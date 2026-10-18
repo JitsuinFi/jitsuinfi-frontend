@@ -1,0 +1,492 @@
+/* Landing. Values come from tokens.css (MASTER.md). Radius 0, no cards, one shadow. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+}
+
+body.landing {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--t-body);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.data {
+  font-family: var(--f-mono);
+  font-size: var(--t-data);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--glint);
+  outline-offset: 3px;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  position: relative;
+  min-height: max(100svh, 680px);
+  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  padding-block: var(--s-3) var(--s-8);
+  padding-left: var(--gutter);
+  padding-right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+}
+
+.hero-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+.hero.no-gl {
+  background: linear-gradient(90deg, var(--paper) 0 58%, var(--pool) 58% 100%);
+}
+
+/* nav: brand and links all sit on the paper side */
+.nav {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  max-width: 56%;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  text-decoration: none;
+  color: var(--head);
+}
+
+.brand-seal {
+  width: 30px;
+  height: 30px;
+}
+
+.brand-name {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.nav-links {
+  display: flex;
+  gap: var(--s-4);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.nav-link {
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--ink);
+  background: linear-gradient(var(--seal), var(--seal)) left bottom / 0 1px no-repeat;
+  transition: background-size var(--dur-fade) var(--ease-glide), color var(--dur-fade) var(--ease-glide);
+}
+
+.nav-link:hover {
+  color: var(--seal);
+  background-size: 100% 1px;
+}
+
+/* headline */
+.hero-copy {
+  position: relative;
+  z-index: 10;
+  align-self: center;
+  max-width: min(54vw, 980px);
+  padding-block: var(--s-8) var(--s-6);
+}
+
+.hero-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: min(var(--t-hero), 9.6vw); /* below 375px the longest word still fits */
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--head);
+  text-wrap: balance;
+}
+
+.hero-line {
+  display: block;
+}
+
+.hero-line + .hero-line {
+  margin-top: 0.22em;
+}
+
+.word {
+  display: inline-block;
+  white-space: nowrap; /* "double-financing." never splits at its hyphen */
+}
+
+.hero-foot {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: min(46vw, 52ch);
+}
+
+.hero-lede {
+  margin: 0;
+  font-size: var(--t-lede);
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  max-width: 52ch;
+}
+
+.hero-calls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+/* seal button: the only filled control */
+.seal-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s-2) var(--s-3);
+  background: var(--seal);
+  color: var(--sheet);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color var(--dur-fade) var(--ease-glide);
+}
+
+.seal-btn:hover {
+  background: var(--seal-hi);
+}
+
+.seal-btn-label {
+  display: inline-block;
+}
+
+/* ink link: the underline bleeds wider on hover */
+.ink-link {
+  color: var(--seal);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  padding-bottom: 3px;
+  background: linear-gradient(var(--seal), var(--seal)) left bottom / 100% 1px no-repeat;
+  transition: background-size var(--dur-fade) var(--ease-glide);
+}
+
+.ink-link:hover {
+  background-size: 100% 3px;
+}
+
+/* ---------- the invoice sheet ---------- */
+
+.sheet-wrap {
+  position: absolute;
+  z-index: 20;
+  margin: 0;
+  top: 50%;
+  left: 55%;
+  width: clamp(260px, 22vw, 380px);
+  translate: 0 -46%;
+  filter: var(--lift-drop);
+}
+
+/* the rest angle sits on the sheet; the wrapper animates relative to it */
+.sheet {
+  rotate: 1.2deg;
+  background: var(--sheet);
+  color: var(--ink);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--fiber);
+}
+
+.sheet-title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-h3);
+  line-height: 1.15;
+  color: var(--head);
+}
+
+.sheet-no {
+  color: var(--ink-2);
+}
+
+.sheet-rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--s-3);
+  row-gap: 6px;
+  font-size: var(--t-data);
+}
+
+.sheet-rows dt {
+  color: var(--ink-2);
+}
+
+.sheet-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ink);
+}
+
+.sheet-fp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--fiber);
+}
+
+.sheet-fp-label {
+  font-size: var(--t-data);
+  color: var(--ink-2);
+}
+
+.sheet-fp-grid {
+  display: flex;
+  flex-direction: column;
+  color: var(--ink-2);
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+}
+
+.fp-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.fp-digit {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
+.fp-digit.is-cycling {
+  color: var(--seal);
+}
+
+.sheet-sign {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 92px;
+  padding-top: var(--s-1);
+  border-top: 1px solid var(--fiber);
+}
+
+.sheet-sign-label {
+  font-size: var(--t-data);
+  color: var(--ink-2);
+}
+
+.impression,
+.stamp {
+  position: absolute;
+  right: var(--s-1);
+  bottom: -4px;
+  width: 92px;
+  height: 92px;
+  overflow: visible;
+  rotate: -7deg;
+}
+
+.impression {
+  opacity: 0;
+}
+
+.impression.is-inked,
+.is-rested .impression {
+  opacity: 0.92;
+}
+
+.stamp {
+  opacity: 0;
+  transform-origin: 50% 50%;
+}
+
+.seal-ring {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 5;
+}
+
+.seal-ring-fine {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 1.4;
+}
+
+.seal-kanji {
+  fill: var(--seal);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 27px;
+}
+
+/* ---------- the pool ---------- */
+
+.pool-note {
+  position: absolute;
+  z-index: 10;
+  right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+  bottom: var(--s-8);
+  margin: 0;
+  max-width: min(30vw, 34ch);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  color: var(--mist);
+  font-size: var(--t-body);
+  line-height: 1.5;
+}
+
+.pool-note-n {
+  color: var(--glint);
+}
+
+.glyphs {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.glyph {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: var(--t-data);
+  line-height: 1.35;
+  will-change: transform;
+}
+
+/* entry states: hidden until the timeline takes them over */
+.is-entering .word,
+.is-entering .hero-lede,
+.is-entering .seal-btn,
+.is-entering .ink-link,
+.is-entering .sheet-wrap,
+.is-entering .pool-note {
+  opacity: 0;
+}
+
+/* story anchor until chapter 2 lands */
+.story-anchor {
+  height: 1px;
+}
+
+/* narrow desktops: the spec link stays in the hero calls */
+@media (max-width: 1099px) {
+  .nav-spec {
+    display: none;
+  }
+}
+
+/* ---------- phones: the pool opens below the sheet ---------- */
+
+@media (max-width: 759px) {
+  .hero {
+    min-height: 0;
+    grid-template-rows: auto auto auto auto auto;
+    padding-block: var(--s-2) var(--s-6);
+    row-gap: 0;
+  }
+
+  .hero.no-gl {
+    background: linear-gradient(180deg, var(--paper) 0 60%, var(--pool) 60% 100%);
+  }
+
+  .nav {
+    max-width: none;
+    justify-content: space-between;
+  }
+
+  .nav-links a:not(.nav-demo) {
+    display: none;
+  }
+
+  .hero-copy {
+    max-width: none;
+    padding-block: var(--s-6) var(--s-3);
+  }
+
+  .hero-foot {
+    max-width: none;
+  }
+
+  .sheet-wrap {
+    position: relative;
+    top: auto;
+    left: auto;
+    translate: none;
+    width: min(100%, 340px);
+    justify-self: center;
+    margin-top: var(--s-6);
+  }
+
+  .pool-note {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    max-width: none;
+    margin-top: var(--s-8);
+    padding-top: var(--s-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .seal-btn,
+  .ink-link {
+    transition: none;
+  }
+}

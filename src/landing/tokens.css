@@ -1,0 +1,65 @@
+/* Tokens from MASTER.md. A value not listed there is a bug. */
+@import "@fontsource/shippori-mincho-b1/700.css";
+@import "@fontsource/shippori-mincho-b1/800.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+:root {
+  /* colour */
+  --paper: #F6F5FC;
+  --sheet: #FCFCFE;
+  --fiber: #ECD0EC;
+  --fold: #BA71A2;
+  --head: #020D2F;
+  --ink: #461D3A;
+  --ink-2: #502A50;
+  --seal: #7E2A53;
+  --seal-hi: #6B2347;
+  --pool: #020D2F;
+  --pool-2: #032C7D;
+  --wave: #0841C9;
+  --glint: #1D97F1;
+  --mist: #C4C7F2;
+
+  /* type */
+  --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;
+  --f-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --t-hero: clamp(36px, 5.6vw, 104px);
+  --t-h2: clamp(30px, 4.2vw, 72px);
+  --t-h3: clamp(20px, 2vw, 32px);
+  --t-lede: clamp(18px, 1.5vw, 24px);
+  --t-body: clamp(16px, 1.1vw, 18px);
+  --t-ui: clamp(14px, 1vw, 16px);
+  --t-data: clamp(12px, .9vw, 14px);
+
+  /* space */
+  --s-1: 8px;
+  --s-2: 16px;
+  --s-3: 24px;
+  --s-4: 32px;
+  --s-6: 48px;
+  --s-8: 64px;
+  --s-12: 96px;
+  --s-section: clamp(96px, 14vw, 220px);
+  --gutter: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-left, 0px));
+
+  /* depth */
+  --lift: 0 18px 40px rgba(70, 29, 58, .16);
+  --lift-drop: drop-shadow(0 18px 20px rgba(70, 29, 58, .16)); /* the same shadow for clipped (torn) sheets */
+
+  /* motion */
+  --dur-press: 67ms;
+  --dur-micro: 133ms;
+  --dur-fade: 200ms;
+  --dur-seal: 367ms;
+  --dur-enter: 400ms;
+  --dur-exit: 433ms;
+  --ease-land: cubic-bezier(.22, .78, .51, .94);
+  --ease-snap: cubic-bezier(.13, 1.06, .31, .94);
+  --ease-glide: cubic-bezier(.53, .91, .89, 1);
+  --ease-inout: cubic-bezier(.34, .07, .66, .93);
+  --ease-exit: cubic-bezier(.29, 0, .63, .04);
+
+  color-scheme: light;
+}

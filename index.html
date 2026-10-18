@@ -2,18 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Same-origin only: no CDN, no third-party requests. WASM needs 'wasm-unsafe-eval'. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Same-origin only: no CDN, no third-party requests. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <meta name="referrer" content="no-referrer" />
+    <meta name="description" content="Private invoice financing on Zcash. Every invoice gets one fingerprint on a public board, so it can be financed once, while amounts, parties and documents stay shielded." />
     <title>JitsuinFi</title>
     <link rel="icon" href="/seal.svg" type="image/svg+xml" />
   </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+  <body class="landing">
+    <div id="landing"></div>
+    <script type="module" src="/src/landing/main.ts"></script>
   </body>
 </html>

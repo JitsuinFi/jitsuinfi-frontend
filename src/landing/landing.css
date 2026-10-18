@@ -1,4 +1,5 @@
-/* Landing. Values come from tokens.css (MASTER.md). Radius 0, no cards, one shadow. */
+/* Landing. Values come from tokens.css (MASTER.md). Radius 0 except glass pills and the round
+   seal (Amendment 2), no cards. */
 
 *,
 *::before,
@@ -33,24 +34,59 @@ a {
   color: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 :focus-visible {
   outline: 2px solid var(--glint);
   outline-offset: 3px;
 }
 
-/* ---------- hero ---------- */
+/* ---------- liquid glass (pills over the pool only) ---------- */
+
+.glass {
+  position: relative;
+  border-radius: 999px;
+  background: var(--glass);
+  background-blend-mode: luminosity;
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: inset 0 1px 1px var(--glass-soft);
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  background: linear-gradient(180deg, var(--glass-edge) 0%, var(--glass-soft) 22%, transparent 40%, transparent 60%, var(--glass-soft) 78%, var(--glass-edge) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ---------- hero: the pool, full-bleed ---------- */
 
 .hero {
+  --sheet-w: clamp(236px, 18.5vw, 312px);
   position: relative;
-  min-height: max(100svh, 680px);
+  height: max(100svh, 700px);
   overflow: hidden;
   isolation: isolate;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
-  padding-block: var(--s-3) var(--s-8);
-  padding-left: var(--gutter);
-  padding-right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+  background: var(--pool);
+  color: var(--sheet);
 }
 
 .hero-field {
@@ -58,35 +94,58 @@ a {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
   display: block;
+  z-index: 0;
 }
 
 .hero.no-gl {
-  background: linear-gradient(90deg, var(--paper) 0 58%, var(--pool) 58% 100%);
+  background: radial-gradient(120% 90% at 18% 0%, var(--wave), var(--pool-2) 45%, var(--pool) 100%);
 }
 
-/* nav: brand and links all sit on the paper side */
+/* the bottom of the scene blurs and deepens under the copy (MotionSites prompt 1, tinted) */
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--veil) 0%, transparent 62%), linear-gradient(90deg, var(--veil) 0%, transparent 48%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 50%);
+  mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 50%);
+}
+
+/* nav */
 .nav {
-  position: relative;
+  position: absolute;
   z-index: 30;
+  top: max(20px, env(safe-area-inset-top, 0px));
+  left: var(--gutter);
+  right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
-  gap: var(--s-6);
-  max-width: 56%;
+  justify-content: space-between;
+  gap: var(--s-3);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-1);
+  gap: 12px;
   text-decoration: none;
-  color: var(--head);
+  color: var(--sheet);
 }
 
 .brand-seal {
-  width: 30px;
-  height: 30px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.brand-mark {
+  width: 26px;
+  height: 26px;
 }
 
 .brand-name {
@@ -96,146 +155,99 @@ a {
   letter-spacing: -0.01em;
 }
 
-.nav-links {
+.nav-pill {
   display: flex;
-  gap: var(--s-4);
-  font-size: var(--t-ui);
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
 }
 
 .nav-link {
-  white-space: nowrap;
-  text-decoration: none;
-  color: var(--ink);
-  background: linear-gradient(var(--seal), var(--seal)) left bottom / 0 1px no-repeat;
-  transition: background-size var(--dur-fade) var(--ease-glide), color var(--dur-fade) var(--ease-glide);
-}
-
-.nav-link:hover {
-  color: var(--seal);
-  background-size: 100% 1px;
-}
-
-/* headline */
-.hero-copy {
-  position: relative;
-  z-index: 10;
-  align-self: center;
-  max-width: min(54vw, 980px);
-  padding-block: var(--s-8) var(--s-6);
-}
-
-.hero-title {
-  margin: 0;
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: min(var(--t-hero), 9.6vw); /* below 375px the longest word still fits */
-  line-height: 0.98;
-  letter-spacing: -0.02em;
-  color: var(--head);
-  text-wrap: balance;
-}
-
-.hero-line {
-  display: block;
-}
-
-.hero-line + .hero-line {
-  margin-top: 0.22em;
-}
-
-.word {
-  display: inline-block;
-  white-space: nowrap; /* "double-financing." never splits at its hyphen */
-}
-
-.hero-foot {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-  max-width: min(46vw, 52ch);
-}
-
-.hero-lede {
-  margin: 0;
-  font-size: var(--t-lede);
-  line-height: 1.5;
-  letter-spacing: -0.005em;
-  color: var(--ink);
-  max-width: 52ch;
-}
-
-.hero-calls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-4);
-}
-
-/* seal button: the only filled control */
-.seal-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--s-2) var(--s-3);
-  background: var(--seal);
-  color: var(--sheet);
+  padding: 8px 14px;
   font-size: var(--t-ui);
   font-weight: 500;
   letter-spacing: 0.01em;
-  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--mist);
+  transition: color var(--dur-fade) var(--ease-glide);
+}
+
+.nav-link:hover {
+  color: var(--sheet);
+}
+
+.nav-cta {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--head);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   text-decoration: none;
   transition: background-color var(--dur-fade) var(--ease-glide);
 }
 
-.seal-btn:hover {
-  background: var(--seal-hi);
+.nav-cta:hover {
+  background: var(--mist);
 }
 
-.seal-btn-label {
-  display: inline-block;
+/* the stage: an origin point; the sheets centre on it */
+.stage {
+  position: absolute;
+  z-index: 10;
+  left: 67%;
+  top: 45%;
+  width: 0;
+  height: 0;
 }
 
-/* ink link: the underline bleeds wider on hover */
-.ink-link {
-  color: var(--seal);
-  font-size: var(--t-ui);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  padding-bottom: 3px;
-  background: linear-gradient(var(--seal), var(--seal)) left bottom / 100% 1px no-repeat;
-  transition: background-size var(--dur-fade) var(--ease-glide);
+.stage-shake {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
 }
-
-.ink-link:hover {
-  background-size: 100% 3px;
-}
-
-/* ---------- the invoice sheet ---------- */
 
 .sheet-wrap {
   position: absolute;
-  z-index: 20;
   margin: 0;
-  top: 50%;
-  left: 55%;
-  width: clamp(260px, 22vw, 380px);
-  translate: 0 -46%;
-  filter: var(--lift-drop);
+  left: calc(var(--sheet-w) / -2);
+  top: 0;
+  width: var(--sheet-w);
+  translate: 0 -50%;
+  filter: var(--lift-pool);
+  will-change: transform, filter, opacity;
 }
 
-/* the rest angle sits on the sheet; the wrapper animates relative to it */
+.sheet-b {
+  z-index: 2;
+}
+
 .sheet {
-  rotate: 1.2deg;
+  position: relative;
   background: var(--sheet);
   color: var(--ink);
-  padding: var(--s-4) var(--s-4) var(--s-3);
+  padding: var(--s-3) var(--s-3) var(--s-2);
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
+  gap: var(--s-2);
+  rotate: 1.2deg;
+}
+
+.sheet-b .sheet {
+  rotate: -1.6deg;
+}
+
+.sheet-tint {
+  position: absolute;
+  inset: 0;
+  background: var(--wave);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sheet-head {
@@ -243,7 +255,7 @@ a {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--s-2);
-  padding-bottom: var(--s-2);
+  padding-bottom: var(--s-1);
   border-bottom: 1px solid var(--fiber);
 }
 
@@ -257,6 +269,7 @@ a {
 
 .sheet-no {
   color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .sheet-rows {
@@ -264,7 +277,7 @@ a {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: var(--s-3);
-  row-gap: 6px;
+  row-gap: 4px;
   font-size: var(--t-data);
 }
 
@@ -281,12 +294,13 @@ a {
 .sheet-fp {
   display: flex;
   flex-direction: column;
-  gap: var(--s-1);
-  padding-top: var(--s-2);
+  gap: 4px;
+  padding-top: var(--s-1);
   border-top: 1px solid var(--fiber);
 }
 
-.sheet-fp-label {
+.sheet-fp-label,
+.sheet-sign-label {
   font-size: var(--t-data);
   color: var(--ink-2);
 }
@@ -318,23 +332,18 @@ a {
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 92px;
+  min-height: 84px;
   padding-top: var(--s-1);
   border-top: 1px solid var(--fiber);
-}
-
-.sheet-sign-label {
-  font-size: var(--t-data);
-  color: var(--ink-2);
 }
 
 .impression,
 .stamp {
   position: absolute;
-  right: var(--s-1);
-  bottom: -4px;
-  width: 92px;
-  height: 92px;
+  right: 4px;
+  bottom: -2px;
+  width: 86px;
+  height: 86px;
   overflow: visible;
   rotate: -7deg;
 }
@@ -343,9 +352,8 @@ a {
   opacity: 0;
 }
 
-.impression.is-inked,
-.is-rested .impression {
-  opacity: 0.92;
+.impression.is-inked {
+  opacity: 0.94;
 }
 
 .stamp {
@@ -372,121 +380,401 @@ a {
   font-size: 27px;
 }
 
-/* ---------- the pool ---------- */
-
-.pool-note {
-  position: absolute;
-  z-index: 10;
-  right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
-  bottom: var(--s-8);
-  margin: 0;
-  max-width: min(30vw, 34ch);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  color: var(--mist);
-  font-size: var(--t-body);
-  line-height: 1.5;
+/* on the pool the seal mark is drawn in paper white */
+.brand-mark .seal-ring,
+.brand-mark .seal-ring-fine,
+.inline-seal .seal-ring,
+.inline-seal .seal-ring-fine {
+  stroke: var(--sheet);
 }
 
-.pool-note-n {
-  color: var(--glint);
+.brand-mark .seal-kanji,
+.inline-seal .seal-kanji {
+  fill: var(--sheet);
 }
 
-.glyphs {
-  position: absolute;
-  inset: 0;
-  z-index: 25;
-  pointer-events: none;
+.crack {
+  fill: none;
+  stroke: var(--sheet);
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.glyph {
+/* the ring of N on the surface */
+.ring {
   position: absolute;
   left: 0;
   top: 0;
-  font-size: var(--t-data);
-  line-height: 1.35;
-  will-change: transform;
+  width: 0;
+  height: 0;
+  z-index: 1;
 }
 
-/* entry states: hidden until the timeline takes them over */
+.ring-line {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ring-line ellipse {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.ring-glyph {
+  position: absolute;
+  margin: -0.75em 0 0 -0.5ch;
+  font-size: calc(var(--t-data) * 1.7);
+  font-weight: 500;
+  color: var(--glint);
+  opacity: 0;
+  transition: color var(--dur-fade) var(--ease-glide);
+}
+
+.ring-glyph.is-caught {
+  color: var(--sheet);
+}
+
+.stage-cap {
+  position: absolute;
+  left: calc(min(34ch, 36vw) / -2);
+  top: calc(var(--sheet-w) * 0.8 + 44px); /* JS sets it under the ring */
+  width: min(34ch, 36vw);
+  margin: 0;
+  text-align: center;
+  font-size: var(--t-ui);
+  line-height: 1.45;
+  color: var(--mist);
+  text-wrap: balance;
+}
+
+/* copy, bottom left */
+.hero-copy {
+  position: absolute;
+  z-index: 20;
+  left: var(--gutter);
+  bottom: clamp(32px, 6vh, 64px);
+  width: min(44vw, 640px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.badge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px 5px 5px;
+  font-size: var(--t-data);
+  color: var(--mist);
+}
+
+.badge-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--head);
+  font-weight: 500;
+}
+
+.hero-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: min(var(--t-hero), 9.6vw);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--sheet);
+}
+
+.hero-line {
+  display: block;
+}
+
+.hero-line-1 {
+  color: var(--mist);
+}
+
+.hero-line + .hero-line {
+  margin-top: 0.14em;
+}
+
+.word {
+  display: inline-block;
+  white-space: nowrap; /* "double-financing." never splits at its hyphen */
+}
+
+.word-seal {
+  width: 0.86em;
+  height: 0.86em;
+  vertical-align: -0.1em;
+  border-radius: 50%;
+  background: var(--seal);
+  display: inline-grid;
+  place-items: center;
+  rotate: -8deg;
+}
+
+.inline-seal {
+  width: 76%;
+  height: 76%;
+}
+
+.hero-lede {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--t-lede);
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--mist);
+}
+
+.hero-calls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.seal-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: var(--seal);
+  color: var(--sheet);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color var(--dur-fade) var(--ease-glide);
+}
+
+.seal-btn:hover {
+  background: var(--seal-hi);
+}
+
+.seal-btn-label {
+  display: inline-block;
+}
+
+.watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 20px;
+  font-size: var(--t-ui);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--sheet);
+}
+
+.watch-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.hero-proof {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: var(--t-data);
+  color: var(--mist);
+}
+
+.hero-proof .data {
+  color: var(--glint);
+}
+
+/* the beat rail */
+.rail {
+  position: absolute;
+  z-index: 20;
+  right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+  bottom: clamp(32px, 6vh, 64px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 6px;
+}
+
+.rail-pause {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--glass-soft);
+  color: var(--sheet);
+}
+
+.rail-pause svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.rail-pause .icon-play,
+.rail-pause.is-paused .icon-pause {
+  display: none;
+}
+
+.rail-pause.is-paused .icon-play {
+  display: block;
+}
+
+.rail-beat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: var(--t-data);
+  color: var(--mist);
+  text-align: left;
+  transition: color var(--dur-fade) var(--ease-glide);
+}
+
+.rail-beat.is-on,
+.rail-beat:hover {
+  color: var(--sheet);
+}
+
+.rail-label {
+  white-space: nowrap;
+}
+
+.rail-track {
+  display: block;
+  width: 100%;
+  min-width: 56px;
+  height: 2px;
+  background: var(--glass-soft);
+}
+
+.rail-fill {
+  display: block;
+  height: 100%;
+  background: var(--sheet);
+  transform-origin: 0 50%;
+  scale: 0 1;
+}
+
+/* entry: hidden until the entry timeline takes them over */
 .is-entering .word,
+.is-entering .nav,
+.is-entering .badge,
 .is-entering .hero-lede,
 .is-entering .seal-btn,
-.is-entering .ink-link,
-.is-entering .sheet-wrap,
-.is-entering .pool-note {
+.is-entering .watch,
+.is-entering .hero-proof,
+.is-entering .rail,
+.is-entering .stage-cap {
   opacity: 0;
 }
 
-/* story anchor until chapter 2 lands */
 .story-anchor {
   height: 1px;
 }
 
-/* narrow desktops: the spec link stays in the hero calls */
+/* ---------- narrow: the stage above, the copy below ---------- */
+
 @media (max-width: 1099px) {
   .nav-spec {
     display: none;
   }
 }
 
-/* ---------- phones: the pool opens below the sheet ---------- */
-
-@media (max-width: 759px) {
+@media (max-width: 1023px) {
   .hero {
-    min-height: 0;
-    grid-template-rows: auto auto auto auto auto;
-    padding-block: var(--s-2) var(--s-6);
-    row-gap: 0;
+    --sheet-w: min(58vw, 252px);
+    height: auto;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding-block: 88px var(--s-4);
+    padding-left: var(--gutter);
+    padding-right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+    gap: var(--s-4);
   }
 
-  .hero.no-gl {
-    background: linear-gradient(180deg, var(--paper) 0 60%, var(--pool) 60% 100%);
+  .hero-veil {
+    -webkit-mask-image: linear-gradient(to top, #000 0%, #000 30%, transparent 62%);
+    mask-image: linear-gradient(to top, #000 0%, #000 30%, transparent 62%);
   }
 
-  .nav {
-    max-width: none;
-    justify-content: space-between;
+  .stage {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: calc(var(--sheet-w) * 1.7 + 72px);
+    flex: none;
   }
 
-  .nav-links a:not(.nav-demo) {
-    display: none;
+  .stage-shake {
+    left: 50%;
+  }
+
+  .stage-cap {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
   }
 
   .hero-copy {
-    max-width: none;
-    padding-block: var(--s-6) var(--s-3);
-  }
-
-  .hero-foot {
-    max-width: none;
-  }
-
-  .sheet-wrap {
     position: relative;
-    top: auto;
     left: auto;
-    translate: none;
-    width: min(100%, 340px);
-    justify-self: center;
-    margin-top: var(--s-6);
+    bottom: auto;
+    width: auto;
   }
 
-  .pool-note {
+  .rail {
     position: relative;
     right: auto;
     bottom: auto;
-    max-width: none;
-    margin-top: var(--s-8);
-    padding-top: var(--s-6);
+    align-self: flex-start;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 559px) {
+  .nav-pill .nav-link {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: 20px;
+  }
+
+  .rail-label {
+    display: none;
+  }
+
+  .rail-beat {
+    padding: 10px 6px;
+  }
+
+  .rail-track {
+    min-width: 40px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-link,
+  .nav-cta,
   .seal-btn,
-  .ink-link {
+  .rail-beat,
+  .ring-glyph {
     transition: none;
   }
 }

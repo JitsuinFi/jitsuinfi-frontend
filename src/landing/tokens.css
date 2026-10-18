@@ -20,12 +20,16 @@
   --wave: #0841C9;
   --glint: #1D97F1;
   --mist: #C4C7F2;
+  --glass: rgba(252, 252, 254, .07);       /* Amendment 2: pills over the pool only */
+  --glass-edge: rgba(252, 252, 254, .5);
+  --glass-soft: rgba(252, 252, 254, .14);
+  --veil: rgba(2, 13, 47, .78);            /* --pool, under the copy for contrast */
 
   /* type */
   --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;
   --f-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --t-hero: clamp(36px, 5.6vw, 104px);
+  --t-hero: clamp(36px, 4.6vw, 88px);
   --t-h2: clamp(30px, 4.2vw, 72px);
   --t-h3: clamp(20px, 2vw, 32px);
   --t-lede: clamp(18px, 1.5vw, 24px);
@@ -47,6 +51,7 @@
   /* depth */
   --lift: 0 18px 40px rgba(70, 29, 58, .16);
   --lift-drop: drop-shadow(0 18px 20px rgba(70, 29, 58, .16)); /* the same shadow for clipped (torn) sheets */
+  --lift-pool: drop-shadow(0 26px 28px rgba(2, 13, 47, .55));  /* a sheet floating on the pool (Amendment 2) */
 
   /* motion */
   --dur-press: 67ms;

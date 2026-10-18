@@ -10,6 +10,8 @@ Single source of truth for the landing page (HNK-18.T4). Every colour, size, dur
 
 **Amendment 1 (user, 2026-10-19): firm and professional, never feminine.** The maroon is the official red of a registered seal on receivable documents and RWA deeds, not a soft colour; the blue palette completes it. So: the ground is cool document paper (`#F6F5FC`), headings are Cetacean navy, body copy is Brown Coffee ink, Dark Raspberry stays the only red (the seal, actions, signatures), Classic Rose and Pearly Purple shrink to ink-bleed fringes and faint fibers. Shapes are firmer: sheets are straight-edged with a fine torn edge on one side only, the pool is revealed where the paper is torn open, and no blob shapes appear anywhere.
 
+**Amendment 2 (user, 2026-10-19): the hero must be iconic.** The first hero read as a static split (paper left, pool right) that stops moving after the intro. The user's references (Reeve's looping camera stage; MotionSites prompts 1–4 in `vault/MotionSites-References/`) set the level: a full-bleed moving scene behind everything, never still, with copy laid over it. So the hero becomes **the pool seen from above in daylight**, full-bleed (WebGL in place of the prompts' CDN videos, which the CSP and the no-third-party-asset rule exclude): caustic light nets on a deep floor ruled like a ledger (the public board), sun sparkles, film grain, ripples everywhere. On it, a looping ~10s story: an invoice floats in, a giant jitsuin slams down and the shockwave crosses the whole screen, N resolves, the invoice sinks and only N stays floating as light; then a copy of the same invoice drifts in, the seal is pressed twice, the impression cracks, the N ring turns seal red ("already registered, refused"), the copy is pushed away, and the loop restarts. A beat rail with a pause control (WCAG 2.2.2) sits at the bottom. Adopted from the prompts, adapted: the bottom blur mask over the scene (prompt 1, tinted with the pool for contrast), word-by-word blur-in headline (prompt 4, with the jittered word delays), liquid-glass pills for the nav, badge, rail and secondary call (prompts 1 and 4), an inline seal mark inside the headline (prompt 3), and a magnetic primary call (Reeve). Not adopted: cards and stat boxes (still forbidden), Inter/Barlow/Fustat (the type stays Shippori Mincho B1 + Geist), pure black, white CTA on black. Rule changes: glass is allowed **only** on pills over the pool (nav, badge, rail, secondary call); pills are the only rounded elements (`999px`), everything else keeps radius 0; blur is allowed in entries (words blur 10px to 0 and the descending seal uses depth blur). Later chapters stay on the day paper; the hero is the one place the pool fills the screen.
+
 **Allowed patterns.** WebGL ink diffusion on paper and a WebGL water field with ripples (both paused offscreen) · deckled paper edges as masks · one round Dark Raspberry seal mark · Geist Mono hashes that resolve digit by digit (real values) · hairline line figures for documents · pinned scroll scenes. Known reflexes this allows, by name: a paper ground (jitsuin is a seal on paper documents), perpetual motion limited to the two WebGL fields (paused offscreen), monospace limited to real data.
 
 **Dials** (sent to `ui-ux-pro-max`): variance 8 ("the pool opens through the paper, deckled edges, no boxes"), motion 8 ("pinned scenes, WebGL ink and water, scroll is the story clock"), density 3 ("airy, cinematic spacing").
@@ -37,6 +39,10 @@ Palette from `vault/ColorPalette-JitsuinFi/`. Ratios are WCAG.
 | `--pool-2` | `#032C7D` | Catalina Blue | Pool depth | — |
 | `--wave` | `#0841C9` | Absolute Zero | Ripple body | — |
 | `--glint` | `#1D97F1` | Button Blue | Light inside the water only | 6.13 on pool, 2.58 on paper (never on paper) |
+| `--glass` | `rgba(252, 252, 254, .07)` | `--sheet` at 7% | Liquid-glass pill fill (Amendment 2) | — |
+| `--glass-edge` | `rgba(252, 252, 254, .5)` | `--sheet` at 50% | Liquid-glass gradient stroke | — |
+| `--glass-soft` | `rgba(252, 252, 254, .14)` | `--sheet` at 14% | Glass inner highlight, tracks | — |
+| `--veil` | `rgba(2, 13, 47, .78)` | `--pool` at 78% | Bottom veil under the hero copy (with the blur mask) | — |
 | `--mist` | `#C4C7F2` | Vodka (RGB 196,199,242; chart label `29B4D1` is wrong) | Text on the pool | 11.62 on pool |
 
 Pairs: `--sheet` on `--seal` 8.68 (seal button text). `--mist` on `--pool-2` 7.71.
@@ -51,7 +57,7 @@ Fallbacks: `"Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Ser
 
 | Token | Face | Weight | Size | Leading | Tracking |
 |---|---|---|---|---|---|
-| `--t-hero` | Shippori Mincho B1 | 800 | `clamp(36px, 5.6vw, 104px)` (was 44/7.2vw/128: "double-financing." overflowed the paper column on desktop and a 375px phone; capped at `9.6vw` below 375px) | .98 | −.02em |
+| `--t-hero` | Shippori Mincho B1 | 800 | `clamp(36px, 4.6vw, 88px)` (was 44/7.2vw/128, then 36/5.6vw/104 before the full-bleed hero shared the width with the stage: "double-financing." overflowed the paper column on desktop and a 375px phone; capped at `9.6vw` below 375px) | .98 | −.02em |
 | `--t-h2` | Shippori Mincho B1 | 800 | `clamp(30px, 4.2vw, 72px)` | 1.04 | −.015em |
 | `--t-h3` | Shippori Mincho B1 | 700 | `clamp(20px, 2vw, 32px)` | 1.15 | 0 |
 | `--t-lede` | Geist | 400 | `clamp(18px, 1.5vw, 24px)` | 1.5 | −.005em |
@@ -66,7 +72,7 @@ Rules: headings in `--head` (navy), body in `--ink`; hierarchy by scale and the 
 - Base 8px: `--s-1 8px`, `--s-2 16px`, `--s-3 24px`, `--s-4 32px`, `--s-6 48px`, `--s-8 64px`, `--s-12 96px`, `--s-section clamp(96px, 14vw, 220px)`.
 - Gutter `max(16px, env(safe-area-inset-*))`, then `clamp(16px, 5vw, 96px)`.
 - **Radius: 0** on every interface element. Organic shape only where paper is torn (one fine edge per sheet, the edge where the pool shows through) and in the ink bleed. No rounded rectangles, no blobs.
-- **Depth:** one shadow, for physical paper sheets lifted off the washi: `--lift: 0 18px 40px rgba(70, 29, 58, .16)` (Brown Coffee at 16%). A torn sheet is clipped, so it carries the same shadow as a filter: `--lift-drop: drop-shadow(0 18px 20px rgba(70, 29, 58, .16))`. Nothing else casts a shadow.
+- **Depth:** one shadow, for physical paper sheets lifted off the washi: `--lift: 0 18px 40px rgba(70, 29, 58, .16)` (Brown Coffee at 16%). A torn sheet is clipped, so it carries the same shadow as a filter: `--lift-drop: drop-shadow(0 18px 20px rgba(70, 29, 58, .16))`. On the pool a floating sheet casts the pool's own shadow instead: `--lift-pool: drop-shadow(0 26px 28px rgba(2, 13, 47, .55))` (Amendment 2). Nothing else casts a shadow.
 - **Lines:** paper rules `1px solid var(--fiber)` on sheets only.
 - z-index: field 0, content 10, sheets 20, nav 30, overlay menu 40.
 

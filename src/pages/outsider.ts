@@ -26,6 +26,19 @@ export function outsiderPage(): HTMLElement {
     "The registry board is public so anyone can audit it. This is everything an outsider can learn from it.",
     card("Privacy", "Public vs hidden", "Zcash shields the money; JitsuinFi keeps the documents with the parties.", table),
     card(
+      "Explorer",
+      "What a block explorer shows for an advance",
+      "Testnet advance 7b5687991a8df84c… paid a supplier 0.00015 TAZ with a receipt, a seal and a receivable note in its memo. An explorer sees this:",
+      kv([
+        ["Transaction", "7b5687991a8df84cdb334d910f5d08850b98d5d02c7df09cd1bff4f2c167dbd9", true],
+        ["Transparent inputs / outputs", "none / none"],
+        ["Shielded pool", "Ironwood"],
+        ["Fee", "0.0001 TAZ (ZIP-317)"],
+        ["Amount, sender, recipient", "encrypted"],
+        ["Memo (receipt, seal, note)", "encrypted"],
+      ]),
+    ),
+    card(
       "Try it",
       "Read a board entry as an outsider",
       "You will see only hashes and signatures. Checking a signature needs the supplier's key, which is only inside the invoice.",

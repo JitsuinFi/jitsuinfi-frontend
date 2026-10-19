@@ -5,6 +5,7 @@
 import { animate, stagger, svg as animeSvg } from "animejs";
 import { inView } from "motion";
 import { dur, ease, sibling } from "./motion";
+import { createPrint, mixParams, paramsOf, type PrintParams } from "./print";
 
 /// The hero invoice (scripts/hero-n.mjs): test keys derived from TES- labels, terms hash of its note.
 const BASE = {
@@ -172,7 +173,16 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
     }
   };
   drawWhorl(vals, new Array(64).fill(false));
-  out.append(whorl);
+  // the print itself (WebGL2); the line whorl stays as the fallback
+  const css = getComputedStyle(document.documentElement);
+  const print = createPrint({ ink: css.getPropertyValue("--head"), hot: css.getPropertyValue("--seal") });
+  let printP: PrintParams = paramsOf(ON_BOARD);
+  const printBox = el("div", "fp-print-box");
+  if (print) {
+    printBox.append(print.el);
+    print.show(printP, 0, reduced ? 1.3 : 0);
+  } else printBox.append(whorl);
+  out.append(printBox);
   const grid = el("div", "fp-grid data");
   grid.setAttribute("role", "status");
   grid.setAttribute("aria-live", "polite");
@@ -223,9 +233,19 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
     const mask = [...n].map((ch, i) => ch !== from[i]);
     if (reduced) {
       digits.forEach((d, i) => (d.textContent = n[i]));
+      printP = paramsOf(n);
+      print?.show(printP, 0, 1.3);
       vals.splice(0, 64, ...target);
       drawWhorl(vals, new Array(64).fill(false));
       return;
+    }
+    if (print) {
+      // the ridges flow from the old print into the new one, inked seal red on the way
+      const a = printP;
+      const b = paramsOf(n);
+      printP = b;
+      const pm = { k: 0 };
+      animate(pm, { k: 1, duration: dur.sink + 300, ease: fn(ease.softInOut), onUpdate: () => print.show(mixParams(a, b, pm.k), Math.sin(Math.PI * pm.k) * 0.9) });
     }
     const start = [...vals];
     const m = { k: 0 };
@@ -338,7 +358,12 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
         const drawn = animeSvg.createDrawable(paths);
         animate(drawn, { draw: ["0 0", "0 1"], duration: dur.ripple, delay: stagger(67, { start: 300 }), ease: fn(ease.softInOut) });
         animate(hashMark, { scale: { from: 0.6, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay: 700, ease: fn(ease.snapSettle) });
-        // the print turns into place, ring by ring (its paths change with N, so no dash drawing)
+        // the print is pressed: ink spreads from the core to the edge of the fingertip
+        if (print) {
+          const rv = { k: 0 };
+          animate(rv, { k: 1.3, duration: dur.bleed + 400, delay: 900, ease: fn(ease.softLand), onUpdate: () => print.show(printP, 0, rv.k) });
+        }
+        // the fallback print turns into place, ring by ring (its paths change with N, so no dash drawing)
         rings.forEach((ring, i) =>
           animate(ring, { opacity: { from: 0, to: 1 }, rotate: { from: -30 - i * 12, to: 0 }, duration: dur.sink, delay: 900 + sibling(i), ease: fn(ease.softLand) }),
         );

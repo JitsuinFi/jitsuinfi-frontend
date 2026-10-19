@@ -988,3 +988,16 @@ button {
 .fp-edit .fp-key {
   white-space: nowrap;
 }
+
+.fp-print-box {
+  width: min(100%, 320px);
+  max-width: 100%;
+}
+
+.fp-print {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-width: 100%;
+  rotate: -6deg;
+}

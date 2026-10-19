@@ -664,7 +664,7 @@ button {
 /* chapter 2: the invoice, the press, the fingerprint */
 .fp-visual {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(120px, 12vw, 200px) minmax(0, 1.15fr);
+  grid-template-columns: minmax(300px, 1fr) clamp(130px, 11vw, 170px) minmax(0, 1.3fr);
   align-items: center;
   min-width: 0;
 }
@@ -820,7 +820,7 @@ button {
   display: grid;
   place-items: center;
   align-content: center;
-  width: clamp(92px, 9vw, 132px);
+  width: clamp(88px, 7.6vw, 118px);
   aspect-ratio: 1;
   max-width: 100%;
   border-radius: 50%;
@@ -828,7 +828,7 @@ button {
   color: var(--sheet);
   text-align: center;
   gap: 2px;
-  margin-left: auto;
+  margin: 0 auto; /* centred in its column, clear of the sheet's +1 */
 }
 
 .fp-hash-name {
@@ -912,10 +912,18 @@ button {
   color: var(--mist);
 }
 
-@media (max-width: 1023px) {
+/* below 1360px the caption sits above the visual, so the sheet, the press and the print have room */
+@media (max-width: 1359px) {
   .chapter {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .chapter-cap {
+    max-width: 60ch;
+  }
+}
+
+@media (max-width: 1023px) {
 
   .fp-visual {
     grid-template-columns: minmax(0, 1fr);
@@ -944,60 +952,86 @@ button {
   }
 }
 
-.fp-whorl {
-  width: min(100%, 300px);
-  aspect-ratio: 1;
-  max-width: 100%;
-  overflow: visible;
-}
-
-.fp-guides circle {
-  fill: none;
-  stroke: var(--fiber);
-  stroke-width: 1;
-  stroke-dasharray: 2 6;
-}
-
-.fp-ring {
-  transform-origin: 0 0;
-  transform-box: view-box;
-  fill: none;
-  stroke: var(--head);
-  stroke-width: 2.4;
-  stroke-linejoin: round;
-}
-
-.fp-ring-hot {
-  fill: none;
-  stroke: var(--seal);
-  stroke-width: 4;
-  stroke-linecap: round;
-}
-
-.fp-core {
-  fill: var(--seal);
-}
-
-.fp-core-n {
-  fill: var(--sheet);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 22px;
-}
-
 .fp-edit .fp-key {
   white-space: nowrap;
 }
 
 .fp-print-box {
-  width: min(100%, 320px);
+  width: min(100%, 460px);
   max-width: 100%;
 }
 
-.fp-print {
+/* the illustrated fingerprint */
+.fp-illus {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  height: auto;
   max-width: 100%;
-  rotate: -6deg;
+  overflow: visible;
+}
+
+.fp-tip {
+  fill: var(--sheet);
+  filter: var(--lift-drop);
+}
+
+.fp-tip-line {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 1.5;
+}
+
+.fp-ridge {
+  fill: none;
+  stroke: var(--head);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 600ms var(--ease-inout);
+}
+
+.fp-ridge.is-core {
+  stroke: var(--ink);
+}
+
+.is-drawing .fp-ridge {
+  stroke: var(--seal);
+  transition: none;
+}
+
+.fp-scan {
+  fill: var(--seal);
+}
+
+.fp-core-ring {
+  fill: var(--sheet);
+  stroke: var(--seal);
+  stroke-width: 2.4;
+}
+
+.fp-core-dot {
+  fill: var(--seal);
+}
+
+.fp-callout-line {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+
+.fp-callout-dot {
+  fill: var(--seal);
+}
+
+.fp-callout-text {
+  fill: var(--head);
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.fp-callout-sub {
+  fill: var(--ink-2);
+  font-family: var(--f-mono);
+  font-size: 12.5px;
 }

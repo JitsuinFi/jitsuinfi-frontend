@@ -1,210 +1,244 @@
-// A fingerprint grown from N (WebGL2): ridges round a core (a spiral whorl or a loop) that relax
-// into arches toward the edge of the fingertip, with minutiae (ridge endings and forks), an
-// uneven inked edge, ink pressure and paper grain, all seeded by N's 32 bytes. A new N moves the
-// parameters, so the ridges flow from one print into the next instead of cutting over.
+// N drawn as an illustrated fingerprint (SVG line art in the site's ink): a paper fingertip, ~20
+// ridges that cap over the top and bend round a core, a core that is rings, a spiral or a loop,
+// one clean minutia (a ridge break), and friendly callouts that say which bytes of N shaped what.
+// Every number comes from N's 32 bytes, so each invoice has its own print. A new N redraws the
+// ridges with anime.js while a seal-red scan line passes over.
+import { animate, stagger, svg as animeSvg } from "animejs";
+import { dur, ease } from "./motion";
 
-const VERT = `#version 300 es
-in vec2 p; out vec2 v;
-void main() { v = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
+const SVG_NS = "http://www.w3.org/2000/svg";
+const fn = (f: (t: number) => number) => () => f;
+const svg = (tag: string, attrs: Record<string, string | number> = {}) => {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+};
 
-const FRAG = `#version 300 es
-precision highp float;
-in vec2 v; out vec4 o;
-uniform vec2 res;
-uniform vec2 core;
-uniform float freq, blendR, ratio, tilt, spiral, seed, warpAmp, reveal, hot;
-uniform vec4 warp;
-uniform vec3 ink, hotInk;
+type Pt = [number, number];
+type Pattern = "rings" | "spiral" | "loop";
 
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
-}
-
-void main() {
-  float aspect = res.y / res.x;
-  vec2 p = (v - 0.5) * vec2(2.0, 2.0 * aspect);
-
-  // the fingertip: an ellipse, rounder at the top, with a ragged inked edge
-  vec2 m = p - vec2(0.0, 0.06 * aspect);
-  float ry = m.y > 0.0 ? 0.98 * aspect : 0.86 * aspect;
-  float e = length(m / vec2(0.86, ry));
-  float rag = (noise(p * 7.0 + seed) - 0.5) * 0.1 + (noise(p * 23.0 + seed * 2.0) - 0.5) * 0.05;
-  float edge = 1.0 - smoothstep(0.82, 1.0, e + rag);
-  // pressed from the centre out
-  edge *= 1.0 - smoothstep(reveal - 0.12, reveal, e);
-  if (edge <= 0.001) { o = vec4(0.0); return; }
-
-  // the skin's organic warp (two octaves), then the pattern frame round the core
-  vec2 w = p + warpAmp * vec2(sin(p.y * 2.3 + warp.x) + 0.6 * sin(p.x * 3.1 + warp.y), sin(p.x * 2.1 + warp.z) + 0.6 * sin(p.y * 2.9 + warp.w));
-  w += 0.035 * (vec2(noise(p * 2.2 + seed), noise(p * 2.2 + seed + 9.1)) - 0.5);
-  float c = cos(tilt), s = sin(tilt);
-  vec2 q = mat2(c, -s, s, c) * (w - core);
-
-  // the core: rings (a whorl), turned into a spiral by whole ridge periods so the seam closes
-  float ang = atan(q.x, -q.y);
-  float rd = length(q * vec2(1.0, ratio));
-  float ring = rd + spiral * (ang / 6.2831853) / freq;
-  // the outer field follows the fingertip: arcs round a centre far below, so the ridges cap
-  // over the top and run nearly level toward the crease
-  vec2 fc = q - vec2(0.0, -1.3); // the centre sits below the fingertip, never inside it
-  float arch = length(fc * vec2(0.68, 1.0)) - 1.3;
-  arch -= 0.16 * q.x * q.x * smoothstep(-0.25, -0.85, q.y); // the lowest ridges follow the tip's base
-  float k = smoothstep(blendR, blendR * 0.42, rd);
-  float phase = mix(arch + blendR * 0.9, ring, k);
-
-  // minutiae: smooth half-ridge shifts make forks and merges; the ridge narrowing to nothing
-  // makes endings; the width breathes with pressure along each ridge
-  float f = phase * freq;
-  f += 0.5 * smoothstep(0.55, 0.78, noise(q * 3.4 + seed * 3.1));
-  f += 0.5 * smoothstep(0.6, 0.82, noise(q * 5.2 + seed * 1.3 + 4.0));
-  float d = abs(fract(f) - 0.5);
-  float aa = fwidth(f) * 0.9;
-  float width = 0.17 + 0.07 * noise(q * 9.0 + seed);
-  width *= smoothstep(0.04, 0.16, noise(q * 6.5 + seed * 2.2)); // rare endings, no bald patches
-  float ridge = 1.0 - smoothstep(width - aa, width + aa, d);
-  // pores: small gaps along the ridges
-  float pore = step(0.93, noise(vec2(f * 2.6, ang * 60.0 + rd * 48.0) + seed));
-  ridge *= 1.0 - 0.6 * pore;
-
-  // ink: pressure falls off toward the edge, a little uneven, on paper grain
-  float pressure = (0.62 + 0.38 * noise(p * 2.6 + seed * 0.7)) * (0.78 + 0.22 * (1.0 - e));
-  float grain = 0.86 + 0.14 * hash(floor(gl_FragCoord.xy));
-  float a = clamp(ridge * edge * pressure * grain, 0.0, 1.0);
-  vec3 col = mix(ink, hotInk, hot);
-  o = vec4(col * a, a);
-}`;
-
-export interface PrintParams {
-  core: [number, number];
-  freq: number;
-  blendR: number;
+interface Shape {
+  core: Pt;
+  spacing: number;
+  coreR: number;
   ratio: number;
   tilt: number;
-  spiral: number;
-  seed: number;
-  warpAmp: number;
-  warp: [number, number, number, number];
+  pattern: Pattern;
+  flat: number;
+  bytes: number[];
 }
 
-/** Every parameter of the print comes from N's bytes, so each N has its own print. */
-export function paramsOf(n: string): PrintParams {
-  const b = Array.from({ length: 32 }, (_, i) => parseInt(n.slice(i * 2, i * 2 + 2), 16) / 255);
-  const tau = Math.PI * 2;
+/** The fingertip: rounder on top (SVG y grows downward). */
+const TIP = { rxT: 128, ryT: 168, rxB: 128, ryB: 150 };
+const inTip = ([x, y]: Pt, pad = 0) => {
+  const ry = y < 0 ? TIP.ryT : TIP.ryB;
+  return (x / (TIP.rxT - pad)) ** 2 + (y / (ry - pad)) ** 2 <= 1;
+};
+
+function shapeOf(n: string): Shape {
+  const b = Array.from({ length: 32 }, (_, i) => parseInt(n.slice(i * 2, i * 2 + 2), 16));
+  const u = (i: number) => b[i] / 255;
   return {
-    core: [(b[0] - 0.5) * 0.18, 0.02 + (b[1] - 0.5) * 0.16],
-    freq: 19 + b[2] * 4,
-    blendR: 0.38 + b[3] * 0.22,
-    ratio: 1.05 + b[4] * 0.4,
-    tilt: (b[5] - 0.5) * 0.5,
-    spiral: b[6] < 0.34 ? 0 : b[6] < 0.67 ? 1 : 2,
-    seed: b[7] * 40 + b[8] * 3,
-    warpAmp: 0.025 + b[9] * 0.04,
-    warp: [b[10] * tau, b[11] * tau, b[12] * tau, b[13] * tau],
+    core: [(u(0) - 0.5) * 50, -14 + (u(1) - 0.5) * 50],
+    spacing: 13 + u(2) * 3,
+    coreR: 44 + u(3) * 22,
+    ratio: 1.05 + u(4) * 0.3,
+    tilt: (u(5) - 0.5) * 0.6,
+    pattern: u(6) < 0.34 ? "rings" : u(6) < 0.67 ? "spiral" : "loop",
+    flat: 0.6 + u(16) * 0.16,
+    bytes: b,
   };
 }
 
-export interface Print {
-  el: HTMLCanvasElement;
-  show(p: PrintParams, hot?: number, reveal?: number): void;
-}
-
-export function createPrint(colors: { ink: string; hot: string }): Print | null {
-  const canvas = document.createElement("canvas");
-  canvas.className = "fp-print";
-  canvas.setAttribute("aria-hidden", "true");
-  const gl = canvas.getContext("webgl2", { premultipliedAlpha: true, alpha: true, antialias: false });
-  if (!gl) return null;
-  const sh = (type: number, src: string) => {
-    const s = gl.createShader(type)!;
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? "shader");
-    return s;
-  };
-  let prog: WebGLProgram;
-  try {
-    prog = gl.createProgram()!;
-    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
-    gl.bindAttribLocation(prog, 0, "p");
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
-  } catch {
-    return null;
+/** A smooth path through points (quadratic curves through the midpoints). */
+function smooth(pts: Pt[]): string {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x, y] = pts[i];
+    const mx = (x + pts[i + 1][0]) / 2;
+    const my = (y + pts[i + 1][1]) / 2;
+    d += ` Q${x.toFixed(1)} ${y.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
   }
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  const U = (n: string) => gl.getUniformLocation(prog, n);
-  const u = Object.fromEntries(["res", "core", "freq", "blendR", "ratio", "tilt", "spiral", "seed", "warpAmp", "reveal", "hot", "warp", "ink", "hotInk"].map((n) => [n, U(n)]));
-  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.trim().replace("#", "").slice(i - 1, i + 1), 16) / 255) as [number, number, number];
-  const ink = rgb(colors.ink);
-  const hotC = rgb(colors.hot);
-
-  let last: { p: PrintParams; hot: number; reveal: number } | null = null;
-  const draw = () => {
-    if (!last) return;
-    const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    const w = Math.max(1, Math.round(r.width * dpr));
-    const h = Math.max(1, Math.round(r.height * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-    const { p, hot, reveal } = last;
-    gl.viewport(0, 0, w, h);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(prog);
-    gl.uniform2f(u.res, w, h);
-    gl.uniform2f(u.core, p.core[0], p.core[1]);
-    gl.uniform1f(u.freq, p.freq);
-    gl.uniform1f(u.blendR, p.blendR);
-    gl.uniform1f(u.ratio, p.ratio);
-    gl.uniform1f(u.tilt, p.tilt);
-    gl.uniform1f(u.spiral, p.spiral);
-    gl.uniform1f(u.seed, p.seed);
-    gl.uniform1f(u.warpAmp, p.warpAmp);
-    gl.uniform1f(u.reveal, reveal);
-    gl.uniform1f(u.hot, hot);
-    gl.uniform4f(u.warp, ...p.warp);
-    gl.uniform3f(u.ink, ...ink);
-    gl.uniform3f(u.hotInk, ...hotC);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  };
-  new ResizeObserver(draw).observe(canvas);
-  return {
-    el: canvas,
-    show(p, hot = 0, reveal = 1.3) {
-      last = { p, hot, reveal };
-      draw();
-    },
-  };
+  const l = pts[pts.length - 1];
+  return d + ` L${l[0].toFixed(1)} ${l[1].toFixed(1)}`;
 }
 
-/** Interpolates two prints' parameters (the spiral steps, it is a count of ridges). */
-export function mixParams(a: PrintParams, b: PrintParams, k: number): PrintParams {
-  const l = (x: number, y: number) => x + (y - x) * k;
-  // phases take the short way round
-  const lp = (x: number, y: number) => {
-    let d = y - x;
-    d = Math.atan2(Math.sin(d), Math.cos(d));
-    return x + d * k;
+/** The ridges of a shape, as path data. */
+function ridgesOf(s: Shape): { outer: string[]; inner: string[] } {
+  const [cx, cy] = s.core;
+  const ct = Math.cos(s.tilt);
+  const st = Math.sin(s.tilt);
+  // the core zone: outer ridges are pushed out of it, compressed into a band round the core
+  const zIn = s.coreR + s.spacing * 0.9;
+  const zOut = s.coreR + s.spacing * 5.2; // a wide band, so the ridges bend gently round the core
+  // measured in the core's own frame (tilted, stretched by ratio), the same frame the rings use
+  const bend = ([x, y]: Pt): Pt => {
+    const ox = x - cx;
+    const oy = y - cy;
+    const lx = ox * ct + oy * st;
+    const ly = (-ox * st + oy * ct) / s.ratio;
+    const d = Math.hypot(lx, ly);
+    if (d >= zOut || d < 1e-6) return [x, y];
+    const k = (zIn + (d / zOut) * (zOut - zIn)) / d;
+    const nx = lx * k;
+    const ny = ly * k * s.ratio;
+    return [cx + nx * ct - ny * st, cy + nx * st + ny * ct];
   };
-  return {
-    core: [l(a.core[0], b.core[0]), l(a.core[1], b.core[1])],
-    freq: l(a.freq, b.freq),
-    blendR: l(a.blendR, b.blendR),
-    ratio: l(a.ratio, b.ratio),
-    tilt: l(a.tilt, b.tilt),
-    spiral: k < 0.5 ? a.spiral : b.spiral,
-    seed: k < 0.5 ? a.seed : b.seed,
-    warpAmp: l(a.warpAmp, b.warpAmp),
-    warp: [lp(a.warp[0], b.warp[0]), lp(a.warp[1], b.warp[1]), lp(a.warp[2], b.warp[2]), lp(a.warp[3], b.warp[3])],
+  // outer ridges: caps round a centre far below the fingertip
+  const Y0 = 330;
+  const outer: string[] = [];
+  const b = s.bytes;
+  // one clean break, away from the core and the edge
+  const breaks = [0].map((k) => ({ ridge: 3 + (b[7 + k] % 6), x: ((b[10 + k] / 255) - 0.5) * 120, w: 9 }));
+  let ridge = 0;
+  for (let R = Y0 - TIP.ryB + 6; R < Y0 + TIP.ryT; R += s.spacing, ridge++) {
+    let run: Pt[] = [];
+    const flush = () => {
+      if (run.length > 7) outer.push(smooth(run)); // no stray stubs
+      run = [];
+    };
+    for (let x = -TIP.rxT; x <= TIP.rxT; x += 3.5) {
+      const h = R * R - (s.flat * x) ** 2;
+      if (h <= 0) {
+        flush();
+        continue;
+      }
+      const p = bend([x, Y0 - Math.sqrt(h)]);
+      const gap = breaks.some((g) => g.ridge === ridge && Math.abs(x - g.x) < g.w);
+      if (!inTip(p, 12) || gap) {
+        flush();
+        continue;
+      }
+      // a ridge through the very centre splits round the core: never bridge the jump
+      const prev = run[run.length - 1];
+      if (prev && Math.hypot(p[0] - prev[0], p[1] - prev[1]) > s.spacing * 1.6) flush();
+      run.push(p);
+    }
+    flush();
+  }
+  // inner ridges: rings, a spiral, or a loop open toward the base
+  const inner: string[] = [];
+  const at = (r: number, a: number): Pt => {
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r * s.ratio;
+    return [cx + x * ct - y * st, cy + x * st + y * ct];
   };
+  if (s.pattern === "spiral") {
+    const pts: Pt[] = [];
+    for (let a = 0; ; a += 0.12) {
+      const r = 5 + (s.spacing * a) / (Math.PI * 2);
+      if (r > s.coreR - s.spacing * 0.2) break;
+      pts.push(at(r, a));
+    }
+    inner.push(smooth(pts));
+  } else {
+    for (let r = s.spacing * 0.75; r <= s.coreR - s.spacing * 0.2; r += s.spacing) {
+      const pts: Pt[] = [];
+      const open = s.pattern === "loop" ? 0.55 : 0; // the loop opens toward the base
+      const a0 = Math.PI / 2 + open;
+      const a1 = Math.PI / 2 + Math.PI * 2 - open;
+      for (let a = a0; a <= a1 + 1e-6; a += 0.1) pts.push(at(r, a));
+      inner.push(smooth(pts) + (open ? "" : " Z"));
+    }
+  }
+  return { outer, inner };
+}
+
+export interface PrintView {
+  el: SVGSVGElement;
+  /** draws N's print; `animated` redraws the ridges and runs the scan line */
+  set(n: string, animated: boolean): void;
+}
+
+export function createPrintView(): PrintView {
+  const root = svg("svg", { class: "fp-illus", viewBox: "-212 -200 424 400", "aria-hidden": "true" }) as SVGSVGElement;
+  const defs = svg("defs");
+  const clip = svg("clipPath", { id: "fp-tip" });
+  const tipD = `M${-TIP.rxT} 0 A${TIP.rxT} ${TIP.ryT} 0 0 1 ${TIP.rxT} 0 A${TIP.rxB} ${TIP.ryB} 0 0 1 ${-TIP.rxT} 0 Z`;
+  clip.append(svg("path", { d: tipD }));
+  defs.append(clip);
+  root.append(defs);
+  // the paper fingertip, lifted off the page
+  root.append(svg("path", { d: tipD, class: "fp-tip" }));
+  const art = svg("g", { "clip-path": "url(#fp-tip)" });
+  root.append(art);
+  const scan = svg("rect", { x: -TIP.rxT, y: -TIP.ryT - 10, width: TIP.rxT * 2, height: 3, class: "fp-scan", opacity: 0 });
+  art.append(scan);
+  root.append(svg("path", { d: tipD, class: "fp-tip-line" }));
+  // the core marker
+  const coreG = svg("g", { class: "fp-core-mark" });
+  coreG.append(svg("circle", { r: 9, class: "fp-core-ring" }), svg("circle", { r: 3.6, class: "fp-core-dot" }));
+  root.append(coreG);
+  // callouts: which bytes of N shaped what
+  const callout = (anchorClass: string) => {
+    const g = svg("g", { class: `fp-callout ${anchorClass}` });
+    const line = svg("path", { class: "fp-callout-line" });
+    const dot = svg("circle", { r: 2.6, class: "fp-callout-dot" });
+    const t1 = svg("text", { class: "fp-callout-text" });
+    const t2 = svg("text", { class: "fp-callout-sub" });
+    g.append(line, dot, t1, t2);
+    root.append(g);
+    return { g, line, dot, t1, t2 };
+  };
+  const cCore = callout("is-core");
+  const cPattern = callout("is-pattern");
+  const cRidges = callout("is-ridges");
+  const cTilt = callout("is-tilt");
+  const place = (c: ReturnType<typeof callout>, from: Pt, elbow: Pt, to: Pt, text: string, sub: string, anchor: "start" | "end") => {
+    c.line.setAttribute("d", `M${from[0]} ${from[1]} L${elbow[0]} ${elbow[1]} L${to[0]} ${to[1]}`);
+    c.dot.setAttribute("cx", String(from[0]));
+    c.dot.setAttribute("cy", String(from[1]));
+    for (const [t, dy] of [[c.t1, -6], [c.t2, 12]] as const) {
+      t.setAttribute("x", String(to[0] + (anchor === "start" ? 6 : -6)));
+      t.setAttribute("y", String(to[1] + dy));
+      t.setAttribute("text-anchor", anchor);
+    }
+    c.t1.textContent = text;
+    c.t2.textContent = sub;
+  };
+
+  let group: SVGGElement | null = null;
+  const NAMES: Record<Pattern, string> = { rings: "whorl", spiral: "spiral whorl", loop: "loop" };
+
+  const set = (n: string, animated: boolean) => {
+    const s = shapeOf(n);
+    const { outer, inner } = ridgesOf(s);
+    const g = svg("g", { class: "fp-ridges" }) as SVGGElement;
+    const paths: SVGPathElement[] = [];
+    for (const d of outer) paths.push(g.appendChild(svg("path", { d, class: "fp-ridge" })) as SVGPathElement);
+    for (const d of inner) paths.push(g.appendChild(svg("path", { d, class: "fp-ridge is-core" })) as SVGPathElement);
+    art.insertBefore(g, scan);
+    const old = group;
+    group = g;
+    const [cx, cy] = s.core;
+    coreG.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+    const ridgeCount = outer.length > 0 ? Math.round((TIP.ryT + TIP.ryB) / s.spacing) : 0;
+    const deg = Math.round((s.tilt * 180) / Math.PI);
+    place(cCore, [cx + 10, cy], [cx + 50, cy - 36], [136, cy - 36], "core", "bytes 00–01", "start");
+    place(cPattern, [-66, -126], [-100, -158], [-136, -158], NAMES[s.pattern], "byte 06", "end");
+    place(cRidges, [-98, 64], [-120, 104], [-136, 104], `${ridgeCount} ridges`, "byte 02", "end");
+    place(cTilt, [72, 110], [104, 146], [136, 146], `tilt ${deg >= 0 ? "+" : "−"}${Math.abs(deg)}°`, "byte 05", "start");
+    if (!animated) {
+      old?.remove();
+      return;
+    }
+    if (old) animate(old, { opacity: { to: 0 }, duration: dur.exit, ease: fn(ease.accelExit), onComplete: () => old.remove() });
+    // the new ridges draw in, outer to inner, with a seal-red pen that settles to ink
+    g.classList.add("is-drawing");
+    animate(animeSvg.createDrawable(paths), { draw: ["0 0", "0 1"], duration: dur.sink, delay: stagger(14), ease: fn(ease.softInOut) });
+    setTimeout(() => g.classList.remove("is-drawing"), dur.sink + paths.length * 14);
+    const sc = { y: 0 };
+    animate(sc, {
+      y: 1,
+      duration: dur.sink + 200,
+      ease: fn(ease.softInOut),
+      onUpdate: () => {
+        scan.setAttribute("y", (-TIP.ryT + sc.y * (TIP.ryT + TIP.ryB)).toFixed(1));
+        scan.setAttribute("opacity", (Math.sin(Math.PI * sc.y) * 0.9).toFixed(2));
+      },
+    });
+    animate([coreG, cCore.g, cPattern.g, cRidges.g, cTilt.g], { opacity: { from: 0, to: 1 }, duration: dur.enter, delay: stagger(67, { start: dur.sink * 0.6 }), ease: fn(ease.softLand) });
+  };
+  return { el: root, set };
 }

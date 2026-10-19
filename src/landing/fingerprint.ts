@@ -5,7 +5,7 @@
 import { animate, stagger, svg as animeSvg } from "animejs";
 import { inView } from "motion";
 import { dur, ease, sibling } from "./motion";
-import { createPrint, mixParams, paramsOf, type PrintParams } from "./print";
+import { createPrintView } from "./print";
 
 /// The hero invoice (scripts/hero-n.mjs): test keys derived from TES- labels, terms hash of its note.
 const BASE = {
@@ -127,61 +127,11 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
 
   const out = el("div", "fp-out");
   out.append(el("p", "fp-out-label", "Fingerprint N"));
-  // the fingerprint drawn from N: four whorls, one per row of 16 hex digits; each digit pushes
-  // its arc in or out, so every N has its own print, and the print morphs when N changes
-  const whorl = svg("svg", { class: "fp-whorl", viewBox: "-200 -200 400 400", "aria-hidden": "true" });
-  const guides = svg("g", { class: "fp-guides" });
-  for (let r = 0; r < 4; r++) guides.append(svg("circle", { cx: 0, cy: 0, r: 70 + r * 36 }));
-  whorl.append(guides);
-  const rings: SVGPathElement[] = [];
-  const hot: SVGPathElement[] = [];
-  for (let r = 0; r < 4; r++) {
-    const ring = svg("path", { class: "fp-ring" }) as SVGPathElement;
-    const h = svg("path", { class: "fp-ring-hot" }) as SVGPathElement;
-    whorl.append(ring, h);
-    rings.push(ring);
-    hot.push(h);
-  }
-  whorl.append(svg("circle", { cx: 0, cy: 0, r: 34, class: "fp-core" }));
-  const coreText = svg("text", { x: 0, y: 7, "text-anchor": "middle", class: "fp-core-n" });
-  coreText.textContent = "N";
-  whorl.append(coreText);
-  const vals = [...ON_BOARD].map((ch) => parseInt(ch, 16));
-  const drawWhorl = (v: number[], hotMask: boolean[]) => {
-    for (let r = 0; r < 4; r++) {
-      const base = 70 + r * 36;
-      const turn = r * 0.37;
-      let d = "";
-      let dh = "";
-      const S = 160;
-      for (let k = 0; k <= S; k++) {
-        const a = (k / S) * Math.PI * 2 + turn;
-        const pos = (k / S) * 16;
-        const i0 = Math.floor(pos) % 16;
-        const i1 = (i0 + 1) % 16;
-        const f = pos - Math.floor(pos);
-        const sm = (1 - Math.cos(Math.PI * f)) / 2;
-        const val = v[r * 16 + i0] * (1 - sm) + v[r * 16 + i1] * sm;
-        const rad = base + (val / 15 - 0.5) * 22;
-        const x = (Math.cos(a) * rad).toFixed(1);
-        const y = (Math.sin(a) * rad).toFixed(1);
-        d += `${k ? "L" : "M"}${x} ${y}`;
-        if (hotMask[r * 16 + i0]) dh += `${dh && hotMask[r * 16 + ((i0 + 15) % 16)] && f > 0 ? "L" : "M"}${x} ${y}`;
-      }
-      rings[r].setAttribute("d", d + "Z");
-      hot[r].setAttribute("d", dh);
-    }
-  };
-  drawWhorl(vals, new Array(64).fill(false));
-  // the print itself (WebGL2); the line whorl stays as the fallback
-  const css = getComputedStyle(document.documentElement);
-  const print = createPrint({ ink: css.getPropertyValue("--head"), hot: css.getPropertyValue("--seal") });
-  let printP: PrintParams = paramsOf(ON_BOARD);
+  // N drawn as an illustrated fingerprint, with callouts for the bytes that shape it
+  const print = createPrintView();
   const printBox = el("div", "fp-print-box");
-  if (print) {
-    printBox.append(print.el);
-    print.show(printP, 0, reduced ? 1.3 : 0);
-  } else printBox.append(whorl);
+  printBox.append(print.el);
+  print.set(ON_BOARD, false);
   out.append(printBox);
   const grid = el("div", "fp-grid data");
   grid.setAttribute("role", "status");
@@ -229,35 +179,11 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
     boardRow.classList.toggle("is-new", n !== ON_BOARD);
     boardN.textContent = `${n.slice(0, 8)}…${n.slice(-6)}`;
     boardSt.textContent = n === ON_BOARD ? "already on the board · a second financing is refused" : "new fingerprint · not on the board";
-    const target = [...n].map((ch) => parseInt(ch, 16));
-    const mask = [...n].map((ch, i) => ch !== from[i]);
+    print.set(n, !reduced);
     if (reduced) {
       digits.forEach((d, i) => (d.textContent = n[i]));
-      printP = paramsOf(n);
-      print?.show(printP, 0, 1.3);
-      vals.splice(0, 64, ...target);
-      drawWhorl(vals, new Array(64).fill(false));
       return;
     }
-    if (print) {
-      // the ridges flow from the old print into the new one, inked seal red on the way
-      const a = printP;
-      const b = paramsOf(n);
-      printP = b;
-      const pm = { k: 0 };
-      animate(pm, { k: 1, duration: dur.sink + 300, ease: fn(ease.softInOut), onUpdate: () => print.show(mixParams(a, b, pm.k), Math.sin(Math.PI * pm.k) * 0.9) });
-    }
-    const start = [...vals];
-    const m = { k: 0 };
-    animate(m, {
-      k: 1,
-      duration: dur.sink,
-      ease: fn(ease.softInOut),
-      onUpdate: () => {
-        for (let i = 0; i < 64; i++) vals[i] = start[i] + (target[i] - start[i]) * m.k;
-        drawWhorl(vals, m.k < 0.98 ? mask : new Array(64).fill(false));
-      },
-    });
     // each changed digit cycles 3-6 glyphs over 400ms, left to right, 20ms apart
     const clock = { t: 0 };
     const total = dur.enter + 64 * 20;
@@ -358,15 +284,8 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
         const drawn = animeSvg.createDrawable(paths);
         animate(drawn, { draw: ["0 0", "0 1"], duration: dur.ripple, delay: stagger(67, { start: 300 }), ease: fn(ease.softInOut) });
         animate(hashMark, { scale: { from: 0.6, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay: 700, ease: fn(ease.snapSettle) });
-        // the print is pressed: ink spreads from the core to the edge of the fingertip
-        if (print) {
-          const rv = { k: 0 };
-          animate(rv, { k: 1.3, duration: dur.bleed + 400, delay: 900, ease: fn(ease.softLand), onUpdate: () => print.show(printP, 0, rv.k) });
-        }
-        // the fallback print turns into place, ring by ring (its paths change with N, so no dash drawing)
-        rings.forEach((ring, i) =>
-          animate(ring, { opacity: { from: 0, to: 1 }, rotate: { from: -30 - i * 12, to: 0 }, duration: dur.sink, delay: 900 + sibling(i), ease: fn(ease.softLand) }),
-        );
+        // the print draws itself in
+        setTimeout(() => print.set(current, true), 900); // the N on the sheet now, which may already be edited
         animate(out, { opacity: { from: 0, to: 1 }, y: { from: 12, to: 0 }, duration: dur.enter, delay: 900, ease: fn(ease.softLand) });
       },
       { amount: 0.3 },

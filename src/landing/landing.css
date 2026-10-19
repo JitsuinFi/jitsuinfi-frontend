@@ -2346,3 +2346,334 @@ button {
     padding-left: 0;
   }
 }
+
+/* ---------- chapter 6: on testnet, it already happened (the close) ---------- */
+.fn-chapter {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(28px, 3.4vw, 56px);
+  background:
+    linear-gradient(to bottom, var(--paper) 0%, var(--sheet) 100%);
+}
+
+.fn-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas: "kanji kanji" "title lede";
+  gap: var(--s-2) clamp(32px, 6vw, 120px);
+  align-items: end;
+}
+
+.fn-head .chapter-kanji { grid-area: kanji; }
+.fn-head .chapter-title { grid-area: title; }
+.fn-head .chapter-lede { grid-area: lede; max-width: 46ch; }
+
+.fn-lens {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--fiber);
+}
+
+.fn-lens-opt {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-size: var(--t-ui);
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--dur-fade) var(--ease-glide), color var(--dur-fade) var(--ease-glide);
+}
+
+.fn-lens-opt[aria-pressed="true"] {
+  background: var(--head);
+  color: var(--sheet);
+}
+
+.fn-lens-opt:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+.fn-row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-4) clamp(16px, 2.4vw, 40px);
+}
+
+.fn-tx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.is-waiting .fn-tx {
+  opacity: 0;
+}
+
+/* the envelope */
+.fn-env {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.fn-env-back {
+  fill: var(--fiber);
+}
+
+.fn-letter-paper {
+  fill: var(--sheet);
+  stroke: var(--fiber);
+}
+
+.fn-letter-rule {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.fn-letter-kanji {
+  fill: var(--seal);
+  font-family: var(--f-seal);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.fn-env-front {
+  fill: var(--paper);
+  stroke: var(--head);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 8px 10px rgba(70, 29, 58, .1));
+}
+
+.fn-env-fold {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 1.5;
+}
+
+.fn-flap,
+.fn-letter,
+.fn-seal {
+  transform-box: fill-box;
+}
+
+.fn-flap {
+  transform-origin: top center;
+}
+
+.fn-seal {
+  transform-origin: center;
+}
+
+.fn-flap-face {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.fn-seal-disc {
+  fill: var(--seal);
+}
+
+.fn-seal-fine {
+  fill: none;
+  stroke: var(--sheet);
+  stroke-width: 1;
+}
+
+.fn-seal-kanji {
+  fill: var(--sheet);
+  font-family: var(--f-seal);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+/* the open state (also the end state with reduced motion) */
+.is-open .fn-flap {
+  transform: scaleY(-1);
+}
+
+.is-open .fn-letter {
+  transform: translateY(-34px);
+}
+
+.fn-step {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1);
+}
+
+.fn-step-n {
+  font-size: var(--t-data);
+  color: var(--seal);
+}
+
+.fn-step-name {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(18px, 1.5vw, 24px);
+  color: var(--head);
+}
+
+.fn-face {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fn-inside {
+  display: none;
+}
+
+.is-open .fn-inside {
+  display: flex;
+}
+
+.is-open .fn-outside {
+  display: none;
+}
+
+.fn-txid {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  align-self: flex-start;
+  font-size: var(--t-data);
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--fiber);
+  text-underline-offset: 4px;
+  cursor: copy;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.fn-txid:hover {
+  color: var(--seal);
+  text-decoration-color: var(--seal);
+}
+
+.fn-facts,
+.fn-memo {
+  margin: 0;
+  font-size: var(--t-data);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.fn-memo {
+  color: var(--ink);
+}
+
+.fn-caption {
+  margin: 0;
+  max-width: 70ch;
+  color: var(--ink-2);
+}
+
+/* the close */
+.fn-close {
+  margin-top: clamp(24px, 4vw, 72px);
+  padding-top: clamp(32px, 5vw, 80px);
+  border-top: 2px solid var(--head);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fn-line {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(34px, 5.6vw, 104px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: var(--head);
+  text-wrap: balance;
+}
+
+.fn-line-b {
+  color: var(--seal);
+}
+
+.fn-calls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+.fn-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  font-size: var(--t-data);
+  color: var(--ink-2);
+}
+
+.fn-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  color: var(--head);
+}
+
+@media (max-width: 1100px) {
+  .fn-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .fn-head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "kanji" "title" "lede";
+  }
+
+  .fn-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .fn-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fn-tx {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    column-gap: var(--s-2);
+    align-items: start;
+  }
+
+  .fn-env {
+    grid-row: span 2;
+  }
+}
+
+/* opening an envelope breaks its seal */
+.is-open .fn-seal {
+  visibility: hidden;
+}

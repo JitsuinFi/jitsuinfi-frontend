@@ -7,6 +7,7 @@ import { mountFingerprint } from "./fingerprint";
 import { mountSealChain } from "./sealchain";
 import { mountTwice } from "./twice";
 import { mountHistory } from "./history";
+import { mountFinale } from "./finale";
 import { reducedMotion } from "./motion";
 
 const root = document.getElementById("landing");
@@ -19,6 +20,7 @@ if (root) {
   mountSealChain(root, reduced);
   mountTwice(root, reduced);
   mountHistory(root, reduced);
+  mountFinale(root, reduced);
 
   if (!reduced) {
     const lenis = new Lenis({ duration: 1.2 });

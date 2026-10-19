@@ -1428,211 +1428,240 @@ button {
   opacity: 0.75;
 }
 
-/* the frame: the scene runs edge to edge; the proof is dropped on it */
+/* the canvas: an automation canvas on the night, nodes and wires */
 .tw-stage {
   position: relative;
-  margin-inline: calc(-1 * var(--gutter)) calc(-1 * max(16px, clamp(16px, 5vw, 96px)));
 }
 
-.tw-scene {
-  display: block;
+.tw-canvas {
+  position: relative;
   width: 100%;
-  max-width: 100%;
-  height: min(50vh, 540px); /* the title, the frame and the steps fit one screen */
-  min-height: 300px;
+  aspect-ratio: 12 / 5;
+  container-type: inline-size;
+}
+
+.tw-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
 }
 
-.tw-star {
-  fill: var(--mist);
-  opacity: 0.55;
+.tw-dot {
+  fill: var(--pool-2);
 }
 
-.tw-moon {
-  fill: var(--mist);
-  opacity: 0.85;
-}
-
-.tw-ground {
+.tw-wire {
+  fill: none;
   stroke: var(--pool-2);
   stroke-width: 3;
-}
-
-.tw-wall {
-  fill: var(--pool-2);
-  stroke: var(--mist);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-.tw-roof {
-  fill: var(--mist);
-}
-
-.tw-door {
-  fill: var(--seal);
-}
-
-.tw-win {
-  fill: var(--glint); /* lit windows: light inside the night, never on paper */
-  stroke: var(--mist);
-  stroke-width: 1.5;
-}
-
-.tw-col {
-  fill: var(--pool);
-  stroke: var(--mist);
-  stroke-width: 1.5;
-}
-
-.tw-step {
-  fill: var(--mist);
-  opacity: 0.4;
-}
-
-.tw-label {
-  fill: var(--sheet);
-  font-family: var(--f-body);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.tw-kanji {
-  fill: var(--fold);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 18px;
-}
-
-.tw-mark {
-  fill: var(--pool);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 15px;
-}
-
-/* the board is the one paper-white thing in the night: public, readable */
-.tw-board-body {
-  fill: var(--sheet);
-}
-
-.tw-board-kanji {
-  fill: var(--head);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.tw-board-title {
-  fill: var(--ink-2);
-  font-family: var(--f-body);
-  font-size: 11px;
-}
-
-.tw-board-rule {
-  stroke: var(--fiber);
-  stroke-width: 1;
-}
-
-.tw-row {
-  fill: var(--paper);
-  stroke: var(--fiber);
-  stroke-width: 1;
-}
-
-.tw-row.is-ours {
-  fill: none;
-  stroke: var(--fold);
-  stroke-dasharray: 4 4;
-}
-
-.is-registered .tw-row.is-ours {
-  fill: var(--pool-2);
-  stroke: none;
-}
-
-.is-caught .tw-row.is-ours {
-  fill: var(--seal);
-}
-
-.tw-row-n {
-  fill: var(--ink-2);
-  font-family: var(--f-mono);
-  font-size: 10.5px;
-}
-
-.tw-row-n.is-ours,
-.tw-row-tag {
-  fill: var(--sheet);
-}
-
-.tw-row-tag {
-  font-family: var(--f-body);
-  font-size: 9.5px;
-}
-
-.tw-route {
-  fill: none;
-  stroke: var(--mist);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 7;
-  opacity: 0.5;
-}
-
-.tw-beam {
-  fill: none;
-  stroke: var(--seal);
-  stroke-width: 3;
   stroke-linecap: round;
-  opacity: 0;
+  transition: stroke 400ms var(--ease-inout);
 }
 
-.tw-paper-sheet {
-  fill: var(--sheet);
-  stroke: var(--head);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
+.tw-wire.is-read {
+  stroke-dasharray: 2 8;
 }
 
-.tw-paper-label {
-  fill: var(--seal);
+.tw-wire.is-live {
+  stroke: var(--mist);
+}
+
+.tw-wire-label {
+  fill: var(--fold);
   font-family: var(--f-body);
-  font-weight: 700;
-  font-size: 11px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.tw-refuse-box {
-  fill: var(--sheet);
-  stroke: var(--seal);
-  stroke-width: 4;
+.tw-flow {
+  fill: var(--glint);
 }
 
-.tw-refuse-jp {
-  fill: var(--seal);
+.tw-node {
+  position: absolute;
+  translate: -50% calc(-1 * 7.3cqw / 2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqw;
+  width: 15cqw;
+  text-align: center;
+}
+
+.tw-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 7.3cqw;
+  aspect-ratio: 1;
+  border-radius: 1.6cqw;
+  background: var(--pool-2);
+  border: 2px solid var(--pool-2);
+  transition: border-color var(--dur-fade) var(--ease-glide), background-color var(--dur-fade) var(--ease-glide);
+}
+
+.tw-tile-kanji {
   font-family: var(--f-display);
   font-weight: 800;
-  font-size: 20px;
+  font-size: 3.2cqw;
+  line-height: 1;
+  color: var(--mist);
 }
 
-.tw-refuse-en {
-  fill: var(--seal);
-  font-family: var(--f-body);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+.tw-node-label {
+  font-size: max(11px, 1.15cqw);
+  font-weight: 600;
+  color: var(--mist);
+  white-space: nowrap;
 }
 
-.tw-refuse {
-  transform-box: fill-box;
-  transform-origin: center;
+.tw-node-out {
+  min-height: 1.4em;
+  font-size: max(10px, 0.95cqw);
+  color: var(--glint);
+  white-space: nowrap;
+}
+
+/* running: a seal-red ring turns round the tile */
+.tw-node.is-run .tw-tile {
+  border-color: var(--sheet);
+}
+
+.tw-node.is-run .tw-badge {
+  position: absolute;
+  inset: -7px;
+  border-radius: 2cqw;
+  border: 2px solid transparent;
+  border-top-color: var(--seal);
+  border-right-color: var(--seal);
+  animation: tw-spin 700ms linear infinite;
+}
+
+@keyframes tw-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.tw-node.is-done .tw-tile {
+  border-color: var(--mist);
+}
+
+.tw-node.is-done .tw-tile-kanji,
+.tw-node.is-done .tw-node-label {
+  color: var(--sheet);
+}
+
+/* done: a small seal check at the tile's corner */
+.tw-node.is-done .tw-badge,
+.tw-node.is-stop .tw-badge {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fold);
+  border: 2px solid var(--pool);
+}
+
+.tw-node.is-done .tw-badge::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--pool);
+  border-width: 0 2px 2px 0;
+  rotate: 45deg;
+}
+
+.tw-node.is-stop .tw-tile {
+  background: var(--seal);
+  border-color: var(--seal);
+}
+
+.tw-node.is-stop .tw-tile-kanji,
+.tw-node.is-stop .tw-node-label {
+  color: var(--sheet);
+}
+
+.tw-node.is-stop .tw-badge {
+  background: var(--sheet);
+}
+
+.tw-node.is-stop .tw-node-out {
+  color: var(--fold);
+}
+
+/* under the canvas: the execution log beside the proof */
+.tw-below {
+  margin-top: var(--s-6);
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+  gap: var(--s-4) clamp(24px, 4vw, 64px);
+  align-items: start;
+}
+
+.tw-log-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.tw-log-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+
+.tw-exec:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tw-run-status {
+  font-size: var(--t-ui);
+  color: var(--mist);
+}
+
+.tw-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--pool-2);
+}
+
+.tw-log-line {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--pool-2);
+  font-size: var(--t-ui);
+  color: var(--sheet);
+}
+
+.tw-log-kanji {
+  font-family: var(--f-display);
+  font-weight: 800;
+  color: var(--fold);
+}
+
+.tw-log-ms {
+  color: var(--glint);
 }
 
 /* the proof: hidden until it is built, then dropped over the frame's lower right */
 .tw-proof {
-  position: absolute;
-  right: max(16px, clamp(16px, 5vw, 96px));
-  bottom: 4%;
-  width: min(380px, 42%);
+  position: relative;
   padding: var(--s-4);
   background: var(--sheet);
   color: var(--ink);
@@ -1703,145 +1732,24 @@ button {
   font-weight: 600;
 }
 
-/* the steps: a numbered rail under the frame, like a storyboard's beats */
-.tw-rail {
-  list-style: none;
-  margin: var(--s-4) 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-top: 1px solid var(--pool-2);
-}
-
-.tw-beat {
-  position: relative;
-}
-
-.tw-beat::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -1px;
-  height: 2px;
-  background: transparent;
-  transition: background-color var(--dur-fade) var(--ease-glide);
-}
-
-.tw-beat.is-done::before {
-  background: var(--fold);
-}
-
-.tw-beat.is-next::before {
-  background: var(--sheet);
-}
-
-.tw-beat-btn {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  padding: var(--s-2) var(--s-2) var(--s-2) 0;
-  text-align: left;
-  color: var(--mist);
-  opacity: 0.5;
-  cursor: default;
-}
-
-.tw-beat.is-done .tw-beat-btn {
-  opacity: 0.85;
-}
-
-.tw-beat.is-next .tw-beat-btn {
-  opacity: 1;
-  color: var(--sheet);
-  cursor: pointer;
-}
-
-.tw-beat-n {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-family: var(--f-mono);
-  font-size: var(--t-data);
-}
-
-.tw-beat.is-next .tw-beat-n {
-  background: var(--seal);
-  border-color: var(--seal);
-  color: var(--sheet);
-}
-
-.tw-beat.is-done .tw-beat-n {
-  background: var(--fold);
-  border-color: var(--fold);
-  color: var(--pool);
-}
-
-.tw-beat-label {
-  font-size: var(--t-ui);
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.tw-beat.is-next .tw-beat-btn:hover .tw-beat-label {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.tw-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-2) var(--s-4);
-}
-
-.tw-say {
-  margin: 0;
-  max-width: 64ch;
-  font-size: var(--t-body);
-  color: var(--sheet);
-}
-
-.tw-reset {
-  padding: 0 0 3px;
-  border: 0;
-  color: var(--fold);
-  background: linear-gradient(var(--fold), var(--fold)) left bottom / 100% 1px no-repeat;
-  cursor: pointer;
-}
-
-.is-waiting .tw-scene,
-.is-waiting .tw-rail,
-.is-waiting .tw-foot {
+.is-waiting .tw-canvas {
   opacity: 0;
 }
 
 @media (max-width: 1023px) {
-  .tw-head {
+  .tw-head,
+  .tw-below {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .tw-proof {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: auto;
-    margin: var(--s-3) max(16px, clamp(16px, 5vw, 96px)) 0 var(--gutter);
+  /* the canvas keeps its shape and scrolls sideways inside its own frame */
+  .tw-stage {
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--gutter)) calc(-1 * max(16px, clamp(16px, 5vw, 96px)));
+    padding-inline: var(--gutter) max(16px, clamp(16px, 5vw, 96px));
   }
 
-  .tw-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 559px) {
-  .tw-rail {
-    grid-template-columns: minmax(0, 1fr);
+  .tw-canvas {
+    min-width: 940px;
   }
 }

@@ -599,3 +599,392 @@ button {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ---------- chapters on the day paper ---------- */
+
+.chapter {
+  position: relative;
+  padding-block: var(--s-section);
+  padding-left: var(--gutter);
+  padding-right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+  gap: clamp(32px, 5vw, 96px);
+  align-items: center;
+  background: var(--paper);
+}
+
+.chapter-cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-width: 44ch;
+}
+
+.chapter-kanji {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-ui);
+  letter-spacing: 0.12em;
+  color: var(--seal);
+}
+
+.chapter-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: var(--t-h2);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  color: var(--head);
+  text-wrap: balance;
+}
+
+.chapter-lede {
+  margin: 0;
+  font-size: var(--t-lede);
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.chapter-note {
+  margin: 0;
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+}
+
+.is-waiting .chapter-cap > *,
+.is-waiting .fp-sheet,
+.is-waiting .fp-hash,
+.is-waiting .fp-out {
+  opacity: 0;
+}
+
+/* chapter 2: the invoice, the press, the fingerprint */
+.fp-visual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(120px, 12vw, 200px) minmax(0, 1.15fr);
+  align-items: center;
+  min-width: 0;
+}
+
+.fp-sheet {
+  position: relative;
+  margin: 0;
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  background: var(--sheet);
+  filter: var(--lift-drop);
+  rotate: -0.8deg;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  z-index: 2;
+}
+
+.fp-sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: 1px solid var(--fiber);
+}
+
+.fp-sheet-title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-h3);
+  color: var(--head);
+}
+
+.fp-sheet-no {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.fp-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.fp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-height: 44px;
+  border-bottom: 1px solid var(--fiber);
+  font-size: var(--t-data);
+}
+
+.fp-key {
+  color: var(--ink-2);
+}
+
+.fp-val {
+  color: var(--ink);
+  text-align: right;
+}
+
+.fp-edit .fp-key {
+  color: var(--seal);
+  font-weight: 500;
+}
+
+.fp-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fp-input {
+  width: 11ch;
+  padding: 4px 2px;
+  border: 0;
+  border-bottom: 2px solid var(--seal);
+  border-radius: 0;
+  background: transparent;
+  color: var(--head);
+  text-align: right;
+  font-size: var(--t-data);
+}
+
+.fp-date {
+  width: auto;
+}
+
+.fp-input:focus-visible {
+  outline: 2px solid var(--glint);
+  outline-offset: 2px;
+}
+
+.fp-step {
+  min-width: 36px;
+  min-height: 32px;
+  border: 1px solid var(--seal);
+  border-radius: 999px;
+  color: var(--seal);
+  font-family: var(--f-mono);
+  font-size: var(--t-data);
+  transition: background-color var(--dur-fade) var(--ease-glide), color var(--dur-fade) var(--ease-glide);
+}
+
+.fp-step:hover {
+  background: var(--seal);
+  color: var(--sheet);
+}
+
+.fp-reset {
+  align-self: flex-start;
+  margin-top: var(--s-1);
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.fp-press {
+  position: relative;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+}
+
+.fp-threads {
+  position: absolute;
+  inset: 12% 0;
+  width: 100%;
+  height: 76%;
+  overflow: visible;
+}
+
+.fp-thread {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transition: stroke var(--dur-fade) var(--ease-glide);
+}
+
+.fp-thread.is-lit {
+  stroke: var(--seal);
+}
+
+.fp-pulse {
+  fill: var(--seal);
+}
+
+.fp-hash {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: clamp(92px, 9vw, 132px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 50%;
+  background: var(--head);
+  color: var(--sheet);
+  text-align: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.fp-hash-name {
+  font-weight: 600;
+  font-size: var(--t-data);
+}
+
+.fp-hash-key {
+  font-size: 10px;
+  color: var(--mist);
+}
+
+.fp-out {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-left: var(--s-4);
+  min-width: 0;
+}
+
+.fp-out-label {
+  margin: 0;
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+}
+
+.fp-grid {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(16px, 1.7vw, 28px);
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  color: var(--head);
+}
+
+.fp-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.fp-digit {
+  display: inline-block;
+  width: 1.05ch;
+  text-align: center;
+  transition: color var(--dur-fade) var(--ease-glide);
+}
+
+.fp-digit.is-hot {
+  color: var(--seal);
+}
+
+.fp-changed {
+  margin: 0;
+  font-size: var(--t-ui);
+  color: var(--ink);
+}
+
+.fp-board {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 12px 16px;
+  background: var(--pool);
+  color: var(--sheet);
+  font-size: var(--t-data);
+  transition: background-color var(--dur-fade) var(--ease-glide);
+}
+
+.fp-board.is-new {
+  background: var(--pool-2);
+}
+
+.fp-board-tag {
+  font-family: var(--f-display);
+  font-weight: 800;
+  color: var(--glint);
+}
+
+.fp-board-st {
+  color: var(--mist);
+}
+
+@media (max-width: 1023px) {
+  .chapter {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fp-visual {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-3);
+  }
+
+  .fp-press {
+    min-height: 120px;
+  }
+
+  .fp-threads {
+    display: none;
+  }
+
+  .fp-hash {
+    margin: 0 auto;
+    width: 136px;
+  }
+
+  .fp-out {
+    padding-left: 0;
+  }
+
+  .fp-grid {
+    font-size: clamp(15px, 4.6vw, 26px);
+  }
+}
+
+.fp-whorl {
+  width: min(100%, 300px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.fp-guides circle {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+}
+
+.fp-ring {
+  transform-origin: 0 0;
+  transform-box: view-box;
+  fill: none;
+  stroke: var(--head);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.fp-ring-hot {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.fp-core {
+  fill: var(--seal);
+}
+
+.fp-core-n {
+  fill: var(--sheet);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.fp-edit .fp-key {
+  white-space: nowrap;
+}

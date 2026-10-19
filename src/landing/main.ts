@@ -3,6 +3,7 @@ import "./tokens.css";
 import "./landing.css";
 import Lenis from "lenis";
 import { mountHero } from "./hero";
+import { mountFingerprint } from "./fingerprint";
 import { reducedMotion } from "./motion";
 
 const root = document.getElementById("landing");
@@ -10,11 +11,8 @@ if (root) {
   const reduced = reducedMotion();
   mountHero(root, reduced);
 
-  // Chapters 2–7 land here, one at a time after each is validated.
-  const story = document.createElement("div");
-  story.id = "story";
-  story.className = "story-anchor";
-  root.append(story);
+  // Chapters land here one at a time, each after it is validated.
+  mountFingerprint(root, reduced);
 
   if (!reduced) {
     const lenis = new Lenis({ duration: 1.2 });

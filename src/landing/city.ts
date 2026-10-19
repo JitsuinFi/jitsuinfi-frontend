@@ -36,7 +36,9 @@ export const PLACES = {
 };
 
 export interface City {
+  /** the truck on its loop: 0 at the workshop, `shopStop` at the shop, 1 home again */
   truck(t: number): void;
+  shopStop: number;
   /** the invoice as a paper plane: to the shop, to the vault; t outside 0..1 hides it */
   plane(route: "shop" | "vault", t: number): void;
   copyPlane(t: number, bounced?: number): void;
@@ -733,18 +735,44 @@ export function createCity(host: HTMLElement, opts: { reduced: boolean; n: strin
     g.fillText("工房", w / 2, h / 2 - 22);
   });
   const cargoSide = toon(hex.sheet, truckSide);
-  put(truck, mesh(boxG(1.8, 1.1, 1.0), [toon(hex.sheet), toon(hex.sheet), toon(hex.sheet), toon(hex.sheet), cargoSide, cargoSide]), [-0.3, 0.85, 0]);
-  put(truck, mesh(boxG(0.8, 0.85, 0.96), toon(hex.seal)), [1.0, 0.72, 0]);
-  put(truck, mesh(new THREE.PlaneGeometry(0.5, 0.36), light(C.glint)), [1.41, 0.88, 0], true).rotation.y = Math.PI / 2;
-  for (const [x, z] of [[-0.8, 0.5], [-0.8, -0.5], [0.95, 0.5], [0.95, -0.5]] as const) put(truck, mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.16, 16), toon(hex.head)), [x, 0.24, z]).rotation.x = Math.PI / 2;
+  // the body rides on its own pivot (over the rear axle) so it can pitch on the throttle and brake
+  const truckBody = new THREE.Group();
+  truckBody.position.set(-0.8, 0.24, 0);
+  truck.add(truckBody);
+  put(truckBody, mesh(boxG(1.8, 1.1, 1.0), [toon(hex.sheet), toon(hex.sheet), toon(hex.sheet), toon(hex.sheet), cargoSide, cargoSide]), [0.5, 0.61, 0]);
+  put(truckBody, mesh(boxG(0.8, 0.85, 0.96), toon(hex.seal)), [1.8, 0.48, 0]);
+  put(truckBody, mesh(new THREE.PlaneGeometry(0.5, 0.36), light(C.glint)), [2.21, 0.64, 0], true).rotation.y = Math.PI / 2;
+  const wheels: THREE.Mesh[] = [];
+  for (const [x, z] of [[-0.8, 0.5], [-0.8, -0.5], [0.95, 0.5], [0.95, -0.5]] as const) {
+    const wheel = put(truck, mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.16, 16), toon(hex.head)), [x, 0.22, z]);
+    wheel.rotation.x = Math.PI / 2;
+    // a hub bar on each side, so the spin reads
+    put(wheel, mesh(boxG(0.3, 0.17, 0.06), toon(hex.mist)));
+    wheels.push(wheel);
+  }
   truck.scale.setScalar(0.85);
   put(world, truck);
-  const truckPath = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-8.6, 0.16, -6.4),
-    new THREE.Vector3(-4, 0.16, -6.4),
-    new THREE.Vector3(2, 0.16, -6.4),
-    new THREE.Vector3(7.2, 0.16, -6.4),
-  ]);
+  // one loop round the ring road, in the outer lane, with rounded corners: out to the shop
+  // along the north road, then home by the east, south and west roads
+  const lane = 6.9;
+  const bend = 1.5;
+  const truckPath = new THREE.CurvePath<THREE.Vector3>();
+  const P = (x: number, z: number) => new THREE.Vector3(x, 0.16, z);
+  const start = P(-4.6, -lane);
+  const stopX = 5.0;
+  truckPath.add(new THREE.LineCurve3(start, P(lane - bend, -lane)));
+  truckPath.add(new THREE.QuadraticBezierCurve3(P(lane - bend, -lane), P(lane, -lane), P(lane, -lane + bend)));
+  truckPath.add(new THREE.LineCurve3(P(lane, -lane + bend), P(lane, lane - bend)));
+  truckPath.add(new THREE.QuadraticBezierCurve3(P(lane, lane - bend), P(lane, lane), P(lane - bend, lane)));
+  truckPath.add(new THREE.LineCurve3(P(lane - bend, lane), P(-lane + bend, lane)));
+  truckPath.add(new THREE.QuadraticBezierCurve3(P(-lane + bend, lane), P(-lane, lane), P(-lane, lane - bend)));
+  truckPath.add(new THREE.LineCurve3(P(-lane, lane - bend), P(-lane, -lane + bend)));
+  truckPath.add(new THREE.QuadraticBezierCurve3(P(-lane, -lane + bend), P(-lane, -lane), P(-lane + bend, -lane)));
+  truckPath.add(new THREE.LineCurve3(P(-lane + bend, -lane), start));
+  const truckLen = truckPath.getLength();
+  /** where the shop's stop is on the loop (0..1) */
+  const shopStop = (stopX - start.x) / truckLen;
+  const drive = { dist: 0, v: 0, at: 0, pitch: 0 };
 
   // ---------- the invoice: paper planes, the sheet, the jitsuin ----------
   const planeGeom = new THREE.BufferGeometry();
@@ -1095,11 +1123,26 @@ export function createCity(host: HTMLElement, opts: { reduced: boolean; n: strin
   const city: City = {
     canvas,
     truck(t) {
-      const k = clamp01(t);
+      const k = ((t % 1) + 1) % 1;
       truck.position.copy(truckPath.getPointAt(k));
-      truck.lookAt(world.localToWorld(truckPath.getPointAt(Math.min(1, k + 0.01))));
-      truck.rotateY(-Math.PI / 2);
+      // heading from the path's tangent (never from two equal points), the cab faces +x
+      const tan = truckPath.getTangentAt(k);
+      truck.rotation.set(0, Math.atan2(-tan.z, tan.x), 0);
+      // wheels turn with the distance covered; the body pitches with acceleration
+      const now = performance.now();
+      const dist = t * truckLen;
+      const dt = Math.max(1, now - drive.at) / 1000;
+      // a jump (an episode jump, the loop closing) is a reset, not a burst of speed
+      const jumped = Math.abs(dist - drive.dist) > 3;
+      const v = drive.at && !jumped ? (dist - drive.dist) / dt : 0;
+      const a = drive.at && dt < 0.1 && !jumped ? (v - drive.v) / dt : 0;
+      drive.pitch += (Math.max(-0.06, Math.min(0.06, -a * 0.012)) - drive.pitch) * 0.2;
+      Object.assign(drive, { dist, v, at: now });
+      wheels.forEach((w) => (w.rotation.y = -dist / (0.22 * 0.85)));
+      truckBody.rotation.z = drive.pitch;
+      truckBody.position.y = 0.24 + Math.abs(Math.sin(dist * 5)) * 0.012 * Math.min(1, Math.abs(v) / 2);
     },
+    shopStop,
     plane(route, t) {
       const g = route === "shop" ? planeShop : planeVault;
       g.visible = t >= 0 && t <= 1;

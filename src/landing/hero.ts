@@ -267,7 +267,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     side.forEach((a) => a.cancel());
     side.clear();
     if (!city) return;
-    city.truck(ep >= 1 ? 1 : 0);
+    city.truck(ep >= 1 ? city.shopStop : 0); // home at the start, at the shop from episode 2 on
     city.plane("shop", -1);
     city.plane("vault", -1);
     city.copyPlane(-1);
@@ -298,7 +298,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
   const enter: ((c: City) => void)[] = [
     // 1 born: the truck drives to the shop; the invoice flies after it and lands as a sheet
     (c) => {
-      tween(3200, 300, ease.softInOut, (t) => c.truck(t));
+      tween(3400, 300, ease.softInOut, (t) => c.truck(t * c.shopStop)); // pulls away, cruises, brakes
       tween(600, 500, ease.softLand, (t) => c.react("supplier", t));
       tween(2600, 900, ease.softInOut, (t) => c.plane("shop", t), () => (c.plane("shop", -1), c.sheet(true, 0)));
     },
@@ -350,8 +350,9 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
         tween(dur.exit, 900, ease.accelExit, (t) => c.beam("B", 1 - t, true));
       });
     },
-    // 6 paid: the 60 days run out, the buyer pays bank A, the row settles
+    // 6 paid: the 60 days run out, the buyer pays bank A, the row settles; the truck drives home
     (c) => {
+      tween(4400, 300, ease.softInOut, (t) => c.truck(c.shopStop + t * (1 - c.shopStop)));
       tween(1800, 200, ease.linear, (t) => c.calendar(60 * (1 - t)));
       tween(2000, 2000, ease.softInOut, (t) => c.stream("pay", t), () => {
         c.stream("pay", -1);

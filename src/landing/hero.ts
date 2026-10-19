@@ -7,11 +7,11 @@ import { animate as motionAnimate, hover, press } from "motion";
 import { PLACES, createCity, type City, type View } from "./city";
 import { dur, ease, sibling, wordDelays } from "./motion";
 
-/// Real values: `node scripts/hero-n.mjs src/wasm` (jitsuin-wasm, test keys derived from TES- labels).
+/// Real values: `node scripts/landing-keys.mjs src/wasm` (jitsuin-wasm, test keys from TES- labels; the buyer key is index 7 of a TES- master).
 export const HERO_INVOICE = {
   id: "TES-INV-0007",
   amount: "0.0004 ZEC",
-  n: "8ee58d12d3b4170056ae09509f2339a742fcee9073af1f8cfe01b068ebdc8354",
+  n: "f9755d220e9d52da8b392467aeb63c6fc7cbaaf2cb23972a24ae715bb0825cd5",
 };
 
 /// A real register entry on testnet (TEST-HNK-19, cycle-it, 2026-10-17).

@@ -1035,3 +1035,349 @@ button {
   font-family: var(--f-mono);
   font-size: 12.5px;
 }
+
+/* ---------- chapter 3: the seal chain (Sign-to-Pay) ---------- */
+.sc-chapter {
+  background: var(--sheet);
+}
+
+.sc-visual {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.15fr) minmax(0, 0.85fr);
+  grid-template-areas: "letter gate" "controls controls";
+  gap: var(--s-4) clamp(24px, 4vw, 64px);
+  align-items: center;
+  min-width: 0;
+}
+
+.sc-letter {
+  grid-area: letter;
+  padding: var(--s-4);
+  background: var(--paper);
+  filter: var(--lift-drop);
+  rotate: 0.6deg;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.sc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: 1px solid var(--fiber);
+}
+
+.sc-title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(18px, 1.6vw, 26px);
+  color: var(--head);
+}
+
+.sc-kanji {
+  white-space: nowrap;
+  font-family: var(--f-display);
+  font-weight: 800;
+  color: var(--seal);
+}
+
+.sc-rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--s-3);
+  row-gap: 8px;
+  font-size: var(--t-data);
+}
+
+.sc-rows dt {
+  color: var(--ink-2);
+}
+
+.sc-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.sc-rows dd.is-edited {
+  color: var(--seal);
+  font-weight: 600;
+}
+
+.sc-slots {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--fiber);
+}
+
+.sc-links {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--s-3) + 34px);
+  width: 100%;
+  height: 20px;
+  pointer-events: none;
+}
+
+.sc-link {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 3;
+  stroke-dasharray: 2 6;
+  vector-effect: non-scaling-stroke;
+}
+
+.sc-link.is-on {
+  stroke: var(--seal);
+  stroke-dasharray: none;
+}
+
+.sc-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sc-slot-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px dashed var(--fold);
+  background: var(--sheet);
+}
+
+.sc-slot.is-sealed .sc-slot-ring {
+  border-color: transparent;
+}
+
+.sc-impression,
+.sc-stamp,
+.sc-crack {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  overflow: visible;
+}
+
+.sc-impression {
+  opacity: 0;
+  rotate: -8deg;
+}
+
+.sc-stamp {
+  opacity: 0;
+}
+
+.sc-seal-ring {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 6;
+}
+
+.sc-seal-fine {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 1.6;
+}
+
+.sc-seal-kanji {
+  fill: var(--seal);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 44px;
+}
+
+.sc-stamp .sc-seal-ring,
+.sc-stamp .sc-seal-fine {
+  fill: var(--seal);
+  fill-opacity: 0.12;
+}
+
+.sc-crack {
+  opacity: 0;
+}
+
+.is-broken .sc-crack {
+  opacity: 1;
+}
+
+.sc-crack path {
+  fill: none;
+  stroke: var(--sheet);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sc-slot-name {
+  font-size: var(--t-ui);
+  font-weight: 600;
+  color: var(--head);
+}
+
+.sc-slot-bytes {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.sc-gate {
+  grid-area: gate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.sc-lock {
+  width: min(100%, 200px);
+  height: auto;
+  overflow: visible;
+}
+
+.sc-shackle {
+  fill: none;
+  stroke: var(--head);
+  stroke-width: 16;
+  stroke-linecap: round;
+}
+
+.sc-body {
+  fill: var(--head);
+}
+
+.sc-pin-bar {
+  fill: var(--pool-2);
+  transition: fill var(--dur-fade) var(--ease-glide);
+}
+
+.sc-pin-dot {
+  fill: var(--pool);
+  stroke: var(--mist);
+  stroke-width: 2;
+}
+
+.sc-pin-kanji {
+  fill: var(--mist);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.sc-pin.is-up .sc-pin-bar {
+  fill: var(--seal);
+}
+
+.sc-flow {
+  width: min(100%, 200px);
+  height: auto;
+  overflow: visible;
+}
+
+.sc-flow-path {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 3;
+  stroke-dasharray: 3 7;
+}
+
+.is-open .sc-flow-path {
+  stroke: var(--head);
+}
+
+.sc-coin {
+  fill: var(--seal);
+  stroke: var(--sheet);
+  stroke-width: 2;
+}
+
+.sc-wallet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+}
+
+.sc-wallet-name {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-h3);
+  color: var(--head);
+}
+
+.sc-wallet-amt {
+  color: var(--seal);
+}
+
+.sc-status {
+  margin: var(--s-2) 0 0;
+  max-width: 34ch;
+  text-align: center;
+  font-size: var(--t-ui);
+  color: var(--ink);
+}
+
+.is-broken .sc-status {
+  color: var(--seal);
+}
+
+.sc-controls {
+  grid-area: controls;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+.sc-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sc-tamper,
+.sc-reset {
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.is-waiting .sc-letter,
+.is-waiting .sc-gate,
+.is-waiting .sc-controls {
+  opacity: 0;
+}
+
+@media (max-width: 1023px) {
+  .sc-visual {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "letter" "controls" "gate";
+  }
+}
+
+@media (max-width: 559px) {
+  .sc-slot-ring {
+    width: 64px;
+    height: 64px;
+  }
+
+  .sc-links {
+    top: calc(var(--s-3) + 26px);
+  }
+
+  .sc-letter {
+    padding: var(--s-3);
+  }
+}

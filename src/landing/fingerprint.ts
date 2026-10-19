@@ -6,19 +6,20 @@ import { animate, stagger, svg as animeSvg } from "animejs";
 import { inView } from "motion";
 import { dur, ease, sibling } from "./motion";
 import { createPrintView } from "./print";
+import { loadWasm, type Wasm } from "./wasm";
 
-/// The hero invoice (scripts/hero-n.mjs): test keys derived from TES- labels, terms hash of its note.
+/// The hero invoice (scripts/landing-keys.mjs): test keys from TES- labels; the buyer key is index 7 of a TES- master.
 const BASE = {
   invoice_id: "TES-INV-0007",
   supplier_pk: "ed7ed2ff196e991257fa507e384dfea6fac4c66725e4b2dfc35861291421af8b",
-  buyer_pk: "fd647194d340b147764394b7dabee0c60df9fbad2a14ec8e4ba141f54219560a",
+  buyer_pk: "31124f793c6ba885185323f324eda73befe068565037e6c31c5c36935b63abb8",
   amount_zat: 40000,
   issue_date: 20745,
   due_date: 20805,
   terms_hash: "4b5958693a4f019b7de30dda6ee98ffc9d8412dfa2a7648d4095aba299950b77",
 };
 /// N of BASE: it is on the public board (hero, board row 7).
-const ON_BOARD = "8ee58d12d3b4170056ae09509f2339a742fcee9073af1f8cfe01b068ebdc8354";
+const ON_BOARD = "f9755d220e9d52da8b392467aeb63c6fc7cbaaf2cb23972a24ae715bb0825cd5";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const fn = (f: (t: number) => number) => () => f;
@@ -38,7 +39,6 @@ function svg(tag: string, attrs: Record<string, string | number> = {}): SVGEleme
   return e;
 }
 
-type Wasm = typeof import("../wasm/jitsuin_wasm.js");
 
 export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLElement {
   const sec = el("section", "chapter fp-chapter");
@@ -160,15 +160,8 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   root.append(sec);
 
   // ---------- computing N ----------
-  let wasm: Wasm | null = null;
   let current = ON_BOARD;
-  const load = async () => {
-    if (wasm) return wasm;
-    const m = await import("../wasm/jitsuin_wasm.js");
-    await m.default();
-    wasm = m;
-    return m;
-  };
+  const load = (): Promise<Wasm> => loadWasm();
   const HEX = "0123456789abcdef";
 
   const show = (n: string, from: string) => {

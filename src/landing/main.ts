@@ -4,6 +4,7 @@ import "./landing.css";
 import Lenis from "lenis";
 import { mountHero } from "./hero";
 import { mountFingerprint } from "./fingerprint";
+import { mountSealChain } from "./sealchain";
 import { reducedMotion } from "./motion";
 
 const root = document.getElementById("landing");
@@ -13,6 +14,7 @@ if (root) {
 
   // Chapters land here one at a time, each after it is validated.
   mountFingerprint(root, reduced);
+  mountSealChain(root, reduced);
 
   if (!reduced) {
     const lenis = new Lenis({ duration: 1.2 });

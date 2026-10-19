@@ -4,7 +4,7 @@
 // tries a second financier, and paid on the due date. Then it begins again.
 import { animate, createTimer, type JSAnimation, type Timer } from "animejs";
 import { animate as motionAnimate, hover, press } from "motion";
-import { CAM_DIR, createCity, type City, type LanternState, type View } from "./city";
+import { PLACES, createCity, type City, type View } from "./city";
 import { dur, ease, sibling, wordDelays } from "./motion";
 
 /// Real values: `node scripts/hero-n.mjs src/wasm` (jitsuin-wasm, test keys derived from TES- labels).
@@ -26,19 +26,19 @@ interface Episode {
   title: string;
   line: string;
   ms: number;
-  /** subject in island coordinates, how close the camera comes, how high it looks */
-  at: [number, number];
+  /** the subject (its front turns to the camera; none keeps the island's turn), the dolly, the look height */
+  place: keyof typeof PLACES | null;
   zoom: number;
   y: number;
 }
 
 const EPISODES: Episode[] = [
-  { kanji: "第一話", title: "The invoice is born", line: "A supplier ships the goods and invoices the buyer: 0.0004 ZEC, due in 60 days.", ms: 4400, at: [-0.5, -5], zoom: 0.92, y: 1.6 },
-  { kanji: "第二話", title: "The buyer's seal", line: "The buyer presses a jitsuin on it. The invoice now has one fingerprint, N.", ms: 3800, at: [6, -4.6], zoom: 0.8, y: 1.6 },
-  { kanji: "第三話", title: "One fingerprint, one board", line: "Only N goes up on the public board. The invoice itself sinks into the shielded vault.", ms: 4600, at: [-1, 1], zoom: 0.86, y: 3.4 },
-  { kanji: "第四話", title: "Financed once", line: "A financier looks N up, finds it once, and advances cash to the supplier.", ms: 4400, at: [-5.5, 6], zoom: 0.84, y: 2 },
-  { kanji: "第五話", title: "Financed twice?", line: "A copy flies to a second financier. Same N already on the board: the gate shuts.", ms: 4800, at: [5.6, 3.6], zoom: 0.84, y: 2.2 },
-  { kanji: "第六話", title: "Paid and remembered", line: "On the due date the buyer pays. Both sign, and the buyer's record grows.", ms: 5000, at: [0, 0], zoom: 1.02, y: 1.8 },
+  { kanji: "第一話", title: "The invoice is born", line: "A supplier ships the goods and invoices the buyer: 0.0004 ZEC, due in 60 days.", ms: 4400, place: "supplier", zoom: 0.94, y: 1.6 },
+  { kanji: "第二話", title: "The buyer's seal", line: "The buyer presses a jitsuin on it. The invoice now has one fingerprint, N.", ms: 3800, place: "buyer", zoom: 0.88, y: 1.4 },
+  { kanji: "第三話", title: "One fingerprint, one board", line: "Only N goes up on the public board. The invoice itself sinks into the shielded vault.", ms: 4600, place: "tower", zoom: 0.9, y: 4 },
+  { kanji: "第四話", title: "Financed once", line: "A financier looks N up, finds it once, and advances cash to the supplier.", ms: 4400, place: "bankA", zoom: 0.8, y: 2 },
+  { kanji: "第五話", title: "Financed twice?", line: "A copy flies to a second financier. Same N already on the board: the gate shuts.", ms: 4800, place: "bankB", zoom: 0.8, y: 2 },
+  { kanji: "第六話", title: "Paid and remembered", line: "On the due date the buyer pays. Both sign, and the buyer's record grows.", ms: 5000, place: null, zoom: 1.04, y: 1.8 },
 ];
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -175,7 +175,9 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     return b;
   });
 
-  hero.append(veil, nav, copy, epi, rail);
+  const flash = el("div", "impact-flash");
+  flash.setAttribute("aria-hidden", "true");
+  hero.append(veil, flash, nav, copy, epi, rail);
   root.append(hero);
   hero.setAttribute("aria-describedby", "hero-story");
   const desc = el("p", "sr-only", "An illustrated town plays the life of one invoice: the supplier ships goods, the buyer seals the invoice, only its fingerprint N is posted to a public board while the invoice sinks into a shielded vault, a financier advances cash, a copy sent to a second financier is refused because the same N is already on the board, and the buyer pays on the due date.");
@@ -235,14 +237,17 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
   };
 
   // camera: the island turns the subject toward a fixed 3/4 camera, which dollies in
-  const camAz = Math.atan2(CAM_DIR.x, CAM_DIR.z);
   const viewOf = (e: Episode): View => {
-    const [x, z] = e.at;
-    // a subject at the centre keeps the island's current turn
-    const rot = x === 0 && z === 0 ? view.rot : camAz - Math.atan2(x, z);
-    return { rot, zoom: e.zoom, look: [x * 0.35, e.y, z * 0.35] }; // the island stays whole in frame
+    if (!e.place) return { rot: 0, zoom: e.zoom, look: [0, e.y, 0] };
+    const p = PLACES[e.place];
+    // two views on the grid: from the south (workshop, shop, tower, vault face it) and from the
+    // north (the banks face it); the look leans toward the subject
+    const rot = p.face === 0 ? 0 : Math.PI;
+    // lean in depth only, so the town never slides left into the copy
+    const lean = p.face === 0 ? 0.28 : 0.46;
+    return { rot, zoom: e.zoom, look: [0, e.y, p.at.z * lean] };
   };
-  const view: View = { rot: 0.3, zoom: 1, look: [0, 1.5, 0] };
+  const view: View = { rot: 0, zoom: 1, look: [0, 1.5, 0] };
   const fly = (to: View, ms = 1600) => {
     const from: View = { rot: view.rot, zoom: view.zoom, look: [...view.look] };
     // the shortest way round
@@ -255,7 +260,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     });
   };
   // the town stands back on narrow screens
-  const distance = () => (hero.clientWidth < 760 ? 58 : hero.clientWidth < 1024 ? 48 : 40);
+  const distance = () => (hero.clientWidth < 760 ? 138 : hero.clientWidth < 1024 ? 100 : 88);
 
   /// The resting state at the start of each episode, so the rail can jump anywhere.
   const pose = (ep: number) => {
@@ -263,80 +268,96 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     side.clear();
     if (!city) return;
     city.truck(ep >= 1 ? 1 : 0);
-    city.planeA(-1);
-    city.planeB(-1);
-    city.sheet(ep >= 1 && ep <= 2, ep >= 2 ? 1 : 0, 0);
+    city.plane("shop", -1);
+    city.plane("vault", -1);
+    city.copyPlane(-1);
+    city.sheet(ep === 1 || ep === 2, ep >= 2 ? 1 : 0);
     city.stamp(0);
+    city.burst(0);
     city.fingerprint(-1);
-    const lantern: LanternState = ep >= 3 ? "lit" : "off";
-    city.lantern(lantern);
-    city.hatch(0);
+    city.board(ep >= 3 ? "lit" : "off");
+    city.vaultDoor(0);
     city.beam("A", 0);
     city.beam("B", 0);
-    city.gateB(0);
+    city.shutterB(0);
+    for (const k of ["registered", "refused", "settled"] as const) city.verdict(k, 0);
     city.stream("advance", -1);
     city.stream("pay", -1);
     city.calendar(60);
+    for (const w of ["supplier", "buyer", "bankA", "bankB"] as const) city.react(w, 0);
     city.shake(0);
   };
 
+  // impact: the camera jolts and the frame flashes paper white for a beat (anime impact frame)
   const impact = (k: number) => {
     if (!city) return;
     tween(420, 0, ease.linear, (t) => city.shake(k * (1 - t)));
+    tween(180, 0, ease.linear, (t) => (flash.style.opacity = (0.55 * k * (1 - t)).toFixed(3)));
   };
 
   const enter: ((c: City) => void)[] = [
-    // 1 born: truck to the shop, the invoice flies after it and lands as a sheet
+    // 1 born: the truck drives to the shop; the invoice flies after it and lands as a sheet
     (c) => {
       tween(3200, 300, ease.softInOut, (t) => c.truck(t));
-      tween(2600, 900, ease.softInOut, (t) => c.planeA(t), () => (c.planeA(-1), c.sheet(true, 0)));
+      tween(600, 500, ease.softLand, (t) => c.react("supplier", t));
+      tween(2600, 900, ease.softInOut, (t) => c.plane("shop", t), () => (c.plane("shop", -1), c.sheet(true, 0)));
     },
-    // 2 seal: the jitsuin comes down, squashes, lifts; the ink bleeds
+    // 2 seal: the jitsuin comes down, squashes, lifts; impact lines; the ink bleeds
     (c) => {
-      tween(dur.seal + 60, 700, ease.snapSettle, (t) => c.stamp(t), () => {
+      tween(dur.seal + 80, 700, ease.snapSettle, (t) => c.stamp(t), () => {
         impact(1);
         tween(dur.press, 0, ease.linear, (t) => c.stamp(1, Math.sin(Math.PI * t)));
+        tween(dur.ripple / 3, 0, ease.softLand, (t) => c.burst(t), () => c.burst(0));
         tween(dur.bleed, 0, ease.linear, (t) => c.sheet(true, t));
-        tween(dur.exit, dur.press + 120, ease.accelExit, (t) => c.stamp(1 - t));
+        tween(dur.exit, dur.press + 160, ease.accelExit, (t) => c.stamp(1 - t));
+        tween(700, 300, ease.softLand, (t) => c.react("buyer", t));
       });
     },
-    // 3 board: N rises to the tower and lights a lantern; the sheet sinks into the vault
+    // 3 board: N rises to the board and takes its row; the invoice folds and flies into the vault
     (c) => {
-      tween(1700, 300, ease.softLand, (t) => c.fingerprint(t), () => {
+      tween(1800, 300, ease.softLand, (t) => c.fingerprint(t), () => {
         c.fingerprint(-1);
-        tween(dur.proof, 0, ease.softLand, (t) => c.lantern("lit", t));
+        c.board("lit");
+        tween(dur.proof, 0, ease.popOver, (t) => c.verdict("registered", t));
+        tween(dur.exit, 1500, ease.accelExit, (t) => c.verdict("registered", 1 - t));
       });
-      tween(dur.seal, 1900, ease.snapSettle, (t) => c.hatch(t));
-      tween(1500, 2100, ease.softInOut, (t) => c.sheet(true, 1, t), () => {
-        c.sheet(false, 1, 1);
-        tween(dur.exit, 0, ease.accelExit, (t) => c.hatch(1 - t));
+      tween(dur.seal, 1700, ease.snapSettle, (t) => c.vaultDoor(t));
+      tween(1600, 1900, ease.softInOut, (t) => (c.sheet(false, 1), c.plane("vault", t)), () => {
+        c.plane("vault", -1);
+        tween(dur.exit, 0, ease.accelExit, (t) => c.vaultDoor(1 - t));
       });
     },
-    // 4 financed once: a beam from bank A to the board, then the advance flows to the supplier
+    // 4 financed once: bank A looks N up on the board, then the advance flows to the supplier
     (c) => {
       tween(700, 400, ease.softLand, (t) => c.beam("A", t));
       tween(dur.exit, 1900, ease.accelExit, (t) => c.beam("A", 1 - t));
-      tween(1900, 2100, ease.softInOut, (t) => c.stream("advance", t), () => c.stream("advance", -1));
-    },
-    // 5 twice: a copy flies to bank B, the beam finds N already lit, the lantern runs red, the gate shuts
-    (c) => {
-      tween(2100, 200, ease.softInOut, (t) => c.planeB(t));
-      tween(500, 2300, ease.softLand, (t) => c.beam("B", t), () => {
-        c.beam("B", 1, true);
-        c.lantern("caught");
-        impact(0.6);
-        tween(dur.seal, 0, ease.snapSettle, (t) => c.gateB(t));
-        tween(900, 200, ease.accelExit, (t) => c.planeB(1, t), () => c.planeB(-1));
-        tween(dur.exit, 900, ease.accelExit, (t) => c.beam("B", 1 - t, true));
-        tween(dur.proof, 1500, ease.softLand, (t) => c.lantern(t > 0.5 ? "lit" : "caught", 1));
+      tween(1900, 2100, ease.softInOut, (t) => c.stream("advance", t), () => {
+        c.stream("advance", -1);
+        tween(700, 0, ease.softLand, (t) => c.react("supplier", t));
       });
     },
-    // 6 paid: the 60 days run out, the buyer pays bank A, the lantern settles
+    // 5 twice: a copy flies to bank B; the lookup finds N already on the board: red, shutter, refused
+    (c) => {
+      tween(2100, 200, ease.softInOut, (t) => c.copyPlane(t));
+      tween(500, 2300, ease.softLand, (t) => c.beam("B", t), () => {
+        c.beam("B", 1, true);
+        c.board("caught");
+        impact(0.6);
+        tween(dur.seal, 0, ease.snapSettle, (t) => c.shutterB(t));
+        tween(dur.proof, 200, ease.popOver, (t) => c.verdict("refused", t));
+        tween(900, 160, ease.accelExit, (t) => c.copyPlane(1, t), () => c.copyPlane(-1));
+        tween(900, 300, ease.linear, (t) => c.react("bankB", t));
+        tween(dur.exit, 900, ease.accelExit, (t) => c.beam("B", 1 - t, true));
+      });
+    },
+    // 6 paid: the 60 days run out, the buyer pays bank A, the row settles
     (c) => {
       tween(1800, 200, ease.linear, (t) => c.calendar(60 * (1 - t)));
       tween(2000, 2000, ease.softInOut, (t) => c.stream("pay", t), () => {
         c.stream("pay", -1);
-        tween(dur.proof, 0, ease.softLand, (t) => c.lantern("settled", t));
+        c.board("settled");
+        tween(dur.proof, 0, ease.popOver, (t) => c.verdict("settled", t));
+        tween(700, 0, ease.softLand, (t) => c.react("buyer", t));
       });
     },
   ];
@@ -434,7 +455,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     rail.hidden = true;
     watch.hidden = true;
     pose(5);
-    city?.lantern("settled");
+    city?.board("settled");
     setEpisodeText(5, false);
     Object.assign(view, viewOf(EPISODES[5]));
     requestAnimationFrame((now) => {

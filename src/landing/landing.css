@@ -582,3 +582,13 @@ button {
     gap: var(--s-2);
   }
 }
+
+/* the anime impact frame: paper white for a beat when the seal lands */
+.impact-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--sheet);
+  opacity: 0;
+  pointer-events: none;
+}

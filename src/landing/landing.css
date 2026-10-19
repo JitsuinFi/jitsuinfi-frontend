@@ -1382,38 +1382,91 @@ button {
   }
 }
 
-/* ---------- chapter 4: pressed twice ---------- */
-.tw-visual {
+/* ---------- chapter 4: pressed twice (a night frame) ---------- */
+.tw-chapter {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* the frame spans the page, unlike the side-by-side chapters */
+  gap: var(--s-4);
+  padding-block: clamp(56px, 7vw, 112px);
+  background: var(--pool);
+  color: var(--mist);
+  overflow: hidden;
+}
+
+.tw-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
-  grid-template-areas: "scene scene" "controls proof";
-  gap: var(--s-4) clamp(24px, 4vw, 56px);
-  align-items: center;
-  min-width: 0;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--s-4) clamp(32px, 6vw, 120px);
+  align-items: end;
+}
+
+.tw-head-title,
+.tw-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.tw-chapter .chapter-kanji {
+  color: var(--fold);
+}
+
+.tw-chapter .chapter-title {
+  color: var(--sheet);
+  font-size: clamp(36px, 5.4vw, 92px);
+  line-height: 0.98;
+}
+
+.tw-chapter .chapter-lede {
+  color: var(--mist);
+  max-width: 46ch;
+}
+
+.tw-chapter .chapter-note {
+  color: var(--mist);
+  opacity: 0.75;
+}
+
+/* the frame: the scene runs edge to edge; the proof is dropped on it */
+.tw-stage {
+  position: relative;
+  margin-inline: calc(-1 * var(--gutter)) calc(-1 * max(16px, clamp(16px, 5vw, 96px)));
 }
 
 .tw-scene {
-  grid-area: scene;
+  display: block;
   width: 100%;
-  height: auto;
   max-width: 100%;
+  height: min(50vh, 540px); /* the title, the frame and the steps fit one screen */
+  min-height: 300px;
   overflow: visible;
 }
 
+.tw-star {
+  fill: var(--mist);
+  opacity: 0.55;
+}
+
+.tw-moon {
+  fill: var(--mist);
+  opacity: 0.85;
+}
+
 .tw-ground {
-  stroke: var(--fiber);
-  stroke-width: 2;
+  stroke: var(--pool-2);
+  stroke-width: 3;
 }
 
 .tw-wall {
-  fill: var(--sheet);
-  stroke: var(--head);
-  stroke-width: 2.5;
+  fill: var(--pool-2);
+  stroke: var(--mist);
+  stroke-width: 2;
   stroke-linejoin: round;
 }
 
 .tw-roof {
-  fill: var(--head);
+  fill: var(--mist);
 }
 
 .tw-door {
@@ -1421,75 +1474,80 @@ button {
 }
 
 .tw-win {
-  fill: var(--mist);
-  stroke: var(--head);
-  stroke-width: 2;
+  fill: var(--glint); /* lit windows: light inside the night, never on paper */
+  stroke: var(--mist);
+  stroke-width: 1.5;
 }
 
 .tw-col {
-  fill: var(--paper);
-  stroke: var(--head);
+  fill: var(--pool);
+  stroke: var(--mist);
   stroke-width: 1.5;
 }
 
 .tw-step {
-  fill: var(--fiber);
+  fill: var(--mist);
+  opacity: 0.4;
 }
 
 .tw-label {
-  fill: var(--head);
+  fill: var(--sheet);
   font-family: var(--f-body);
   font-weight: 600;
   font-size: 14px;
 }
 
-.tw-kanji,
-.tw-mark {
-  fill: var(--seal);
+.tw-kanji {
+  fill: var(--fold);
   font-family: var(--f-display);
   font-weight: 800;
   font-size: 18px;
 }
 
 .tw-mark {
-  fill: var(--sheet);
+  fill: var(--pool);
+  font-family: var(--f-display);
+  font-weight: 800;
   font-size: 15px;
 }
 
+/* the board is the one paper-white thing in the night: public, readable */
 .tw-board-body {
-  fill: var(--pool);
+  fill: var(--sheet);
 }
 
 .tw-board-kanji {
-  fill: var(--sheet);
+  fill: var(--head);
   font-family: var(--f-display);
   font-weight: 800;
   font-size: 16px;
 }
 
 .tw-board-title {
-  fill: var(--mist);
+  fill: var(--ink-2);
   font-family: var(--f-body);
   font-size: 11px;
 }
 
 .tw-board-rule {
-  stroke: var(--mist);
+  stroke: var(--fiber);
   stroke-width: 1;
 }
 
 .tw-row {
-  fill: var(--pool-2);
+  fill: var(--paper);
+  stroke: var(--fiber);
+  stroke-width: 1;
 }
 
 .tw-row.is-ours {
   fill: none;
-  stroke: var(--mist);
+  stroke: var(--fold);
   stroke-dasharray: 4 4;
 }
 
 .is-registered .tw-row.is-ours {
-  fill: var(--wave);
+  fill: var(--pool-2);
   stroke: none;
 }
 
@@ -1498,7 +1556,7 @@ button {
 }
 
 .tw-row-n {
-  fill: var(--mist);
+  fill: var(--ink-2);
   font-family: var(--f-mono);
   font-size: 10.5px;
 }
@@ -1515,9 +1573,10 @@ button {
 
 .tw-route {
   fill: none;
-  stroke: var(--fiber);
-  stroke-width: 2;
+  stroke: var(--mist);
+  stroke-width: 1.5;
   stroke-dasharray: 3 7;
+  opacity: 0.5;
 }
 
 .tw-beam {
@@ -1531,7 +1590,7 @@ button {
 .tw-paper-sheet {
   fill: var(--sheet);
   stroke: var(--head);
-  stroke-width: 2;
+  stroke-width: 1.5;
   stroke-linejoin: round;
 }
 
@@ -1568,21 +1627,28 @@ button {
   transform-origin: center;
 }
 
+/* the proof: hidden until it is built, then dropped over the frame's lower right */
 .tw-proof {
-  grid-area: proof;
+  position: absolute;
+  right: max(16px, clamp(16px, 5vw, 96px));
+  bottom: 4%;
+  width: min(380px, 42%);
   padding: var(--s-4);
   background: var(--sheet);
-  filter: var(--lift-drop);
-  rotate: 0.5deg;
+  color: var(--ink);
+  filter: var(--lift-pool);
+  rotate: -2.5deg;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  opacity: 0.55;
-  transition: opacity var(--dur-fade) var(--ease-glide);
+  opacity: 0;
+  visibility: hidden;
+  z-index: 3;
 }
 
-.is-proven .tw-proof {
+.tw-proof.is-shown {
   opacity: 1;
+  visibility: visible;
 }
 
 .tw-proof-head {
@@ -1633,51 +1699,149 @@ button {
   padding-top: var(--s-1);
   border-top: 1px solid var(--fiber);
   font-size: var(--t-ui);
-  color: var(--ink-2);
-}
-
-.is-proven .tw-verdict {
   color: var(--seal);
   font-weight: 600;
 }
 
-.tw-controls {
-  grid-area: controls;
-  align-self: start;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2) var(--s-4);
+/* the steps: a numbered rail under the frame, like a storyboard's beats */
+.tw-rail {
+  list-style: none;
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--pool-2);
 }
 
-.tw-step-btn:disabled {
-  opacity: 0.55;
+.tw-beat {
+  position: relative;
+}
+
+.tw-beat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--dur-fade) var(--ease-glide);
+}
+
+.tw-beat.is-done::before {
+  background: var(--fold);
+}
+
+.tw-beat.is-next::before {
+  background: var(--sheet);
+}
+
+.tw-beat-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: var(--s-2) var(--s-2) var(--s-2) 0;
+  text-align: left;
+  color: var(--mist);
+  opacity: 0.5;
   cursor: default;
 }
 
-.tw-reset {
-  border: 0;
-  background-color: transparent;
+.tw-beat.is-done .tw-beat-btn {
+  opacity: 0.85;
+}
+
+.tw-beat.is-next .tw-beat-btn {
+  opacity: 1;
+  color: var(--sheet);
   cursor: pointer;
 }
 
+.tw-beat-n {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-family: var(--f-mono);
+  font-size: var(--t-data);
+}
+
+.tw-beat.is-next .tw-beat-n {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--sheet);
+}
+
+.tw-beat.is-done .tw-beat-n {
+  background: var(--fold);
+  border-color: var(--fold);
+  color: var(--pool);
+}
+
+.tw-beat-label {
+  font-size: var(--t-ui);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.tw-beat.is-next .tw-beat-btn:hover .tw-beat-label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.tw-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+}
+
 .tw-say {
-  flex-basis: 100%;
   margin: 0;
   max-width: 64ch;
   font-size: var(--t-body);
-  color: var(--ink);
+  color: var(--sheet);
+}
+
+.tw-reset {
+  padding: 0 0 3px;
+  border: 0;
+  color: var(--fold);
+  background: linear-gradient(var(--fold), var(--fold)) left bottom / 100% 1px no-repeat;
+  cursor: pointer;
 }
 
 .is-waiting .tw-scene,
-.is-waiting .tw-proof,
-.is-waiting .tw-controls {
+.is-waiting .tw-rail,
+.is-waiting .tw-foot {
   opacity: 0;
 }
 
 @media (max-width: 1023px) {
-  .tw-visual {
+  .tw-head {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "scene" "controls" "proof";
+  }
+
+  .tw-proof {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin: var(--s-3) max(16px, clamp(16px, 5vw, 96px)) 0 var(--gutter);
+  }
+
+  .tw-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 559px) {
+  .tw-rail {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

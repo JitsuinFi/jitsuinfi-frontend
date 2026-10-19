@@ -49,19 +49,30 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
   sec.id = "pressed-twice";
   sec.setAttribute("aria-labelledby", "tw-title");
 
-  const cap = el("div", "chapter-cap");
+  // a night chapter, laid out like a film frame: the title over a wide scene, the steps under it
+  const cap = el("header", "tw-head");
+  const capL = el("div", "tw-head-title");
+  const capR = el("div", "tw-head-text");
   const kanji = el("p", "chapter-kanji", "二重 · Chapter 4");
   const h2 = el("h2", "chapter-title", "Pressed twice, caught once.");
   h2.id = "tw-title";
   const p = el("p", "chapter-lede", "A supplier who signs one invoice for two financiers leaves two signatures on one N. The second financier finds N on the board, refuses, and keeps both entries: a proof anyone can check, offline.");
   const note = el("p", "chapter-note", "Real register entries and a real proof, made in your browser with test keys. Nothing is sent.");
-  cap.append(kanji, h2, p, note);
+  capL.append(kanji, h2);
+  capR.append(p, note);
+  cap.append(capL, capR);
 
-  const vis = el("div", "tw-visual");
+  const vis = el("div", "tw-stage");
 
   // ---------- the scene: line art in the site's ink ----------
   const scene = svg("svg", { viewBox: "0 0 640 380", class: "tw-scene", role: "img", "aria-label": "The supplier, the public board, financier A and financier B" }) as SVGSVGElement;
-  // ground line
+  // night: a scatter of stars, a thin moon, the ground line
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 97.3) % 620 + 10;
+    const y = ((i * 53.7) % 150) + 8;
+    scene.append(svg("circle", { cx: x.toFixed(1), cy: y.toFixed(1), r: i % 5 === 0 ? 1.6 : 1, class: "tw-star" }));
+  }
+  scene.append(svg("path", { d: "M58 70 a20 20 0 1 0 22 -24 a15 15 0 1 1 -22 24 Z", class: "tw-moon" }));
   scene.append(svg("path", { d: "M10 336 H630", class: "tw-ground" }));
   // supplier workshop (sawtooth roof)
   const workshop = svg("g", { class: "tw-house" });
@@ -155,21 +166,32 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
   proof.append(ph, pr, pVerdict);
   vis.append(proof);
 
-  // ---------- controls ----------
-  const controls = el("div", "tw-controls");
-  const stepBtn = el("button", "seal-btn tw-step-btn");
-  stepBtn.type = "button";
-  const stepLabel = el("span", "seal-btn-label", `1 · ${STEPS[0].btn}`);
-  stepBtn.append(stepLabel);
-  const reset = el("button", "ink-link tw-reset", "Start over");
-  reset.type = "button";
+  // ---------- the steps, as a rail under the frame ----------
+  const rail = el("ol", "tw-rail");
+  const beats = STEPS.map((st, i) => {
+    const li = el("li", "tw-beat");
+    const b = el("button", "tw-beat-btn");
+    b.type = "button";
+    b.append(el("span", "tw-beat-n", String(i + 1)), el("span", "tw-beat-label", st.btn));
+    li.append(b);
+    rail.append(li);
+    return b;
+  });
+  const foot = el("div", "tw-foot");
   const say = el("p", "tw-say", STEPS[0].say);
   say.setAttribute("role", "status");
   say.setAttribute("aria-live", "polite");
-  controls.append(stepBtn, reset, say);
-  vis.append(controls);
+  const reset = el("button", "ink-link tw-reset", "Start over");
+  reset.type = "button";
+  foot.append(say, reset);
+  const paintRail = (busy = false) =>
+    beats.forEach((b, i) => {
+      b.disabled = busy || i !== step;
+      b.parentElement!.classList.toggle("is-done", i < step);
+      b.parentElement!.classList.toggle("is-next", i === step);
+    });
 
-  sec.append(cap, vis);
+  sec.append(cap, vis, rail, foot);
   root.append(sec);
 
   // ---------- the real work ----------
@@ -210,7 +232,7 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
     });
 
   const run = async () => {
-    stepBtn.disabled = true;
+    paintRail(true);
     try {
       const w = await loadWasm();
       const k = await keys();
@@ -250,23 +272,25 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
         pSize.textContent = `JTSP · ${b64len(pf)} bytes · checked offline`;
         pVerdict.textContent = "Verified: one supplier key signed one N for two financiers.";
         sec.classList.add("is-proven");
+        proof.classList.add("is-shown");
         if (!reduced) {
           animate(entryA, { opacity: { to: 0 }, duration: dur.exit, ease: fn(ease.accelExit) });
           animate(entryB, { opacity: { to: 0 }, duration: dur.exit, ease: fn(ease.accelExit) });
-          animate(proof, { y: { from: 20, to: 0 }, rotate: { from: -2, to: 0.5 }, opacity: { from: 0.4, to: 1 }, duration: dur.enter + 200, ease: fn(ease.softLand) });
+          // the camera pans left to make room, and the proof is dropped on the frame like a
+          // document thrown on the desk (wide screens; on phones it sits under the frame)
+          if (innerWidth >= 1024) animate(scene, { translateX: { from: 0, to: -innerWidth * 0.14 }, duration: dur.enter + 300, ease: fn(ease.softInOut) });
+          animate(proof, { y: { from: 80, to: 0 }, rotate: { from: 9, to: -2.5 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 300, ease: fn(ease.softLand) });
           animate([...pr.querySelectorAll("dd"), pVerdict], { opacity: { from: 0, to: 1 }, x: { from: -6, to: 0 }, duration: dur.enter, delay: stagger(67), ease: fn(ease.softLand) });
         }
       }
       step++;
     } catch (e) {
       say.textContent = `Refused by the wasm: ${(e as Error).message}`;
-      stepBtn.disabled = false;
+      paintRail();
       return;
     }
-    const next = STEPS[step];
     say.textContent = STEPS[step - 1].say;
-    stepLabel.textContent = next ? `${step + 1} · ${next.btn}` : "Proof verified";
-    stepBtn.disabled = !next;
+    paintRail();
   };
 
   const startOver = () => {
@@ -279,11 +303,13 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
     beam.style.opacity = "";
     for (const dd of [pN, pKey, pA, pB, pSize]) dd.textContent = "—";
     pVerdict.textContent = "Not built yet.";
-    stepLabel.textContent = `1 · ${STEPS[0].btn}`;
     say.textContent = STEPS[0].say;
-    stepBtn.disabled = false;
+    proof.classList.remove("is-shown");
+    scene.style.transform = "";
+    paintRail();
   };
-  stepBtn.addEventListener("click", run);
+  beats.forEach((b) => b.addEventListener("click", run));
+  paintRail();
   reset.addEventListener("click", startOver);
 
   const io = new IntersectionObserver(
@@ -306,7 +332,7 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
           animate(t, { y: { from: 16, to: 0 }, filter: { from: "blur(8px)", to: "blur(0px)" }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: sibling(i), ease: fn(ease.softLand) }),
         );
         animate(scene, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
-        animate([proof, controls], { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
+        animate([rail, foot], { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
       },
       { amount: 0.25 },
     );

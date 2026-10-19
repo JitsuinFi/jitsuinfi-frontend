@@ -6,6 +6,7 @@
 // break, the lock falls shut. Nothing leaves the page.
 import { animate, svg as animeSvg } from "animejs";
 import { inView } from "motion";
+import { ta, tx } from "./i18n";
 import { dur, ease, sibling } from "./motion";
 import { labelKey, loadWasm } from "./wasm";
 
@@ -23,10 +24,10 @@ const PAY_TO = "utest1landingfinanciera";
 const BUYER_INDEX = 7;
 
 type Role = "supplier" | "buyer" | "financier";
-const ROLES: { role: Role; kanji: string; name: string; who: string }[] = [
-  { role: "supplier", kanji: "売", name: "Supplier", who: "the supplier" },
-  { role: "buyer", kanji: "買", name: "Buyer", who: "the buyer" },
-  { role: "financier", kanji: "融", name: "Financier", who: "the financier" },
+const ROLES: { role: Role; kanji: string; name: string }[] = [
+  { role: "supplier", kanji: "売", name: "Supplier" },
+  { role: "buyer", kanji: "買", name: "Buyer" },
+  { role: "financier", kanji: "融", name: "Financier" },
 ];
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -63,28 +64,29 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
   sec.setAttribute("aria-labelledby", "sc-title");
 
   const cap = el("div", "chapter-cap");
-  const kanji = el("p", "chapter-kanji", "連署 · Chapter 3");
-  const h2 = el("h2", "chapter-title", "Three seals, then the money moves.");
+  const kanji = tx(el("p", "chapter-kanji"), "sc.kanji");
+  const h2 = tx(el("h2", "chapter-title"), "sc.title");
   h2.id = "sc-title";
-  const p = el("p", "chapter-lede", "The assignment letter hands the invoice to the financier. The supplier seals it, then the buyer, then the financier, each over the seals before. Only a whole chain releases the advance: Sign-to-Pay.");
-  const note = el("p", "chapter-note", "Each press makes a real Ed25519 seal in your browser with test keys. Nothing is sent.");
+  const p = tx(el("p", "chapter-lede"), "sc.lede");
+  const note = tx(el("p", "chapter-note"), "sc.note");
   cap.append(kanji, h2, p, note);
 
   const vis = el("div", "sc-visual");
 
   // the letter
   const letter = el("article", "sc-letter");
-  letter.setAttribute("aria-label", "Assignment letter");
+  ta(letter, "aria-label", "sc.aria");
   const head = el("div", "sc-head");
-  head.append(el("span", "sc-title", "Notice of assignment"), el("span", "sc-kanji", "譲渡通知"));
+  head.append(tx(el("span", "sc-title"), "sc.letter"), el("span", "sc-kanji", "譲渡通知"));
   const rows = el("dl", "sc-rows");
-  const row = (k: string, v: string, data = true) => rows.append(el("dt", "", k), el("dd", data ? "data" : "", v));
-  row("Invoice", INVOICE.invoice_id);
-  row("Fingerprint N", short(N));
-  row("Amount", "0.0004 ZEC", false);
+  const row = (k: string, v: string, data = true) => rows.append(tx(el("dt"), k), el("dd", data ? "data" : "", v));
+  row("doc.invoice", INVOICE.invoice_id);
+  row("doc.fingerprint", short(N));
+  row("doc.amount", "0.0004 ZEC", false);
   const amountDd = rows.lastElementChild as HTMLElement;
-  row("Due", "18 Dec 2026", false);
-  row("Pay to", PAY_TO);
+  row("doc.due", "", false);
+  tx(rows.lastElementChild!, "sc.dueVal");
+  row("doc.payTo", PAY_TO);
   const slotsWrap = el("div", "sc-slots");
   const links = svg("svg", { class: "sc-links", viewBox: "0 0 300 20", preserveAspectRatio: "none", "aria-hidden": "true" });
   const linkPaths = [0, 1].map((i) => {
@@ -101,8 +103,8 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
     const crack = svg("svg", { viewBox: "0 0 100 100", class: "sc-crack", "aria-hidden": "true" });
     crack.append(svg("path", { d: "M50 6 L45 30 L56 44 L43 62 L52 78 L47 96" }), svg("path", { d: "M43 62 L24 70" }), svg("path", { d: "M56 44 L76 38" }));
     ring.append(imp, crack, stamp);
-    const lab = el("span", "sc-slot-name", r.name);
-    const bytes = el("span", "sc-slot-bytes data", "unsealed");
+    const lab = tx(el("span", "sc-slot-name"), `doc.${r.role}`);
+    const bytes = tx(el("span", "sc-slot-bytes data"), "sc.unsealed");
     s.append(ring, lab, bytes);
     slotsWrap.append(s);
     return { s, imp, stamp, crack, bytes };
@@ -134,21 +136,21 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
     return c;
   });
   const wallet = el("div", "sc-wallet");
-  wallet.append(el("span", "sc-wallet-name", "Supplier"), el("span", "sc-wallet-amt data", "+ 0.0004 ZEC advance"));
+  wallet.append(tx(el("span", "sc-wallet-name"), "doc.supplier"), tx(el("span", "sc-wallet-amt data"), "sc.advance"));
   const status = el("p", "sc-status");
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
-  status.textContent = "Waiting for the supplier’s seal.";
+  tx(status, "sc.wait.supplier");
   gate.append(lockSvg, flow, wallet, status);
 
   const controls = el("div", "sc-controls");
   const pressBtn = el("button", "seal-btn sc-press");
   pressBtn.type = "button";
-  pressBtn.append(el("span", "seal-btn-label", "Press the supplier’s seal"));
-  const tamper = el("button", "ink-link sc-tamper", "Change one zat on the sealed letter");
+  pressBtn.append(tx(el("span", "seal-btn-label"), "sc.press.supplier"));
+  const tamper = tx(el("button", "ink-link sc-tamper"), "sc.tamper");
   tamper.type = "button";
   tamper.disabled = true;
-  const reset = el("button", "ink-link sc-reset", "Start over");
+  const reset = tx(el("button", "ink-link sc-reset"), "sc.reset");
   reset.type = "button";
   controls.append(pressBtn, tamper, reset);
 
@@ -179,8 +181,7 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
     return { w, k: keys };
   };
 
-  const friendly = (st: string) =>
-    st === "Sealed" ? "Sealed by all three. The advance is released." : `Waiting for ${ROLES.find((r) => st.endsWith(r.name))?.who ?? "the next"}’s seal.`;
+  const friendly = (st: string) => (st === "Sealed" ? "sc.sealed" : `sc.wait.${ROLES.find((r) => st.endsWith(r.name))?.role ?? "financier"}`);
 
   const pressNext = async () => {
     if (broken || seals.length >= 3) return;
@@ -197,22 +198,22 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
       seals.push(seal);
       const st = w.assignmentStatus(invCode, letterCode, JSON.stringify(seals));
       await stampDown(i, seal);
-      status.textContent = friendly(st);
+      tx(status, friendly(st));
       if (st === "Sealed") release();
       tamper.disabled = false;
     } catch (e) {
-      status.textContent = `Refused: ${(e as Error).message}`;
+      tx(status, "sc.refused", { msg: (e as Error).message });
     } finally {
       pressBtn.disabled = seals.length >= 3 || broken;
       const next = ROLES[seals.length];
-      (pressBtn.firstElementChild as HTMLElement).textContent = next ? `Press ${next.who}’s seal` : "Chain complete";
+      tx(pressBtn.firstElementChild!, next ? `sc.press.${next.role}` : "sc.complete");
     }
   };
 
   const stampDown = (i: number, seal: string) =>
     new Promise<void>((done) => {
       const sl = slots[i];
-      sl.bytes.textContent = `seal ${b64hex(seal, 136, 4)}…`;
+      tx(sl.bytes, "sc.seal", { b: b64hex(seal, 136, 4) });
       sl.s.classList.add("is-sealed");
       if (reduced) {
         sl.imp.style.opacity = "1";
@@ -277,7 +278,7 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
     sec.classList.add("is-broken");
     gate.classList.remove("is-open");
     wallet.style.opacity = "0"; // no advance on a letter whose seals broke
-    status.textContent = `One zat changed, the seals no longer match: ${msg}. Financing refused.`;
+    tx(status, "sc.broken", { msg });
     pressBtn.disabled = true;
     tamper.disabled = true;
     slots.forEach((sl, i) => {
@@ -303,17 +304,17 @@ export function mountSealChain(root: HTMLElement, reduced: boolean): HTMLElement
     slots.forEach((sl) => {
       sl.s.classList.remove("is-sealed");
       sl.imp.style.opacity = "0";
-      sl.bytes.textContent = "unsealed";
+      tx(sl.bytes, "sc.unsealed");
       sl.crack.querySelectorAll("path").forEach((pth) => pth.removeAttribute("draw"));
     });
     linkPaths.forEach((l) => l.classList.remove("is-on"));
     pins.forEach((pin) => ((pin as SVGElement).style.transform = "", pin.classList.remove("is-up")));
     (shackle as SVGElement).style.transform = "";
     wallet.style.opacity = "0";
-    status.textContent = "Waiting for the supplier’s seal.";
+    tx(status, "sc.wait.supplier");
     pressBtn.disabled = false;
     tamper.disabled = true;
-    (pressBtn.firstElementChild as HTMLElement).textContent = "Press the supplier’s seal";
+    tx(pressBtn.firstElementChild!, "sc.press.supplier");
   };
 
   pressBtn.addEventListener("click", pressNext);

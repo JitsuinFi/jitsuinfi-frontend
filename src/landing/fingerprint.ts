@@ -4,6 +4,7 @@
 // and N is the same again, already on the board. Nothing leaves the page.
 import { animate, stagger, svg as animeSvg } from "animejs";
 import { inView } from "motion";
+import { ta, tx } from "./i18n";
 import { dur, ease, sibling } from "./motion";
 import { createPrintView } from "./print";
 import { loadWasm, type Wasm } from "./wasm";
@@ -47,38 +48,38 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
 
   // caption (the 35%)
   const cap = el("div", "chapter-cap");
-  const kanji = el("p", "chapter-kanji", "指紋 · Chapter 2");
-  const h2 = el("h2", "chapter-title", "One fingerprint per invoice.");
+  const kanji = tx(el("p", "chapter-kanji"), "fp.kanji");
+  const h2 = tx(el("h2", "chapter-title"), "fp.title");
   h2.id = "fp-title";
-  const p = el("p", "chapter-lede", "N is a BLAKE2b-256 hash of the invoice’s exact bytes. The same invoice always gives the same N; change one zat and almost every digit changes. The board keeps N, never the invoice.");
-  const note = el("p", "chapter-note", "Try it: this runs jitsuin-wasm in your browser. Nothing is sent.");
+  const p = tx(el("p", "chapter-lede"), "fp.lede");
+  const note = tx(el("p", "chapter-note"), "fp.note");
   cap.append(kanji, h2, p, note);
 
   // the visual: the invoice sheet, the press, the fingerprint
   const vis = el("div", "fp-visual");
 
   const sheet = el("form", "fp-sheet");
-  sheet.setAttribute("aria-label", "Test invoice");
+  ta(sheet, "aria-label", "fp.sheet");
   sheet.addEventListener("submit", (e) => e.preventDefault());
   const head = el("div", "fp-sheet-head");
-  head.append(el("span", "fp-sheet-title", "Invoice"), el("span", "fp-sheet-no data", BASE.invoice_id));
+  head.append(tx(el("span", "fp-sheet-title"), "doc.invoice"), el("span", "fp-sheet-no data", BASE.invoice_id));
   const rows = el("div", "fp-rows");
   const fixed = (k: string, v: string) => {
     const r = el("div", "fp-row");
-    r.append(el("span", "fp-key", k), el("span", "fp-val data", v));
+    r.append(tx(el("span", "fp-key"), k), el("span", "fp-val data", v));
     rows.append(r);
     return r;
   };
-  fixed("Supplier", short(BASE.supplier_pk));
-  fixed("Buyer", short(BASE.buyer_pk));
+  fixed("doc.supplier", short(BASE.supplier_pk));
+  fixed("doc.buyer", short(BASE.buyer_pk));
   // editable: amount (zat) with one-zat steps, and the due date
   const amtRow = el("div", "fp-row fp-edit");
-  const amtLabel = el("label", "fp-key", "Amount (zat)");
+  const amtLabel = tx(el("label", "fp-key"), "doc.amountZat");
   amtLabel.htmlFor = "fp-amount";
   const amtWrap = el("span", "fp-val fp-amount");
   const minus = el("button", "fp-step", "−1");
   minus.type = "button";
-  minus.setAttribute("aria-label", "One zat less");
+  ta(minus, "aria-label", "fp.less");
   const amount = el("input", "fp-input data");
   amount.id = "fp-amount";
   amount.type = "number";
@@ -88,12 +89,12 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   amount.value = String(BASE.amount_zat);
   const plus = el("button", "fp-step", "+1");
   plus.type = "button";
-  plus.setAttribute("aria-label", "One zat more");
+  ta(plus, "aria-label", "fp.more");
   amtWrap.append(minus, amount, plus);
   amtRow.append(amtLabel, amtWrap);
   rows.append(amtRow);
   const dueRow = el("div", "fp-row fp-edit");
-  const dueLabel = el("label", "fp-key", "Due");
+  const dueLabel = tx(el("label", "fp-key"), "doc.due");
   dueLabel.htmlFor = "fp-due";
   const due = el("input", "fp-input fp-date data");
   due.id = "fp-due";
@@ -103,8 +104,8 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   dueVal.append(due);
   dueRow.append(dueLabel, dueVal);
   rows.append(dueRow);
-  fixed("Terms", short(BASE.terms_hash));
-  const reset = el("button", "fp-reset ink-link", "Back to TES-INV-0007");
+  fixed("doc.terms", short(BASE.terms_hash));
+  const reset = tx(el("button", "fp-reset ink-link"), "fp.reset");
   reset.type = "button";
   sheet.append(head, rows, reset);
 
@@ -126,7 +127,7 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   press.append(threads, hashMark);
 
   const out = el("div", "fp-out");
-  out.append(el("p", "fp-out-label", "Fingerprint N"));
+  out.append(tx(el("p", "fp-out-label"), "doc.fingerprint"));
   // N drawn as an illustrated fingerprint, with callouts for the bytes that shape it
   const print = createPrintView();
   const printBox = el("div", "fp-print-box");
@@ -148,10 +149,10 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   }
   const srN = el("span", "sr-only", `N ${ON_BOARD}`);
   grid.append(srN);
-  const changed = el("p", "fp-changed", "The invoice as registered.");
+  const changed = tx(el("p", "fp-changed"), "fp.asRegistered");
   const boardRow = el("div", "fp-board");
   const boardN = el("span", "fp-board-n data", `${ON_BOARD.slice(0, 8)}…${ON_BOARD.slice(-6)}`);
-  const boardSt = el("span", "fp-board-st", "already on the board");
+  const boardSt = tx(el("span", "fp-board-st"), "fp.onBoard");
   boardRow.append(el("span", "fp-board-tag", "登記簿"), boardN, boardSt);
   out.append(grid, changed, boardRow);
 
@@ -167,11 +168,11 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
   const show = (n: string, from: string) => {
     const diff = [...n].filter((ch, i) => ch !== from[i]).length;
     srN.textContent = `N ${n}`;
-    if (n === ON_BOARD) changed.textContent = diff ? `Back to the registered invoice: ${diff} of 64 digits changed back.` : "The invoice as registered.";
-    else changed.textContent = `${diff} of 64 digits changed.`;
+    if (n === ON_BOARD) tx(changed, diff ? "fp.changedBack" : "fp.asRegistered", { d: diff });
+    else tx(changed, "fp.changed", { d: diff });
     boardRow.classList.toggle("is-new", n !== ON_BOARD);
     boardN.textContent = `${n.slice(0, 8)}…${n.slice(-6)}`;
-    boardSt.textContent = n === ON_BOARD ? "already on the board · a second financing is refused" : "new fingerprint · not on the board";
+    tx(boardSt, n === ON_BOARD ? "fp.onBoard" : "fp.newN");
     print.set(n, !reduced);
     if (reduced) {
       digits.forEach((d, i) => (d.textContent = n[i]));
@@ -239,7 +240,7 @@ export function mountFingerprint(root: HTMLElement, reduced: boolean): HTMLEleme
       current = n;
       show(n, from);
     } catch (e) {
-      changed.textContent = `That invoice is not valid: ${(e as Error).message}`;
+      tx(changed, "fp.invalid", { msg: (e as Error).message });
     }
   };
   amount.addEventListener("input", recompute);

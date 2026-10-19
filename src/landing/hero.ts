@@ -2,9 +2,10 @@
 // six episodes. The camera tours the diorama while the economy of one invoice plays out: born,
 // sealed by the buyer, posted to the board as one fingerprint, financed once, refused when a copy
 // tries a second financier, and paid on the due date. Then it begins again.
-import { animate, createTimer, type JSAnimation, type Timer } from "animejs";
+import { animate, createTimer, stagger, type JSAnimation, type Timer } from "animejs";
 import { animate as motionAnimate, hover, press } from "motion";
 import { PLACES, createCity, type City, type View } from "./city";
+import { getLang, onLang, setLang, t, ta, tx, type Lang } from "./i18n";
 import { dur, ease, sibling, wordDelays } from "./motion";
 
 /// Real values: `node scripts/landing-keys.mjs src/wasm` (jitsuin-wasm, test keys from TES- labels; the buyer key is index 7 of a TES- master).
@@ -19,13 +20,14 @@ const TESTNET_ENTRY = { txid: "33b8f3b0aa754e790e9c7fac0ae7dc08ce8612a8c26620d55
 
 export const SPEC_URL = "https://github.com/JitsuinFi/jitsuinfi-zcash/blob/main/docs/zip-shielded-receivable-registry.md";
 
-const LEDE =
-  "The private invoice fund on Zcash. Every receivable leaves one fingerprint on a public board, so it is registered once and financed once. Amounts, parties and documents stay in the shielded pool.";
+/// The headline in three beats, per language: the asset (RWA), the money (private), the guarantee
+/// (the seal, once). "◉" is where the seal sits; Chinese sets its words with no spaces.
+const HEADLINE: Record<Lang, { words: string[][]; gap: string }> = {
+  en: { words: [["Real", "invoices."], ["Private", "capital."], ["Financed", "◉", "once."]], gap: " " },
+  zh: { words: [["真实发票。"], ["私密资本。"], ["只融资", "◉", "一次。"]], gap: "" },
+};
 
 interface Episode {
-  kanji: string;
-  title: string;
-  line: string;
   ms: number;
   /** the subject (its front turns to the camera; none keeps the island's turn), the dolly, the look height */
   place: keyof typeof PLACES | null;
@@ -34,12 +36,12 @@ interface Episode {
 }
 
 const EPISODES: Episode[] = [
-  { kanji: "第一話", title: "The invoice is born", line: "A supplier ships the goods and invoices the buyer: 0.0004 ZEC, due in 60 days.", ms: 4400, place: "supplier", zoom: 0.94, y: 1.6 },
-  { kanji: "第二話", title: "The buyer's seal", line: "The buyer presses a jitsuin on it. The invoice now has one fingerprint, N.", ms: 3800, place: "buyer", zoom: 0.88, y: 1.4 },
-  { kanji: "第三話", title: "One fingerprint, one board", line: "Only N goes up on the public board. The invoice itself sinks into the shielded vault.", ms: 4600, place: "tower", zoom: 0.9, y: 4 },
-  { kanji: "第四話", title: "Financed once", line: "A financier looks N up, finds it once, and advances cash to the supplier.", ms: 4400, place: "bankA", zoom: 0.8, y: 2 },
-  { kanji: "第五話", title: "Financed twice?", line: "A copy flies to a second financier. Same N already on the board: the gate shuts.", ms: 4800, place: "bankB", zoom: 0.8, y: 2 },
-  { kanji: "第六話", title: "Paid and remembered", line: "On the due date the buyer pays. Both sign, and the buyer's record grows.", ms: 5000, place: null, zoom: 1.04, y: 1.8 },
+  { ms: 4400, place: "supplier", zoom: 0.94, y: 1.6 },
+  { ms: 3800, place: "buyer", zoom: 0.88, y: 1.4 },
+  { ms: 4600, place: "tower", zoom: 0.9, y: 4 },
+  { ms: 4400, place: "bankA", zoom: 0.8, y: 2 },
+  { ms: 4800, place: "bankB", zoom: 0.8, y: 2 },
+  { ms: 5000, place: null, zoom: 1.04, y: 1.8 },
 ];
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -83,81 +85,100 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
 
   // nav
   const nav = el("nav", "nav");
-  nav.setAttribute("aria-label", "Main");
+  ta(nav, "aria-label", "nav.main");
   const brand = el("a", "brand");
   brand.href = "#top";
-  brand.setAttribute("aria-label", "JitsuinFi, top of page");
+  ta(brand, "aria-label", "nav.top");
   const brandSeal = el("span", "brand-seal");
   brandSeal.append(sealIcon("brand-mark"));
   brand.append(brandSeal, el("span", "brand-name", "JitsuinFi"));
   const pill = el("div", "nav-pill glass");
-  const link = (text: string, href: string, cls = "nav-link") => {
-    const a = el("a", cls, text);
+  const link = (key: string, href: string, cls = "nav-link") => {
+    const a = tx(el("a", cls), key);
     a.href = href;
     if (href.startsWith("http")) a.rel = "noreferrer";
     return a;
   };
-  pill.append(link("How it works", "#story"), link("Read the spec", SPEC_URL, "nav-link nav-spec"), link("Open the demo", "/app.html", "nav-cta"));
+  // the language switch: English or Simplified Chinese, each named in its own script
+  const langs = el("div", "lang-switch");
+  langs.setAttribute("role", "group");
+  ta(langs, "aria-label", "nav.lang");
+  const langBtns = (["en", "zh"] as Lang[]).map((l) => {
+    const b = el("button", "lang-opt", l === "en" ? "EN" : "中文");
+    b.type = "button";
+    b.lang = l === "en" ? "en" : "zh-Hans";
+    b.addEventListener("click", () => setLang(l));
+    langs.append(b);
+    return [l, b] as const;
+  });
+  onLang(() => langBtns.forEach(([l, b]) => b.setAttribute("aria-pressed", String(l === getLang()))));
+  pill.append(link("nav.how", "#story"), link("nav.spec", SPEC_URL, "nav-link nav-spec"), langs, link("nav.demo", "/app.html", "nav-cta"));
   nav.append(brand, pill);
 
   // copy
   const copy = el("div", "hero-copy");
   const badge = el("p", "badge glass");
-  badge.append(el("span", "badge-chip", "Testnet"), el("span", "badge-text", "Live on Zcash testnet, NU7"));
+  badge.append(tx(el("span", "badge-chip"), "hero.chip"), tx(el("span", "badge-text"), "hero.badge"));
   const title = el("h1", "hero-title");
   title.id = "hero-title";
-  const words: HTMLElement[] = [];
-  const line = (text: string, cls: string, sealAfter?: string) => {
-    const l = el("span", `hero-line ${cls}`);
-    text.split(" ").forEach((w, i, all) => {
-      const s = el("span", "word", w);
-      words.push(s);
-      l.append(s);
-      if (w === sealAfter) {
-        l.append(document.createTextNode(" "));
-        const icon = el("span", "word word-seal");
-        icon.append(sealIcon("inline-seal"));
-        words.push(icon);
-        l.append(icon);
-      }
-      if (i < all.length - 1) l.append(document.createTextNode(" "));
-    });
-    title.append(l);
+  let words: HTMLElement[] = [];
+  // rebuilt on a language switch; only the first build plays the entry
+  const buildTitle = () => {
+    const { words: lines, gap } = HEADLINE[getLang()];
+    words = [];
+    title.replaceChildren(
+      ...lines.map((ws, n) => {
+        const l = el("span", `hero-line ${n < 2 ? "hero-line-1" : "hero-line-2"}`);
+        ws.forEach((w, i) => {
+          const word = el("span", w === "◉" ? "word word-seal" : "word", w === "◉" ? undefined : w);
+          if (w === "◉") word.append(sealIcon("inline-seal"));
+          words.push(word);
+          l.append(word);
+          if (gap && i < ws.length - 1) l.append(document.createTextNode(gap));
+        });
+        return l;
+      }),
+    );
   };
-  // three beats: the asset (RWA), the money (private), the guarantee (the seal, once)
-  line("Real invoices.", "hero-line-1");
-  line("Private capital.", "hero-line-1");
-  line("Financed once.", "hero-line-2", "Financed");
-  const lede = el("p", "hero-lede", LEDE);
+  let built = false;
+  onLang(() => {
+    buildTitle();
+    // a rebuilt headline (a language switch) settles in quickly; the first one waits for the entry
+    if (built && !reduced) animate(words, { opacity: { from: 0, to: 1 }, y: { from: "0.2em", to: 0 }, duration: dur.enter, delay: stagger(40), ease: fn(ease.softLand) });
+    built = true;
+  });
+  const lede = tx(el("p", "hero-lede"), "hero.lede");
   const calls = el("div", "hero-calls");
   const demo = el("a", "seal-btn");
   demo.href = "/app.html";
-  demo.append(el("span", "seal-btn-label", "Open the demo"));
+  demo.append(tx(el("span", "seal-btn-label"), "hero.demo"));
   const watch = el("button", "watch glass");
   watch.type = "button";
   const watchIcon = svg("svg", { viewBox: "0 0 24 24", class: "watch-icon", "aria-hidden": "true" });
   watchIcon.append(svg("polygon", { points: "7 4 20 12 7 20 7 4" }));
-  watch.append(watchIcon, el("span", "", "Watch it catch a double"));
+  watch.append(watchIcon, tx(el("span"), "hero.watch"));
   calls.append(demo, watch);
   const proof = el("p", "hero-proof");
-  proof.append(el("span", "", "Registered on testnet"), el("span", "data", `${short(TESTNET_ENTRY.txid)} · block ${TESTNET_ENTRY.height}`));
+  const proofAt = el("span", "data");
+  onLang(() => (proofAt.textContent = `${short(TESTNET_ENTRY.txid)} · ${t("hero.block")} ${TESTNET_ENTRY.height}`));
+  proof.append(tx(el("span"), "hero.registered"), proofAt);
   copy.append(badge, title, lede, calls, proof);
 
   // the episode subtitle, anime style
   const epi = el("div", "episode");
   epi.setAttribute("aria-live", "off");
-  const epiKanji = el("span", "episode-kanji", EPISODES[0].kanji);
-  const epiTitle = el("p", "episode-title", EPISODES[0].title);
-  const epiLine = el("p", "episode-line", EPISODES[0].line);
+  const epiKanji = tx(el("span", "episode-kanji"), "ep1.kanji");
+  const epiTitle = tx(el("p", "episode-title"), "ep1.title");
+  const epiLine = tx(el("p", "episode-line"), "ep1.line");
   epi.append(epiKanji, epiTitle, epiLine);
 
   // rail
   const rail = el("div", "rail glass");
   rail.setAttribute("role", "group");
-  rail.setAttribute("aria-label", "Story");
+  ta(rail, "aria-label", "hero.rail");
   const pause = el("button", "rail-pause");
   pause.type = "button";
-  pause.setAttribute("aria-label", "Pause the story");
+  ta(pause, "aria-label", "hero.pause");
   const pauseIcon = svg("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", class: "icon-pause" });
   pauseIcon.append(svg("rect", { x: 6, y: 5, width: 4, height: 14 }), svg("rect", { x: 14, y: 5, width: 4, height: 14 }));
   const playIcon = svg("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", class: "icon-play" });
@@ -165,10 +186,10 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
   pause.append(pauseIcon, playIcon);
   rail.append(pause);
   const tracks: HTMLElement[] = [];
-  const epBtns = EPISODES.map((e, i) => {
+  const epBtns = EPISODES.map((_, i) => {
     const b = el("button", "rail-beat");
     b.type = "button";
-    b.setAttribute("aria-label", `Play episode ${i + 1}: ${e.title}`);
+    onLang(() => b.setAttribute("aria-label", t("hero.episode", { i: i + 1, title: t(`ep${i + 1}.title`) })));
     const track = el("span", "rail-track");
     const fill = el("span", "rail-fill");
     track.append(fill);
@@ -186,7 +207,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
   hero.append(veil, flash, nav, left, rail);
   root.append(hero);
   hero.setAttribute("aria-describedby", "hero-story");
-  const desc = el("p", "sr-only", "An illustrated town plays the life of one invoice: the supplier ships goods, the buyer seals the invoice, only its fingerprint N is posted to a public board while the invoice sinks into a shielded vault, a financier advances cash, a copy sent to a second financier is refused because the same N is already on the board, and the buyer pays on the due date.");
+  const desc = tx(el("p", "sr-only"), "hero.story");
   desc.id = "hero-story";
   hero.append(desc);
 
@@ -373,11 +394,10 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
   let beatTimer: Timer | null = null;
   let paused = false;
   const setEpisodeText = (i: number, animated: boolean) => {
-    const e = EPISODES[i];
     const swap = () => {
-      epiKanji.textContent = e.kanji;
-      epiTitle.textContent = e.title;
-      epiLine.textContent = e.line;
+      tx(epiKanji, `ep${i + 1}.kanji`);
+      tx(epiTitle, `ep${i + 1}.title`);
+      tx(epiLine, `ep${i + 1}.line`);
     };
     if (!animated) return swap();
     run(
@@ -419,7 +439,7 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
       beatTimer?.resume();
       side.forEach((a) => a.resume());
     }
-    pause.setAttribute("aria-label", p ? "Play the story" : "Pause the story");
+    ta(pause, "aria-label", p ? "hero.play" : "hero.pause");
     pause.classList.toggle("is-paused", p);
   };
   pause.addEventListener("click", () => setPaused(!paused));

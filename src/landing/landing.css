@@ -201,6 +201,63 @@ button {
   background: var(--pool-2);
 }
 
+/* the language switch: two options in the pill, the current one inked */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline: 4px;
+  padding-inline: 8px 4px;
+  border-left: 1px solid var(--fiber);
+}
+
+.lang-opt {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: var(--t-ui);
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+  position: relative;
+  transition: color var(--dur-fade) var(--ease-glide);
+}
+
+.lang-opt[lang="zh-Hans"] {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
+.lang-opt::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 2px;
+  height: 2px;
+  background: var(--seal);
+  scale: 0 1;
+  transition: scale var(--dur-fade) var(--ease-glide);
+}
+
+.lang-opt:hover {
+  color: var(--seal);
+}
+
+.lang-opt[aria-pressed="true"] {
+  color: var(--head);
+}
+
+.lang-opt[aria-pressed="true"]::after {
+  scale: 1 1;
+}
+
+.lang-opt:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
 /* the seal mark */
 .seal-ring {
   fill: none;
@@ -216,7 +273,7 @@ button {
 
 .seal-kanji {
   fill: var(--seal);
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   font-size: 27px;
 }
@@ -292,6 +349,16 @@ button {
 .word {
   display: inline-block;
   white-space: nowrap; /* "double-financing." never splits at its hyphen */
+}
+
+/* Chinese sets no spaces, so the seal keeps its own air */
+:lang(zh-Hans) /* Chinese titles carry their own break (after the comma), so a line never splits a word */
+:lang(zh-Hans) .chapter-title {
+  white-space: pre-line;
+}
+
+.word-seal {
+  margin-inline: 0.1em;
 }
 
 .word-seal {
@@ -903,7 +970,7 @@ button {
 }
 
 .fp-board-tag {
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   color: var(--glint);
 }
@@ -1079,7 +1146,7 @@ button {
 
 .sc-kanji {
   white-space: nowrap;
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   color: var(--seal);
 }
@@ -1194,7 +1261,7 @@ button {
 
 .sc-seal-kanji {
   fill: var(--seal);
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   font-size: 44px;
 }
@@ -1271,7 +1338,7 @@ button {
 
 .sc-pin-kanji {
   fill: var(--mist);
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   font-size: 18px;
 }
@@ -1382,16 +1449,16 @@ button {
   }
 }
 
-/* ---------- chapter 4: pressed twice (a night frame) ---------- */
+/* ---------- chapter 4: pressed twice (a flow on the day paper) ---------- */
 .tw-chapter {
   display: flex;
   flex-direction: column;
-  align-items: stretch; /* the frame spans the page, unlike the side-by-side chapters */
+  align-items: stretch; /* a wide frame, unlike the side-by-side chapters */
   gap: var(--s-4);
   padding-block: clamp(56px, 7vw, 112px);
-  background: var(--pool);
-  color: var(--mist);
-  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, var(--fiber) 1px, transparent 1.5px) 0 0 / 24px 24px,
+    var(--paper);
 }
 
 .tw-head {
@@ -1408,53 +1475,31 @@ button {
   gap: var(--s-2);
 }
 
-.tw-chapter .chapter-kanji {
-  color: var(--fold);
-}
-
 .tw-chapter .chapter-title {
-  color: var(--sheet);
   font-size: clamp(36px, 5.4vw, 92px);
   line-height: 0.98;
 }
 
 .tw-chapter .chapter-lede {
-  color: var(--mist);
   max-width: 46ch;
 }
 
-.tw-chapter .chapter-note {
-  color: var(--mist);
-  opacity: 0.75;
-}
-
-/* the canvas: an automation canvas on the night, nodes and wires */
 .tw-stage {
   position: relative;
 }
 
-.tw-canvas {
-  position: relative;
+.tw-flowart {
+  display: block;
   width: 100%;
-  aspect-ratio: 12 / 5;
-  container-type: inline-size;
-}
-
-.tw-wires {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  height: auto;
+  max-width: 100%;
   overflow: visible;
 }
 
-.tw-dot {
-  fill: var(--pool-2);
-}
-
+/* wires */
 .tw-wire {
   fill: none;
-  stroke: var(--pool-2);
+  stroke: var(--fiber);
   stroke-width: 3;
   stroke-linecap: round;
   transition: stroke 400ms var(--ease-inout);
@@ -1465,141 +1510,299 @@ button {
 }
 
 .tw-wire.is-live {
-  stroke: var(--mist);
+  stroke: var(--ink-2);
 }
 
-.tw-wire-label {
-  fill: var(--fold);
-  font-family: var(--f-body);
-  font-size: 15px;
-  font-weight: 600;
+.tw-flowdot {
+  fill: var(--seal);
 }
 
-.tw-flow {
-  fill: var(--glint);
+/* stations */
+.tw-st {
+  opacity: 0.45;
+  transition: opacity var(--dur-fade) var(--ease-glide);
 }
 
-.tw-node {
-  position: absolute;
-  translate: -50% calc(-1 * 7.3cqw / 2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5cqw;
-  width: 15cqw;
-  text-align: center;
+.tw-st.is-run,
+.tw-st.is-done,
+.tw-st.is-stop {
+  opacity: 1;
 }
 
-.tw-tile {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 7.3cqw;
-  aspect-ratio: 1;
-  border-radius: 1.6cqw;
-  background: var(--pool-2);
-  border: 2px solid var(--pool-2);
-  transition: border-color var(--dur-fade) var(--ease-glide), background-color var(--dur-fade) var(--ease-glide);
+.tw-halo {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2;
 }
 
-.tw-tile-kanji {
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 3.2cqw;
-  line-height: 1;
-  color: var(--mist);
+.tw-st.is-run .tw-halo {
+  stroke: var(--seal);
+  stroke-dasharray: 10 8;
+  animation: tw-march 600ms linear infinite;
 }
 
-.tw-node-label {
-  font-size: max(11px, 1.15cqw);
-  font-weight: 600;
-  color: var(--mist);
-  white-space: nowrap;
-}
-
-.tw-node-out {
-  min-height: 1.4em;
-  font-size: max(10px, 0.95cqw);
-  color: var(--glint);
-  white-space: nowrap;
-}
-
-/* running: a seal-red ring turns round the tile */
-.tw-node.is-run .tw-tile {
-  border-color: var(--sheet);
-}
-
-.tw-node.is-run .tw-badge {
-  position: absolute;
-  inset: -7px;
-  border-radius: 2cqw;
-  border: 2px solid transparent;
-  border-top-color: var(--seal);
-  border-right-color: var(--seal);
-  animation: tw-spin 700ms linear infinite;
-}
-
-@keyframes tw-spin {
+@keyframes tw-march {
   to {
-    rotate: 1turn;
+    stroke-dashoffset: -18;
   }
 }
 
-.tw-node.is-done .tw-tile {
-  border-color: var(--mist);
+.tw-draw {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.tw-node.is-done .tw-tile-kanji,
-.tw-node.is-done .tw-node-label {
-  color: var(--sheet);
+.tw-st-label {
+  fill: var(--head);
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: 15px;
 }
 
-/* done: a small seal check at the tile's corner */
-.tw-node.is-done .tw-badge,
-.tw-node.is-stop .tw-badge {
-  position: absolute;
-  right: -8px;
-  top: -8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--fold);
-  border: 2px solid var(--pool);
+.tw-st-out {
+  fill: var(--seal);
+  font-family: var(--f-mono);
+  font-size: 12.5px;
 }
 
-.tw-node.is-done .tw-badge::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 3px;
-  width: 5px;
-  height: 9px;
-  border: solid var(--pool);
-  border-width: 0 2px 2px 0;
-  rotate: 45deg;
+.tw-check {
+  opacity: 0;
+  transition: opacity var(--dur-fade) var(--ease-glide);
 }
 
-.tw-node.is-stop .tw-tile {
-  background: var(--seal);
-  border-color: var(--seal);
+.tw-st.is-done .tw-check {
+  opacity: 1;
 }
 
-.tw-node.is-stop .tw-tile-kanji,
-.tw-node.is-stop .tw-node-label {
-  color: var(--sheet);
+.tw-check-dot {
+  fill: var(--head);
 }
 
-.tw-node.is-stop .tw-badge {
-  background: var(--sheet);
+.tw-check-tick {
+  fill: none;
+  stroke: var(--sheet);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.tw-node.is-stop .tw-node-out {
-  color: var(--fold);
+/* the drawings */
+.tw-paper {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 6px 8px rgba(70, 29, 58, .12));
 }
 
-/* under the canvas: the execution log beside the proof */
+.tw-rule {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.tw-seal,
+.tw-seal-fine {
+  fill: none;
+  stroke: var(--seal);
+}
+
+.tw-seal {
+  stroke-width: 3;
+}
+
+.tw-seal-fine {
+  stroke-width: 1;
+}
+
+.tw-seal-kanji {
+  fill: var(--seal);
+  font-family: var(--f-seal);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.tw-mono-s {
+  fill: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 12px;
+}
+
+/* board rows: light mono on the dark board */
+.tw-mono-xs {
+  fill: var(--mist);
+  font-family: var(--f-mono);
+  font-size: 9.5px;
+}
+
+.tw-mono-s.is-ours {
+  fill: var(--sheet);
+}
+
+.tw-sign {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.tw-slip-to {
+  fill: var(--ink-2);
+  font-family: var(--f-body);
+  font-size: 12px;
+}
+
+.tw-slip-mark {
+  fill: var(--seal);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 24px;
+}
+
+.tw-board {
+  fill: var(--head);
+}
+
+.tw-board-title {
+  fill: var(--sheet);
+  font-family: var(--f-seal);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.tw-row {
+  fill: var(--pool-2);
+}
+
+.tw-row.is-ours {
+  fill: none;
+  stroke: var(--mist);
+  stroke-dasharray: 3 4;
+}
+
+.is-registered .tw-row.is-ours {
+  fill: var(--wave);
+  stroke: none;
+}
+
+.is-caught .tw-row.is-ours {
+  fill: var(--seal);
+}
+
+.tw-row.is-look {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 1.5;
+}
+
+.tw-lens {
+  fill: rgba(196, 199, 242, .35);
+  stroke: var(--head);
+  stroke-width: 4;
+}
+
+.tw-lens-handle {
+  stroke: var(--head);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.tw-cmp-key {
+  fill: var(--ink-2);
+  font-family: var(--f-body);
+  font-size: 11px;
+}
+
+.tw-eq {
+  fill: var(--head);
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.tw-neq {
+  fill: var(--seal);
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.tw-roof {
+  fill: var(--head);
+}
+
+.tw-wall {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 2;
+}
+
+.tw-col {
+  fill: var(--paper);
+  stroke: var(--head);
+  stroke-width: 1.4;
+}
+
+.tw-doorway {
+  fill: var(--head);
+}
+
+.tw-shutter {
+  fill: var(--mist);
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+
+.tw-step {
+  fill: var(--fiber);
+}
+
+.tw-stamp {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tw-stamp-box {
+  fill: var(--sheet);
+  stroke: var(--seal);
+  stroke-width: 4;
+}
+
+.tw-stamp-jp {
+  fill: var(--seal);
+  font-family: var(--f-seal);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.tw-stamp-en {
+  fill: var(--seal);
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.tw-ok {
+  fill: var(--head);
+}
+
+.tw-ok-tick {
+  fill: none;
+  stroke: var(--sheet);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tw-st.is-stop .tw-st-label {
+  fill: var(--seal);
+}
+
+/* under the flow: the log beside the proof */
 .tw-below {
-  margin-top: var(--s-6);
+  margin-top: var(--s-4);
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
   gap: var(--s-4) clamp(24px, 4vw, 64px);
@@ -1626,7 +1829,7 @@ button {
 
 .tw-run-status {
   font-size: var(--t-ui);
-  color: var(--mist);
+  color: var(--ink-2);
 }
 
 .tw-log {
@@ -1635,44 +1838,41 @@ button {
   padding: 0;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--pool-2);
+  border-top: 1px solid var(--fiber);
 }
 
 .tw-log-line {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1.4fr) auto;
   align-items: baseline;
   gap: var(--s-2);
   padding: 8px 0;
-  border-bottom: 1px solid var(--pool-2);
+  border-bottom: 1px solid var(--fiber);
   font-size: var(--t-ui);
-  color: var(--sheet);
+  color: var(--ink);
 }
 
-.tw-log-kanji {
-  font-family: var(--f-display);
-  font-weight: 800;
-  color: var(--fold);
+.tw-log-st {
+  font-weight: 600;
+  color: var(--head);
 }
 
 .tw-log-ms {
-  color: var(--glint);
+  color: var(--seal);
 }
 
-/* the proof: hidden until it is built, then dropped over the frame's lower right */
 .tw-proof {
   position: relative;
   padding: var(--s-4);
   background: var(--sheet);
   color: var(--ink);
-  filter: var(--lift-pool);
-  rotate: -2.5deg;
+  filter: var(--lift-drop);
+  rotate: -1.2deg;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
   opacity: 0;
   visibility: hidden;
-  z-index: 3;
 }
 
 .tw-proof.is-shown {
@@ -1698,7 +1898,7 @@ button {
 
 .tw-proof-kanji {
   white-space: nowrap;
-  font-family: var(--f-display);
+  font-family: var(--f-seal);
   font-weight: 800;
   color: var(--seal);
 }
@@ -1732,7 +1932,7 @@ button {
   font-weight: 600;
 }
 
-.is-waiting .tw-canvas {
+.is-waiting .tw-flowart {
   opacity: 0;
 }
 
@@ -1742,14 +1942,22 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* the canvas keeps its shape and scrolls sideways inside its own frame */
+}
+
+/* between phone and desk the wide flow scrolls inside its own frame; phones get the tall flow */
+@media (min-width: 701px) and (max-width: 899px) {
   .tw-stage {
     overflow-x: auto;
-    margin-inline: calc(-1 * var(--gutter)) calc(-1 * max(16px, clamp(16px, 5vw, 96px)));
-    padding-inline: var(--gutter) max(16px, clamp(16px, 5vw, 96px));
   }
 
-  .tw-canvas {
-    min-width: 940px;
+  .tw-flowart {
+    min-width: 860px;
+  }
+}
+
+@media (max-width: 700px) {
+  .tw-flowart {
+    max-width: 460px;
+    margin-inline: auto;
   }
 }

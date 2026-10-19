@@ -4,6 +4,7 @@
 // Every number comes from N's 32 bytes, so each invoice has its own print. A new N redraws the
 // ridges with anime.js while a seal-red scan line passes over.
 import { animate, stagger, svg as animeSvg } from "animejs";
+import { tx } from "./i18n";
 import { dur, ease } from "./motion";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -185,7 +186,8 @@ export function createPrintView(): PrintView {
   const cPattern = callout("is-pattern");
   const cRidges = callout("is-ridges");
   const cTilt = callout("is-tilt");
-  const place = (c: ReturnType<typeof callout>, from: Pt, elbow: Pt, to: Pt, text: string, sub: string, anchor: "start" | "end") => {
+  type Say = [key: string, params?: Record<string, string | number>];
+  const place = (c: ReturnType<typeof callout>, from: Pt, elbow: Pt, to: Pt, text: Say, sub: Say, anchor: "start" | "end") => {
     c.line.setAttribute("d", `M${from[0]} ${from[1]} L${elbow[0]} ${elbow[1]} L${to[0]} ${to[1]}`);
     c.dot.setAttribute("cx", String(from[0]));
     c.dot.setAttribute("cy", String(from[1]));
@@ -194,12 +196,11 @@ export function createPrintView(): PrintView {
       t.setAttribute("y", String(to[1] + dy));
       t.setAttribute("text-anchor", anchor);
     }
-    c.t1.textContent = text;
-    c.t2.textContent = sub;
+    tx(c.t1, ...text);
+    tx(c.t2, ...sub);
   };
 
   let group: SVGGElement | null = null;
-  const NAMES: Record<Pattern, string> = { rings: "whorl", spiral: "spiral whorl", loop: "loop" };
 
   const set = (n: string, animated: boolean) => {
     const s = shapeOf(n);
@@ -215,10 +216,10 @@ export function createPrintView(): PrintView {
     coreG.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
     const ridgeCount = outer.length > 0 ? Math.round((TIP.ryT + TIP.ryB) / s.spacing) : 0;
     const deg = Math.round((s.tilt * 180) / Math.PI);
-    place(cCore, [cx + 10, cy], [cx + 50, cy - 36], [136, cy - 36], "core", "bytes 00–01", "start");
-    place(cPattern, [-66, -126], [-100, -158], [-136, -158], NAMES[s.pattern], "byte 06", "end");
-    place(cRidges, [-98, 64], [-120, 104], [-136, 104], `${ridgeCount} ridges`, "byte 02", "end");
-    place(cTilt, [72, 110], [104, 146], [136, 146], `tilt ${deg >= 0 ? "+" : "−"}${Math.abs(deg)}°`, "byte 05", "start");
+    place(cCore, [cx + 10, cy], [cx + 50, cy - 36], [136, cy - 36], ["pr.core"], ["pr.bytes", { b: "00–01" }], "start");
+    place(cPattern, [-66, -126], [-100, -158], [-136, -158], [`pr.${s.pattern}`], ["pr.byte", { b: "06" }], "end");
+    place(cRidges, [-98, 64], [-120, 104], [-136, 104], ["pr.ridges", { n: ridgeCount }], ["pr.byte", { b: "02" }], "end");
+    place(cTilt, [72, 110], [104, 146], [136, 146], ["pr.tilt", { deg: `${deg >= 0 ? "+" : "−"}${Math.abs(deg)}°` }], ["pr.byte", { b: "05" }], "start");
     if (!animated) {
       old?.remove();
       return;

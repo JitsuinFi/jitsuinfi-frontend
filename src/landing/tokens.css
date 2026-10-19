@@ -30,6 +30,7 @@
 
   /* type */
   --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;
+  --f-seal: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif; /* the Japanese seals and signs, in every language */
   --f-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --t-hero: clamp(36px, 4.6vw, 88px);
@@ -70,4 +71,12 @@
   --ease-exit: cubic-bezier(.29, 0, .63, .04);
 
   color-scheme: light;
+}
+
+/* Simplified Chinese: Shippori is a Japanese face (its kanji are Japanese forms and it lacks most
+   simplified characters), so Chinese text takes a Song face for display and the system sans for
+   body; Shippori stays last for the Japanese seals (実印, 拒否) drawn in the art. */
+:root:lang(zh-Hans) {
+  --f-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "SimSun", "Shippori Mincho B1", Georgia, serif;
+  --f-body: "Geist Variable", "Geist", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
 }

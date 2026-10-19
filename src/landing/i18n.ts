@@ -170,7 +170,7 @@ const D: Record<string, Entry> = {
   "fn.repay.name": { en: "Repaid", zh: "还款" },
   "fn.repay.memo": { en: "The buyer pays the financier by ZIP-321; its receipt and claim seal ride in the memo.", zh: "买方通过 ZIP-321 向资金方付款；收据和结清印章附在备注中。" },
   "fn.settled.name": { en: "Settled", zh: "结清" },
-  "fn.settled.memo": { en: "Settled entry, signed by buyer and financier, on time. Its tag cannot be linked to the register entry.", zh: "结清记录，由买方和资金方签名，按时。它的标签无法与登记记录关联。" },
+  "fn.settled.memo": { en: "Settled entry, signed by buyer and financier, on time. Without N, its tag cannot be linked to the register entry.", zh: "结清记录，由买方和资金方签名，按时。不知道 N 的人无法把它的标签与登记记录关联。" },
   "fn.b.name": { en: "Caught", zh: "识破" },
   "fn.b.memo": { en: "The same N, offered to financier B. It reached the board second, so it loses, and the two entries are the double-signature proof.", zh: "同一个 N 被送往资金方 B。它第二个上板，因此无效，两条登记构成双重签名证明。" },
   "fn.caption": {

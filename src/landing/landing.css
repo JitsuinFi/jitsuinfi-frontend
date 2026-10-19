@@ -1381,3 +1381,303 @@ button {
     padding: var(--s-3);
   }
 }
+
+/* ---------- chapter 4: pressed twice ---------- */
+.tw-visual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+  grid-template-areas: "scene scene" "controls proof";
+  gap: var(--s-4) clamp(24px, 4vw, 56px);
+  align-items: center;
+  min-width: 0;
+}
+
+.tw-scene {
+  grid-area: scene;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.tw-ground {
+  stroke: var(--fiber);
+  stroke-width: 2;
+}
+
+.tw-wall {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.tw-roof {
+  fill: var(--head);
+}
+
+.tw-door {
+  fill: var(--seal);
+}
+
+.tw-win {
+  fill: var(--mist);
+  stroke: var(--head);
+  stroke-width: 2;
+}
+
+.tw-col {
+  fill: var(--paper);
+  stroke: var(--head);
+  stroke-width: 1.5;
+}
+
+.tw-step {
+  fill: var(--fiber);
+}
+
+.tw-label {
+  fill: var(--head);
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tw-kanji,
+.tw-mark {
+  fill: var(--seal);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.tw-mark {
+  fill: var(--sheet);
+  font-size: 15px;
+}
+
+.tw-board-body {
+  fill: var(--pool);
+}
+
+.tw-board-kanji {
+  fill: var(--sheet);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.tw-board-title {
+  fill: var(--mist);
+  font-family: var(--f-body);
+  font-size: 11px;
+}
+
+.tw-board-rule {
+  stroke: var(--mist);
+  stroke-width: 1;
+}
+
+.tw-row {
+  fill: var(--pool-2);
+}
+
+.tw-row.is-ours {
+  fill: none;
+  stroke: var(--mist);
+  stroke-dasharray: 4 4;
+}
+
+.is-registered .tw-row.is-ours {
+  fill: var(--wave);
+  stroke: none;
+}
+
+.is-caught .tw-row.is-ours {
+  fill: var(--seal);
+}
+
+.tw-row-n {
+  fill: var(--mist);
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+}
+
+.tw-row-n.is-ours,
+.tw-row-tag {
+  fill: var(--sheet);
+}
+
+.tw-row-tag {
+  font-family: var(--f-body);
+  font-size: 9.5px;
+}
+
+.tw-route {
+  fill: none;
+  stroke: var(--fiber);
+  stroke-width: 2;
+  stroke-dasharray: 3 7;
+}
+
+.tw-beam {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.tw-paper-sheet {
+  fill: var(--sheet);
+  stroke: var(--head);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.tw-paper-label {
+  fill: var(--seal);
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.tw-refuse-box {
+  fill: var(--sheet);
+  stroke: var(--seal);
+  stroke-width: 4;
+}
+
+.tw-refuse-jp {
+  fill: var(--seal);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.tw-refuse-en {
+  fill: var(--seal);
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.tw-refuse {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tw-proof {
+  grid-area: proof;
+  padding: var(--s-4);
+  background: var(--sheet);
+  filter: var(--lift-drop);
+  rotate: 0.5deg;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  opacity: 0.55;
+  transition: opacity var(--dur-fade) var(--ease-glide);
+}
+
+.is-proven .tw-proof {
+  opacity: 1;
+}
+
+.tw-proof-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: 1px solid var(--fiber);
+}
+
+.tw-proof-title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(18px, 1.5vw, 24px);
+  color: var(--head);
+}
+
+.tw-proof-kanji {
+  white-space: nowrap;
+  font-family: var(--f-display);
+  font-weight: 800;
+  color: var(--seal);
+}
+
+.tw-proof-rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--s-3);
+  row-gap: 8px;
+  font-size: var(--t-data);
+}
+
+.tw-proof-rows dt {
+  color: var(--ink-2);
+}
+
+.tw-proof-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.tw-verdict {
+  margin: 0;
+  padding-top: var(--s-1);
+  border-top: 1px solid var(--fiber);
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+}
+
+.is-proven .tw-verdict {
+  color: var(--seal);
+  font-weight: 600;
+}
+
+.tw-controls {
+  grid-area: controls;
+  align-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+.tw-step-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tw-reset {
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.tw-say {
+  flex-basis: 100%;
+  margin: 0;
+  max-width: 64ch;
+  font-size: var(--t-body);
+  color: var(--ink);
+}
+
+.is-waiting .tw-scene,
+.is-waiting .tw-proof,
+.is-waiting .tw-controls {
+  opacity: 0;
+}
+
+@media (max-width: 1023px) {
+  .tw-visual {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "scene" "controls" "proof";
+  }
+}

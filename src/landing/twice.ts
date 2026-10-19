@@ -159,7 +159,7 @@ export function mountTwice(root: HTMLElement, reduced: boolean): HTMLElement {
   {
     const d = S.board.draw;
     d.append(svg("rect", { x: -72, y: -70, width: 144, height: 120, class: "tw-board" }), svg("text", { x: -60, y: -50, class: "tw-board-title" }, "登記簿"));
-    ["82dfbc47…", "3d4fa116…", "463789b7…"].forEach((r, i) => {
+    ["2eca708e…", "43a49aba…", "f1f00264…"].forEach((r, i) => {
       const row = svg("rect", { x: -60, y: -38 + i * 19, width: 120, height: 15, class: "tw-row" });
       boardRows.push(row);
       d.append(row, svg("text", { x: -52, y: -27 + i * 19, class: "tw-mono-xs" }, r));

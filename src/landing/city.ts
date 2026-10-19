@@ -67,14 +67,14 @@ export interface City {
   canvas: HTMLCanvasElement;
 }
 
-/** The public board's earlier entries: real N of TES-INV-0001..0006 (`node scripts/landing-keys.mjs src/wasm`). */
+/** The public board's earlier entries: real N of TES-INV-0001..0006, the buyer's paid history (`node scripts/landing-keys.mjs src/wasm`). */
 const BOARD_ROWS = [
-  "82dfbc47f3ed4d5a2e6a996cc70c5d05897ada40cd61486810ad253a272d6a3a",
-  "3d4fa116838e874a2dcf7d894b933f21e1c3200114ba532fbb1978e08b0d0637",
-  "463789b7d0933342451aa10442aef772b22ed67d367c89804e560d5602b753fb",
-  "545cc2248a558b078186d0b9f0892f9c856db57772016dc3bc1c539d816f738d",
-  "ce4150a1bf7ab97ea59e0e94d5a2f4687d9e5b97406b009e483c26666701feee",
-  "96a3e72802a632343617b60ba448fc4b66def4e21bb1bfa82314caa34ad3c703",
+  "2eca708ec630786e19eaed4732378548ec6a85084c8a0a0c5bee002b158db0d0",
+  "43a49aba3f76f720bf521ae045cf27409ced33cdcd46a262d3a74a03217b20f9",
+  "f1f00264bacbbae7004334a7442785487525c32cd7743e690e8b575e5bf8bea8",
+  "4a22c4711f17407db9e00447ce3d3944304fb6c5df1069be8355fb080c48659d",
+  "c0ebb10b178bc4d57d0cad8a47877042e52378917e76c40bae08d624fcf746b8",
+  "5f8680d26412c62a65dfc9b9182d17b0a12d3c809c8204aa0c8709f6e522f9f5",
 ];
 
 const FX = 1; // render layer for things with no ink line (sky, light, labels)

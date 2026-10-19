@@ -305,7 +305,7 @@ button {
 
 .hero-lede {
   margin: 0;
-  max-width: 44ch;
+  max-width: 40ch;
   font-size: var(--t-lede);
   line-height: 1.5;
   letter-spacing: -0.005em;

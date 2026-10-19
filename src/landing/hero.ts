@@ -19,7 +19,8 @@ const TESTNET_ENTRY = { txid: "33b8f3b0aa754e790e9c7fac0ae7dc08ce8612a8c26620d55
 
 export const SPEC_URL = "https://github.com/JitsuinFi/jitsuinfi-zcash/blob/main/docs/zip-shielded-receivable-registry.md";
 
-const LEDE = "Private invoice financing on Zcash. One fingerprint per invoice on a public board, so it is financed once. Everything else stays shielded.";
+const LEDE =
+  "The private invoice fund on Zcash. Every receivable leaves one fingerprint on a public board, so it is registered once and financed once. Amounts, parties and documents stay in the shielded pool.";
 
 interface Episode {
   kanji: string;
@@ -123,8 +124,10 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
     });
     title.append(l);
   };
-  line("Zcash stops double-spending.", "hero-line-1");
-  line("JitsuinFi stops double-financing.", "hero-line-2", "JitsuinFi");
+  // three beats: the asset (RWA), the money (private), the guarantee (the seal, once)
+  line("Real invoices.", "hero-line-1");
+  line("Private capital.", "hero-line-1");
+  line("Financed once.", "hero-line-2", "Financed");
   const lede = el("p", "hero-lede", LEDE);
   const calls = el("div", "hero-calls");
   const demo = el("a", "seal-btn");

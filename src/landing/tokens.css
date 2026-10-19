@@ -24,6 +24,9 @@
   --glass-edge: rgba(252, 252, 254, .5);
   --glass-soft: rgba(252, 252, 254, .14);
   --veil: rgba(2, 13, 47, .78);            /* --pool, under the copy for contrast */
+  --glass-day: rgba(252, 252, 254, .58);   /* Amendment 3: pills over the daylight town */
+  --glass-day-edge: rgba(252, 252, 254, .95);
+  --veil-day: rgba(246, 245, 252, .9);     /* --paper, behind the copy over the sky */
 
   /* type */
   --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;

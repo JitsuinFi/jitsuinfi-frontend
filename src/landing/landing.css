@@ -90,7 +90,8 @@ button {
 
 .hero {
   position: relative;
-  height: max(100svh, 700px);
+  display: flex;
+  min-height: max(100svh, 700px);
   overflow: hidden;
   isolation: isolate;
   background: var(--paper);
@@ -229,13 +230,19 @@ button {
   fill: var(--sheet);
 }
 
-/* copy, top left */
-.hero-copy {
-  position: absolute;
+/* the left column: copy on top, the episode at the foot; in the flow, so they never meet */
+.hero-left {
+  position: relative;
   z-index: 20;
-  left: var(--gutter);
-  top: clamp(108px, 17vh, 168px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
   width: min(42vw, 620px);
+  margin-left: var(--gutter);
+  padding-block: clamp(108px, 17vh, 168px) clamp(32px, 6vh, 64px);
+}
+
+.hero-copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -368,13 +375,10 @@ button {
   color: var(--ink-2);
 }
 
-/* the episode subtitle, bottom left */
+/* the episode subtitle, at the foot of the left column */
 .episode {
-  position: absolute;
-  z-index: 20;
-  left: var(--gutter);
-  bottom: clamp(32px, 6vh, 64px);
-  width: min(40vw, 520px);
+  margin-top: auto;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -507,7 +511,14 @@ button {
 /* narrow: copy on top, the town below, the episode at the foot */
 @media (max-width: 1023px) {
   .hero {
-    height: max(100svh, 760px);
+    min-height: max(100svh, 760px);
+  }
+
+  .hero-left {
+    width: auto;
+    flex: 1;
+    margin-right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
+    padding-block: 88px 84px;
   }
 
   .hero-veil {
@@ -517,9 +528,6 @@ button {
   }
 
   .hero-copy {
-    top: 88px;
-    width: auto;
-    right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
     gap: var(--s-2);
   }
 
@@ -527,11 +535,7 @@ button {
     display: none;
   }
 
-  .episode {
-    width: auto;
-    right: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-right, 0px));
-    bottom: 84px;
-  }
+
 
   .rail {
     left: var(--gutter);
@@ -577,8 +581,11 @@ button {
     display: none;
   }
 
+  .hero-left {
+    padding-top: clamp(96px, 14vh, 140px);
+  }
+
   .hero-copy {
-    top: clamp(96px, 14vh, 140px);
     gap: var(--s-2);
   }
 }

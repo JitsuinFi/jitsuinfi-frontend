@@ -180,7 +180,10 @@ export function mountHero(root: HTMLElement, reduced: boolean): { city: City | n
 
   const flash = el("div", "impact-flash");
   flash.setAttribute("aria-hidden", "true");
-  hero.append(veil, flash, nav, copy, epi, rail);
+  // one column for the copy and the episode subtitle: they stack, so they can never overlap
+  const left = el("div", "hero-left");
+  left.append(copy, epi);
+  hero.append(veil, flash, nav, left, rail);
   root.append(hero);
   hero.setAttribute("aria-describedby", "hero-story");
   const desc = el("p", "sr-only", "An illustrated town plays the life of one invoice: the supplier ships goods, the buyer seals the invoice, only its fingerprint N is posted to a public board while the invoice sinks into a shielded vault, a financier advances cash, a copy sent to a second financier is refused because the same N is already on the board, and the buyer pays on the due date.");

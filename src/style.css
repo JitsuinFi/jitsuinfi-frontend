@@ -182,6 +182,12 @@ table.kv tr:first-child td { border-top: 0; }
 table.kv td:first-child { color: var(--ink-2); width: 36%; }
 table.kv td.mono { font: 400 12.5px/1.5 var(--f-mono); word-break: break-all; }
 
+/* rate index (HNK-08.T3): a table of classes in an inset well that scrolls on its own on phones */
+.table-scroll { overflow-x: auto; border-radius: var(--r-row); }
+table.grid-table th { text-align: left; font: 600 12px/1.2 var(--f-body); color: var(--ink-2); padding: 11px 14px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.grid-table td:first-child { color: var(--head); width: auto; white-space: nowrap; }
+p.note { color: var(--ink-2); margin: 0 0 var(--s-2); font-size: 14px; line-height: 1.5; max-width: 60ch; }
+
 .qr { background: var(--sheet); padding: 14px; display: inline-block; border-radius: var(--r-sheet); box-shadow: var(--sheet-shadow); }
 .qr svg { width: 260px; height: 260px; display: block; }
 

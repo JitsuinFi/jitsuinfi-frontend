@@ -22,6 +22,7 @@ export const doubleSignProof: (a: number, b: number, c: number, d: number, e: nu
 export const financierCommitment: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const financierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
 export const financierSettle: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const historyNext: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
 export const invoiceDecode: (a: number, b: number) => [number, number, number, number];
 export const invoiceEncode: (a: number, b: number) => [number, number, number, number];
 export const invoiceNullifier: (a: number, b: number) => [number, number, number, number];

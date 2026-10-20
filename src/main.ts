@@ -3,7 +3,7 @@ import { roleLabel, type Role } from "./lib/account";
 import { account } from "./lib/app-session";
 import { loadWasm } from "./lib/core";
 import { h } from "./lib/ui";
-import { accountPage } from "./pages/account";
+import { accountPage, onboardingPending } from "./pages/account";
 import { buyerPage } from "./pages/buyer";
 import { financierPage } from "./pages/financier";
 import { memberPage } from "./pages/member";
@@ -52,7 +52,7 @@ function home(): HTMLElement {
 function pageFor(path: string): HTMLElement {
   if (path === "/account") return accountPage();
   const rp = ROLE_PAGES[path];
-  if (rp) return account.current?.role === rp.role ? rp.page() : accountPage(rp.role);
+  if (rp) return account.current?.role === rp.role && !onboardingPending() ? rp.page() : accountPage(rp.role);
   const pub = PUBLIC[path];
   if (pub) return pub.page();
   const hidden = HIDDEN[path];

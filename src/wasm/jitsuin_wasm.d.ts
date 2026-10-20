@@ -50,6 +50,8 @@ export function financierSealAssignment(financier_secret_hex: string, invoice_b6
 
 export function financierSettle(financier_secret_hex: string, invoice_b64: string, assignment_b64: string, repayment_memo_b64: string): string;
 
+export function historyNext(certs_json: string, identity_pk_hex: string, board_json: string): string;
+
 export function invoiceDecode(invoice_b64: string): string;
 
 export function invoiceEncode(json: string): string;
@@ -131,6 +133,7 @@ export interface InitOutput {
     readonly financierCommitment: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly financierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly financierSettle: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly historyNext: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly invoiceDecode: (a: number, b: number) => [number, number, number, number];
     readonly invoiceEncode: (a: number, b: number) => [number, number, number, number];
     readonly invoiceNullifier: (a: number, b: number) => [number, number, number, number];

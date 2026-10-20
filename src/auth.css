@@ -1,7 +1,6 @@
 /* Account / sign-in screen (HNK-22): a consumer login sheet in JitsuinFi's palette.
    Token values come from MASTER.md (§2 colour, §3 type, §5 motion) and src/landing/tokens.css;
-   they apply only while this screen is shown (:root:has(.auth)), so the rest of the app (light and
-   dark) is untouched. Keep them in sync. */
+   they apply only while this screen is shown (:root:has(.auth)). Keep them in sync. */
 @import "@fontsource/shippori-mincho-b1/800.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
@@ -29,15 +28,7 @@
   color-scheme: light;
 }
 
-/* the app shell takes the day paper too while this screen is open */
-:root:has(.auth) body { background: var(--paper); color: var(--ink); }
-:root:has(.auth) header.top { background: var(--paper); border-bottom-color: var(--rule); }
-:root:has(.auth) header.top .brand { color: var(--head); font-family: var(--f-body); }
-:root:has(.auth) header.top nav a { color: var(--ink-2); }
-:root:has(.auth) header.top nav a.active,
-:root:has(.auth) header.top nav a:hover { color: var(--head); background: rgba(70, 29, 58, .07); }
-:root:has(.auth) footer { color: var(--ink-2); }
-:root:has(.auth) .net { color: var(--seal); background: rgba(126, 42, 83, .08); }
+/* the app shell (header, footer) already sits on the day paper: src/style.css (D-36) */
 
 .auth {
   background: var(--paper);

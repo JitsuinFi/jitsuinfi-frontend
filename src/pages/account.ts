@@ -36,6 +36,11 @@ const FIRST_STEP: Record<Role, { label: string; line: string }> = {
 };
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/** True right after sign-up, until the onboarding sheet is left: the router keeps showing it. */
+export function onboardingPending(): boolean {
+  return onboarding && account.current !== null;
+}
+
 export function rolePath(role: Role): string {
   return `#/${role}`;
 }
@@ -389,7 +394,16 @@ function onboardingSheet(paint: () => void): HTMLElement {
       h("li", {}, h("strong", {}, "Your key fingerprint"), h("span", { class: "auth-print" }, s.fingerprint), "It is the same on every device with this passkey. If it ever looks different, you picked another passkey."),
       h("li", {}, h("strong", {}, "Your first step"), h("div", { class: "auth-list" }, start)),
     ),
-    h("p", { class: "auth-switch" }, link("I'll do it later", () => (done(), paint()))),
+    h(
+      "p",
+      { class: "auth-switch" },
+      link("I'll do it later", () => {
+        done();
+        // Opened from a role screen: show that screen now; from the account page: the role list.
+        if (location.hash !== "#/account") window.dispatchEvent(new HashChangeEvent("hashchange"));
+        else paint();
+      }),
+    ),
   );
 }
 

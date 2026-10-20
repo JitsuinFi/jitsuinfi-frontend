@@ -1,6 +1,35 @@
 /* @ts-self-types="./jitsuin_wasm.d.ts" */
 
 /**
+ * Fields of an assignment letter; pass the invoice (or "") to check that the letter is for it.
+ * @param {string} assignment_b64
+ * @param {string} invoice_b64
+ * @returns {string}
+ */
+export function assignmentDecode(assignment_b64, invoice_b64) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.assignmentDecode(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * @param {string} invoice_b64
  * @param {string} financier_pk_hex
  * @param {string} financier_address
@@ -179,6 +208,41 @@ export function buyerHistoryCert(master_hex, index, invoice_b64, financier_pk_he
 }
 
 /**
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @param {string} invoice_b64
+ * @param {string} financier_pk_hex
+ * @param {string} prev_b64
+ * @returns {string}
+ */
+export function buyerHistoryCertBytes(master, index, invoice_b64, financier_pk_hex, prev_b64) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(financier_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(prev_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerHistoryCertBytes(ptr0, len0, master, index, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
  * @param {string} master_hex
  * @param {number} index
  * @returns {string}
@@ -190,6 +254,32 @@ export function buyerKeys(master_hex, index) {
         const ptr0 = passStringToWasm0(master_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.buyerKeys(ptr0, len0, index);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @returns {string}
+ */
+export function buyerKeysBytes(master, index) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerKeysBytes(ptr0, len0, master, index);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -223,6 +313,39 @@ export function buyerRepayment(master_hex, index, invoice_b64, assignment_b64, d
         const ptr2 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
         const ret = wasm.buyerRepayment(ptr0, len0, index, ptr1, len1, ptr2, len2, date);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @param {string} invoice_b64
+ * @param {string} assignment_b64
+ * @param {number} date
+ * @returns {string}
+ */
+export function buyerRepaymentBytes(master, index, invoice_b64, assignment_b64, date) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerRepaymentBytes(ptr0, len0, master, index, ptr1, len1, ptr2, len2, date);
         var ptr4 = ret[0];
         var len4 = ret[1];
         if (ret[3]) {
@@ -273,6 +396,41 @@ export function buyerSealAssignment(master_hex, index, invoice_b64, assignment_b
 }
 
 /**
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @param {string} invoice_b64
+ * @param {string} assignment_b64
+ * @param {string} supplier_seal_b64
+ * @returns {string}
+ */
+export function buyerSealAssignmentBytes(master, index, invoice_b64, assignment_b64, supplier_seal_b64) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(supplier_seal_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerSealAssignmentBytes(ptr0, len0, master, index, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
  * @param {string} master_hex
  * @param {number} index
  * @param {string} invoice_b64
@@ -287,6 +445,35 @@ export function buyerSignInvoice(master_hex, index, invoice_b64) {
         const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.buyerSignInvoice(ptr0, len0, index, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @param {string} invoice_b64
+ * @returns {string}
+ */
+export function buyerSignInvoiceBytes(master, index, invoice_b64) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerSignInvoiceBytes(ptr0, len0, master, index, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
         if (ret[3]) {
@@ -321,15 +508,19 @@ export function documentHash(file) {
 }
 
 /**
+ * `first_at` and `second_at`: board positions as JSON `{txid, height, tx_index, output_index}`
+ * (omit for an entry that is not on chain; `jitsuin verify` needs the first one).
  * @param {string} invoice_b64
  * @param {string} buyer_signature_hex
  * @param {string} first_memo_b64
  * @param {string} second_memo_b64
+ * @param {string | null} [first_at]
+ * @param {string | null} [second_at]
  * @returns {string}
  */
-export function doubleSignProof(invoice_b64, buyer_signature_hex, first_memo_b64, second_memo_b64) {
-    let deferred6_0;
-    let deferred6_1;
+export function doubleSignProof(invoice_b64, buyer_signature_hex, first_memo_b64, second_memo_b64, first_at, second_at) {
+    let deferred8_0;
+    let deferred8_1;
     try {
         const ptr0 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
@@ -339,18 +530,50 @@ export function doubleSignProof(invoice_b64, buyer_signature_hex, first_memo_b64
         const len2 = WASM_VECTOR_LEN;
         const ptr3 = passStringToWasm0(second_memo_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len3 = WASM_VECTOR_LEN;
-        const ret = wasm.doubleSignProof(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-        var ptr5 = ret[0];
-        var len5 = ret[1];
+        var ptr4 = isLikeNone(first_at) ? 0 : passStringToWasm0(first_at, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len4 = WASM_VECTOR_LEN;
+        var ptr5 = isLikeNone(second_at) ? 0 : passStringToWasm0(second_at, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len5 = WASM_VECTOR_LEN;
+        const ret = wasm.doubleSignProof(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, ptr5, len5);
+        var ptr7 = ret[0];
+        var len7 = ret[1];
         if (ret[3]) {
-            ptr5 = 0; len5 = 0;
+            ptr7 = 0; len7 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred6_0 = ptr5;
-        deferred6_1 = len5;
-        return getStringFromWasm0(ptr5, len5);
+        deferred8_0 = ptr7;
+        deferred8_1 = len7;
+        return getStringFromWasm0(ptr7, len7);
     } finally {
-        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+        wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
+    }
+}
+
+/**
+ * @param {string} financier_secret_hex
+ * @param {string} invoice_b64
+ * @returns {string}
+ */
+export function financierCommitment(financier_secret_hex, invoice_b64) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(financier_secret_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.financierCommitment(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -523,13 +746,89 @@ export function publicKey(secret_hex) {
 }
 
 /**
+ * 64 bytes: AES-256-GCM key, then HMAC-SHA-256 index key, for the encrypted local deal store.
+ * @param {Uint8Array} master
+ * @returns {Uint8Array}
+ */
+export function storageKeysBytes(master) {
+    var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+    var len0 = WASM_VECTOR_LEN;
+    const ret = wasm.storageKeysBytes(ptr0, len0, master);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v2;
+}
+
+/**
+ * Public key (hex) of the supplier's per-invoice key for `invoice_id` and the buyer's
+ * `invoice_pk(k)`.
+ * @param {Uint8Array} master
+ * @param {string} invoice_id
+ * @param {string} buyer_pk_hex
+ * @returns {string}
+ */
+export function supplierInvoicePublicKeyBytes(master, invoice_id, buyer_pk_hex) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(buyer_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierInvoicePublicKeyBytes(ptr0, len0, master, ptr1, len1, ptr2, len2);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * The per-invoice secret as 32 bytes, to hand to a supplier `*Bytes` function (which wipes it).
+ * @param {Uint8Array} master
+ * @param {string} invoice_id
+ * @param {string} buyer_pk_hex
+ * @returns {Uint8Array}
+ */
+export function supplierInvoiceSecretBytes(master, invoice_id, buyer_pk_hex) {
+    var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+    var len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(invoice_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(buyer_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.supplierInvoiceSecretBytes(ptr0, len0, master, ptr1, len1, ptr2, len2);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v4 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v4;
+}
+
+/**
+ * `discount` and `tenor` are the classes from the financier (both or neither; omitted = `0/0`).
  * @param {string} supplier_secret_hex
  * @param {string} invoice_b64
  * @param {string} financier_pk_hex
  * @param {string} salt_hex
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
  * @returns {string}
  */
-export function supplierRegisterEntry(supplier_secret_hex, invoice_b64, financier_pk_hex, salt_hex) {
+export function supplierRegisterEntry(supplier_secret_hex, invoice_b64, financier_pk_hex, salt_hex, discount, tenor) {
     let deferred6_0;
     let deferred6_1;
     try {
@@ -541,7 +840,43 @@ export function supplierRegisterEntry(supplier_secret_hex, invoice_b64, financie
         const len2 = WASM_VECTOR_LEN;
         const ptr3 = passStringToWasm0(salt_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len3 = WASM_VECTOR_LEN;
-        const ret = wasm.supplierRegisterEntry(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        const ret = wasm.supplierRegisterEntry(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} supplier_secret
+ * @param {string} invoice_b64
+ * @param {string} financier_pk_hex
+ * @param {string} salt_hex
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
+ * @returns {string}
+ */
+export function supplierRegisterEntryBytes(supplier_secret, invoice_b64, financier_pk_hex, salt_hex, discount, tenor) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        var ptr0 = passArray8ToWasm0(supplier_secret, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(financier_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(salt_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierRegisterEntryBytes(ptr0, len0, supplier_secret, ptr1, len1, ptr2, len2, ptr3, len3, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
         var ptr5 = ret[0];
         var len5 = ret[1];
         if (ret[3]) {
@@ -562,9 +897,11 @@ export function supplierRegisterEntry(supplier_secret_hex, invoice_b64, financie
  * @param {string} financier_pk_hex
  * @param {string} salt_hex
  * @param {string} cert_b64
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
  * @returns {string}
  */
-export function supplierRegisterHistoryEntry(supplier_secret_hex, invoice_b64, financier_pk_hex, salt_hex, cert_b64) {
+export function supplierRegisterHistoryEntry(supplier_secret_hex, invoice_b64, financier_pk_hex, salt_hex, cert_b64, discount, tenor) {
     let deferred7_0;
     let deferred7_1;
     try {
@@ -578,7 +915,125 @@ export function supplierRegisterHistoryEntry(supplier_secret_hex, invoice_b64, f
         const len3 = WASM_VECTOR_LEN;
         const ptr4 = passStringToWasm0(cert_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len4 = WASM_VECTOR_LEN;
-        const ret = wasm.supplierRegisterHistoryEntry(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4);
+        const ret = wasm.supplierRegisterHistoryEntry(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
+        var ptr6 = ret[0];
+        var len6 = ret[1];
+        if (ret[3]) {
+            ptr6 = 0; len6 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred7_0 = ptr6;
+        deferred7_1 = len6;
+        return getStringFromWasm0(ptr6, len6);
+    } finally {
+        wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} supplier_secret
+ * @param {string} invoice_b64
+ * @param {string} financier_pk_hex
+ * @param {string} salt_hex
+ * @param {string} cert_b64
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
+ * @returns {string}
+ */
+export function supplierRegisterHistoryEntryBytes(supplier_secret, invoice_b64, financier_pk_hex, salt_hex, cert_b64, discount, tenor) {
+    let deferred7_0;
+    let deferred7_1;
+    try {
+        var ptr0 = passArray8ToWasm0(supplier_secret, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(financier_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(salt_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passStringToWasm0(cert_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len4 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierRegisterHistoryEntryBytes(ptr0, len0, supplier_secret, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
+        var ptr6 = ret[0];
+        var len6 = ret[1];
+        if (ret[3]) {
+            ptr6 = 0; len6 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred7_0 = ptr6;
+        deferred7_1 = len6;
+        return getStringFromWasm0(ptr6, len6);
+    } finally {
+        wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
+    }
+}
+
+/**
+ * Register memo carrying a history tag (hex) from the financier, without certificate k.
+ * @param {string} supplier_secret_hex
+ * @param {string} invoice_b64
+ * @param {string} financier_pk_hex
+ * @param {string} salt_hex
+ * @param {string} history_tag_hex
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
+ * @returns {string}
+ */
+export function supplierRegisterTaggedEntry(supplier_secret_hex, invoice_b64, financier_pk_hex, salt_hex, history_tag_hex, discount, tenor) {
+    let deferred7_0;
+    let deferred7_1;
+    try {
+        const ptr0 = passStringToWasm0(supplier_secret_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(financier_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(salt_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passStringToWasm0(history_tag_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len4 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierRegisterTaggedEntry(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
+        var ptr6 = ret[0];
+        var len6 = ret[1];
+        if (ret[3]) {
+            ptr6 = 0; len6 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred7_0 = ptr6;
+        deferred7_1 = len6;
+        return getStringFromWasm0(ptr6, len6);
+    } finally {
+        wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} supplier_secret
+ * @param {string} invoice_b64
+ * @param {string} financier_pk_hex
+ * @param {string} salt_hex
+ * @param {string} history_tag_hex
+ * @param {number | null} [discount]
+ * @param {number | null} [tenor]
+ * @returns {string}
+ */
+export function supplierRegisterTaggedEntryBytes(supplier_secret, invoice_b64, financier_pk_hex, salt_hex, history_tag_hex, discount, tenor) {
+    let deferred7_0;
+    let deferred7_1;
+    try {
+        var ptr0 = passArray8ToWasm0(supplier_secret, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(financier_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(salt_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passStringToWasm0(history_tag_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len4 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierRegisterTaggedEntryBytes(ptr0, len0, supplier_secret, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, isLikeNone(discount) ? 0xFFFFFF : discount, isLikeNone(tenor) ? 0xFFFFFF : tenor);
         var ptr6 = ret[0];
         var len6 = ret[1];
         if (ret[3]) {
@@ -610,6 +1065,37 @@ export function supplierSealAssignment(supplier_secret_hex, invoice_b64, assignm
         const ptr2 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
         const ret = wasm.supplierSealAssignment(ptr0, len0, ptr1, len1, ptr2, len2);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * @param {Uint8Array} supplier_secret
+ * @param {string} invoice_b64
+ * @param {string} assignment_b64
+ * @returns {string}
+ */
+export function supplierSealAssignmentBytes(supplier_secret, invoice_b64, assignment_b64) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        var ptr0 = passArray8ToWasm0(supplier_secret, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(invoice_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(assignment_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.supplierSealAssignmentBytes(ptr0, len0, supplier_secret, ptr1, len1, ptr2, len2);
         var ptr4 = ret[0];
         var len4 = ret[1];
         if (ret[3]) {
@@ -716,6 +1202,9 @@ function __wbg_get_imports() {
             const ret = Error(getStringFromWasm0(arg0, arg1));
             return ret;
         },
+        __wbg___wbindgen_copy_to_typed_array_88899a52af046901: function(arg0, arg1, arg2) {
+            new Uint8Array(arg2.buffer, arg2.byteOffset, arg2.byteLength).set(getArrayU8FromWasm0(arg0, arg1));
+        },
         __wbindgen_init_externref_table: function() {
             const table = wasm.__wbindgen_externrefs;
             const offset = table.grow(4);
@@ -732,6 +1221,11 @@ function __wbg_get_imports() {
     };
 }
 
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
 function getStringFromWasm0(ptr, len) {
     return decodeText(ptr >>> 0, len);
 }
@@ -742,6 +1236,10 @@ function getUint8ArrayMemory0() {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
 }
 
 function passArray8ToWasm0(arg, malloc) {

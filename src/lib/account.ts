@@ -58,10 +58,14 @@ export function isNonProductionHost(hostname: string): boolean {
 
 // ---------- local profile (BL-D21-03) ----------
 
-/** Non-secret: which credential and which roles this browser has used. Allowed to vanish. */
+/**
+ * Non-secret: which credential and which roles this browser has used, and the account details
+ * typed at sign-up (`label` is the username, also the passkey's name). Allowed to vanish. Until
+ * the account server exists (relay HNK-23, D-34) this is the only place the email is kept.
+ */
 export interface Profile {
   v: 1;
-  credentials: Array<{ id: string; roles: Role[]; label: string; created_at: number }>;
+  credentials: Array<{ id: string; roles: Role[]; label: string; created_at: number; email?: string }>;
 }
 
 export const PROFILE_KEY = "jitsuinfi-profile";
@@ -90,6 +94,7 @@ export function readProfile(kv: KeyValue | null): Profile {
         roles: Array.isArray(c.roles) ? c.roles.filter(isRole) : [],
         label: typeof c.label === "string" ? c.label : "JitsuinFi",
         created_at: Number(c.created_at) || 0,
+        ...(typeof c.email === "string" && c.email ? { email: c.email } : {}),
       }));
     return { v: 1, credentials };
   } catch {
@@ -118,6 +123,41 @@ export function rememberRole(p: Profile, id: string, role: Role, now: number): P
   }
   c.roles = [...c.roles.filter((r) => r !== role), role];
   return { v: 1, credentials };
+}
+
+/** Stores the sign-up details for credential `id`. */
+export function rememberAccount(p: Profile, id: string, who: { username: string; email?: string }, now: number): Profile {
+  const credentials = p.credentials.map((c) => ({ ...c, roles: [...c.roles] }));
+  let c = credentials.find((x) => x.id === id);
+  if (!c) {
+    c = { id, roles: [], label: who.username, created_at: now };
+    credentials.push(c);
+  }
+  c.label = who.username;
+  if (who.email) c.email = who.email;
+  return { v: 1, credentials };
+}
+
+/** The credential this browser knows under `username`, if any. */
+export function findByUsername(p: Profile, username: string): Profile["credentials"][number] | undefined {
+  const u = normalizeUsername(username);
+  return p.credentials.find((c) => c.label === u);
+}
+
+/** Usernames: 3 – 20 characters, lowercase letters, digits, dot and underscore, starting with a letter or digit. */
+export function normalizeUsername(s: string): string {
+  return s.trim().replace(/^@/, "").toLowerCase();
+}
+
+export function usernameProblem(s: string): string | null {
+  const u = normalizeUsername(s);
+  if (u.length < 3 || u.length > 20) return "Use 3 to 20 characters.";
+  if (!/^[a-z0-9][a-z0-9._]*$/.test(u)) return "Use letters, digits, dot or underscore, and start with a letter or digit.";
+  return null;
+}
+
+export function emailProblem(s: string): string | null {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim()) ? null : "Enter an email address like name@example.com.";
 }
 
 /** Credential ids for `excludeCredentials` (register) and `allowCredentials` (sign in). */

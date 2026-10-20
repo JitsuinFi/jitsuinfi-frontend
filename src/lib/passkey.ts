@@ -55,13 +55,13 @@ function outputs(credentialId: string, ext: PrfResults | undefined): PrfOutput |
  * knows). The name is "JitsuinFi" for every role. Returns the PRF output for `role` when the
  * authenticator gives it at creation, otherwise `null` (then call `evaluatePrf`).
  */
-export async function registerPasskey(role: Role, known: string[]): Promise<{ credentialId: string; out: PrfOutput | null }> {
+export async function registerPasskey(role: Role, known: string[], name = "JitsuinFi"): Promise<{ credentialId: string; out: PrfOutput | null }> {
   let cred: PublicKeyCredential | null;
   try {
     cred = (await navigator.credentials.create({
       publicKey: {
         rp: { id: rpId(), name: "JitsuinFi" },
-        user: { id: random(16), name: "JitsuinFi", displayName: "JitsuinFi" },
+        user: { id: random(16), name, displayName: name },
         challenge: random(32),
         pubKeyCredParams: [
           { type: "public-key", alg: -7 },

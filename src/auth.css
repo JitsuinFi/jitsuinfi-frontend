@@ -215,6 +215,78 @@ main:has(> .auth) { max-width: none; padding: 0; }
 }
 .auth-button.is-secondary { background: rgba(126, 42, 83, .08); color: var(--seal); }
 
+/* ---------- forms ---------- */
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+
+.auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-field > span { font-size: 13px; font-weight: 600; color: var(--head); }
+.auth-field input {
+  font: 400 16px/1.3 var(--f-body);
+  color: var(--head);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 13px 14px;
+  transition: border-color var(--dur-fade) ease;
+}
+.auth-field input:focus { border-color: var(--seal); outline: none; box-shadow: 0 0 0 3px rgba(126, 42, 83, .12); }
+.auth-field input[aria-invalid="true"] { border-color: var(--seal); }
+.auth-field small { font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.auth-field .auth-field-error { color: var(--seal); font-weight: 500; }
+.auth-field .auth-field-error:empty { display: none; }
+
+.auth-roles { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.auth-roles legend { padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--head); }
+.auth-row.is-choice .is-check { visibility: hidden; }
+.auth-row.is-choice[aria-checked="true"] { border-color: var(--seal); background: rgba(236, 208, 236, .18); }
+.auth-row.is-choice[aria-checked="true"] .is-check { visibility: visible; }
+
+.auth-button.is-primary { background: var(--seal); color: var(--sheet); width: 100%; min-height: 50px; font-size: 16px; }
+.auth-button.is-primary:hover { background: var(--seal-hi); }
+.auth-button.is-primary:active { transform: scale(.985); }
+
+.auth-switch { margin: 0; text-align: center; font-size: 14px; color: var(--ink-2); }
+.auth-switch .auth-link { padding: 6px 4px; }
+
+.auth-sub.is-left { max-width: none; text-align: left; }
+
+.auth-who { margin: -6px 0 0; display: flex; justify-content: center; align-items: center; gap: 4px; }
+.auth-chip { padding: 6px 12px; border-radius: 999px; background: rgba(126, 42, 83, .08); color: var(--seal); font-weight: 600; font-size: 14px; }
+
+/* sign-up progress */
+.auth-steps { list-style: none; margin: 0 0 6px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
+.auth-steps li { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); text-align: left; }
+.auth-steps-bar { height: 4px; border-radius: 999px; background: rgba(70, 29, 58, .1); }
+.auth-steps li.is-done .auth-steps-bar,
+.auth-steps li.is-now .auth-steps-bar { background: var(--seal); }
+.auth-steps li.is-now { color: var(--head); font-weight: 600; }
+
+/* passkey explainer */
+.auth-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.auth-points li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.auth-points .auth-ico { width: 24px; height: 24px; margin-top: 2px; }
+.auth-points strong { display: block; color: var(--head); font-weight: 600; }
+
+/* onboarding */
+.auth-onboard { margin: 0; padding: 0; list-style: none; counter-reset: ob; display: flex; flex-direction: column; gap: 18px; }
+.auth-onboard > li { counter-increment: ob; display: flex; flex-direction: column; gap: 6px; padding-left: 36px; position: relative; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.auth-onboard > li::before {
+  content: counter(ob);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--seal);
+  color: var(--sheet);
+  font: 600 13px/1 var(--f-body);
+}
+.auth-onboard strong { color: var(--head); font-weight: 600; font-size: 15px; }
+.auth-onboard .auth-print { font: 500 16px/1.4 var(--f-mono); letter-spacing: .04em; color: var(--head); }
+
 @media (max-width: 480px) {
   .auth { justify-items: stretch; align-items: start; padding-top: 16px; }
   .auth-sheet { max-width: none; }

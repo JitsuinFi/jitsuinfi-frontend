@@ -9,12 +9,12 @@
 //
 // Dependencies are passed in, so tests run this under Node without WebAuthn or wasm.
 
-import { IDLE_LOCK_MS, credentialIds, fingerprint, readProfile, rememberRole, signs, writeProfile, type KeyValue, type Role } from "./account.ts";
+import { IDLE_LOCK_MS, credentialIds, findByUsername, fingerprint, normalizeUsername, readProfile, rememberAccount, rememberRole, signs, writeProfile, type KeyValue, type Role } from "./account.ts";
 import type { PrfOutput } from "./passkey";
 import type { DealStore } from "./store";
 
 export interface KeySource {
-  register(role: Role, known: string[]): Promise<{ credentialId: string; out: PrfOutput | null }>;
+  register(role: Role, known: string[], name?: string): Promise<{ credentialId: string; out: PrfOutput | null }>;
   evaluate(role: Role, allow: string[]): Promise<PrfOutput>;
 }
 
@@ -84,10 +84,51 @@ export class Account {
     return p.credentials.at(-1)?.roles.at(-1) ?? null;
   }
 
-  /** Creates the person's one passkey and signs in to `role` with it. */
-  async register(role: Role): Promise<Session> {
-    const { credentialId, out } = await this.deps.keys.register(role, this.knownCredentials());
-    return this.start(role, out ?? (await this.deps.keys.evaluate(role, [credentialId])), false);
+  /**
+   * Creates the person's one passkey and signs in to `role` with it. `who` (sign-up details) names
+   * the passkey after the username and is kept in the local profile.
+   */
+  async register(role: Role, who?: { username: string; email?: string }): Promise<Session> {
+    const username = who ? normalizeUsername(who.username) : undefined;
+    const { credentialId, out } = await this.deps.keys.register(role, this.knownCredentials(), username);
+    const prf = out ?? (await this.deps.keys.evaluate(role, [credentialId]));
+    // Written before the session starts: the session's first render reads the username.
+    if (username) writeProfile(this.deps.profile, rememberAccount(readProfile(this.deps.profile), credentialId, { username, email: who!.email?.trim() }, this.now()));
+    return this.start(role, prf, false);
+  }
+
+  /**
+   * Signs in by username: the passkey this browser knows under that name, or, on a new device, any
+   * passkey the user picks (then remembered under that name). Opens `role`, else the last role.
+   */
+  async signInAs(username: string, role?: Role): Promise<Session> {
+    const u = normalizeUsername(username);
+    const known = findByUsername(readProfile(this.deps.profile), u);
+    const r = role ?? known?.roles.at(-1) ?? "supplier";
+    const prf = await this.deps.keys.evaluate(r, known ? [known.id] : []);
+    if (!known) {
+      const owner = readProfile(this.deps.profile).credentials.find((c) => c.id === prf.credentialId);
+      if (owner && owner.label !== "JitsuinFi" && owner.label !== u) {
+        prf.first.fill(0);
+        prf.second.fill(0);
+        throw new Error(`this passkey belongs to @${owner.label}; log in as @${owner.label}`);
+      }
+      writeProfile(this.deps.profile, rememberAccount(readProfile(this.deps.profile), prf.credentialId, { username: u }, this.now()));
+    }
+    return this.start(r, prf, false);
+  }
+
+  /** Username and email of the signed-in passkey, from the local profile. */
+  who(): { username: string; email?: string } | null {
+    const id = this.session?.credentialId;
+    if (!id) return null;
+    const c = readProfile(this.deps.profile).credentials.find((x) => x.id === id);
+    return c && c.label !== "JitsuinFi" ? { username: c.label, email: c.email } : null;
+  }
+
+  /** Whether this browser already has an account under `username`. */
+  usernameKnown(username: string): boolean {
+    return findByUsername(readProfile(this.deps.profile), username) !== undefined;
   }
 
   /** Signs in to `role`. `anyPasskey` lets the user pick a passkey this browser does not know. */

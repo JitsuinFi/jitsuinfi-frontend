@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   credentialIds,
+  emailProblem,
   emptyProfile,
   fingerprint,
   fromB64url,
@@ -15,6 +16,7 @@ import {
   rememberRole,
   rpIdFor,
   toB64url,
+  usernameProblem,
   writeProfile,
   type KeyValue,
   type Role,
@@ -225,4 +227,52 @@ test("the profile records the roles used", async () => {
   await acct.switchRole("supplier");
   assert.equal(acct.lastRole(), "supplier");
   assert.deepEqual(readProfile(kv).credentials[0].roles, ["member", "supplier"]);
+});
+
+test("usernames and emails are checked", () => {
+  assert.equal(usernameProblem("Hans_01"), null);
+  assert.equal(usernameProblem("@hans.g"), null);
+  assert.ok(usernameProblem("ab"));
+  assert.ok(usernameProblem("_hans"));
+  assert.ok(usernameProblem("hans gunawan"));
+  assert.equal(emailProblem("name@example.com"), null);
+  assert.ok(emailProblem("name@example"));
+  assert.ok(emailProblem("not an email"));
+});
+
+test("sign-up keeps username and email; sign-in by username opens the last role with that passkey", async () => {
+  const kv = new MapStorage();
+  const { auth, acct } = setup(kv);
+  const s = await acct.register("buyer", { username: "Hans_01", email: " hans@example.com " });
+  assert.deepEqual(acct.who(), { username: "hans_01", email: "hans@example.com" });
+  assert.ok(acct.usernameKnown("@HANS_01"));
+  acct.lock();
+  auth.passkeys.set("decoy", crypto.getRandomValues(new Uint8Array(32)));
+  auth.pick = "decoy"; // a picker would offer another passkey; the username must select ours
+  const again = await acct.signInAs("hans_01");
+  assert.equal(again.credentialId, s.credentialId);
+  assert.equal(again.role, "buyer");
+  assert.equal(again.fingerprint, s.fingerprint);
+});
+
+test("sign-in by a username this device does not know uses any passkey and remembers it", async () => {
+  const first = setup();
+  const s = await first.acct.register("supplier", { username: "dex" });
+  const other = setup(new MapStorage()); // a new device with the synced passkey
+  other.auth.passkeys = first.auth.passkeys;
+  other.auth.pick = s.credentialId;
+  assert.ok(!other.acct.usernameKnown("dex"));
+  const t = await other.acct.signInAs("dex");
+  assert.equal(t.fingerprint, s.fingerprint);
+  assert.ok(other.acct.usernameKnown("dex"));
+});
+
+test("a passkey known under another username is refused, not renamed", async () => {
+  const kv = new MapStorage();
+  const { acct } = setup(kv);
+  await acct.register("supplier", { username: "hans" });
+  acct.lock();
+  await assert.rejects(acct.signInAs("someoneelse"), /belongs to @hans/);
+  assert.ok(acct.usernameKnown("hans"));
+  assert.ok(!acct.usernameKnown("someoneelse"));
 });

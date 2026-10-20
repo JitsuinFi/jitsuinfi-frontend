@@ -89,10 +89,11 @@ textarea { font-family: var(--mono); font-size: 12px; min-height: 76px; resize: 
 input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 
-button {
+button, a.button {
   font: 600 14px var(--sans); border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
   padding: 9px 16px; border-radius: 8px; cursor: pointer;
 }
+a.button { display: inline-block; text-decoration: none; }
 button.secondary { background: transparent; color: var(--text); border-color: var(--line); }
 button:disabled { opacity: .5; cursor: default; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
@@ -140,3 +141,10 @@ ol.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 1
 .chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
 .chip.done { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
 .chip.next { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* account (HNK-22) */
+.demo { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.demo h3 { margin: 0 0 8px; font-size: 15px; }
+.who { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.roles { margin-bottom: 14px; }
+.roles button[aria-checked="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }

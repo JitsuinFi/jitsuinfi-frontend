@@ -1,13 +1,13 @@
-// Supplier screen (HNK-10.T2; HNK-24.T2, T4 – T9): unlock with the supplier passkey, keep every
-// deal in the encrypted device store, and walk each deal from invoice to advance.
+// Supplier screen (HNK-10.T2; HNK-24.T2, T4 – T9; HNK-22.T4): opens in a supplier session, keeps
+// every deal in the encrypted device store, and walks each deal from invoice to advance.
 //
 // Keys: the per-invoice key comes from the supplier master (P-03, HNK-24.T1), so there is no secret
-// to back up. The master stays in this tab's memory while unlocked; every jitsuin-wasm `*Bytes`
-// call gets a copy and zeroes it. Documents travel by copy-paste until the relay exists (HNK-23);
+// to back up. No master stays in this tab: every action that needs a key is a stamp (one passkey
+// touch, `account.stamp()`), and the jitsuin-wasm `*Bytes` call zeroes it. Documents travel by
+// copy-paste until the relay exists (HNK-23);
 // the financier is chosen by pasting its key until contacts exist (HNK-22).
-import { dateToDays, daysToDate, fileHash, json, openDealStore, wasm, zatToZec, zecToZat } from "../lib/core";
-import { createPasskey, masterBytesFromPasskey, passkeysAvailable } from "../lib/passkey";
-import type { DealStore } from "../lib/store";
+import { account } from "../lib/app-session";
+import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import {
   decodeEntryRequest,
   encodeOffer,
@@ -22,18 +22,11 @@ import {
 } from "../lib/supplier-deal";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page } from "../lib/ui";
 
-// In memory only, for this tab: survives moving between screens, gone when the tab closes.
-let master: Uint8Array | null = null;
-let store: DealStore | null = null;
+// The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
-
-function bytesFromHex(s: string): Uint8Array {
-  if (!HEX64.test(s)) throw new Error("expected 64 hex characters");
-  return Uint8Array.from(s.match(/../g)!.map((b) => parseInt(b, 16)));
-}
 
 function hex64(value: string, what: string): string {
   const v = value.trim().toLowerCase();
@@ -41,27 +34,15 @@ function hex64(value: string, what: string): string {
   return v;
 }
 
-/** Fresh per-invoice secret for `d`; the supplier `*Bytes` function that receives it zeroes it. */
-function secretFor(d: SupplierDeal): Uint8Array {
-  if (!master) throw new Error("unlock with your passkey first");
-  return wasm.supplierInvoiceSecretBytes(master.slice(), d.invoice_id, d.buyer_pk);
+/** Per-invoice secret for `d` from one stamp; the supplier `*Bytes` function that receives it zeroes it. */
+async function secretFor(d: SupplierDeal): Promise<Uint8Array> {
+  return wasm.supplierInvoiceSecretBytes(await account.stamp(), d.invoice_id, d.buyer_pk);
 }
 
 async function save(d: SupplierDeal): Promise<void> {
-  if (!store) throw new Error("unlock with your passkey first");
+  const store = account.current?.store;
+  if (!store) throw new Error("sign in as supplier first");
   await store.put(d.n, d);
-}
-
-async function unlock(bytes: Uint8Array): Promise<void> {
-  master = bytes.slice();
-  store = await openDealStore("supplier", bytes);
-}
-
-function lock(): void {
-  master?.fill(0);
-  master = null;
-  store = null;
-  current = null;
 }
 
 export function supplierPage(): HTMLElement {
@@ -74,81 +55,16 @@ export function supplierPage(): HTMLElement {
 }
 
 async function render(root: HTMLElement, refresh: () => void): Promise<void> {
-  if (!master || !store) {
-    root.replaceChildren(page("Supplier", LEAD, unlockCard(refresh)));
-    return;
-  }
+  const store = account.current?.store;
+  if (!store) return;
   const deals = sortDeals((await store.list<SupplierDeal>()).map((r) => r.doc));
   const open = deals.find((d) => d.n === current) ?? null;
-  const cards = [sessionCard(deals.length, refresh), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
+  const cards: HTMLElement[] = [dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
+  if (!store.persistent) {
+    cards.unshift(banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes."));
+  }
   if (open) cards.push(...dealCards(open, refresh));
   root.replaceChildren(page("Supplier", LEAD, ...cards));
-}
-
-// ---------- unlock (HNK-24.T2) ----------
-
-function unlockCard(refresh: () => void): HTMLElement {
-  const out = new Out();
-  const test = field("Or use a test secret", {
-    placeholder: "64 hex characters",
-    help: "Demo only, for TES- data on a device without passkeys. Anyone with it can act as this supplier.",
-  });
-  const viaPasskey = passkeysAvailable()
-    ? actions(
-        button("Unlock with passkey", async () => {
-          try {
-            await unlock(await masterBytesFromPasskey("supplier"));
-            refresh();
-          } catch (e) {
-            out.error(e);
-          }
-        }),
-        button("Create a passkey", async () => {
-          try {
-            await createPasskey();
-            out.show(banner("ok", "Passkey created", "Now unlock with it. The same passkey also unlocks the buyer screen with separate keys."));
-          } catch (e) {
-            out.error(e);
-          }
-        }, true),
-      )
-    : banner("warn", "No passkeys here", "This browser or connection does not support passkeys. Use a test secret for TES- data.");
-  return card(
-    "Sign in",
-    "Unlock your supplier keys",
-    "Your keys come from a passkey: every invoice gets its own key derived from it, so there is nothing to back up and nobody can link your invoices.",
-    viaPasskey,
-    test.el,
-    actions(
-      button("Use test secret", async () => {
-        try {
-          await unlock(bytesFromHex(test.value()));
-          refresh();
-        } catch (e) {
-          out.error(e);
-        }
-      }, true),
-    ),
-    out.el,
-  );
-}
-
-function sessionCard(count: number, refresh: () => void): HTMLElement {
-  return card(
-    "Session",
-    "Unlocked",
-    "Your deals are encrypted on this device with a key from your passkey.",
-    kv([["Deals on this device", String(count)]]),
-    store && !store.persistent
-      ? banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes.")
-      : null,
-    actions(
-      button("Lock", () => {
-        lock();
-        refresh();
-      }, true),
-    ),
-  );
 }
 
 // ---------- deals and timeline (HNK-24.T9) ----------
@@ -208,8 +124,7 @@ function newInvoiceCard(deals: SupplierDeal[], refresh: () => void): HTMLElement
           const buyerPk = hex64(buyer.value(), "buyer key");
           const file = terms.input.files?.[0];
           if (!file) throw new Error("choose the invoice document");
-          if (!master) throw new Error("unlock with your passkey first");
-          const supplierPk = wasm.supplierInvoicePublicKeyBytes(master.slice(), invoiceId, buyerPk);
+          const supplierPk = wasm.supplierInvoicePublicKeyBytes(await account.stamp(), invoiceId, buyerPk);
           const amountZat = zecToZat(amount.value());
           const dueDay = dateToDays(due.value());
           const code = wasm.invoiceEncode(
@@ -402,8 +317,8 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
         try {
           const r = json<{ memo: string; commitment: string }>(
             req.history_tag
-              ? wasm.supplierRegisterTaggedEntryBytes(secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, req.discount, req.tenor)
-              : wasm.supplierRegisterEntryBytes(secretFor(d), d.invoice, req.financier_pk, req.salt, req.discount, req.tenor),
+              ? wasm.supplierRegisterTaggedEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, req.discount, req.tenor)
+              : wasm.supplierRegisterEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.discount, req.tenor),
           );
           await save({
             ...d,
@@ -479,7 +394,7 @@ function sealCard(d: SupplierDeal, refresh: () => void): HTMLElement {
             actions(
               button("Seal as supplier", async () => {
                 try {
-                  const s0 = wasm.supplierSealAssignmentBytes(secretFor(d), d.invoice, code);
+                  const s0 = wasm.supplierSealAssignmentBytes(await secretFor(d), d.invoice, code);
                   await save({ ...d, seal: { letter: code, s0 } });
                   refresh();
                 } catch (e) {

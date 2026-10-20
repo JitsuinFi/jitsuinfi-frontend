@@ -1,13 +1,15 @@
-// Buyer screen (HNK-10.T3 crucial, HNK-06.T5 QR): keys from a passkey, sign the invoice, seal
-// the letter, issue the history certificate, and pay at maturity by QR.
+// Buyer screen (HNK-10.T3 crucial, HNK-06.T5 QR; HNK-22.T4): keys from a passkey, sign the
+// invoice, seal the letter, issue the history certificate, and pay at maturity by QR.
+//
+// Opens in a buyer session. No master stays in this tab: every action that needs a key is a stamp
+// (one passkey touch, `account.stamp()`) passed to a jitsuin-wasm `*Bytes` function, which zeroes
+// it. The buyer salt is unchanged (`jitsuin/buyer/master/v1`), so old buyer keys stay the same.
+import { account } from "../lib/app-session";
 import { daysToDate, json, today, wasm, zatToZec } from "../lib/core";
-import { createPasskey, masterFromPasskey, passkeysAvailable } from "../lib/passkey";
-import { actions, banner, button, card, codeBlock, field, h, kv, Out, page, trustedSvg } from "../lib/ui";
+import { actions, button, card, codeBlock, field, h, kv, Out, page, trustedSvg } from "../lib/ui";
 
-// In memory only (never storage): survives moving between screens while the tab is open.
-let master = "";
-
-export function buyerPage(): HTMLElement {  const index = field("Invoice number in your history", { type: "number", value: "0", help: "0 for your first financed invoice, then 1, 2, …" });
+export function buyerPage(): HTMLElement {
+  const index = field("Invoice number in your history", { type: "number", value: "0", help: "0 for your first financed invoice, then 1, 2, …" });
   const idx = () => {
     const n = Number(index.value());
     if (!Number.isInteger(n) || n < 0) throw new Error("history number must be 0 or more");
@@ -16,55 +18,30 @@ export function buyerPage(): HTMLElement {  const index = field("Invoice number 
 
   // 1. keys
   const keysOut = new Out();
-  const testSecret = field("Test secret (demo only)", { placeholder: "64 hex characters", help: "Stands in for the passkey on devices without PRF support." });
-  const showKeys = () => {
-    const k = json<{ identity_pk: string; invoice_pk: string }>(wasm.buyerKeys(master, idx()));
-    keysOut.show(
-      kv([
-        ["Your identity key", k.identity_pk, true],
-        [`Key for invoice #${idx()}`, k.invoice_pk, true],
-      ]),
-      h("p", { class: "hint" }, "Give the invoice key to the supplier for the invoice. Each invoice uses a different key, so the public board cannot link your invoices."),
-    );
-  };
-  const unlock = async (get: () => Promise<string>) => {
-    try {
-      master = await get();
-      showKeys();
-    } catch (e) {
-      keysOut.error(e);
-    }
-  };
   const keysCard = card(
     "Step 1",
-    "Unlock your keys",
-    "Your keys come from a passkey on this device. There is no seed phrase and nothing is stored: the same passkey always gives the same keys.",
+    "Your keys",
+    "Your keys come from your passkey. There is no seed phrase and nothing is stored: the same passkey always gives the same keys.",
+    index.el,
     actions(
-      button("Create passkey", async () => {
+      button("Show my keys", async () => {
         try {
-          await createPasskey();
-          keysOut.show(banner("ok", "Passkey created", "Now use it to unlock your keys."));
+          const n = idx();
+          const k = json<{ identity_pk: string; invoice_pk: string }>(wasm.buyerKeysBytes(await account.stamp(), n));
+          keysOut.show(
+            kv([
+              ["Your identity key", k.identity_pk, true],
+              [`Key for invoice #${n}`, k.invoice_pk, true],
+            ]),
+            h("p", { class: "hint" }, "Give the invoice key to the supplier for the invoice. Each invoice uses a different key, so the public board cannot link your invoices."),
+          );
         } catch (e) {
           keysOut.error(e);
         }
-      }, true),
-      button("Unlock with passkey", () => unlock(masterFromPasskey)),
-      button("Use test secret", () => unlock(async () => {
-        wasm.buyerKeys(testSecret.value(), 0);
-        return testSecret.value();
-      }), true),
+      }),
     ),
-    passkeysAvailable() ? null : banner("warn", "Passkeys unavailable here", "Open the app over https or localhost, or use a test secret."),
-    index.el,
-    testSecret.el,
     keysOut.el,
   );
-  if (master) showKeys();
-
-  const need = () => {
-    if (!master) throw new Error("unlock your keys first (step 1)");
-    return master;
-  };
 
   // 2. sign the invoice
   const sInvoice = field("Invoice code from the supplier", { area: true });
@@ -83,10 +60,11 @@ export function buyerPage(): HTMLElement {  const index = field("Invoice number 
           signOut.error(e);
         }
       }, true),
-      button("Sign invoice", () => {
+      button("Sign invoice", async () => {
         try {
           const f = json<Record<string, string | number>>(wasm.invoiceDecode(sInvoice.value()));
-          const sig = wasm.buyerSignInvoice(need(), idx(), sInvoice.value());
+          const n = idx();
+          const sig = wasm.buyerSignInvoiceBytes(await account.stamp(), n, sInvoice.value());
           signOut.show(invoiceTable(f), codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"));
         } catch (e) {
           signOut.error(e);
@@ -109,9 +87,10 @@ export function buyerPage(): HTMLElement {  const index = field("Invoice number 
     lLetter.el,
     lSeal.el,
     actions(
-      button("Seal as buyer", () => {
+      button("Seal as buyer", async () => {
         try {
-          const seal = wasm.buyerSealAssignment(need(), idx(), lInvoice.value(), lLetter.value(), lSeal.value());
+          const n = idx();
+          const seal = wasm.buyerSealAssignmentBytes(await account.stamp(), n, lInvoice.value(), lLetter.value(), lSeal.value());
           sealOut.show(codeBlock("Your seal: send it to the financier", seal, "buyer.seal.txt"));
         } catch (e) {
           sealOut.error(e);
@@ -134,9 +113,10 @@ export function buyerPage(): HTMLElement {  const index = field("Invoice number 
     hFin.el,
     hPrev.el,
     actions(
-      button("Issue certificate", () => {
+      button("Issue certificate", async () => {
         try {
-          const cert = wasm.buyerHistoryCert(need(), idx(), hInvoice.value(), hFin.value(), hPrev.value());
+          const n = idx();
+          const cert = wasm.buyerHistoryCertBytes(await account.stamp(), n, hInvoice.value(), hFin.value(), hPrev.value());
           histOut.show(codeBlock(`Certificate #${idx()}: keep it and give it to the financier`, cert, `history-${idx()}.cert.txt`));
         } catch (e) {
           histOut.error(e);
@@ -157,9 +137,10 @@ export function buyerPage(): HTMLElement {  const index = field("Invoice number 
     pInvoice.el,
     pLetter.el,
     actions(
-      button("Show payment QR", () => {
+      button("Show payment QR", async () => {
         try {
-          const r = json<{ uri: string; qr_svg: string }>(wasm.buyerRepayment(need(), idx(), pInvoice.value(), pLetter.value(), today()));
+          const n = idx();
+          const r = json<{ uri: string; qr_svg: string }>(wasm.buyerRepaymentBytes(await account.stamp(), n, pInvoice.value(), pLetter.value(), today()));
           payOut.show(trustedSvg(r.qr_svg), codeBlock("Payment request (ZIP-321)", r.uri));
         } catch (e) {
           payOut.error(e);

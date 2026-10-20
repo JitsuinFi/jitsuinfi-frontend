@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/store.test.ts tests/supplier-deal.test.ts tests/relay-message.test.ts"
+    "test": "node --test tests/store.test.ts tests/supplier-deal.test.ts tests/account.test.ts tests/relay-message.test.ts"
   },
   "devDependencies": {
     "@types/three": "0.186.0",

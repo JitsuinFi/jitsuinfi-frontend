@@ -8,6 +8,7 @@ import { buyerPage } from "./pages/buyer";
 import { financierPage } from "./pages/financier";
 import { memberPage } from "./pages/member";
 import { outsiderPage } from "./pages/outsider";
+import { ratesPage } from "./pages/rates";
 import { supplierPage } from "./pages/supplier";
 import { verifyPage } from "./pages/verify";
 
@@ -15,6 +16,7 @@ import { verifyPage } from "./pages/verify";
 const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
   "/verify": { label: "Verify", page: verifyPage },
   "/outsider": { label: "What outsiders see", page: outsiderPage },
+  "/index": { label: "Rate index", page: ratesPage },
 };
 
 // Role pages open only in a session of that role; otherwise the account page asks to sign in.
@@ -30,13 +32,14 @@ const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage 
 
 function home(): HTMLElement {
   // Each screen wears a seal badge, as the roles on the sign-in sheet: 売 sell, 買 buy, 資 fund,
-  // 証 prove, 外 outside.
+  // 証 prove, 外 outside, 価 price.
   const tiles: Array<[string, string, string, string]> = [
     ["/supplier", "売", "Supplier", "Issue an invoice and get it financed once."],
     ["/buyer", "買", "Buyer", "Sign, acknowledge and pay with keys from your passkey."],
     ["/member", "資", "Fund member", "See what the fund holds for you."],
     ["/verify", "証", "Verify", "Check a deal or catch a double financing."],
     ["/outsider", "外", "What outsiders see", "Hashes only. Nothing about the parties."],
+    ["/index", "価", "Rate index", "Market prices from the board, no parties."],
   ];
   return h(
     "div",

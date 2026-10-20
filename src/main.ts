@@ -38,7 +38,7 @@ function home(): HTMLElement {
     ["/buyer", "買", "Buyer", "Sign, acknowledge and pay with keys from your passkey."],
     ["/member", "資", "Fund member", "See what the fund holds for you."],
     ["/verify", "証", "Verify", "Check a deal or catch a double financing."],
-    ["/outsider", "外", "What outsiders see", "Hashes only. Nothing about the parties."],
+    ["/outsider", "外", "What outsiders see", "Codes and hashes. Nothing about the parties."],
     ["/index", "価", "Rate index", "Market prices from the board, no parties."],
   ];
   return h(

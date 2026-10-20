@@ -142,9 +142,3 @@ ol.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 1
 .chip.done { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
 .chip.next { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
-/* account (HNK-22) */
-.demo { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
-.demo h3 { margin: 0 0 8px; font-size: 15px; }
-.who { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.roles { margin-bottom: 14px; }
-.roles button[aria-checked="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }

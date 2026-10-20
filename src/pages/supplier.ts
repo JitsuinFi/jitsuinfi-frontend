@@ -322,7 +322,7 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
       "The financier posts it to the board. The first valid entry for N wins.",
       kv([
         ["Commitment", d.entry.commitment, true],
-        ["Classes (discount / tenor)", `${d.entry.discount} / ${d.entry.tenor}`],
+        ["Public index classes", d.entry.discount === 0 && d.entry.tenor === 0 ? "not disclosed" : `${d.entry.discount} / ${d.entry.tenor}`],
         ["Buyer history tag", d.entry.tagged ? "yes" : "no"],
       ]),
       codeBlock("Entry: send it to the financier", d.entry.memo, `${d.invoice_id}.entry.txt`),
@@ -357,6 +357,19 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
     );
   }
   const classes = req.discount === undefined ? "none" : `${req.discount} / ${req.tenor}`;
+  // Classes stay out of the public rate index unless the supplier opts in (D-42, W-14): anyone
+  // holding this invoice can find the entry by N and read them.
+  const share = h("input", { type: "checkbox" }) as HTMLInputElement;
+  const optIn =
+    req.discount === undefined
+      ? null
+      : h(
+          "label",
+          { class: "field" },
+          share,
+          " add this deal's classes to the public rate index",
+          h("small", {}, "Off by default. Anyone who holds this invoice, such as the buyer or a financier you showed it to, can then read your discount class on the board."),
+        );
   return card(
     "Step 3",
     "Sign the board entry",
@@ -364,20 +377,22 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
     kv([
       ["Financier", req.financier_pk, true],
       ["Commitment salt", req.salt, true],
-      ["Classes (discount / tenor)", classes],
+      ["Classes from the financier (discount / tenor)", classes],
       ["Buyer history tag", req.history_tag ?? "none", req.history_tag !== undefined],
     ]),
+    ...(optIn ? [optIn] : []),
     actions(
       button("Sign entry", async () => {
         try {
+          const [disc, ten] = share.checked ? [req.discount, req.tenor] : [undefined, undefined];
           const r = json<{ memo: string; commitment: string }>(
             req.history_tag
-              ? wasm.supplierRegisterTaggedEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, req.discount, req.tenor)
-              : wasm.supplierRegisterEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.discount, req.tenor),
+              ? wasm.supplierRegisterTaggedEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, disc, ten)
+              : wasm.supplierRegisterEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, disc, ten),
           );
           await save({
             ...d,
-            entry: { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: req.discount ?? 0, tenor: req.tenor ?? 0 },
+            entry: { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: disc ?? 0, tenor: ten ?? 0 },
           });
           refresh();
         } catch (e) {

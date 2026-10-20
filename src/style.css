@@ -127,3 +127,16 @@ footer { color: var(--muted); font-size: 13px; text-align: center; padding: 24px
   header.top { padding: 12px 16px; }
   .net { margin-left: 0; }
 }
+
+/* Supplier deals and timeline (HNK-24.T9) */
+.deals { display: grid; gap: 10px; }
+.deal { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: var(--surface); }
+.deal.open { border-color: var(--accent); }
+.deal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.deal-head span { color: var(--muted); font-size: 14px; }
+.deal-head button { margin-left: auto; }
+.deal small { display: block; color: var(--muted); margin-top: 6px; }
+ol.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; }
+.chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.chip.done { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.chip.next { border-color: var(--accent); color: var(--accent); font-weight: 600; }

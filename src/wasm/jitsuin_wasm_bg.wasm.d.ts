@@ -26,6 +26,7 @@ export const invoiceDecode: (a: number, b: number) => [number, number, number, n
 export const invoiceEncode: (a: number, b: number) => [number, number, number, number];
 export const invoiceNullifier: (a: number, b: number) => [number, number, number, number];
 export const publicKey: (a: number, b: number) => [number, number, number, number];
+export const rateIndex: (a: number, b: number, c: number) => [number, number, number, number];
 export const storageKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];
 export const supplierInvoicePublicKeyBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
 export const supplierInvoiceSecretBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
@@ -40,6 +41,7 @@ export const supplierSealAssignmentBytes: (a: number, b: number, c: any, d: numb
 export const verifyBundle: (a: number, b: number) => [number, number, number, number];
 export const verifyHistory: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
 export const verifyProof: (a: number, b: number) => [number, number, number, number];
+export const verifyProofOnBoard: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const __wbindgen_externrefs: WebAssembly.Table;
 export const __wbindgen_malloc: (a: number, b: number) => number;
 export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

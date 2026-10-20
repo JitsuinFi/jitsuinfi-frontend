@@ -58,6 +58,8 @@ export function invoiceNullifier(invoice_b64: string): string;
 
 export function publicKey(secret_hex: string): string;
 
+export function rateIndex(board_json: string, k: number): string;
+
 /**
  * 64 bytes: AES-256-GCM key, then HMAC-SHA-256 index key, for the encrypted local deal store.
  */
@@ -102,6 +104,8 @@ export function verifyHistory(certs_json: string, identity_pk_hex: string, allow
 
 export function verifyProof(proof_b64: string): string;
 
+export function verifyProofOnBoard(proof_b64: string, board_json: string): string;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
@@ -131,6 +135,7 @@ export interface InitOutput {
     readonly invoiceEncode: (a: number, b: number) => [number, number, number, number];
     readonly invoiceNullifier: (a: number, b: number) => [number, number, number, number];
     readonly publicKey: (a: number, b: number) => [number, number, number, number];
+    readonly rateIndex: (a: number, b: number, c: number) => [number, number, number, number];
     readonly storageKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];
     readonly supplierInvoicePublicKeyBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly supplierInvoiceSecretBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
@@ -145,6 +150,7 @@ export interface InitOutput {
     readonly verifyBundle: (a: number, b: number) => [number, number, number, number];
     readonly verifyHistory: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
     readonly verifyProof: (a: number, b: number) => [number, number, number, number];
+    readonly verifyProofOnBoard: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

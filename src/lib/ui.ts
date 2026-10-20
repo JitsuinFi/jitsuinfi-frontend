@@ -91,11 +91,12 @@ export class Out {
 // meaning; the stamp and its ink colour only repeat it (never colour alone).
 const HANKO = { ok: "認", warn: "待", bad: "拒" } as const;
 
-export function banner(kind: "ok" | "warn" | "bad", title: string, text: string): HTMLElement {
+/** `glyph` replaces the stamp for a named verdict, e.g. 偽 forged seal or 重 already pledged. */
+export function banner(kind: "ok" | "warn" | "bad", title: string, text: string, glyph?: string): HTMLElement {
   return h(
     "div",
     { class: `banner ${kind}`, role: kind === "bad" ? "alert" : "status" },
-    h("span", { class: "hanko", "aria-hidden": "true" }, HANKO[kind]),
+    h("span", { class: "hanko", "aria-hidden": "true" }, glyph ?? HANKO[kind]),
     h("strong", {}, title),
     h("span", {}, text),
   );

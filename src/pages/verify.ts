@@ -3,6 +3,7 @@
 // Proofs (HNK-28.T2): with board data, every position the proof claims is checked by the same
 // rule as `jitsuin verify` (wasm `verifyProofOnBoard`); without it, positions are shown as
 // claimed only, never as facts.
+import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, download, field, fileField, h, kv, Out, page } from "../lib/ui";
 
@@ -31,19 +32,14 @@ export function verifyPage(): HTMLElement {
 
 function bundleView(c: string, boardJson?: string): Node[] {
   const v = json<{ nullifier: string; invoice_id: string; amount_zat: number; due_date: number; assignment: string | null }>(wasm.verifyBundle(c));
-  const letter =
-    v.assignment === "Sealed"
-      ? "sealed by supplier, buyer and financier"
-      : v.assignment === null
-        ? "not included"
-        : `waiting for ${v.assignment.replace("AwaitingSeal:", "")}`;
+  const verdict = bundleVerdict(v.assignment);
   const nodes: Node[] = [
-    banner("ok", "Bundle is genuine", "The buyer signed this invoice and every seal checks out."),
+    banner(verdict.kind, verdict.title, verdict.text),
     kv([
       ["Invoice", v.invoice_id],
       ["Amount", `${zatToZec(v.amount_zat)} ZEC`],
       ["Due", daysToDate(v.due_date)],
-      ["Assignment letter", letter],
+      ["Assignment letter", letterStatus(v.assignment)],
       ["Fingerprint N", v.nullifier, true],
     ]),
   ];

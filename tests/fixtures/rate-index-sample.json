@@ -1,0 +1,143 @@
+{
+  "board": {
+    "path": "examples/index/board-sample.json",
+    "source": "snapshot"
+  },
+  "classes": {
+    "discount_bps": [
+      {
+        "class": 1,
+        "label": "< 1%",
+        "max": 99,
+        "min": 0
+      },
+      {
+        "class": 2,
+        "label": "1-2%",
+        "max": 199,
+        "min": 100
+      },
+      {
+        "class": 3,
+        "label": "2-3%",
+        "max": 299,
+        "min": 200
+      },
+      {
+        "class": 4,
+        "label": "3-5%",
+        "max": 499,
+        "min": 300
+      },
+      {
+        "class": 5,
+        "label": "5-8%",
+        "max": 799,
+        "min": 500
+      },
+      {
+        "class": 6,
+        "label": "8-12%",
+        "max": 1199,
+        "min": 800
+      },
+      {
+        "class": 7,
+        "label": ">= 12%",
+        "max": 9999,
+        "min": 1200
+      }
+    ],
+    "tenor_days": [
+      {
+        "class": 1,
+        "label": "<= 30 days",
+        "max": 30,
+        "min": 0
+      },
+      {
+        "class": 2,
+        "label": "31-60 days",
+        "max": 60,
+        "min": 31
+      },
+      {
+        "class": 3,
+        "label": "61-90 days",
+        "max": 90,
+        "min": 61
+      },
+      {
+        "class": 4,
+        "label": "91-180 days",
+        "max": 180,
+        "min": 91
+      },
+      {
+        "class": 5,
+        "label": "181-365 days",
+        "max": 365,
+        "min": 181
+      }
+    ]
+  },
+  "entries": 18,
+  "invalid": 1,
+  "invoices": 17,
+  "k": 5,
+  "tenors": [
+    {
+      "label": "<= 30 days",
+      "published": false,
+      "tenor": 1
+    },
+    {
+      "discounts": [
+        {
+          "class": 3,
+          "invoices": 6,
+          "label": "2-3%"
+        }
+      ],
+      "invoices": 9,
+      "label": "31-60 days",
+      "median_discount": {
+        "class": 3,
+        "label": "2-3%"
+      },
+      "other": 3,
+      "published": true,
+      "tenor": 2
+    },
+    {
+      "discounts": [
+        {
+          "class": 4,
+          "invoices": 5,
+          "label": "3-5%"
+        }
+      ],
+      "invoices": 5,
+      "label": "61-90 days",
+      "median_discount": {
+        "class": 4,
+        "label": "3-5%"
+      },
+      "other": 0,
+      "published": true,
+      "tenor": 3
+    },
+    {
+      "label": "91-180 days",
+      "published": false,
+      "tenor": 4
+    },
+    {
+      "label": "181-365 days",
+      "published": false,
+      "tenor": 5
+    }
+  ],
+  "undisclosed": 1,
+  "version": "0.1.0"
+}

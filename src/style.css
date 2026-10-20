@@ -117,6 +117,10 @@ table.kv { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.kv td { border-top: 1px solid var(--line); padding: 7px 6px; vertical-align: top; }
 table.kv td:first-child { color: var(--muted); width: 34%; }
 table.kv td.mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.table-scroll { overflow-x: auto; margin-top: 14px; }
+table.grid-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 7px 6px; }
+table.grid-table td:first-child { color: inherit; width: auto; white-space: nowrap; }
+p.note { color: var(--muted); margin: 0 0 10px; font-size: 14px; }
 
 .qr { background: #fff; padding: 12px; border-radius: 8px; display: inline-block; margin-top: 10px; }
 .qr svg { width: 260px; height: 260px; display: block; }

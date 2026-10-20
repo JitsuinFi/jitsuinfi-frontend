@@ -8,6 +8,7 @@ import { buyerPage } from "./pages/buyer";
 import { financierPage } from "./pages/financier";
 import { memberPage } from "./pages/member";
 import { outsiderPage } from "./pages/outsider";
+import { ratesPage } from "./pages/rates";
 import { supplierPage } from "./pages/supplier";
 import { verifyPage } from "./pages/verify";
 
@@ -15,6 +16,7 @@ import { verifyPage } from "./pages/verify";
 const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
   "/verify": { label: "Verify", page: verifyPage },
   "/outsider": { label: "What outsiders see", page: outsiderPage },
+  "/index": { label: "Rate index", page: ratesPage },
 };
 
 // Role pages open only in a session of that role; otherwise the account page asks to sign in.
@@ -35,6 +37,7 @@ function home(): HTMLElement {
     ["/member", "Fund member", "See what the fund holds for you."],
     ["/verify", "Verify", "Check a deal or catch a double financing."],
     ["/outsider", "What outsiders see", "Hashes only. Nothing about the parties."],
+    ["/index", "Rate index", "Market prices from the board, no parties."],
   ];
   return h(
     "div",

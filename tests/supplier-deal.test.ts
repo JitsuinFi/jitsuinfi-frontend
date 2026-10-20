@@ -1,12 +1,16 @@
-// HNK-24.T5, T9: supplier deal timeline and offer code, run with `npm test`.
+// HNK-24.T5, T6, T9: supplier deal timeline, offer code and entry request code, run with `npm test`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   actionOf,
+  decodeEntryRequest,
   decodeOffer,
+  encodeEntryRequest,
   encodeOffer,
+  entryRequestProblems,
   invoiceIdTaken,
   looksShielded,
+  nextAction,
   nextStep,
   sortDeals,
   timeline,
@@ -78,4 +82,38 @@ test("shielded address check", () => {
   assert.ok(looksShielded("u1" + "a".repeat(60)));
   assert.ok(!looksShielded("tmQ9vB5kGuUqFdQ2UxQ1eVLdJfhJ4Tw7Rt"));
   assert.ok(!looksShielded("utest1short"));
+});
+
+const offer = { financier_pk: "33".repeat(32), advance_zat: 38_000, supplier_address: "utest1x" };
+const request = { n: "ab".repeat(32), financier_pk: "33".repeat(32), salt: "44".repeat(32), discount: 3, tenor: 1 };
+
+test("the entry waits for the financier's request (SEQ-03)", () => {
+  const offered = deal({ buyer_signature: "00", offer });
+  assert.equal(nextStep(offered), "entry");
+  assert.equal(nextAction(offered), "wait for the financier's entry request");
+  assert.equal(nextAction(deal({ buyer_signature: "00", offer, entry_request: request })), "sign the board entry");
+  assert.equal(nextAction(deal()), "check the buyer's signature");
+});
+
+test("entry request codes roundtrip, with and without classes and tag", () => {
+  assert.deepEqual(decodeEntryRequest(encodeEntryRequest(request)), request);
+  const plain = { n: request.n, financier_pk: request.financier_pk, salt: request.salt };
+  assert.deepEqual(decodeEntryRequest(encodeEntryRequest(plain)), plain);
+  const tagged = { ...plain, history_tag: "55".repeat(32) };
+  assert.deepEqual(decodeEntryRequest(encodeEntryRequest(tagged)), tagged);
+});
+
+test("bad entry request codes are refused", () => {
+  assert.throws(() => decodeEntryRequest(encodeOffer({ invoice: "J", buyer_signature: "00", ...offer })));
+  assert.throws(() => decodeEntryRequest(encodeEntryRequest({ ...request, salt: "44" })));
+  assert.throws(() => decodeEntryRequest(encodeEntryRequest({ ...request, tenor: undefined })));
+  assert.throws(() => decodeEntryRequest(encodeEntryRequest({ ...request, discount: 8 })));
+  assert.throws(() => decodeEntryRequest(encodeEntryRequest({ ...request, history_tag: "zz" })));
+});
+
+test("a request for another invoice or from another financier does not fit the deal", () => {
+  const d = deal({ buyer_signature: "00", offer });
+  assert.deepEqual(entryRequestProblems(d, request), []);
+  assert.equal(entryRequestProblems(d, { ...request, n: "cd".repeat(32) }).length, 1);
+  assert.equal(entryRequestProblems(d, { ...request, financier_pk: "66".repeat(32) }).length, 1);
 });

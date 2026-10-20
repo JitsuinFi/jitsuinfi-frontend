@@ -9,10 +9,12 @@ import { dateToDays, daysToDate, fileHash, json, openDealStore, wasm, zatToZec, 
 import { createPasskey, masterBytesFromPasskey, passkeysAvailable } from "../lib/passkey";
 import type { DealStore } from "../lib/store";
 import {
-  actionOf,
+  decodeEntryRequest,
   encodeOffer,
+  entryRequestProblems,
   invoiceIdTaken,
   looksShielded,
+  nextAction,
   nextStep,
   sortDeals,
   timeline,
@@ -153,7 +155,7 @@ function sessionCard(count: number, refresh: () => void): HTMLElement {
 
 function dealsCard(deals: SupplierDeal[], refresh: () => void): HTMLElement {
   const rows = deals.map((d) => {
-    const next = nextStep(d);
+    const next = nextAction(d);
     return h(
       "div",
       { class: d.n === current ? "deal open" : "deal" },
@@ -168,7 +170,7 @@ function dealsCard(deals: SupplierDeal[], refresh: () => void): HTMLElement {
         }, true),
       ),
       h("ol", { class: "steps" }, ...timeline(d).map((s) => h("li", { class: `chip ${s.state}` }, s.label))),
-      h("small", {}, next ? `Next: ${actionOf(next)}` : "Complete"),
+      h("small", {}, next ? `Next: ${next}` : "Complete"),
     );
   });
   return card(
@@ -321,7 +323,7 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   return card(
     "Step 2",
     "Offer it to one financier",
-    "The financier checks the board for this invoice, then sends you its commitment opening and the assignment letter.",
+    "The financier sends you the assignment letter, checks the board for this invoice, then asks you for the board entry.",
     fin.el,
     h("div", { class: "row" }, adv.el, addr.el),
     actions(
@@ -341,14 +343,7 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   );
 }
 
-function optionalClass(value: string, what: string): number | undefined {
-  if (value === "") return undefined;
-  const n = Number(value);
-  if (!Number.isInteger(n) || n < 0 || n > 7) throw new Error(`${what}: a class from 0 to 7`);
-  return n;
-}
-
-/** T6: sign the board entry for the financier's commitment, with the classes it sent. */
+/** T6: wait for the financier's entry request (SEQ-03 part 4), then sign the board entry for it. */
 function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   if (d.entry) {
     return card(
@@ -363,33 +358,57 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
       codeBlock("Entry: send it to the financier", d.entry.memo, `${d.invoice_id}.entry.txt`),
     );
   }
-  const salt = field("Commitment salt from the financier", { placeholder: "64 hex characters" });
-  const disc = field("Discount class", { type: "number", placeholder: "from the financier" });
-  const tenor = field("Tenor class", { type: "number", placeholder: "from the financier" });
-  const tag = field("Buyer history tag (if the buyer shares its history)", { placeholder: "64 hex characters, optional" });
   const out = new Out();
+  const req = d.entry_request;
+  if (!req) {
+    const code = field("Entry request code (from the financier)", { area: true });
+    return card(
+      "Step 3",
+      "Wait for the entry request",
+      "The financier asks for the board entry only after it has checked the board for this invoice (and the buyer's history, if it needs it). Nothing to sign before that.",
+      code.el,
+      actions(
+        button("Read request", async () => {
+          try {
+            const r = decodeEntryRequest(code.value());
+            const problems = entryRequestProblems(d, r);
+            if (problems.length) {
+              out.show(banner("bad", "Not for this deal", problems.join("; ") + "."));
+              return;
+            }
+            await save({ ...d, entry_request: r });
+            refresh();
+          } catch (e) {
+            out.error(e);
+          }
+        }),
+      ),
+      out.el,
+    );
+  }
+  const classes = req.discount === undefined ? "none" : `${req.discount} / ${req.tenor}`;
   return card(
     "Step 3",
     "Sign the board entry",
-    "Sign only after the financier asks for it: it has checked the board and the buyer's history. The entry commits to that financier without naming it.",
-    salt.el,
-    h("div", { class: "row" }, disc.el, tenor.el),
-    tag.el,
+    "The financier checked the board and asks for your entry. The entry commits to that financier without naming it.",
+    kv([
+      ["Financier", req.financier_pk, true],
+      ["Commitment salt", req.salt, true],
+      ["Classes (discount / tenor)", classes],
+      ["Buyer history tag", req.history_tag ?? "none", req.history_tag !== undefined],
+    ]),
     actions(
       button("Sign entry", async () => {
         try {
-          const s = hex64(salt.value(), "salt");
-          const dc = optionalClass(disc.value(), "discount class");
-          const tc = optionalClass(tenor.value(), "tenor class");
-          if ((dc === undefined) !== (tc === undefined)) throw new Error("give both classes, or neither");
-          const t = tag.value() ? hex64(tag.value(), "history tag") : "";
-          const fin = d.offer!.financier_pk;
           const r = json<{ memo: string; commitment: string }>(
-            t
-              ? wasm.supplierRegisterTaggedEntryBytes(secretFor(d), d.invoice, fin, s, t, dc, tc)
-              : wasm.supplierRegisterEntryBytes(secretFor(d), d.invoice, fin, s, dc, tc),
+            req.history_tag
+              ? wasm.supplierRegisterTaggedEntryBytes(secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, req.discount, req.tenor)
+              : wasm.supplierRegisterEntryBytes(secretFor(d), d.invoice, req.financier_pk, req.salt, req.discount, req.tenor),
           );
-          await save({ ...d, entry: { memo: r.memo, commitment: r.commitment, tagged: t !== "", discount: dc ?? 0, tenor: tc ?? 0 } });
+          await save({
+            ...d,
+            entry: { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: req.discount ?? 0, tenor: req.tenor ?? 0 },
+          });
           refresh();
         } catch (e) {
           out.error(e);

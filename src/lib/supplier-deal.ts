@@ -1,8 +1,9 @@
 // Supplier deal record and its timeline (HNK-24.T9), kept in the encrypted device store
 // (HNK-24.T3) under the invoice's N. Pure data, no wasm: tests run it under Node.
 //
-// The offer code is an interim copy-paste format until the relay message schema (HNK-23.T1,
-// C-04) exists; the financier console reads it the same way.
+// The offer code and the entry request code are interim copy-paste formats until the relay
+// message schema (HNK-23.T1, C-04) exists. The entry request is not signed yet: the signed
+// message from the financier node comes with HNK-23.T8.
 
 export interface SupplierDeal {
   /** N of the invoice (hex): the store id. */
@@ -21,6 +22,8 @@ export interface SupplierDeal {
   buyer_signature?: string;
   /** T5: the offer sent to one financier. */
   offer?: { financier_pk: string; advance_zat: number; supplier_address: string };
+  /** T6: the financier's request for the board entry, sent after it checked the board (SEQ-03). */
+  entry_request?: EntryRequest;
   /** T6: the signed register entry for that financier's commitment. */
   entry?: { memo: string; commitment: string; tagged: boolean; discount: number; tenor: number };
   /** T7: the assignment letter, its PDF check and the supplier's seal s0. */
@@ -42,6 +45,13 @@ export const STEPS: ReadonlyArray<{ key: StepKey; label: string; action: string 
 /** What to do for `step`, as shown under a deal ("Next: …"). */
 export function actionOf(step: StepKey): string {
   return STEPS.find((s) => s.key === step)!.action;
+}
+
+/** What to do next for `d`, or `null` when complete. The entry waits for the financier's request. */
+export function nextAction(d: SupplierDeal): string | null {
+  const step = nextStep(d);
+  if (step === "entry" && !d.entry_request) return "wait for the financier's entry request";
+  return step ? actionOf(step) : null;
 }
 
 function done(d: SupplierDeal, k: StepKey): boolean {
@@ -133,4 +143,56 @@ export function decodeOffer(code: string): Offer {
     advance_zat: Number(j.advance_zat),
     supplier_address: j.supplier_address,
   };
+}
+
+const ENTRY_REQUEST_PREFIX = "jitsuin-entry-request-v1:";
+const HEX64 = /^[0-9a-f]{64}$/;
+
+/**
+ * The financier asks for the board entry once the board shows no entry for N (SEQ-03 part 4).
+ * It carries the commitment opening (salt), the classes and the buyer history tag, if any.
+ */
+export interface EntryRequest {
+  n: string;
+  financier_pk: string;
+  salt: string;
+  /** Discount and tenor classes (0 – 7), both or neither. */
+  discount?: number;
+  tenor?: number;
+  history_tag?: string;
+}
+
+function isClass(x: unknown): x is number {
+  return Number.isInteger(x) && (x as number) >= 0 && (x as number) <= 7;
+}
+
+/** Entry request as one copy-paste code (interim until the signed relay message, HNK-23.T8). */
+export function encodeEntryRequest(r: EntryRequest): string {
+  return ENTRY_REQUEST_PREFIX + b64url(JSON.stringify({ v: 1, ...r }));
+}
+
+export function decodeEntryRequest(code: string): EntryRequest {
+  const c = code.trim();
+  if (!c.startsWith(ENTRY_REQUEST_PREFIX)) throw new Error("not a JitsuinFi entry request code");
+  const j = JSON.parse(unb64url(c.slice(ENTRY_REQUEST_PREFIX.length))) as Partial<EntryRequest> & { v?: number };
+  const hex = (x: unknown): x is string => typeof x === "string" && HEX64.test(x);
+  if (j.v !== 1 || !hex(j.n) || !hex(j.financier_pk) || !hex(j.salt)) throw new Error("incomplete entry request code");
+  if ((j.discount === undefined) !== (j.tenor === undefined)) throw new Error("entry request: both classes, or neither");
+  if (j.discount !== undefined && !(isClass(j.discount) && isClass(j.tenor))) throw new Error("entry request: classes from 0 to 7");
+  if (j.history_tag !== undefined && !hex(j.history_tag)) throw new Error("entry request: bad history tag");
+  const r: EntryRequest = { n: j.n, financier_pk: j.financier_pk, salt: j.salt };
+  if (j.discount !== undefined) {
+    r.discount = j.discount;
+    r.tenor = j.tenor;
+  }
+  if (j.history_tag !== undefined) r.history_tag = j.history_tag;
+  return r;
+}
+
+/** Why `r` does not belong to `d`: another invoice, or not the financier `d` was offered to. */
+export function entryRequestProblems(d: SupplierDeal, r: EntryRequest): string[] {
+  return [
+    r.n === d.n ? null : "the request is for another invoice (N differs)",
+    d.offer && r.financier_pk === d.offer.financier_pk ? null : "the request comes from another financier than the one you offered to",
+  ].filter((p): p is string => p !== null);
 }

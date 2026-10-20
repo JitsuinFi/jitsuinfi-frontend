@@ -18,6 +18,10 @@ export interface BuyerInvoice {
   received_at: number;
   /** The buyer's signature on the invoice, once signed. */
   signature?: string;
+  /** HNK-23.T7: the supplier's mailbox the invoice came from, for the reply. */
+  reply_to?: string;
+  /** When the signature went back to the supplier (ms since epoch). */
+  signature_sent_at?: number;
 }
 
 const PREFIX = "invoice:";
@@ -50,6 +54,8 @@ export function invoiceRecord(
     terms_checked: termsChecked || (previous?.terms_checked ?? false),
     received_at: previous?.received_at ?? now,
     ...(previous?.signature ? { signature: previous.signature } : {}),
+    ...(previous?.reply_to ? { reply_to: previous.reply_to } : {}),
+    ...(previous?.signature_sent_at ? { signature_sent_at: previous.signature_sent_at } : {}),
   };
 }
 
@@ -63,6 +69,7 @@ export function sortInvoices(list: BuyerInvoice[]): BuyerInvoice[] {
 }
 
 export function invoiceStatus(rec: BuyerInvoice): string {
+  if (rec.signature_sent_at) return "signed, sent to the supplier";
   if (rec.signature) return "signed";
   return rec.terms_checked ? "checked, not signed" : "terms PDF not checked";
 }

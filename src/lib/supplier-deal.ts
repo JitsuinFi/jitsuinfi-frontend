@@ -18,6 +18,8 @@ export interface SupplierDeal {
   invoice: string;
   /** Creation time (ms since epoch), for the newest-first order. */
   created_at: number;
+  /** HNK-23.T7: the sign request went to the buyer's mailbox (its `mailbox_pk`), at this time (ms). */
+  sign_request?: { to: string; at: number };
   /** T4: the buyer's signature, checked with `bundleBuild`. */
   buyer_signature?: string;
   /** T5: the offer sent to one financier. */

@@ -10,13 +10,21 @@
 // `historyNext`); for an invoice already in hand, `k` is found from the key it is addressed to.
 import { account } from "../lib/app-session";
 import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
+import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
+import { discard, draft, send, type Received } from "../lib/relay";
+import { encodeMessage, verifyHeader } from "../lib/relay-message";
+import { mailboxCard } from "./mailbox";
 import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page, trustedSvg } from "../lib/ui";
 
 // This tab only: the history check found the board ahead of this device, so issuing is blocked.
 let successorOnBoard = false;
+
+// This tab only: sign requests opened from the inbox, by N: who to answer, and the relay message to
+// remove once the signature is sent (it stays until then, so its PDF is not lost).
+const pending = new Map<string, { replyTo: string; relayId: string }>();
 
 async function loadHistory(): Promise<HistoryDoc> {
   return (await account.current?.store?.get<HistoryDoc>(HISTORY_ID)) ?? emptyHistory();
@@ -71,6 +79,24 @@ async function saveInvoice(update: (previous: BuyerInvoice | undefined) => Buyer
   const store = account.current?.store;
   if (!store) return;
   await store.put(storeId(n), update(await store.get<BuyerInvoice>(storeId(n))));
+}
+
+/** Sends the signature on invoice N to the supplier's mailbox and removes the request it answers. */
+async function sendSignature(n: string, signature: string, replyTo: string): Promise<void> {
+  const s = account.current;
+  if (!s) throw new Error("sign in first");
+  const me = myIdentity();
+  const header = { ...draft("invoice.signature", { role: "buyer", mailbox_pk: me.mailbox_pk }, replyTo, relayDeps, { n, body: { buyer_signature: signature } }) };
+  await send(replyTo, await encodeMessage(header), relayDeps);
+  await saveInvoice((prev) => {
+    if (!prev) throw new Error("check the invoice first");
+    return { ...prev, reply_to: replyTo, signature_sent_at: Date.now() };
+  }, n);
+  const p = pending.get(n);
+  if (p) {
+    pending.delete(n);
+    await discard(s.inbox, p.relayId, relayDeps).catch(() => undefined); // expires anyway
+  }
 }
 
 export function buyerPage(): HTMLElement {
@@ -145,7 +171,24 @@ export function buyerPage(): HTMLElement {
         if (!prev) throw new Error("check the invoice first");
         return withSignature(prev, sig);
       }, String(f.nullifier));
-      signOut.show(invoiceTable(f), codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"));
+      const n = String(f.nullifier);
+      const rec = await account.current?.store?.get<BuyerInvoice>(storeId(n));
+      const replyTo = rec?.reply_to ?? pending.get(n)?.replyTo;
+      const sendOut = new Out();
+      const sendBtn: HTMLButtonElement | null = replyTo
+        ? button("Send signature to the supplier", async () => {
+            try {
+              await sendSignature(n, sig, replyTo);
+              sendRow?.remove(); // sent once; a second copy would only repeat it
+              sendOut.show(banner("ok", "Signature sent", "Sealed to the supplier's mailbox. The supplier offers the invoice to a financier next."));
+              void refreshInvoices();
+            } catch (e) {
+              sendOut.error(e);
+            }
+          })
+        : null;
+      const sendRow = sendBtn ? actions(sendBtn) : null;
+      signOut.show(invoiceTable(f), sendRow ?? codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"), sendOut.el);
       void refreshInvoices();
     } catch (e) {
       signOut.error(e);
@@ -176,7 +219,8 @@ export function buyerPage(): HTMLElement {
           const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex });
           if (keyIndex !== null) {
             const d = { nullifier: String(f.nullifier), invoice_id: String(f.invoice_id), amount_zat: Number(f.amount_zat), due_date: Number(f.due_date) };
-            await saveInvoice((prev) => invoiceRecord(d, invoice, keyIndex, r.canSign, Date.now(), prev), d.nullifier);
+            const p = pending.get(d.nullifier);
+            await saveInvoice((prev) => ({ ...invoiceRecord(d, invoice, keyIndex, r.canSign, Date.now(), prev), ...(p ? { reply_to: p.replyTo } : {}) }), d.nullifier);
             void refreshInvoices();
           }
           signOut.show(banner(r.kind, r.title, r.text), kv(r.rows), invoiceTable(f));
@@ -274,6 +318,30 @@ export function buyerPage(): HTMLElement {
     payOut.el,
   );
 
+  // inbox: a sign request fills step 2 with the invoice and its PDF (HNK-23.T7)
+  const fromInbox = {
+    label: "Open in step 2",
+    keep: true,
+    run: async (r: Received): Promise<string> => {
+      const hd = r.message.header;
+      const invoice = String(hd.body.invoice);
+      const f = json<{ supplier_pk: string; nullifier: string; invoice_id: string }>(wasm.invoiceDecode(invoice));
+      if (hd.n !== f.nullifier) throw new Error("the message names another invoice than the one it carries");
+      if (!(await verifyHeader(hd, f.supplier_pk))) throw new Error("not signed by this invoice's supplier key");
+      const pdf = r.message.attachments[0];
+      pending.set(f.nullifier, { replyTo: hd.from.mailbox_pk, relayId: r.relayId });
+      sInvoice.input.value = invoice;
+      sInvoice.input.dispatchEvent(new Event("input", { bubbles: true }));
+      const dt = new DataTransfer();
+      dt.items.add(new File([new Uint8Array(pdf)], hd.attachments[0]?.name ?? `${f.invoice_id}.pdf`, { type: "application/pdf" }));
+      sTerms.input.files = dt.files;
+      sTerms.input.dispatchEvent(new Event("change", { bubbles: true }));
+      signCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      return `${f.invoice_id} is in step 2 with its PDF. Check it, then sign.`;
+    },
+  };
+  const mailCard = mailboxCard({ "invoice.sign_request": fromInbox });
+
   // 0. the invoices received on this device, newest first; Open fills every step
   const listOut = new Out();
   const open = (rec: BuyerInvoice) => {
@@ -315,7 +383,7 @@ export function buyerPage(): HTMLElement {
   const listCard = card("Invoices", "Your invoices", "Invoices addressed to your keys, kept encrypted on this device after you check them.", listOut.el);
   void refreshInvoices();
 
-  return page("Buyer", "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.", listCard, keysCard, signCard, sealCard, histCard, payCard);
+  return page("Buyer", "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.", mailCard, listCard, keysCard, signCard, sealCard, histCard, payCard);
 }
 
 function invoiceTable(f: Record<string, string | number>): HTMLElement {

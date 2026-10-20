@@ -124,6 +124,12 @@ export async function remove(me: MailboxIdentity, relayId: string, readToken: st
   await call(d, "DELETE", `/api/mailbox/${me.mailbox_id}/messages/${relayId}`, undefined, { Authorization: `Bearer ${readToken}` });
 }
 
+/** Removes a message with a fresh read token (when the token from `receive` is gone). */
+export async function discard(inbox: Uint8Array, relayId: string, d: RelayDeps): Promise<void> {
+  const me = identity(inbox, d);
+  await remove(me, relayId, await token(inbox, d, me), d);
+}
+
 /** A header ready to sign: the common fields of a message from this role to `toPk`. */
 export function draft(type: Header["type"], from: { role: Header["from"]["role"]; mailbox_pk: string }, toPk: string, d: RelayDeps, extra: Pick<Header, "body"> & Partial<Pick<Header, "n" | "attachments">>): Omit<Header, "sig" | "signer"> {
   const h = {

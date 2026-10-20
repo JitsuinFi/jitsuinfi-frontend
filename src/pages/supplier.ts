@@ -3,9 +3,10 @@
 //
 // Keys: the per-invoice key comes from the supplier master (P-03, HNK-24.T1), so there is no secret
 // to back up. No master stays in this tab: every action that needs a key is a stamp (one passkey
-// touch, `account.stamp()`), and the jitsuin-wasm `*Bytes` call zeroes it. Documents travel by
-// copy-paste until the relay exists (HNK-23);
-// the financier is chosen by pasting its key until contacts exist (HNK-22).
+// touch, `account.stamp()`), and the jitsuin-wasm `*Bytes` call zeroes it. The invoice and its
+// PDF go to the buyer through the relay, sealed to the buyer's mailbox, and the buyer's signature
+// comes back the same way (HNK-23.T7); later steps still travel by copy-paste until the financier
+// node exists (HNK-26).
 import { account } from "../lib/app-session";
 import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import {
@@ -21,6 +22,10 @@ import {
   type SupplierDeal,
 } from "../lib/supplier-deal";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page } from "../lib/ui";
+import { myIdentity, relayDeps } from "../lib/app-relay";
+import { draft, send, signInWasm } from "../lib/relay";
+import { describeFiles, encodeMessage } from "../lib/relay-message";
+import { mailboxCard, useContact } from "./mailbox";
 
 // The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;
@@ -57,9 +62,10 @@ export function supplierPage(): HTMLElement {
 async function render(root: HTMLElement, refresh: () => void): Promise<void> {
   const store = account.current?.store;
   if (!store) return;
-  const deals = sortDeals((await store.list<SupplierDeal>()).map((r) => r.doc));
+  // the store also keeps contacts ("contact:" ids); deals are stored under their N
+  const deals = sortDeals((await store.list<SupplierDeal>()).filter((r) => HEX64.test(r.id)).map((r) => r.doc));
   const open = deals.find((d) => d.n === current) ?? null;
-  const cards: HTMLElement[] = [dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
+  const cards: HTMLElement[] = [mailboxCard({ "invoice.signature": signatureFromInbox(refresh) }), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
   if (!store.persistent) {
     cards.unshift(banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes."));
   }
@@ -167,7 +173,7 @@ function dealCards(d: SupplierDeal, refresh: () => void): HTMLElement[] {
     card(
       "Deal",
       d.invoice_id,
-      "Send the invoice code and the invoice document to the buyer to sign.",
+      "The invoice the buyer signs; its fingerprint N is what financiers look up on the board.",
       kv([
         ["Fingerprint N", d.n, true],
         ["Amount", `${zatToZec(d.amount_zat)} ZEC`],
@@ -186,17 +192,66 @@ function dealCards(d: SupplierDeal, refresh: () => void): HTMLElement[] {
   return cards;
 }
 
+/** HNK-23.T7: a buyer's signature from the inbox, checked against its deal and kept. */
+function signatureFromInbox(refresh: () => void) {
+  return {
+    label: "Check and keep",
+    run: async (r: import("../lib/relay").Received): Promise<string> => {
+      const n = r.message.header.n ?? "";
+      const d = await account.current?.store?.get<SupplierDeal>(n);
+      if (!d) throw new Error("no deal on this device has this fingerprint N");
+      const s = String(r.message.header.body.buyer_signature);
+      wasm.bundleBuild(JSON.stringify({ invoice: d.invoice, buyer_signature: s }));
+      await save({ ...d, buyer_signature: s });
+      current = d.n;
+      refresh();
+      return `The buyer signed ${d.invoice_id}. Next: offer it to one financier.`;
+    },
+  };
+}
+
 /** T4: check the buyer's signature before offering the invoice to anyone. */
 function signatureCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   if (d.buyer_signature) {
     return card("Step 1", "Buyer signature", "Checked against the invoice.", banner("ok", "Signed by the buyer", "The buyer's per-invoice key signed exactly this invoice."));
   }
+  const contact = field("Buyer's contact card", { area: true, placeholder: "jitsuin-contact-v1:…", help: "From the buyer. Compare its key fingerprint with the buyer before you send." });
+  const pdf = fileField("Invoice document (PDF)", "The same file you created the invoice with; its hash must match. Sent sealed, only the buyer can open it.");
+  const sendOut = new Out();
+  if (d.sign_request) sendOut.show(banner("ok", "Sent to the buyer", `On ${new Date(d.sign_request.at).toLocaleString()}. The signature arrives in your inbox above.`));
+  const sendBtn = button("Send to the buyer", async () => {
+    try {
+      const buyer = await useContact(contact.value(), "buyer");
+      const file = pdf.input.files?.[0];
+      if (!file) throw new Error("choose the invoice document");
+      const terms = json<{ terms_hash: string }>(wasm.invoiceDecode(d.invoice)).terms_hash;
+      if ((await fileHash(file)) !== terms) throw new Error("this PDF is not the invoice document: its hash differs from the invoice");
+      const files = [{ name: file.name.endsWith(".pdf") ? file.name : `${d.invoice_id}.pdf`, mime: "application/pdf" as const, bytes: new Uint8Array(await file.arrayBuffer()) }];
+      const me = myIdentity();
+      const header = signInWasm(
+        draft("invoice.sign_request", { role: "supplier", mailbox_pk: me.mailbox_pk }, buyer.mailbox_pk, relayDeps, { n: d.n, body: { invoice: d.invoice }, attachments: await describeFiles(files) }),
+        d.supplier_pk,
+        await secretFor(d),
+        relayDeps,
+      );
+      await send(buyer.mailbox_pk, await encodeMessage(header, files), relayDeps);
+      await save({ ...d, sign_request: { to: buyer.mailbox_pk, at: Date.now() } });
+      refresh();
+    } catch (e) {
+      sendOut.error(e);
+    }
+  });
   const sig = field("Buyer signature", { placeholder: "128 hex characters from the buyer's screen" });
   const out = new Out();
   return card(
     "Step 1",
-    "Check the buyer's signature",
-    "A financier only looks at an invoice the buyer signed. The check runs in your browser.",
+    "Get the buyer's signature",
+    "Send the invoice and its document to the buyer's mailbox; the signature comes back to yours. A financier only looks at an invoice the buyer signed.",
+    contact.el,
+    pdf.el,
+    actions(sendBtn),
+    sendOut.el,
+    h("p", { class: "hint" }, "Or paste a signature the buyer gave you another way; it is checked in your browser."),
     sig.el,
     actions(
       button("Check signature", async () => {

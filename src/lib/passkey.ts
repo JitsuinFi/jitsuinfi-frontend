@@ -1,12 +1,13 @@
-// Buyer master secret from a passkey (WebAuthn PRF extension): no seed phrase, nothing stored.
-// The same passkey on any synced device gives the same 32 bytes, so the same buyer keys.
+// Role master secret from a passkey (WebAuthn PRF extension): no seed phrase, nothing stored.
+// The same passkey on any synced device gives the same 32 bytes, so the same keys. Each role has
+// its own salt (P-02), so one passkey gives isolated buyer and supplier masters.
 
 import { hex } from "./core";
 
-const SALT_LABEL = "jitsuin/buyer/master/v1";
+export type PasskeyRole = "buyer" | "supplier";
 
-async function salt(): Promise<ArrayBuffer> {
-  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(SALT_LABEL));
+async function salt(role: PasskeyRole): Promise<ArrayBuffer> {
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(`jitsuin/${role}/master/v1`));
 }
 
 function random(n: number): Uint8Array<ArrayBuffer> {
@@ -24,7 +25,7 @@ export async function createPasskey(): Promise<void> {
   const cred = (await navigator.credentials.create({
     publicKey: {
       rp: { name: "JitsuinFi" },
-      user: { id: random(16), name: "jitsuinfi-buyer", displayName: "JitsuinFi buyer" },
+      user: { id: random(16), name: "jitsuinfi", displayName: "JitsuinFi" },
       challenge: random(32),
       pubKeyCredParams: [
         { type: "public-key", alg: -7 },
@@ -40,16 +41,22 @@ export async function createPasskey(): Promise<void> {
   }
 }
 
-/// Asks the passkey for the PRF output under JitsuinFi's salt: the buyer's master secret (hex).
-export async function masterFromPasskey(): Promise<string> {
+/// Asks the passkey for the PRF output under the role's salt: that role's master secret (32 bytes).
+/// Pass it to the jitsuin-wasm `*Bytes` functions, which zero it.
+export async function masterBytesFromPasskey(role: PasskeyRole): Promise<Uint8Array> {
   const cred = (await navigator.credentials.get({
     publicKey: {
       challenge: random(32),
       userVerification: "required",
-      extensions: { prf: { eval: { first: await salt() } } } as AuthenticationExtensionsClientInputs,
+      extensions: { prf: { eval: { first: await salt(role) } } } as AuthenticationExtensionsClientInputs,
     },
   })) as PublicKeyCredential | null;
   const out = (cred?.getClientExtensionResults() as PrfResults | undefined)?.prf?.results?.first;
   if (!out) throw new Error("no PRF output from the passkey; use a test secret instead");
-  return hex(new Uint8Array(out));
+  return new Uint8Array(out);
+}
+
+/// The buyer's master secret (hex), for the buyer screen.
+export async function masterFromPasskey(): Promise<string> {
+  return hex(await masterBytesFromPasskey("buyer"));
 }

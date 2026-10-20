@@ -29,12 +29,14 @@ const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
 const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage };
 
 function home(): HTMLElement {
-  const tiles: Array<[string, string, string]> = [
-    ["/supplier", "Supplier", "Issue an invoice and get it financed once."],
-    ["/buyer", "Buyer", "Sign, acknowledge and pay with keys from your passkey."],
-    ["/member", "Fund member", "See what the fund holds for you."],
-    ["/verify", "Verify", "Check a deal or catch a double financing."],
-    ["/outsider", "What outsiders see", "Hashes only. Nothing about the parties."],
+  // Each screen wears a seal badge, as the roles on the sign-in sheet: 売 sell, 買 buy, 資 fund,
+  // 証 prove, 外 outside.
+  const tiles: Array<[string, string, string, string]> = [
+    ["/supplier", "売", "Supplier", "Issue an invoice and get it financed once."],
+    ["/buyer", "買", "Buyer", "Sign, acknowledge and pay with keys from your passkey."],
+    ["/member", "資", "Fund member", "See what the fund holds for you."],
+    ["/verify", "証", "Verify", "Check a deal or catch a double financing."],
+    ["/outsider", "外", "What outsiders see", "Hashes only. Nothing about the parties."],
   ];
   return h(
     "div",
@@ -45,7 +47,13 @@ function home(): HTMLElement {
       { class: "lead" },
       "Private invoice financing on Zcash: every invoice gets a fingerprint on a public board, so a supplier cannot finance it twice, while amounts, parties and documents stay shielded.",
     ),
-    h("div", { class: "grid" }, ...tiles.map(([href, title, text]) => h("a", { class: "tile", href: `#${href}` }, h("strong", {}, title), h("span", {}, text)))),
+    h(
+      "div",
+      { class: "grid" },
+      ...tiles.map(([href, kanji, title, text]) =>
+        h("a", { class: "tile", href: `#${href}` }, h("span", { class: "badge", "aria-hidden": "true" }, kanji), h("strong", {}, title), h("span", {}, text)),
+      ),
+    ),
   );
 }
 
@@ -66,7 +74,8 @@ function render(): void {
   const link = (href: string, label: string) => h("a", { href: `#${href}`, class: href === path ? "active" : undefined }, label);
   const nav = h(
     "nav",
-    {},
+    { "aria-label": "Screens" },
+    link("/", "Home"),
     s ? link(`/${s.role}`, roleLabel(s.role)) : null,
     ...Object.entries(PUBLIC).map(([href, r]) => link(href, r.label)),
     link("/account", s ? "Account" : "Sign in"),

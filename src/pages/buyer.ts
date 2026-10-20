@@ -10,7 +10,8 @@
 // `historyNext`); for an invoice already in hand, `k` is found from the key it is addressed to.
 import { account } from "../lib/app-session";
 import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
-import { daysToDate, json, today, wasm, zatToZec } from "../lib/core";
+import { checkInvoice } from "../lib/buyer-check";
+import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page, trustedSvg } from "../lib/ui";
 
 // This tab only: the history check found the board ahead of this device, so issuing is blocked.
@@ -44,6 +45,16 @@ async function withInvoiceIndex<T>(invoice: string, use: (master: Uint8Array, k:
     throw new Error("this invoice is not addressed to one of your invoice keys");
   } finally {
     m.fill(0);
+  }
+}
+
+/** One passkey touch: the history index of the key `invoice` is addressed to, or null. */
+async function findKeyIndex(invoice: string): Promise<number | null> {
+  try {
+    return await withInvoiceIndex(invoice, (_m, k) => k);
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith("this invoice is not addressed")) return null;
+    throw e;
   }
 }
 
@@ -104,32 +115,57 @@ export function buyerPage(): HTMLElement {
     keysOut.el,
   );
 
-  // 2. sign the invoice
+  // 2. sign the invoice: signing stays off until the terms PDF matches and the key is ours
+  // (HNK-25.T1, BL-D22-06)
   const sInvoice = field("Invoice code from the supplier", { area: true });
+  const sTerms = fileField("Terms PDF from the supplier", "Hashed in your browser and compared with the invoice; the file is not sent anywhere.");
   const signOut = new Out();
+  let checked: string | null = null; // the invoice text that passed both checks
+  const signBtn = button("Sign invoice", async () => {
+    try {
+      if (checked === null || checked !== sInvoice.value()) throw new Error("check the invoice first");
+      const f = json<Record<string, string | number>>(wasm.invoiceDecode(checked));
+      const sig = await withInvoiceIndex(checked, (m, k) => wasm.buyerSignInvoiceBytes(m, k, checked as string));
+      signOut.show(invoiceTable(f), codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"));
+    } catch (e) {
+      signOut.error(e);
+    }
+  });
+  const lock = () => {
+    checked = null;
+    signBtn.disabled = true;
+  };
+  lock();
+  sInvoice.input.addEventListener("input", lock);
+  sTerms.input.addEventListener("change", lock);
   const signCard = card(
     "Step 2",
     "Review and sign the invoice",
     "Your signature confirms the trade happened. Check every field: this is what financiers rely on.",
     sInvoice.el,
+    sTerms.el,
     actions(
-      button("Show invoice", () => {
+      button("Check invoice", async () => {
         try {
-          const f = json<Record<string, string | number>>(wasm.invoiceDecode(sInvoice.value()));
-          signOut.show(invoiceTable(f));
+          lock();
+          const invoice = sInvoice.value();
+          const f = json<Record<string, string | number>>(wasm.invoiceDecode(invoice));
+          const file = sTerms.input.files?.[0];
+          const r = checkInvoice({
+            termsHash: String(f.terms_hash),
+            fileHash: file ? await fileHash(file) : null,
+            keyIndex: await findKeyIndex(invoice),
+          });
+          signOut.show(banner(r.kind, r.title, r.text), kv(r.rows), invoiceTable(f));
+          if (r.canSign) {
+            checked = invoice;
+            signBtn.disabled = false;
+          }
         } catch (e) {
           signOut.error(e);
         }
       }, true),
-      button("Sign invoice", async () => {
-        try {
-          const f = json<Record<string, string | number>>(wasm.invoiceDecode(sInvoice.value()));
-          const sig = await withInvoiceIndex(sInvoice.value(), (m, k) => wasm.buyerSignInvoiceBytes(m, k, sInvoice.value()));
-          signOut.show(invoiceTable(f), codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"));
-        } catch (e) {
-          signOut.error(e);
-        }
-      }),
+      signBtn,
     ),
     signOut.el,
   );

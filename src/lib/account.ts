@@ -108,7 +108,7 @@ export function writeProfile(kv: KeyValue | null, p: Profile): boolean {
   }
 }
 
-/** Records that credential `id` was used for `role`. */
+/** Records that credential `id` was used for `role`; the most recent role is last. */
 export function rememberRole(p: Profile, id: string, role: Role, now: number): Profile {
   const credentials = p.credentials.map((c) => ({ ...c, roles: [...c.roles] }));
   let c = credentials.find((x) => x.id === id);
@@ -116,7 +116,7 @@ export function rememberRole(p: Profile, id: string, role: Role, now: number): P
     c = { id, roles: [], label: "JitsuinFi", created_at: now };
     credentials.push(c);
   }
-  if (!c.roles.includes(role)) c.roles.push(role);
+  c.roles = [...c.roles.filter((r) => r !== role), role];
   return { v: 1, credentials };
 }
 

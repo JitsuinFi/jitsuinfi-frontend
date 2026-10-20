@@ -78,6 +78,12 @@ export class Account {
     return credentialIds(readProfile(this.deps.profile));
   }
 
+  /** The role this browser used last, for the first sign-in screen; `null` when unknown. */
+  lastRole(): Role | null {
+    const p = readProfile(this.deps.profile);
+    return p.credentials.at(-1)?.roles.at(-1) ?? null;
+  }
+
   /** Creates the person's one passkey and signs in to `role` with it. */
   async register(role: Role): Promise<Session> {
     const { credentialId, out } = await this.deps.keys.register(role, this.knownCredentials());

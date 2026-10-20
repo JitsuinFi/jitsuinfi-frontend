@@ -1,4 +1,4 @@
-/* Account / sign-in screen (HNK-22): the landing's day paper and seal, set out like an iOS sheet.
+/* Account / sign-in screen (HNK-22): a consumer login sheet in JitsuinFi's palette.
    Token values come from MASTER.md (§2 colour, §3 type, §5 motion) and src/landing/tokens.css;
    they apply only while this screen is shown (:root:has(.auth)), so the rest of the app (light and
    dark) is untouched. Keep them in sync. */
@@ -43,253 +43,185 @@
   background: var(--paper);
   color: var(--ink);
   font-family: var(--f-body);
-  padding: 28px max(20px, env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
   min-height: calc(100dvh - 64px);
+  display: grid;
+  place-items: start center;
+  padding: clamp(24px, 8vh, 72px) max(16px, env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
 
 /* full-bleed paper: the app's <main> drops its width cap and padding around this screen */
 main:has(> .auth) { max-width: none; padding: 0; }
 
-.auth-col {
-  max-width: 420px;
-  margin: 0 auto;
+/* ---------- the sheet ---------- */
+.auth-sheet {
+  width: 100%;
+  max-width: 400px;
+  background: var(--sheet);
+  border-radius: 24px;
+  box-shadow: 0 1px 2px rgba(70, 29, 58, .06), 0 18px 48px rgba(70, 29, 58, .12);
+  padding: 28px 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
+  animation: auth-in 280ms var(--ease-land) both;
 }
+@keyframes auth-in { from { opacity: 0; transform: translateY(8px) scale(.985); } }
 
-/* iOS large title, set in the seal-register mincho */
-.auth-title {
-  font: 800 34px/1.12 var(--f-display);
-  letter-spacing: -.01em;
+.auth-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+
+.auth-logo { width: 48px; height: 48px; margin-bottom: 6px; }
+.auth-logo .ring { fill: none; stroke: var(--seal); stroke-width: 7; }
+.auth-logo .ring-fine { fill: none; stroke: var(--seal); stroke-width: 2.2; }
+.auth-logo .kanji { fill: var(--seal); font: 800 46px var(--f-display); }
+
+.auth-title { margin: 0; font: 600 20px/1.25 var(--f-body); color: var(--head); letter-spacing: -.01em; }
+.auth-sub { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); max-width: 30ch; }
+
+/* ---------- list rows ---------- */
+.auth-list { display: flex; flex-direction: column; gap: 10px; }
+
+.auth-row {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 36px 1fr 20px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  text-align: left;
+  font: inherit;
   color: var(--head);
-  margin: 6px 0 0;
-  text-wrap: balance;
+  cursor: pointer;
+  transition: border-color var(--dur-fade) ease, background var(--dur-fade) ease, transform var(--dur-press) linear;
 }
+.auth-row:hover { border-color: var(--fold); background: rgba(236, 208, 236, .18); }
+.auth-row:active { transform: scale(.99); }
+.auth-row[aria-current="true"] { border-color: var(--seal); }
 
-.auth-lede {
-  margin: -10px 0 0;
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--ink-2);
-  max-width: 34ch;
+.auth-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.auth-row-label { font-size: 15px; font-weight: 600; }
+.auth-row-line { font-size: 13px; color: var(--ink-2); }
+
+.auth-ico {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  justify-self: center;
 }
+.auth-ico.is-small { width: 14px; height: 14px; stroke: currentColor; }
+.auth-ico.is-chevron { width: 18px; height: 18px; stroke: var(--ink-2); }
+.auth-ico.is-check { width: 20px; height: 20px; stroke: var(--seal); stroke-width: 2.4; }
 
-/* ---------- the seal ---------- */
-.auth-stage {
-  position: relative;
+.auth-badge {
   display: grid;
   place-items: center;
-  height: 220px;
-  margin: 4px 0 -4px;
-}
-
-.auth-seal {
-  width: 168px;
-  height: 168px;
-  overflow: visible;
-}
-
-.auth-seal .ring { fill: none; stroke: var(--seal); stroke-width: 6; }
-.auth-seal .ring-fine { fill: none; stroke: var(--seal); stroke-width: 1.6; }
-.auth-seal .kanji {
-  fill: var(--seal);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 48px;
-}
-
-/* the impression left on the paper after a press: ink bleed, fill tint */
-.auth-seal.is-impression .ring,
-.auth-seal.is-impression .ring-fine {
-  fill: var(--seal);
-  fill-opacity: .08;
-}
-.auth-seal.is-impression { filter: drop-shadow(0 0 6px rgba(186, 113, 162, .35)); }
-
-/* a waiting press: the seal is lifted off the paper */
-.auth-seal.is-lifted { transform: translateY(-14px) scale(1.04); transition: transform var(--dur-seal) var(--ease-land); }
-
-.auth-shadow {
-  position: absolute;
-  bottom: 18px;
-  width: 120px;
-  height: 14px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(70, 29, 58, .18), transparent);
-  transition: transform var(--dur-seal) var(--ease-land), opacity var(--dur-seal) var(--ease-land);
-}
-.auth-stage.is-lifted .auth-shadow { transform: scale(.7); opacity: .5; }
-
-/* ---------- segmented control (role) ---------- */
-.auth-seg {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 3px;
-  border-radius: 22px;
-  background: rgba(70, 29, 58, .07);
-}
-
-.auth-seg-thumb {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc((100% - 6px) / 3);
-  border-radius: 19px;
-  background: var(--sheet);
-  box-shadow: 0 1px 2px rgba(70, 29, 58, .12), 0 3px 8px rgba(70, 29, 58, .08);
-  transform: translateX(calc(100% * var(--i, 0)));
-  transition: transform 260ms var(--ease-snap);
-}
-
-.auth-seg button {
-  position: relative;
-  z-index: 1;
-  appearance: none;
-  border: 0;
-  background: none;
-  padding: 8px 4px 7px;
-  border-radius: 19px;
-  font: 500 13px/1.2 var(--f-body);
-  color: var(--ink-2);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.auth-seg button[aria-checked="true"] { color: var(--head); font-weight: 600; }
-.auth-seg .seg-kanji { font: 800 17px/1 var(--f-display); color: var(--seal); }
-
-/* ---------- actions ---------- */
-.auth-actions { display: flex; flex-direction: column; gap: 6px; }
-
-.auth-primary {
-  appearance: none;
-  border: 0;
-  width: 100%;
-  min-height: 52px;
-  border-radius: 999px;
-  background: var(--seal);
-  color: var(--sheet);
-  font: 600 17px/1 var(--f-body);
-  cursor: pointer;
-  transition: background var(--dur-fade) ease, transform var(--dur-press) linear;
-}
-.auth-primary:hover { background: var(--seal-hi); }
-.auth-primary:active { transform: scale(.97); }
-
-.auth-plain {
-  appearance: none;
-  border: 0;
-  background: none;
-  min-height: 44px;
-  font: 500 16px/1.2 var(--f-body);
+  border: 2px solid var(--seal);
   color: var(--seal);
-  cursor: pointer;
-}
-.auth-plain.is-quiet { color: var(--ink-2); font-size: 15px; }
-.auth-plain.is-danger { color: var(--seal); }
-
-.auth button:disabled { opacity: .45; cursor: default; }
-
-.auth :is(button, a, input):focus-visible {
-  outline: 2px solid var(--glint);
-  outline-offset: 3px;
+  font: 800 17px/1 var(--f-display);
 }
 
-/* the primary call sits in the thumb zone on phones */
-@media (max-width: 560px) {
-  .auth-actions.is-sticky {
-    position: sticky;
-    bottom: 0;
-    padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to top, var(--paper) 72%, rgba(246, 245, 252, 0));
-  }
+/* waiting for the passkey */
+.auth-row.is-waiting .is-chevron,
+.auth-row.is-waiting .is-check { visibility: hidden; }
+.auth-row.is-waiting::after {
+  content: "";
+  grid-column: 3;
+  grid-row: 1;
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  border-radius: 50%;
+  border: 2px solid var(--fiber);
+  border-top-color: var(--seal);
+  animation: auth-spin 700ms linear infinite;
 }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
 
-/* ---------- notes, rows, messages ---------- */
-.auth-note {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ink-2);
-  text-align: center;
-}
+.auth button:disabled { cursor: default; }
+.auth button:disabled:not(.is-waiting) { opacity: .5; }
 
-.auth-msg {
-  margin: 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--seal);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--ink);
-}
-.auth-msg strong { display: block; color: var(--seal); font-weight: 600; }
+.auth :is(button, a, input, summary):focus-visible { outline: 2px solid var(--glint); outline-offset: 2px; }
+
+/* ---------- message, facts, footer ---------- */
+.auth-msg { margin: -6px 0 0; font-size: 13px; line-height: 1.5; color: var(--seal); text-align: center; }
 .auth-msg:empty { display: none; }
 
-/* iOS plain list: rows on the paper, hairline separators, no container */
-.auth-rows { list-style: none; margin: 0; padding: 0; }
-.auth-rows li {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: 15px;
+.auth-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  padding: 14px 2px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
 }
-.auth-rows li:first-child { border-top: 1px solid var(--rule); }
-.auth-rows .k { color: var(--ink-2); }
-.auth-rows .v { color: var(--head); text-align: right; }
+.auth-facts dt { color: var(--ink-2); }
+.auth-facts dd { margin: 0; text-align: right; color: var(--head); }
+.auth-facts dd.is-mono { font-family: var(--f-mono); letter-spacing: .03em; }
 
-.auth-print {
-  margin: -6px 0 0;
-  text-align: center;
-  font: 500 15px/1.4 var(--f-mono);
-  letter-spacing: .04em;
-  color: var(--head);
-}
-.auth-print small {
-  display: block;
-  font: 400 13px/1.5 var(--f-body);
-  letter-spacing: 0;
-  color: var(--ink-2);
-}
+.auth-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 4px; }
+.auth-protected { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.auth-host { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-2); text-align: center; opacity: .85; }
 
-/* test data, opened in place */
-.auth-demo summary {
+.auth-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: 600 14px/1 var(--f-body);
+  color: var(--seal);
+  padding: 10px 12px;
   cursor: pointer;
+}
+
+/* ---------- test data ---------- */
+.auth-demo summary {
   list-style: none;
+  cursor: pointer;
   text-align: center;
-  font: 500 15px/44px var(--f-body);
+  font-size: 13px;
   color: var(--ink-2);
+  padding: 4px 0;
 }
 .auth-demo summary::-webkit-details-marker { display: none; }
-.auth-demo[open] summary { color: var(--seal); }
-.auth-demo .auth-field { margin-top: 4px; }
-
-.auth-field { display: flex; flex-direction: column; gap: 6px; }
-.auth-field span { font-size: 13px; color: var(--ink-2); }
-.auth-field input {
-  font: 400 14px/1.4 var(--f-mono);
+.auth-demo-body { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.auth-demo input {
+  font: 400 13px/1.4 var(--f-mono);
   color: var(--head);
-  background: var(--sheet);
+  background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: 12px;
   padding: 12px 14px;
 }
-.auth-field small { font-size: 12px; line-height: 1.5; color: var(--ink-2); }
+.auth-demo small { font-size: 12px; color: var(--ink-2); }
 
-@media (prefers-reduced-motion: reduce) {
-  .auth *, .auth *::before, .auth *::after { transition: none !important; }
+.auth-button {
+  appearance: none;
+  border: 0;
+  min-height: 46px;
+  border-radius: 12px;
+  font: 600 15px/1 var(--f-body);
+  cursor: pointer;
+}
+.auth-button.is-secondary { background: rgba(126, 42, 83, .08); color: var(--seal); }
+
+@media (max-width: 480px) {
+  .auth { justify-items: stretch; align-items: start; padding-top: 16px; }
+  .auth-sheet { max-width: none; }
 }
 
-/* links that act as calls */
-a.auth-link { display: grid; place-items: center; text-decoration: none; }
-a.auth-primary { color: var(--sheet); }
+@media (prefers-reduced-motion: reduce) {
+  .auth-sheet { animation: none; }
+  .auth-row.is-waiting::after { animation-duration: 2s; }
+  .auth * { transition: none !important; }
+}

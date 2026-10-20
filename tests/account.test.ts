@@ -221,4 +221,8 @@ test("the profile records the roles used", async () => {
   const s = await acct.register("supplier");
   await acct.switchRole("member");
   assert.deepEqual(readProfile(kv).credentials, [{ id: s.credentialId!, roles: ["supplier", "member"], label: "JitsuinFi", created_at: 1_000 }]);
+  assert.equal(acct.lastRole(), "member");
+  await acct.switchRole("supplier");
+  assert.equal(acct.lastRole(), "supplier");
+  assert.deepEqual(readProfile(kv).credentials[0].roles, ["member", "supplier"]);
 });

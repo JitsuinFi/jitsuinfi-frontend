@@ -752,6 +752,166 @@ export function invoiceNullifier(invoice_b64) {
 }
 
 /**
+ * `mailbox_id` of a recipient's `mailbox_pk`.
+ * @param {string} mailbox_pk_hex
+ * @returns {string}
+ */
+export function mailboxId(mailbox_pk_hex) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(mailbox_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mailboxId(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Mailbox key and id (HNK-23.T2) from the passkey's second PRF output, which is wiped.
+ * @param {Uint8Array} prf_second
+ * @returns {string}
+ */
+export function mailboxKeysBytes(prf_second) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        var ptr0 = passArray8ToWasm0(prf_second, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mailboxKeysBytes(ptr0, len0, prf_second);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Opens a sealed message for this mailbox; the PRF output is wiped.
+ * @param {Uint8Array} prf_second
+ * @param {Uint8Array} sealed
+ * @returns {Uint8Array}
+ */
+export function mailboxOpenBytes(prf_second, sealed) {
+    var ptr0 = passArray8ToWasm0(prf_second, wasm.__wbindgen_malloc);
+    var len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(sealed, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.mailboxOpenBytes(ptr0, len0, prf_second, ptr1, len1);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v3 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v3;
+}
+
+/**
+ * Answer to a relay challenge; the PRF output is wiped.
+ * @param {Uint8Array} prf_second
+ * @param {string} purpose
+ * @param {string} eph_pk_hex
+ * @param {string} nonce_hex
+ * @returns {string}
+ */
+export function mailboxProofBytes(prf_second, purpose, eph_pk_hex, nonce_hex) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        var ptr0 = passArray8ToWasm0(prf_second, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(purpose, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(eph_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(nonce_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.mailboxProofBytes(ptr0, len0, prf_second, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
+ * Seals a message to a recipient's `mailbox_pk`. `eph_secret` is 32 fresh random bytes
+ * (`crypto.getRandomValues`), used once and wiped.
+ * @param {string} recipient_pk_hex
+ * @param {Uint8Array} eph_secret
+ * @param {Uint8Array} message
+ * @returns {Uint8Array}
+ */
+export function mailboxSeal(recipient_pk_hex, eph_secret, message) {
+    const ptr0 = passStringToWasm0(recipient_pk_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    var ptr1 = passArray8ToWasm0(eph_secret, wasm.__wbindgen_malloc);
+    var len1 = WASM_VECTOR_LEN;
+    const ptr2 = passArray8ToWasm0(message, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.mailboxSeal(ptr0, len0, ptr1, len1, eph_secret, ptr2, len2);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v4 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v4;
+}
+
+/**
+ * Signs a relay message header's signing bytes with a party key (wiped); refuses any other bytes.
+ * @param {Uint8Array} secret
+ * @param {Uint8Array} signing_bytes
+ * @returns {string}
+ */
+export function messageSignBytes(secret, signing_bytes) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        var ptr0 = passArray8ToWasm0(secret, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(signing_bytes, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.messageSignBytes(ptr0, len0, secret, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * @param {string} secret_hex
  * @returns {string}
  */

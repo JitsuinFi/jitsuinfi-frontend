@@ -58,6 +58,37 @@ export function invoiceEncode(json: string): string;
 
 export function invoiceNullifier(invoice_b64: string): string;
 
+/**
+ * `mailbox_id` of a recipient's `mailbox_pk`.
+ */
+export function mailboxId(mailbox_pk_hex: string): string;
+
+/**
+ * Mailbox key and id (HNK-23.T2) from the passkey's second PRF output, which is wiped.
+ */
+export function mailboxKeysBytes(prf_second: Uint8Array): string;
+
+/**
+ * Opens a sealed message for this mailbox; the PRF output is wiped.
+ */
+export function mailboxOpenBytes(prf_second: Uint8Array, sealed: Uint8Array): Uint8Array;
+
+/**
+ * Answer to a relay challenge; the PRF output is wiped.
+ */
+export function mailboxProofBytes(prf_second: Uint8Array, purpose: string, eph_pk_hex: string, nonce_hex: string): string;
+
+/**
+ * Seals a message to a recipient's `mailbox_pk`. `eph_secret` is 32 fresh random bytes
+ * (`crypto.getRandomValues`), used once and wiped.
+ */
+export function mailboxSeal(recipient_pk_hex: string, eph_secret: Uint8Array, message: Uint8Array): Uint8Array;
+
+/**
+ * Signs a relay message header's signing bytes with a party key (wiped); refuses any other bytes.
+ */
+export function messageSignBytes(secret: Uint8Array, signing_bytes: Uint8Array): string;
+
 export function publicKey(secret_hex: string): string;
 
 export function rateIndex(board_json: string, k: number): string;
@@ -137,6 +168,12 @@ export interface InitOutput {
     readonly invoiceDecode: (a: number, b: number) => [number, number, number, number];
     readonly invoiceEncode: (a: number, b: number) => [number, number, number, number];
     readonly invoiceNullifier: (a: number, b: number) => [number, number, number, number];
+    readonly mailboxId: (a: number, b: number) => [number, number, number, number];
+    readonly mailboxKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];
+    readonly mailboxOpenBytes: (a: number, b: number, c: any, d: number, e: number) => [number, number, number, number];
+    readonly mailboxProofBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
+    readonly mailboxSeal: (a: number, b: number, c: number, d: number, e: any, f: number, g: number) => [number, number, number, number];
+    readonly messageSignBytes: (a: number, b: number, c: any, d: number, e: number) => [number, number, number, number];
     readonly publicKey: (a: number, b: number) => [number, number, number, number];
     readonly rateIndex: (a: number, b: number, c: number) => [number, number, number, number];
     readonly storageKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];

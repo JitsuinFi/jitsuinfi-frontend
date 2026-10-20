@@ -11,6 +11,7 @@
 import { account } from "../lib/app-session";
 import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
 import { checkInvoice } from "../lib/buyer-check";
+import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page, trustedSvg } from "../lib/ui";
 
@@ -56,6 +57,20 @@ async function findKeyIndex(invoice: string): Promise<number | null> {
     if (e instanceof Error && e.message.startsWith("this invoice is not addressed")) return null;
     throw e;
   }
+}
+
+// Received invoices in the encrypted device store (BL-D22-07): saved once the invoice is known to
+// be addressed to one of the buyer's keys, again with the signature.
+async function loadInvoices(): Promise<BuyerInvoice[]> {
+  const store = account.current?.store;
+  if (!store) return [];
+  return sortInvoices((await store.list<BuyerInvoice>()).filter((r) => isInvoiceId(r.id)).map((r) => r.doc));
+}
+
+async function saveInvoice(update: (previous: BuyerInvoice | undefined) => BuyerInvoice, n: string): Promise<void> {
+  const store = account.current?.store;
+  if (!store) return;
+  await store.put(storeId(n), update(await store.get<BuyerInvoice>(storeId(n))));
 }
 
 export function buyerPage(): HTMLElement {
@@ -126,7 +141,12 @@ export function buyerPage(): HTMLElement {
       if (checked === null || checked !== sInvoice.value()) throw new Error("check the invoice first");
       const f = json<Record<string, string | number>>(wasm.invoiceDecode(checked));
       const sig = await withInvoiceIndex(checked, (m, k) => wasm.buyerSignInvoiceBytes(m, k, checked as string));
+      await saveInvoice((prev) => {
+        if (!prev) throw new Error("check the invoice first");
+        return withSignature(prev, sig);
+      }, String(f.nullifier));
       signOut.show(invoiceTable(f), codeBlock("Your signature: send it to the supplier", sig, "buyer.signature.txt"));
+      void refreshInvoices();
     } catch (e) {
       signOut.error(e);
     }
@@ -151,11 +171,14 @@ export function buyerPage(): HTMLElement {
           const invoice = sInvoice.value();
           const f = json<Record<string, string | number>>(wasm.invoiceDecode(invoice));
           const file = sTerms.input.files?.[0];
-          const r = checkInvoice({
-            termsHash: String(f.terms_hash),
-            fileHash: file ? await fileHash(file) : null,
-            keyIndex: await findKeyIndex(invoice),
-          });
+          const hash = file ? await fileHash(file) : null;
+          const keyIndex = await findKeyIndex(invoice);
+          const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex });
+          if (keyIndex !== null) {
+            const d = { nullifier: String(f.nullifier), invoice_id: String(f.invoice_id), amount_zat: Number(f.amount_zat), due_date: Number(f.due_date) };
+            await saveInvoice((prev) => invoiceRecord(d, invoice, keyIndex, r.canSign, Date.now(), prev), d.nullifier);
+            void refreshInvoices();
+          }
           signOut.show(banner(r.kind, r.title, r.text), kv(r.rows), invoiceTable(f));
           if (r.canSign) {
             checked = invoice;
@@ -251,7 +274,48 @@ export function buyerPage(): HTMLElement {
     payOut.el,
   );
 
-  return page("Buyer", "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.", keysCard, signCard, sealCard, histCard, payCard);
+  // 0. the invoices received on this device, newest first; Open fills every step
+  const listOut = new Out();
+  const open = (rec: BuyerInvoice) => {
+    for (const f of [sInvoice, lInvoice, hInvoice, pInvoice]) {
+      f.input.value = rec.invoice;
+      f.input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    signCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const refreshInvoices = async () => {
+    try {
+      const list = await loadInvoices();
+      if (!account.current?.store) return listOut.show(h("p", { class: "hint" }, "This browser blocks local storage, so received invoices are not kept."));
+      if (!list.length) return listOut.show(h("p", { class: "hint" }, "No invoice yet. Check one in step 2 and it is kept here, encrypted on this device."));
+      listOut.show(
+        h(
+          "div",
+          { class: "deals" },
+          ...list.map((rec) =>
+            h(
+              "div",
+              { class: "deal" },
+              h(
+                "div",
+                { class: "deal-head" },
+                h("strong", {}, rec.invoice_id),
+                h("span", {}, `${zatToZec(rec.amount_zat)} ZEC · due ${daysToDate(rec.due_date)} · key #${rec.key_index}`),
+                button("Open", () => open(rec), true),
+              ),
+              h("small", {}, invoiceStatus(rec)),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      listOut.error(e);
+    }
+  };
+  const listCard = card("Invoices", "Your invoices", "Invoices addressed to your keys, kept encrypted on this device after you check them.", listOut.el);
+  void refreshInvoices();
+
+  return page("Buyer", "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.", listCard, keysCard, signCard, sealCard, histCard, payCard);
 }
 
 function invoiceTable(f: Record<string, string | number>): HTMLElement {

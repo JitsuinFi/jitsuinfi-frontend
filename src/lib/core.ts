@@ -1,5 +1,6 @@
 // Thin typed layer over jitsuin-wasm, plus date, amount and key helpers.
 import init, * as w from "../wasm/jitsuin_wasm.js";
+import { DealStore, type Role } from "./store";
 
 let ready: Promise<unknown> | null = null;
 
@@ -74,4 +75,12 @@ export function codeKind(code: string): CodeKind {
     JTSH: "history",
   };
   return kinds[magic] ?? "unknown";
+}
+
+/// Encrypted deal store of `role` on this device (HNK-24.T3). `master` is the role's passkey PRF
+/// output as bytes; it is zeroed by jitsuin-wasm, and the derived storage keys are zeroed by the
+/// store once imported as non-extractable WebCrypto keys.
+export async function openDealStore(role: Role, master: Uint8Array): Promise<DealStore> {
+  await loadWasm();
+  return DealStore.open(role, w.storageKeysBytes(master));
 }

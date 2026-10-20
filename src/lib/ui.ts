@@ -21,8 +21,15 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   return el;
 }
 
+// One part of a screen, set on the paper (D-36: no card box): its heading on the left, its fields
+// and results on the right; stacked on narrow screens. The class name stays "card" for the pages.
 export function card(step: string, title: string, hint: string, ...body: Child[]): HTMLElement {
-  return h("section", { class: "card" }, h("div", { class: "step" }, step), h("h2", {}, title), h("p", { class: "hint" }, hint), ...body);
+  return h(
+    "section",
+    { class: "card" },
+    h("div", { class: "part-head" }, h("div", { class: "step" }, step), h("h2", {}, title), h("p", { class: "hint" }, hint)),
+    h("div", { class: "part-body" }, ...body),
+  );
 }
 
 export interface Field {
@@ -80,8 +87,18 @@ export class Out {
   }
 }
 
+// The hanko pressed beside a verdict: 認 accepted, 待 waiting, 拒 refused. The words carry the
+// meaning; the stamp and its ink colour only repeat it (never colour alone).
+const HANKO = { ok: "認", warn: "待", bad: "拒" } as const;
+
 export function banner(kind: "ok" | "warn" | "bad", title: string, text: string): HTMLElement {
-  return h("div", { class: `banner ${kind}` }, h("strong", {}, title), text);
+  return h(
+    "div",
+    { class: `banner ${kind}`, role: kind === "bad" ? "alert" : "status" },
+    h("span", { class: "hanko", "aria-hidden": "true" }, HANKO[kind]),
+    h("strong", {}, title),
+    h("span", {}, text),
+  );
 }
 
 export function codeBlock(label: string, value: string, filename?: string): HTMLElement {

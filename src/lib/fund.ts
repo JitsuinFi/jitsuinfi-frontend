@@ -42,6 +42,29 @@ export interface Payout {
 export interface Wallet {
   holdings: Holding[];
   payouts: Payout[];
+  /** HNK-30.T22: the fund card the manager gave this member (deposit address, fund key). */
+  fund?: import("./fund-card.ts").FundCard;
+}
+
+/** The fund's holdings in aggregate, as the latest path carried them (HNK-30.T22). */
+export interface Portfolio {
+  cash_zat: number;
+  open: number;
+  open_zat: number;
+  overdue: number;
+  overdue_zat: number;
+  repaid: number;
+  due_within: [number, number, number];
+}
+
+/** The portfolio of the newest period this device has a path for, or null. */
+export function latestPortfolio(w: Wallet): { period: number; p: Portfolio } | null {
+  let best: { period: number; p: Portfolio } | null = null;
+  for (const h of w.holdings) {
+    const p = h.path?.body?.portfolio as Portfolio | undefined;
+    if (p && h.path && (!best || h.path.period > best.period)) best = { period: h.path.period, p };
+  }
+  return best;
 }
 
 export const EMPTY: Wallet = { holdings: [], payouts: [] };

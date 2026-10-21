@@ -11,10 +11,12 @@
 import { vault } from "@lucasmarkes/hairline";
 import { account } from "../lib/app-session";
 import { myIdentity, relayDeps } from "../lib/app-relay";
-import { addPath, addPayout, addReceipt, EMPTY, openPeriod, valueOf, withdrawBody, type Holding, type Wallet } from "../lib/fund";
+import { addPath, addPayout, addReceipt, EMPTY, latestPortfolio, openPeriod, valueOf, withdrawBody, type Holding, type Wallet } from "../lib/fund";
+import { decodeFundCard } from "../lib/fund-card";
+import { wasm, zecToZat } from "../lib/core";
 import { draft, send } from "../lib/relay";
 import { encodeMessage, type Header } from "../lib/relay-message";
-import { banner, card, download, h, Out } from "../lib/ui";
+import { actions, banner, button, card, download, field, h, kv, Out, trustedSvg } from "../lib/ui";
 import { deskPage } from "./desk";
 import { mailboxCard } from "./mailbox";
 
@@ -39,8 +41,14 @@ export function memberPage(): HTMLElement {
   const slips = h("div", { class: "mb-slips", "aria-live": "polite" });
   const total = h("p", { class: "mb-plate-sum" }, "");
 
+  const holds = h("p", { class: "mb-plate-note" }, "");
   const render = async () => {
     const w = await load();
+    // HNK-30.T22: what the fund holds, in aggregate, from the newest period's path
+    const lp = latestPortfolio(w);
+    holds.textContent = lp
+      ? `Period ${lp.period}: ${lp.p.open} open receivable${lp.p.open === 1 ? "" : "s"} (${zec(lp.p.open_zat)}), ${lp.p.overdue} overdue, ${lp.p.repaid} repaid; due within 30 days ${lp.p.due_within[0]}, 31 – 90 days ${lp.p.due_within[1]}, later ${lp.p.due_within[2]}; cash ${zec(lp.p.cash_zat)}.`
+      : "";
     const held = w.holdings.reduce((n, x) => n + valueOf(x.units, x.nav), 0);
     total.textContent = w.holdings.length ? `${zec(held)} at the last price the fund showed you` : "No units yet";
     if (!w.holdings.length) {
@@ -134,6 +142,7 @@ export function memberPage(): HTMLElement {
       h("p", { class: "mb-plate-sub" }, "Fund member · key fingerprint"),
       h("p", { class: "mb-plate-v" }, s.fingerprint),
       total,
+      holds,
       h("p", { class: "mb-plate-note" }, s.store?.persistent === false ? "This browser keeps nothing after you close it: your withdraw tokens would be lost. Use a normal window." : "An inbox key only. You never sign anything here."),
     ),
     h(
@@ -155,6 +164,7 @@ export function memberPage(): HTMLElement {
       lede: "Your units, checked against the root the manager signs each period; withdraw at the period's price.",
       stage,
       docs: [
+        depositCard(),
         mailboxCard({
           "fund.receipt": keep(addReceipt, "Kept: the slip is on the tray. Its withdraw token stays on this device only."),
           "fund.merkle_path": keep(async (w, hd) => (await addPath(w, hd)).wallet, "Checked: the slip shows whether your units are under the root."),
@@ -175,3 +185,58 @@ export function memberPage(): HTMLElement {
     }),
   );
 }
+
+/**
+ * HNK-30.T22: how a member pays in. The manager hands a fund card with a deposit address made for
+ * this member; the member pays it from any shielded wallet (the QR is a plain ZIP-321 request),
+ * then gives the manager the transaction id and this screen's contact card for the receipt.
+ */
+function depositCard(): HTMLElement {
+  const code = field("Fund card from the manager", { area: true, placeholder: "jitsuin-fund-v1:…" });
+  const amount = field("Amount to deposit (ZEC)", { type: "number", placeholder: "0.01" });
+  const out = new Out();
+  const show = (w: Wallet) => {
+    if (!w.fund) return;
+    code.input.value = "";
+    out.show(
+      kv([
+        ["Deposit address (made for you)", w.fund.deposit_address, true],
+        ["Fund key (signs your receipts)", w.fund.fund_pk, true],
+      ]),
+    );
+  };
+  void load().then(show, () => undefined);
+  return card(
+    "Deposit",
+    "Pay into the fund",
+    "Paste the fund card the manager gave you, then pay its address from a shielded wallet. Send the manager the transaction id and your contact card below: the receipt with your withdraw token comes back to your inbox.",
+    code.el,
+    amount.el,
+    actions(
+      button("Keep the fund card", async () => {
+        try {
+          const fund = decodeFundCard(code.value());
+          const w = await load();
+          await save({ ...w, fund });
+          show({ ...w, fund });
+        } catch (e) {
+          out.error(e);
+        }
+      }, true),
+      button("Show the deposit QR", async () => {
+        try {
+          const w = await load();
+          if (!w.fund) throw new Error("keep the fund card first");
+          const zat = zecToZat(amount.value());
+          const r = JSON.parse(wasm.paymentRequest(w.fund.deposit_address, BigInt(zat))) as { uri: string; qr_svg: string };
+          show(w);
+          out.el.append(trustedSvg(r.qr_svg), h("p", { class: "hint" }, r.uri));
+        } catch (e) {
+          out.error(e);
+        }
+      }),
+    ),
+    out.el,
+  );
+}
+

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/store.test.ts tests/supplier-deal.test.ts tests/account.test.ts tests/relay-message.test.ts tests/buyer-history.test.ts tests/rate-index.test.ts tests/bundle-verdict.test.ts tests/buyer-check.test.ts tests/relay-client.test.ts tests/buyer-invoices.test.ts tests/kit.test.ts tests/board.test.ts tests/provider.test.ts tests/directory.test.ts tests/units.test.ts tests/fund.test.ts tests/explain.test.ts"
+    "test": "node --test tests/store.test.ts tests/supplier-deal.test.ts tests/account.test.ts tests/relay-message.test.ts tests/buyer-history.test.ts tests/rate-index.test.ts tests/bundle-verdict.test.ts tests/buyer-check.test.ts tests/relay-client.test.ts tests/buyer-invoices.test.ts tests/kit.test.ts tests/board.test.ts tests/provider.test.ts tests/directory.test.ts tests/units.test.ts tests/fund.test.ts tests/explain.test.ts tests/fund-card.test.ts"
   },
   "devDependencies": {
     "@types/three": "0.186.0",

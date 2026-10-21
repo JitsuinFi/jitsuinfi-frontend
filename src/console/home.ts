@@ -7,6 +7,7 @@ import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
 import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
 import { fact, seal } from "./sheet";
+import { encodeFundCard } from "../lib/fund-card";
 import "./desk.css";
 
 interface Session {
@@ -771,7 +772,7 @@ const price = (n: FundNav) => (n.assets_zat / Math.max(1, n.units)).toFixed(4);
  * the wallet become members' units, withdrawals wait for the period's end, and the close pays them
  * from cash with one passkey approval of the exact plan, then signs the new root into JTLR.
  */
-function fundLedger(demo = false): HTMLElement {
+function fundLedger(info: Info, demo = false): HTMLElement {
   const book = h("dl", { class: "fd-book" });
   const queue = h("ol", { class: "fd-queue" });
   const planOut = h("div", { class: "fd-plan" });
@@ -819,6 +820,33 @@ function fundLedger(demo = false): HTMLElement {
     }
   });
 
+  // HNK-30.T22: a fund card for a new member: a deposit address made for them, the fund's key and
+  // mailbox, so the member can pay in and the receipt comes back sealed to them
+  const cardOut = h("div", { class: "fd-plan" });
+  const cardBtn = h("button", { class: "auth-link", type: "button" }, "Fund card for a new member") as HTMLButtonElement;
+  cardBtn.addEventListener("click", async () => {
+    cardBtn.disabled = true;
+    try {
+      const { address } = await post<{ address: string }>("/node/console/fund/deposit-address");
+      const contact = JSON.parse(atob(info.contact.slice("jitsuin-contact-v1:".length).replace(/-/g, "+").replace(/_/g, "/"))) as { mailbox_pk: string };
+      const code = encodeFundCard({ v: 1, fund_pk: info.financier_pk, mailbox_pk: contact.mailbox_pk, deposit_address: address });
+      const text = h("p", { class: "invite-link is-mono" }, code);
+      const copy = h("button", { type: "button" }, "Copy") as HTMLButtonElement;
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          copy.textContent = "Copied";
+        } catch {
+          getSelection()?.selectAllChildren(text);
+        }
+      });
+      cardOut.replaceChildren(h("p", { class: "mail-note" }, "Give this card to the member over a private channel. Its deposit address is new and used for this member only."), text, copy);
+    } catch (err) {
+      say(err);
+    } finally {
+      cardBtn.disabled = false;
+    }
+  });
   const planBtn = h("button", { class: "auth-link", type: "button" }, "Plan the period's close") as HTMLButtonElement;
   planBtn.addEventListener("click", async () => {
     planBtn.disabled = true;
@@ -863,6 +891,8 @@ function fundLedger(demo = false): HTMLElement {
     h("p", { class: "mail-note" }, "For a pooled fund: members hold units, priced from this wallet's cash and receivables at each close."),
     book,
     queue,
+    demo ? null : cardBtn,
+    cardOut,
     demo ? null : deposit,
     demo ? null : planBtn,
     planOut,
@@ -1024,7 +1054,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
     h(
       "div",
       { class: "dk-desk" },
-      h("div", { class: "dk-left" }, mailbox(demo), pipeline(demo), fundLedger(demo)),
+      h("div", { class: "dk-left" }, mailbox(demo), pipeline(demo), fundLedger(info, demo)),
       h("div", { class: "dk-right" }, share(info), mandate(demo), privateMandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );

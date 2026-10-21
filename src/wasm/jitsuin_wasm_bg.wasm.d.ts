@@ -33,7 +33,9 @@ export const mailboxOpenBytes: (a: number, b: number, c: any, d: number, e: numb
 export const mailboxProofBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
 export const mailboxSeal: (a: number, b: number, c: number, d: number, e: any, f: number, g: number) => [number, number, number, number];
 export const messageSignBytes: (a: number, b: number, c: any, d: number, e: number) => [number, number, number, number];
+export const paymentRequest: (a: number, b: number, c: bigint) => [number, number, number, number];
 export const publicKey: (a: number, b: number) => [number, number, number, number];
+export const qrSvg: (a: number, b: number) => [number, number, number, number];
 export const rateIndex: (a: number, b: number, c: number) => [number, number, number, number];
 export const storageKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];
 export const supplierInvoicePublicKeyBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];

@@ -73,6 +73,10 @@ const nav: Check = (x) => {
   const n = x as Record<string, unknown>;
   return typeof x === "object" && x !== null && Object.keys(n).length === 2 && pos(n.assets_zat) && pos(n.units);
 };
+const portfolio: Check = (x) => {
+  const p = x as Record<string, unknown>;
+  return typeof x === "object" && x !== null && ["cash_zat", "open", "open_zat", "overdue", "overdue_zat", "repaid"].every((k) => uint(p[k])) && Array.isArray(p.due_within) && p.due_within.length === 3 && p.due_within.every(uint);
+};
 const fundPath: Check = (x) => typeof x === "string" && x.length % 82 === 0 && x.length <= 82 * 40 && /^[0-9a-f]*$/.test(x);
 
 interface Spec {
@@ -183,7 +187,7 @@ export const TYPES = {
   "fund.merkle_path": {
     flows: "9.6 → 9.7 (HNK-15.T1: a leaf of the unit sum tree, root and total as in JTLR)",
     from: ["fund"], to: ["member"], n: "none",
-    body: { period: req(pos), leaf_id: req(H32), units: req(pos), root: req(H32), total: req(pos), path: req(fundPath) },
+    body: { period: req(pos), leaf_id: req(H32), units: req(pos), root: req(H32), total: req(pos), path: req(fundPath), portfolio: opt(portfolio) },
     attachments: { min: 0, max: 0 }, signer: "fund",
   },
   "fund.withdraw": {

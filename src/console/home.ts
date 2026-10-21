@@ -435,6 +435,69 @@ function nameSection(current: string | null | undefined, onSaved: (name: string)
   return h("section", { class: "mail is-name", "aria-labelledby": "name-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "name-title" }, "Profile")), form, note);
 }
 
+interface MandateData {
+  min_zat: number;
+  max_zat: number;
+  max_tenor_days: number;
+  buyer_kyc: boolean;
+}
+
+/** The public mandate (HNK-30.T19, D-47): what suppliers see of this financier in the directory.
+ *  The node signs it and sends it to the node provider, who lists it; the detailed rules for
+ *  offers stay private on the node (N-15). */
+function mandate(demo = false): HTMLElement {
+  const input = (attrs: Record<string, string>) => h("input", { inputmode: "decimal", ...attrs }) as HTMLInputElement;
+  const min = input({ placeholder: "0.0001" });
+  const max = input({ placeholder: "1" });
+  const tenor = input({ inputmode: "numeric", placeholder: "90" });
+  const kyc = h("input", { type: "checkbox" }) as HTMLInputElement;
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  const zat = (v: string) => Math.round(Number(v) * 1e8);
+  void get<{ mandate: MandateData | null }>("/node/console/mandate").then(
+    (r) => {
+      if (!r.mandate) return;
+      min.value = zec(r.mandate.min_zat);
+      max.value = zec(r.mandate.max_zat);
+      tenor.value = String(r.mandate.max_tenor_days);
+      kyc.checked = r.mandate.buyer_kyc;
+      note.textContent = "This is what the directory shows now, once the provider listed it.";
+    },
+    () => undefined,
+  );
+  const send = h("button", { class: "auth-link", type: "submit" }, "Send to the directory") as HTMLButtonElement;
+  const form = h(
+    "form",
+    { class: "offer-form mandate-form" },
+    h("label", { class: "auth-field" }, h("span", {}, "Smallest invoice (ZEC)"), min),
+    h("label", { class: "auth-field" }, h("span", {}, "Largest invoice (ZEC)"), max),
+    h("label", { class: "auth-field" }, h("span", {}, "Longest tenor (days)"), tenor),
+    h("label", { class: "mandate-kyc" }, kyc, h("span", {}, "Only buyers I know from KYC")),
+    demo ? h("span", {}) : send,
+  );
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    send.disabled = true;
+    try {
+      const body: MandateData = { min_zat: zat(min.value), max_zat: zat(max.value), max_tenor_days: Math.round(Number(tenor.value)), buyer_kyc: kyc.checked };
+      if (![body.min_zat, body.max_zat, body.max_tenor_days].every(Number.isFinite)) throw new Error("fill in the three numbers");
+      await post("/node/console/mandate", body);
+      note.textContent = "Signed and sent to the node provider. Suppliers see it once the provider lists it.";
+    } catch (err) {
+      note.textContent = err instanceof Error ? err.message : String(err);
+    } finally {
+      send.disabled = false;
+    }
+  });
+  return h(
+    "section",
+    { class: "mail is-mandate", "aria-labelledby": "mandate-title" },
+    h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "mandate-title" }, "Public mandate")),
+    h("p", { class: "mail-note mandate-lede" }, "What suppliers see of you in the financier directory. Your detailed rules for offers stay on this node."),
+    form,
+    note,
+  );
+}
+
 /** What a supplier needs to offer this node an invoice: the contact card and the financier key. */
 function share(info: Info): HTMLElement {
   const item = (label: string, value: string, hint: string): HTMLElement => {
@@ -501,7 +564,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
       "div",
       { class: "dk-desk" },
       h("div", { class: "dk-left" }, mailbox(demo)),
-      h("div", { class: "dk-right" }, share(info), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
+      h("div", { class: "dk-right" }, share(info), mandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );
 }

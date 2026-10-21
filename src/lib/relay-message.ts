@@ -178,8 +178,21 @@ export const TYPES = {
   "financier.apply": {
     flows: "D-46 B (HNK-26.T25): applicant to node provider",
     from: ["applicant"], to: ["provider"], n: "none",
-    body: { name: req(text(80)), contact: req(text(120)), note: opt(text(1000)) },
+    body: { name: req(text(80)), contact: req(text(120)), note: opt(text(1000)), list: opt((x) => typeof x === "boolean") },
     attachments: { min: 0, max: 0 }, signer: "none",
+  },
+  "financier.listing": {
+    flows: "D-47 (HNK-30.T19): financier node to node provider, the public mandate for the directory",
+    from: ["financier"], to: ["provider"], n: "none",
+    body: {
+      name: req(text(60)),
+      contact: req(text(400)),
+      mandate: req((x) => {
+        const m = x as Record<string, unknown>;
+        return typeof x === "object" && x !== null && Number.isSafeInteger(m.min_zat) && Number.isSafeInteger(m.max_zat) && Number.isSafeInteger(m.max_tenor_days) && typeof m.buyer_kyc === "boolean";
+      }),
+    },
+    attachments: { min: 0, max: 0 }, signer: "financier",
   },
   "financier.invite": {
     flows: "D-46 B (HNK-26.T25): node provider to applicant",

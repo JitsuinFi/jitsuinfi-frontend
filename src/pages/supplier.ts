@@ -8,6 +8,8 @@
 // comes back the same way (HNK-23.T7); later steps still travel by copy-paste until the financier
 // node exists (HNK-26).
 import { financierFingerprint } from "../lib/account";
+import { rank, verifyDirectory, type Directory, type Fit } from "../lib/directory";
+import { PROVIDER } from "../lib/provider";
 import { account } from "../lib/app-session";
 import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import {
@@ -289,6 +291,16 @@ function signatureCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   );
 }
 
+/** The signed financier directory, checked against the provider key and ranked for `d`. */
+async function findFinanciers(d: SupplierDeal): Promise<Fit[]> {
+  const r = await fetch("/directory.json", { credentials: "same-origin", cache: "no-cache" });
+  if (!r.ok) throw new Error(`the directory answered ${r.status}`);
+  const dir = (await r.json()) as Directory;
+  if (!(await verifyDirectory(dir, PROVIDER.signer_pk))) throw new Error("its signature is not the node provider's");
+  const today = Math.floor(Date.now() / 86_400_000);
+  return rank(dir.financiers, d.amount_zat, Math.max(0, d.due_date - today));
+}
+
 /** T5: offer the invoice to one financier, with a fresh shielded address for this deal. */
 function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   if (d.offer) {
@@ -320,10 +332,48 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   const adv = field("Advance you ask (ZEC)", { type: "number", placeholder: "0.00038" });
   const addr = field("Your shielded address for this deal", { placeholder: "utest1… / u1…", help: "Use a new address for every deal, so deals cannot be linked by address." });
   const out = new Out();
+  // HNK-30.T20 (D-47): the financiers that chose to be listed, matched to this invoice here, in
+  // the browser. Picking one fills its contact card and key; nothing about the invoice is sent.
+  const finder = h("div", { class: "fd" }, h("p", { class: "hint" }, "Reading the financier directory…"));
+  void findFinanciers(d).then(
+    (fits) => {
+      if (!fits.length) {
+        finder.replaceChildren(h("p", { class: "hint" }, "No financier is listed in the directory yet. Paste the contact card and key a financier gave you."));
+        return;
+      }
+      finder.replaceChildren(
+        h("p", { class: "fd-k" }, h("b", { lang: "ja" }, "名簿"), `Financier directory, matched to this invoice in your browser (${fits.filter((f) => f.fits).length} of ${fits.length} fit)`),
+        h(
+          "ol",
+          { class: "fd-list" },
+          ...fits.map((f) => {
+            const m = f.listing.mandate;
+            const use = h("button", { type: "button", class: f.fits ? undefined : "secondary" }, "Offer to this financier") as HTMLButtonElement;
+            use.addEventListener("click", () => {
+              contact.input.value = f.listing.contact;
+              fin.input.value = f.listing.financier_pk;
+              adv.input.focus();
+            });
+            return h(
+              "li",
+              { class: f.fits ? "fd-row is-fit" : "fd-row" },
+              h("span", { class: "fd-mark", lang: "ja", "aria-hidden": "true" }, f.fits ? "適" : "否"),
+              h("strong", {}, f.listing.name),
+              h("span", { class: "fd-m" }, `${zatToZec(m.min_zat)} – ${zatToZec(m.max_zat)} ZEC · up to ${m.max_tenor_days} days${m.buyer_kyc ? " · buyers it knows from KYC" : ""}`),
+              h("span", { class: "fd-why" }, f.fits ? "Fits this invoice." : f.misses.join("; ")),
+              use,
+            );
+          }),
+        ),
+      );
+    },
+    (e) => finder.replaceChildren(h("p", { class: "hint" }, `The directory could not be read (${e instanceof Error ? e.message : String(e)}). Paste a contact card and key instead.`)),
+  );
   return card(
     "Step 2",
     "Offer it to one financier",
     "Your offer goes sealed to the financier's mailbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you for the board entry.",
+    finder,
     contact.el,
     fin.el,
     h("div", { class: "row" }, adv.el, addr.el),

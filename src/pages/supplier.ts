@@ -7,6 +7,7 @@
 // PDF go to the buyer through the relay, sealed to the buyer's mailbox, and the buyer's signature
 // comes back the same way (HNK-23.T7); later steps still travel by copy-paste until the financier
 // node exists (HNK-26).
+import { financierFingerprint } from "../lib/account";
 import { account } from "../lib/app-session";
 import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import {
@@ -273,36 +274,63 @@ function signatureCard(d: SupplierDeal, refresh: () => void): HTMLElement {
 /** T5: offer the invoice to one financier, with a fresh shielded address for this deal. */
 function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   if (d.offer) {
+    const facts = kv([
+      ["Financier key", d.offer.financier_pk, true],
+      ["Advance asked", `${zatToZec(d.offer.advance_zat)} ZEC`],
+      ["Your address for the advance", d.offer.supplier_address, true],
+    ]);
+    if (d.offer.sent) {
+      return card(
+        "Step 2",
+        "Offer sent",
+        "Offer this invoice to one financier only. A second offer gets caught on the board.",
+        banner("ok", "In the financier's mailbox", `Sealed and signed on ${new Date(d.offer.sent.at).toLocaleString()}. The financier's node checks your signature and the buyer's before it answers.`),
+        facts,
+      );
+    }
     const code = encodeOffer({ invoice: d.invoice, buyer_signature: d.buyer_signature!, ...d.offer });
     return card(
       "Step 2",
       "Offer sent",
       "Offer this invoice to one financier only. A second offer gets caught on the board.",
-      kv([
-        ["Financier key", d.offer.financier_pk, true],
-        ["Advance asked", `${zatToZec(d.offer.advance_zat)} ZEC`],
-        ["Your address for the advance", d.offer.supplier_address, true],
-      ]),
+      facts,
       codeBlock("Offer code: send it to the financier", code, `${d.invoice_id}.offer.txt`),
     );
   }
-  const fin = field("Financier key", { placeholder: "64 hex characters from the financier" });
+  const contact = field("Financier's contact card", { area: true, placeholder: "jitsuin-contact-v1:…", help: "From the financier's console, under For suppliers." });
+  const fin = field("Financier key", { placeholder: "64 hex characters from the same place", help: "Checked against the card's fingerprint before anything is sent." });
   const adv = field("Advance you ask (ZEC)", { type: "number", placeholder: "0.00038" });
   const addr = field("Your shielded address for this deal", { placeholder: "utest1… / u1…", help: "Use a new address for every deal, so deals cannot be linked by address." });
   const out = new Out();
   return card(
     "Step 2",
     "Offer it to one financier",
-    "The financier sends you the assignment letter, checks the board for this invoice, then asks you for the board entry.",
+    "Your offer goes sealed to the financier's mailbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you for the board entry.",
+    contact.el,
     fin.el,
     h("div", { class: "row" }, adv.el, addr.el),
     actions(
-      button("Make offer", async () => {
+      button("Send offer", async () => {
         try {
           const advanceZat = zecToZat(adv.value());
           if (advanceZat > d.amount_zat) throw new Error("the advance cannot be more than the invoice amount");
           if (!looksShielded(addr.value())) throw new Error("use a shielded address (u1… / utest1…)");
-          await save({ ...d, offer: { financier_pk: hex64(fin.value(), "financier key"), advance_zat: advanceZat, supplier_address: addr.value() } });
+          const financierPk = hex64(fin.value(), "financier key");
+          const c = await useContact(contact.value(), "financier");
+          if ((await financierFingerprint(financierPk)) !== c.fingerprint) throw new Error("this key does not belong to that contact card: ask the financier again");
+          const offer = { financier_pk: financierPk, advance_zat: advanceZat, supplier_address: addr.value().trim() };
+          const me = myIdentity();
+          const header = signInWasm(
+            draft("deal.offer", { role: "supplier", mailbox_pk: me.mailbox_pk }, c.mailbox_pk, relayDeps, {
+              n: d.n,
+              body: { invoice: d.invoice, buyer_signature: d.buyer_signature!, advance_zat: offer.advance_zat, supplier_address: offer.supplier_address },
+            }),
+            d.supplier_pk,
+            await secretFor(d),
+            relayDeps,
+          );
+          await send(c.mailbox_pk, await encodeMessage(header, []), relayDeps);
+          await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at: Date.now() } } });
           refresh();
         } catch (e) {
           out.error(e);

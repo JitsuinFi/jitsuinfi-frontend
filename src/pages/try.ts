@@ -252,6 +252,12 @@ export function tryPage(autoplay = false): HTMLElement {
     exhibit,
     lens,
     limits,
+    card(
+      "Step 7",
+      "The financier's side",
+      "A financier runs its own node and works from a passkey console. Try the demo console: create a passkey, read the node's sealed mailbox, see that payments wait for the passkey. Nothing there moves money.",
+      actions(h("a", { class: "button", href: "https://jitsuinfi-console-demo.vercel.app/console", target: "_blank", rel: "noopener" }, "Open the demo console")),
+    ),
   );
   if (autoplay) void play({ amount: amount.input, offer, takeHome, out: out.el, exOut: exOut.el });
   return root;

@@ -1,48 +1,72 @@
-// "Try to double-finance" (HNK-30.T3, M-02 sealed invoice kit, D-40): the judge plays the
-// supplier of Case File #0417 and offers an invoice that financier A already registered on the
-// testnet board to financier B. Nothing to install, no wallet, nothing sent anywhere: the checks
-// run in this browser with the same code as the node and `jitsuin verify`.
-import { checkOffer, KIT } from "../lib/kit";
-import { daysToDate, json, wasm, zatToZec } from "../lib/core";
-import { actions, banner, button, card, kv, Out, page } from "../lib/ui";
+// "Try to double-finance" (HNK-30.T3 – T4, M-02 sealed invoice kit, M-01 two exits, D-40): the
+// judge plays the supplier of Case File #0417 and offers an invoice that financier A already
+// registered on the testnet board to financier B, as it is or changed in any field. Every try
+// ends at one of two exits: 偽 (the buyer's seal does not hold for the bytes) or 重 (the board
+// already holds the invoice's fingerprint). Nothing to install, no wallet, nothing recorded: the
+// checks run in this browser with the same code as the node and `jitsuin verify`, against the
+// live board scanned by the financier node (or a bundled copy when the node does not answer).
+import { checkOffer, encodeEdited, KIT, loadBoard, type BoardData, type InvoiceFields } from "../lib/kit";
+import { dateToDays, daysToDate, json, wasm, zatToZec, zecToZat } from "../lib/core";
+import { actions, banner, button, card, field, h, kv, Out, page } from "../lib/ui";
 
 const short = (x: string) => `${x.slice(0, 12)}…${x.slice(-6)}`;
 
-interface Decoded {
-  invoice_id: string;
-  buyer_pk: string;
-  amount_zat: number;
-  issue_date: number;
-  due_date: number;
-  terms_hash: string;
+const LABEL: Record<string, string> = { invoice_id: "number", amount_zat: "amount", issue_date: "issue date", due_date: "due date", terms_hash: "terms" };
+
+interface Decoded extends InvoiceFields {
   nullifier: string;
 }
 
-let boardCache: Promise<string> | null = null;
-function boardData(): Promise<string> {
-  boardCache ??= fetch(KIT.board.url, { credentials: "same-origin" }).then((r) => {
-    if (!r.ok) throw new Error(`board data answered ${r.status}`);
-    return r.text();
+let boardCache: Promise<BoardData> | null = null;
+function board(): Promise<BoardData> {
+  boardCache ??= loadBoard((u, i) => fetch(u, i)).catch((e) => {
+    boardCache = null;
+    throw e;
   });
   return boardCache;
 }
 
+function boardLine(b: BoardData): string {
+  if (b.source === "live") {
+    const mins = Math.max(0, Math.round((Date.now() / 1000 - b.at) / 60));
+    return `Zcash testnet board, live scan up to block ${b.tip} (${mins} min ago)`;
+  }
+  return `Bundled copy of the testnet board up to block ${b.tip} (${daysToDate(Math.floor(b.at / 86400))}): the node did not answer`;
+}
+
 export function tryPage(): HTMLElement {
-  const inv = json<Decoded>(wasm.invoiceDecode(KIT.invoice));
+  const orig = json<Decoded>(wasm.invoiceDecode(KIT.invoice));
   const at = KIT.financierA;
+
+  const id = field("Invoice number", { value: orig.invoice_id });
+  const amount = field("Amount (ZEC)", { value: zatToZec(orig.amount_zat) });
+  const issued = field("Issued", { type: "date", value: daysToDate(orig.issue_date) });
+  const due = field("Due", { type: "date", value: daysToDate(orig.due_date) });
+  const terms = field("Terms hash (SHA-256 of the PDF)", { value: orig.terms_hash });
+  const reset = button(
+    "Put back the original",
+    () => {
+      id.input.value = orig.invoice_id;
+      amount.input.value = zatToZec(orig.amount_zat);
+      issued.input.value = daysToDate(orig.issue_date);
+      due.input.value = daysToDate(orig.due_date);
+      terms.input.value = orig.terms_hash;
+    },
+    true,
+  );
 
   const envelope = card(
     "Step 1",
     "The envelope",
-    `${KIT.supplier} holds one invoice its buyer signed. This is all a supplier brings to a financier.`,
+    `${KIT.supplier} holds one invoice its buyer signed. Change anything you like (number, amount, dates, terms): a new-looking invoice is what a second financier would need.`,
+    h("div", { class: "row" }, id.el, amount.el),
+    h("div", { class: "row" }, issued.el, due.el),
+    terms.el,
     kv([
-      ["Invoice", inv.invoice_id],
-      ["Amount", `${zatToZec(inv.amount_zat)} ZEC (testnet)`],
-      ["Issued / due", `${daysToDate(inv.issue_date)} / ${daysToDate(inv.due_date)}`],
-      ["Buyer key", short(inv.buyer_pk), true],
-      ["Terms (SHA-256 of the PDF)", short(inv.terms_hash), true],
-      ["Buyer's seal", short(KIT.buyerSignature), true],
+      ["Buyer key", short(orig.buyer_pk), true],
+      ["Buyer's seal (signature)", short(KIT.buyerSignature), true],
     ]),
+    actions(reset),
   );
 
   const deskA = card(
@@ -52,15 +76,46 @@ export function tryPage(): HTMLElement {
     banner("ok", "Registered on the board", `Entry at block ${at.height}, transaction ${at.tx_index}. The board shows a fingerprint and a commitment, never A's name or the amount.`),
   );
 
+  const tally = { forged: 0, pledged: 0 };
+  const score = h("p", { class: "note", "aria-live": "polite" });
   const out = new Out();
+
+  const edited = (): { invoice: string; changed: string[] } => {
+    const f: InvoiceFields = {
+      invoice_id: id.value(),
+      supplier_pk: orig.supplier_pk,
+      buyer_pk: orig.buyer_pk,
+      amount_zat: zecToZat(amount.value()),
+      issue_date: dateToDays(issued.value()),
+      due_date: dateToDays(due.value()),
+      terms_hash: terms.value().toLowerCase(),
+    };
+    const changed = (["invoice_id", "amount_zat", "issue_date", "due_date", "terms_hash"] as const).filter((k) => f[k] !== orig[k]);
+    return { invoice: changed.length ? encodeEdited(wasm, f) : KIT.invoice, changed };
+  };
+
   const offer = button("Offer it to financier B", async () => {
     offer.disabled = true;
     try {
       out.show(banner("warn", "Financier B is checking", "First the buyer's seal on these exact bytes, then the board."));
-      const exit = checkOffer(wasm, KIT.invoice, KIT.buyerSignature, await boardData());
+      let invoice: string;
+      let changed: string[];
+      try {
+        ({ invoice, changed } = edited());
+      } catch (e) {
+        tally.forged++;
+        out.show(banner("bad", "Not a valid invoice", `B cannot even read it: ${e instanceof Error ? e.message : String(e)}. No buyer signed this.`, "偽"));
+        return;
+      }
+      const b = await board();
+      const exit = checkOffer(wasm, invoice, KIT.buyerSignature, b.json);
       if (exit.kind === "forged") {
-        out.show(banner("bad", "Forged seal", `The buyer's signature does not hold for this invoice (${exit.reason}). B stops here.`, "偽"));
+        tally.forged++;
+        out.show(
+          banner("bad", "Forged seal", `You changed the ${changed.map((k) => LABEL[k]).join(", ")}. The buyer signed the original bytes, so its signature does not hold for these. B stops here, before the board.`, "偽"),
+        );
       } else if (exit.kind === "pledged") {
+        tally.pledged++;
         out.show(
           banner(
             "bad",
@@ -69,34 +124,50 @@ export function tryPage(): HTMLElement {
             "重",
           ),
           kv([
-            ["Fingerprint N", inv.nullifier, true],
+            ["Fingerprint N", json<Decoded>(wasm.invoiceDecode(invoice)).nullifier, true],
             ["First entry", exit.txid, true],
-            ["Board data", `Testnet board up to block ${KIT.board.upToHeight} (${KIT.board.taken})`],
+            ["Board data", boardLine(b)],
           ]),
         );
       } else {
-        out.show(banner("ok", "Not on the board", "B could finance it. (The kit invoice never ends here.)"));
+        out.show(banner("ok", "Not on the board", `B could finance it. If you got here with a buyer-signed invoice, you found a hole: please tell us. (${boardLine(b)})`));
       }
     } catch (e) {
       out.error(e);
     } finally {
       offer.disabled = false;
+      score.textContent = `Your tries: ${tally.forged} ended at 偽 (forged seal), ${tally.pledged} at 重 (already pledged), 0 got financed. Nothing about your tries leaves this page.`;
     }
   });
 
   const deskB = card(
     "Step 3",
     "Now try financier B",
-    "You are Kurogane. Offer the same invoice to a second financier and see what B can tell.",
+    "You are Kurogane. Offer the invoice to a second financier, as it is or changed. Try as often as you like.",
     actions(offer),
     out.el,
+    score,
+  );
+
+  const limits = card(
+    "Step 4",
+    "What this does not stop",
+    "The board stops one signed invoice from being financed twice. It is not credit diligence.",
+    h(
+      "ul",
+      { class: "limits" },
+      h("li", {}, "A fake invoice that the buyer itself co-signs: the buyer's signature is real, so the board sees a new invoice."),
+      h("li", {}, "One delivery split into two invoices that the buyer both signs."),
+      h("li", {}, "A financier that does not check the board before paying."),
+    ),
   );
 
   return page(
     "Try to double-finance",
-    `${KIT.case}. Play the supplier who sells one invoice twice. No wallet, no account: every check runs in your browser against Zcash testnet board data.`,
+    `${KIT.case}. Play the supplier who sells one invoice twice. No wallet, no account: every check runs in your browser against the Zcash testnet board.`,
     envelope,
     deskA,
     deskB,
+    limits,
   );
 }

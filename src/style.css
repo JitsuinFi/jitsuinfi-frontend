@@ -260,3 +260,8 @@ html main:has(> .auth) { padding-bottom: var(--tabbar-h); }
   .banner .hanko { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
+
+/* try page (HNK-30.T4): the limits of the board, as plain lines on the paper (N-13) */
+ul.limits { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; max-width: 60ch; }
+ul.limits li { position: relative; padding-left: 22px; font-size: 15px; line-height: 1.5; color: var(--ink); }
+ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(--seal); }

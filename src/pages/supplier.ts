@@ -10,6 +10,8 @@
 import { financierFingerprint } from "../lib/account";
 import { rank, recordLine, verifyDirectory, type Directory, type Fit } from "../lib/directory";
 import { PROVIDER } from "../lib/provider";
+import { loadBoard } from "../lib/board";
+import { boardStatus } from "../lib/buyer-invoices";
 import { account } from "../lib/app-session";
 import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import {
@@ -142,14 +144,50 @@ function dealsCard(deals: SupplierDeal[], refresh: () => void): HTMLElement {
       ),
       h("ol", { class: "steps" }, ...timeline(d).map((s) => h("li", { class: `chip ${s.state}` }, s.label))),
       h("small", {}, next ? `Next: ${next}` : "Complete"),
+      boardLine(d),
     );
   });
+  // HNK-25.T7 (BL-D25-09): each offered deal against the live board, filled in when it loads
+  if (deals.some((d) => d.buyer_signature && d.offer)) {
+    void loadBoard((u, i) => fetch(u, i)).then(
+      (b) => {
+        for (const d of deals) {
+          const el = document.getElementById(`board-${d.n}`);
+          if (el) el.textContent = statusOnBoard(d, b.json) ?? "";
+        }
+      },
+      () => undefined,
+    );
+  }
   return card(
     "Deals",
     "Your deals",
     "One line per invoice, newest first. Open a deal to do its next step.",
     rows.length ? h("div", { class: "deals" }, ...rows) : h("p", { class: "hint" }, "No deal yet. Create an invoice below."),
   );
+}
+
+/** The board line under a deal, filled once the board loads. */
+function boardLine(d: SupplierDeal): HTMLElement | null {
+  return d.buyer_signature && d.offer ? h("small", { id: `board-${d.n}`, class: "board-line" }, "") : null;
+}
+
+/** What the board says about this deal, from the bundle the financier sent or what this device holds. */
+function statusOnBoard(d: SupplierDeal, boardJson: string): string | null {
+  try {
+    const bundle =
+      d.bundle ??
+      wasm.bundleBuild(
+        JSON.stringify({
+          invoice: d.invoice,
+          buyer_signature: d.buyer_signature,
+          ...(d.seal ? { assignment: d.seal.letter, seals: [d.seal.s0], with_settlement: true } : {}),
+        }),
+      );
+    return `On the board: ${boardStatus(json<{ register: { status: string }; settled: { on_time: boolean } | null }>(wasm.bundleOnBoard(bundle, boardJson)))}`;
+  } catch {
+    return null;
+  }
 }
 
 // ---------- new invoice (HNK-24.T2) ----------

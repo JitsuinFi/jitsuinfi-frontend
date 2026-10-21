@@ -96,3 +96,24 @@ export function invoiceStatus(rec: BuyerInvoice): string {
   if (rec.signature) return "signed";
   return rec.terms_checked ? "checked, not signed" : "terms PDF not checked";
 }
+
+/** HNK-25.T5 (BL-D25-02): financed invoices (letter sealed by all three) not settled yet, due within `days` (or past due), soonest first. */
+export function dueSoon(list: BuyerInvoice[], today: number, days = 7): Array<{ rec: BuyerInvoice; days_left: number }> {
+  return list
+    .filter((r) => r.assignment?.financier_seal && !r.bundle && r.due_date - today <= days)
+    .map((rec) => ({ rec, days_left: rec.due_date - today }))
+    .sort((a, b) => a.days_left - b.days_left);
+}
+
+/** What the board says, in words, from `bundleOnBoard` (HNK-25.T7, BL-D25-09). */
+export function boardStatus(b: { register: { status: string }; settled: { on_time: boolean } | null }): string {
+  if (b.settled) return b.settled.on_time ? "settled on time" : "settled late";
+  switch (b.register.status) {
+    case "Registered":
+      return "financed, registered on the board";
+    case "DoubleFinanced":
+      return "registered for more than one financier";
+    default:
+      return "not on the board yet";
+  }
+}

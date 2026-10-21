@@ -488,12 +488,27 @@ function mandate(demo = false): HTMLElement {
       send.disabled = false;
     }
   });
+  // HNK-30.T21 (D-48): the provider attests this financier's record from the board; only coarse
+  // classes appear in the directory.
+  const attest = h("button", { class: "auth-link", type: "button" }, "Ask the provider to attest my record") as HTMLButtonElement;
+  attest.addEventListener("click", async () => {
+    attest.disabled = true;
+    try {
+      const r = await post<{ deals: number }>("/node/console/reputation");
+      note.textContent = `Sent ${r.deals} deal fingerprint(s) with their salts, sealed to the node provider. It checks them on the board and lists only classes (deals settled, share on time).`;
+    } catch (err) {
+      note.textContent = err instanceof Error ? err.message : String(err);
+    } finally {
+      attest.disabled = false;
+    }
+  });
   return h(
     "section",
     { class: "mail is-mandate", "aria-labelledby": "mandate-title" },
     h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "mandate-title" }, "Public mandate")),
     h("p", { class: "mail-note mandate-lede" }, "What suppliers see of you in the financier directory. Your detailed rules for offers stay on this node."),
     form,
+    demo ? null : attest,
     note,
   );
 }

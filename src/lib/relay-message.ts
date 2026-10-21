@@ -194,6 +194,14 @@ export const TYPES = {
     },
     attachments: { min: 0, max: 0 }, signer: "financier",
   },
+  "financier.reputation_request": {
+    flows: "D-48 (HNK-30.T21): financier node to node provider, (N, salt) of its deals for attestation",
+    from: ["financier"], to: ["provider"], n: "none",
+    body: {
+      deals: req((x) => Array.isArray(x) && x.length <= 10_000 && x.every((d) => typeof d === "object" && d !== null && /^[0-9a-f]{64}$/.test((d as Record<string, string>).n ?? "") && /^[0-9a-f]{64}$/.test((d as Record<string, string>).salt ?? ""))),
+    },
+    attachments: { min: 0, max: 0 }, signer: "financier",
+  },
   "financier.invite": {
     flows: "D-46 B (HNK-26.T25): node provider to applicant",
     from: ["provider"], to: ["applicant"], n: "none",

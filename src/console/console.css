@@ -1,6 +1,7 @@
 /* Financier console (HNK-26.T21): what the app's sign-in sheet (src/auth.css) does not have.
    Tokens from auth.css (:root:has(.auth)), DS-PAL palette; no boxed paragraphs. */
 html, body { margin: 0; background: #F6F5FC; }
+[hidden] { display: none !important; }
 .auth { min-height: 100dvh; }
 
 .auth-eyebrow { margin: 0; font: 600 11px/1 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }

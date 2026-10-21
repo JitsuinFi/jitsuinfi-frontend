@@ -48,3 +48,5 @@ a.auth-button { display: inline-flex; align-items: center; justify-content: cent
   .auth-button.is-waiting::after { animation-duration: 2s; }
 }
 .auth-facts:empty { display: none; }
+.name-form { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.name-form .auth-field { width: 100%; }

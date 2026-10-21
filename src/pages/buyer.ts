@@ -265,7 +265,7 @@ export function buyerPage(): HTMLElement {
             await send(t, await encodeMessage(hd as Header), relayDeps);
           }
           if (to.length && rec) {
-            await saveInvoice((prev) => ({ ...(prev ?? rec), assignment: { ...a, sealed_at: Date.now() } }), n);
+            await saveInvoice((prev) => ({ ...(prev ?? rec), assignment: { ...a, buyer_seal: seal, sealed_at: Date.now() } }), n);
             sealOut.show(banner("ok", "Sealed and sent", "Your seal went to the financier and the supplier. The financier pays the advance next, with its own seal."));
           } else sealOut.show(codeBlock("Your seal: send it to the financier", seal, "buyer.seal.txt"));
         } catch (e) {
@@ -322,8 +322,18 @@ export function buyerPage(): HTMLElement {
     actions(
       button("Show payment QR", async () => {
         try {
+          // HNK-25.T4: a letter that came through the mailbox is paid only once all three seals hold
+          const n = json<{ nullifier: string }>(wasm.invoiceDecode(pInvoice.value())).nullifier;
+          const a = (await account.current?.store?.get<BuyerInvoice>(storeId(n)))?.assignment;
+          if (a?.letter === pLetter.value()) {
+            const seals = [a.supplier_seal, a.buyer_seal, a.financier_seal].filter((x): x is string => !!x);
+            if (seals.length < 3 || wasm.assignmentStatus(pInvoice.value(), a.letter, JSON.stringify(seals)) !== "Sealed") {
+              throw new Error("the letter is not complete yet: the financier seals it when it pays the advance; wait for that seal in your inbox");
+            }
+          }
+          const payTo = json<{ financier_address: string }>(wasm.assignmentDecode(pLetter.value(), pInvoice.value())).financier_address;
           const r = json<{ uri: string; qr_svg: string }>(await withInvoiceIndex(pInvoice.value(), (m, k) => wasm.buyerRepaymentBytes(m, k, pInvoice.value(), pLetter.value(), today())));
-          payOut.show(trustedSvg(r.qr_svg), codeBlock("Payment request (ZIP-321)", r.uri));
+          payOut.show(trustedSvg(r.qr_svg), kv([["Pays the financier at", payTo, true]]), codeBlock("Payment request (ZIP-321)", r.uri));
         } catch (e) {
           payOut.error(e);
         }
@@ -356,6 +366,12 @@ export function buyerPage(): HTMLElement {
   };
   // HNK-26.T16: the letter from the financier's node and the supplier's seal fill step 3
   const fillSeal = (rec: BuyerInvoice) => {
+    if (rec.assignment?.financier_seal && rec.assignment.letter) {
+      pInvoice.input.value = rec.invoice;
+      pLetter.input.value = rec.assignment.letter;
+      payCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     lInvoice.input.value = rec.invoice;
     if (rec.assignment?.letter) lLetter.input.value = rec.assignment.letter;
     if (rec.assignment?.supplier_seal) lSeal.input.value = rec.assignment.supplier_seal;
@@ -371,7 +387,9 @@ export function buyerPage(): HTMLElement {
       const next = { ...rec, assignment: { ...rec.assignment, ...add } };
       await saveInvoice(() => next, rec.n);
       fillSeal(next);
-      return next.assignment.letter && next.assignment.supplier_seal
+      return next.assignment.financier_seal
+        ? `${rec.invoice_id}: the financier sealed the letter and paid the supplier. Pay at maturity in step 5.`
+        : next.assignment.letter && next.assignment.supplier_seal
         ? `${rec.invoice_id}: letter and the supplier's seal are in step 3. Read the letter, then seal.`
         : `${rec.invoice_id}: kept. Step 3 waits for ${next.assignment.letter ? "the supplier's seal" : "the financier's letter"}.`;
     },
@@ -386,10 +404,32 @@ export function buyerPage(): HTMLElement {
       if (!files[0] || (await fileHash(new File([new Uint8Array(files[0])], "letter.pdf"))) !== f.terms_hash) throw new Error("the PDF is not the letter's document");
       return { letter, pdf: btoa(Array.from(files[0], (x) => String.fromCharCode(x)).join("")), financier_pk: f.financier_pk, financier_mailbox: hd.from.mailbox_pk };
     }),
-    "deal.seal": keepAssignment("Keep the supplier's seal", async (hd) => {
-      if (hd.from.role !== "supplier" || hd.body.index !== 0) throw new Error("only the supplier's seal (the first) is kept here");
-      return { supplier_seal: String(hd.body.seal), supplier_mailbox: hd.from.mailbox_pk };
+    "deal.seal": keepAssignment("Keep the seal", async (hd, _files, rec) => {
+      if (hd.from.role === "supplier" && hd.body.index === 0) return { supplier_seal: String(hd.body.seal), supplier_mailbox: hd.from.mailbox_pk };
+      // HNK-25.T4: the financier's seal completes the letter; checked against the whole chain
+      const a = rec.assignment;
+      if (hd.from.role === "financier" && hd.body.index === 2 && a?.letter && a.supplier_seal && a.buyer_seal) {
+        const s2 = String(hd.body.seal);
+        if (wasm.assignmentStatus(rec.invoice, a.letter, JSON.stringify([a.supplier_seal, a.buyer_seal, s2])) !== "Sealed") throw new Error("this seal does not complete your letter");
+        return { financier_seal: s2 };
+      }
+      throw new Error("not a seal this device expects for this invoice");
     }),
+    "deal.bundle": {
+      label: "Keep the settlement bundle",
+      run: async (r: Received): Promise<string> => {
+        const hd = r.message.header;
+        const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+        if (!rec) throw new Error("no invoice on this device has this fingerprint N");
+        if (rec.assignment?.financier_pk !== hd.signer) throw new Error("not from the financier your letter names");
+        const bundle = String(hd.body.bundle);
+        const v = json<{ nullifier: string }>(wasm.verifyBundle(bundle));
+        if (v.nullifier !== rec.n) throw new Error("this bundle is for another invoice");
+        await saveInvoice((prev) => ({ ...(prev ?? rec), bundle }), rec.n);
+        void refreshInvoices();
+        return `${rec.invoice_id} is settled. The bundle is kept on this device: it proves the whole deal to anyone, on the Verify page.`;
+      },
+    },
   });
 
   // The stage (HNK-30.T17): the invoice in hand and its route along the counter rail. Only the

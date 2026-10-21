@@ -33,8 +33,13 @@ export interface BuyerInvoice {
     financier_mailbox?: string;
     supplier_seal?: string;
     supplier_mailbox?: string;
+    /** The buyer's own seal s1, and the financier's s2 that completes the letter (HNK-25.T4). */
+    buyer_seal?: string;
+    financier_seal?: string;
     sealed_at?: number;
   };
+  /** HNK-26.T18: the verification bundle the financier sent once the repayment settled. */
+  bundle?: string;
 }
 
 const PREFIX = "invoice:";
@@ -70,6 +75,7 @@ export function invoiceRecord(
     ...(previous?.reply_to ? { reply_to: previous.reply_to } : {}),
     ...(previous?.signature_sent_at ? { signature_sent_at: previous.signature_sent_at } : {}),
     ...(previous?.assignment ? { assignment: previous.assignment } : {}),
+    ...(previous?.bundle ? { bundle: previous.bundle } : {}),
   };
 }
 

@@ -17,7 +17,7 @@ const D: Record<string, Entry> = {
   "nav.top": { en: "JitsuinFi, top of page", zh: "JitsuinFi，回到页首" },
   "hero.rail": { en: "Story", zh: "故事" },
   "hero.chip": { en: "Testnet", zh: "测试网" },
-  "hero.badge": { en: "Live on Zcash testnet, NU7", zh: "已在 Zcash 测试网（NU7）运行" },
+  "hero.badge": { en: "Live on Zcash testnet, Ironwood pool", zh: "已在 Zcash 测试网（Ironwood 池）运行" },
   "hero.lede": {
     en: "The private invoice fund on Zcash. Every receivable leaves one fingerprint on a public board, so it is registered once and financed once. Amounts, parties and documents stay in the shielded pool.",
     zh: "Zcash 上的私密发票基金。每笔应收账款在公开登记板上只留下一个指纹，因此只能登记一次、融资一次。金额、交易方和文件都保存在屏蔽池中。",

@@ -42,6 +42,7 @@ export function applyPage(): HTMLElement {
   const name = h("input", { type: "text", maxlength: "80", autocomplete: "organization", placeholder: "e.g. Kurogane Capital" }) as HTMLInputElement;
   const contact = h("input", { type: "text", maxlength: "120", autocomplete: "email", placeholder: "email or phone" }) as HTMLInputElement;
   const note = h("textarea", { rows: "3", maxlength: "1000", placeholder: "What you finance, roughly how much, where you are" }) as HTMLTextAreaElement;
+  const list = h("input", { type: "checkbox" }) as HTMLInputElement;
   const line = (jp: string, en: string, field: HTMLElement) => h("label", { class: "ap-line" }, h("span", {}, h("b", { lang: "ja" }, jp), en), field);
   const form = h(
     "article",
@@ -50,6 +51,12 @@ export function applyPage(): HTMLElement {
     line("名称", "Company or fund", name),
     line("連絡先", "How we reach you", contact),
     line("備考", "Anything we should know (optional)", note),
+    h(
+      "label",
+      { class: "ap-opt" },
+      list,
+      h("span", {}, h("b", { lang: "ja" }, "名簿掲載"), "List me in the financier directory. Suppliers then see your name, your contact card and the coarse mandate you set in your console; nothing about your deals."),
+    ),
     h("p", { class: "ap-small" }, "Sealed to the node provider before it leaves this page. The relay stores ciphertext only."),
   );
   const post = h("button", { type: "button", class: "seal-btn" }, h("span", {}, "Seal it and post it")) as HTMLButtonElement;
@@ -96,8 +103,9 @@ export function applyPage(): HTMLElement {
       if (!name.value.trim() || !contact.value.trim()) throw new Error("Give a name and a way to reach you first.");
       const seed = replySeed();
       const me = await ensureMailbox(seed, relayDeps);
-      const body: Record<string, string> = { name: name.value.trim(), contact: contact.value.trim() };
+      const body: Record<string, string | boolean> = { name: name.value.trim(), contact: contact.value.trim() };
       if (note.value.trim()) body.note = note.value.trim();
+      if (list.checked) body.list = true;
       const hd = draft("financier.apply", { role: "applicant", mailbox_pk: me.mailbox_pk }, PROVIDER.mailbox_pk, relayDeps, { body }) as Header;
       await send(PROVIDER.mailbox_pk, await encodeMessage(hd), relayDeps);
       store()?.setItem(SENT, new Date().toISOString());

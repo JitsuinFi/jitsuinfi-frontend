@@ -18,6 +18,10 @@
 }
 .ap-line input:focus, .ap-line textarea:focus { outline: none; border-bottom: 2px solid var(--seal); }
 .ap-line :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+.ap-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; cursor: pointer; }
+.ap-opt input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--seal); }
+.ap-opt span { display: grid; gap: 4px; font: 400 13px/1.45 var(--f-body); color: var(--ink); }
+.ap-opt b { font: 800 14px/1 var(--f-seal); color: var(--head); letter-spacing: .1em; }
 .ap-small { margin: 0; font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
 
 .ap { min-height: 0; }

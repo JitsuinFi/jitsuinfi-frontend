@@ -1,4 +1,5 @@
 // Small DOM helpers: no framework, no innerHTML for user data.
+import { explain } from "./explain";
 
 type Attrs = Record<string, string | boolean | undefined>;
 type Child = Node | string | null | undefined | false;
@@ -83,7 +84,11 @@ export class Out {
 
   error(e: unknown): void {
     const msg = e instanceof Error ? e.message : String(e);
-    this.show(banner("bad", "Refused", msg));
+    // HNK-21.T9: what happened in a sentence; the crate's own words stay for support
+    const said = explain(msg);
+    const b = banner("bad", "Refused", said);
+    if (said !== msg) b.append(h("small", { class: "banner-detail" }, msg));
+    this.show(b);
   }
 }
 

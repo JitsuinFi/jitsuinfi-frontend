@@ -281,3 +281,6 @@ ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(-
 .lens[data-world="true"] .lens-paper { opacity: .12; filter: blur(3px); transform: scale(.98); }
 .lens[data-world="true"] .lens-pool { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .lens-side { transition: none; } }
+
+/* HNK-21.T9: the crate's own words under a readable refusal */
+.banner .banner-detail { display: block; margin-top: 4px; font: 400 11px/1.4 var(--f-mono, ui-monospace, monospace); opacity: .7; overflow-wrap: anywhere; }

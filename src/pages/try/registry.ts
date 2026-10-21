@@ -17,9 +17,29 @@ export interface Entry {
 const PER_PAGE = 5;
 const short = (x: string) => `${x.slice(0, 14)}…${x.slice(-8)}`;
 
+/** The registry rows of a board snapshot (wasm `boardMemoDescribe` per entry); a settled entry
+ *  carries its settled tag where a register entry carries N. */
+export function entriesOf(
+  boardJson: string,
+  describe: (memo: string) => string,
+  mine?: string,
+): Entry[] {
+  const list = JSON.parse(boardJson) as Array<{ txid: string; height: number; tx_index: number; memo: string }>;
+  return list.flatMap((e) => {
+    try {
+      const d = JSON.parse(describe(e.memo)) as { kind: string; nullifier?: string; settled_tag?: string };
+      return [{ txid: e.txid, height: e.height, tx_index: e.tx_index, n: d.nullifier ?? d.settled_tag ?? "", kind: d.kind, mine: e.txid === mine }];
+    } catch {
+      return [];
+    }
+  });
+}
+
 export interface Registry {
   el: HTMLElement;
   set(entries: Entry[], note: string): void;
+  /** Marks `txid`'s row if it is on the open spread; false otherwise. */
+  mark(txid: string): boolean;
   /** Turns to the spread holding `txid` and marks its row; resolves with the row element. */
   find(txid: string): Promise<HTMLElement | null>;
   clear(): void;
@@ -105,6 +125,11 @@ export function registry(): Registry {
         if (!still()) await run(row, { x: [0, 3, 0], duration: dur.seal }, ease.snapSettle);
       }
       return row;
+    },
+    mark(txid) {
+      const row = el.querySelector<HTMLElement>(`li[data-txid="${txid}"]`);
+      row?.classList.add("is-hit");
+      return row !== null;
     },
     clear() {
       for (const r of el.querySelectorAll(".is-hit")) r.classList.remove("is-hit");

@@ -20,7 +20,7 @@ import { lens } from "./try/lens";
 import { notice } from "./try/notice";
 import { phone } from "./try/phone";
 import { printer } from "./try/receipt";
-import { registry, type Entry } from "./try/registry";
+import { entriesOf, registry } from "./try/registry";
 import { seikyusho } from "./try/seikyusho";
 import "./try.css";
 
@@ -103,21 +103,10 @@ export function tryPage(autoplay = false): HTMLElement {
   const counter = h("section", { class: "ct", "aria-label": "Financier B's counter" }, desk, windowEl, thread);
 
   void board().then(
-    (b) => {
-      const entries = JSON.parse(b.json) as Array<{ txid: string; height: number; tx_index: number; memo: string }>;
-      const list: Entry[] = entries.flatMap((e) => {
-        try {
-          // a settled entry carries its settled tag where a register entry carries N
-          const d = json<{ kind: string; nullifier?: string; settled_tag?: string }>(wasm.boardMemoDescribe(e.memo));
-          return [{ txid: e.txid, height: e.height, tx_index: e.tx_index, n: d.nullifier ?? d.settled_tag ?? "", kind: d.kind, mine: e.txid === at.txid }];
-        } catch {
-          return [];
-        }
-      });
-      book.set(list, boardLine(b));
-    },
+    (b) => book.set(entriesOf(b.json, (m) => wasm.boardMemoDescribe(m), at.txid), boardLine(b)),
     (e) => book.set([], e instanceof Error ? e.message : String(e)),
   );
+
 
   // ---------- live: the seal and N follow every keystroke ----------
   const edited = (): { invoice: string; changed: string[] } => {
@@ -188,7 +177,10 @@ export function tryPage(autoplay = false): HTMLElement {
   };
 
   const toPile = async (copy: HTMLElement, glyph: string) => {
-    const slot = h("span", { class: "ct-sheetlet", lang: "ja", style: `--r:${((tries * 37) % 13) - 6}deg;--i:${Math.min(tries - 1, 8)}` }, glyph);
+    // CSSOM, not a style attribute: the CSP (style-src 'self') refuses inline style attributes
+    const slot = h("span", { class: "ct-sheetlet", lang: "ja" }, glyph);
+    slot.style.setProperty("--r", `${((tries * 37) % 13) - 6}deg`);
+    slot.style.setProperty("--i", String(Math.min(tries - 1, 8)));
     stack.append(slot);
     slot.style.visibility = "hidden";
     const d = delta(copy, slot);

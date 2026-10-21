@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DealStore, MemoryBackend } from "../src/lib/store.ts";
 import { HISTORY_ID } from "../src/lib/buyer-history.ts";
-import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../src/lib/buyer-invoices.ts";
+import { boardStatus, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../src/lib/buyer-invoices.ts";
 
 const dec = (n: string, id: string) => ({ nullifier: n, invoice_id: id, amount_zat: 5_000_000, due_date: 20_776 });
 
@@ -37,4 +37,19 @@ test("status and order", () => {
   assert.equal(invoiceStatus(b), "checked, not signed");
   assert.deepEqual(sortInvoices([a, b]).map((r) => r.invoice_id), ["B", "A"]);
   assert.equal(isInvoiceId(HISTORY_ID), false);
+});
+
+test("financed invoices due within a week are reminded, soonest first; settled ones are not", () => {
+  const base = { invoice_id: "X", amount_zat: 1, invoice: "i", key_index: 0, terms_checked: true, received_at: 0 };
+  const sealed = { financier_seal: "s2" };
+  const list = [
+    { ...base, n: "a", due_date: 110, assignment: sealed },
+    { ...base, n: "b", due_date: 103, assignment: sealed },
+    { ...base, n: "c", due_date: 99, assignment: sealed },
+    { ...base, n: "d", due_date: 101, assignment: sealed, bundle: "settled" },
+    { ...base, n: "e", due_date: 101 },
+  ];
+  assert.deepEqual(dueSoon(list, 100).map((x) => [x.rec.n, x.days_left]), [["c", -1], ["b", 3]]);
+  assert.equal(boardStatus({ register: { status: "Registered" }, settled: { on_time: false } }), "settled late");
+  assert.equal(boardStatus({ register: { status: "NotFound" }, settled: null }), "not on the board yet");
 });

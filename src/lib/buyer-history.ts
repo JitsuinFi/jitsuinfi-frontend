@@ -43,3 +43,31 @@ export function dropTail(h: HistoryDoc, dropped: number[]): HistoryDoc {
   }
   return { certs: h.certs.slice(0, from) };
 }
+
+/** The public fields of one history certificate (JTSH v1, jitsuin-core `HistoryCert`). */
+export interface CertFields {
+  index: number;
+  nullifier: string;
+  amount_zat: number;
+  due_date: number;
+  financier_pk: string;
+  identity_pk: string;
+}
+
+const hexOf = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+
+/** Reads a certificate (base64url): magic, version, index, keys, N, amount, due date, financier, prev, identity, signature. */
+export function certFields(b64: string): CertFields {
+  const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+  const b = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  if (b.length < 213 || String.fromCharCode(...b.slice(0, 4)) !== "JTSH") throw new Error("not a history certificate");
+  const v = new DataView(b.buffer);
+  return {
+    index: v.getUint32(5, true),
+    nullifier: hexOf(b.slice(73, 105)),
+    amount_zat: Number(v.getBigUint64(105, true)),
+    due_date: v.getUint32(113, true),
+    financier_pk: hexOf(b.slice(117, 149)),
+    identity_pk: hexOf(b.slice(181, 213)),
+  };
+}

@@ -10,14 +10,14 @@
 // `historyNext`); for an invoice already in hand, `k` is found from the key it is addressed to.
 import { account } from "../lib/app-session";
 import { loadBoard } from "../lib/board";
-import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
+import { append, certFields, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
 import { discard, draft, send, type Received } from "../lib/relay";
 import { encodeMessage, verifyHeader, type Header } from "../lib/relay-message";
 import { deskPage, miniInvoice, route } from "./desk";
 import { mailboxCard } from "./mailbox";
-import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
+import { boardStatus, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, trustedSvg } from "../lib/ui";
 
@@ -501,13 +501,45 @@ export function buyerPage(): HTMLElement {
     }
     signCard.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  // HNK-25.T7 (BL-D25-09): each signed invoice against the board, with what this device holds
+  // (the settlement bundle when the financier sent it, else the invoice, letter and seals)
+  const onBoard = (rec: BuyerInvoice, boardJson: string | undefined): string | null => {
+    if (!boardJson || !rec.signature) return null;
+    try {
+      const a = rec.assignment;
+      const bundle =
+        rec.bundle ??
+        wasm.bundleBuild(
+          JSON.stringify({
+            invoice: rec.invoice,
+            buyer_signature: rec.signature,
+            ...(a?.letter ? { assignment: a.letter, seals: [a.supplier_seal, a.buyer_seal, a.financier_seal].filter(Boolean), with_settlement: true } : {}),
+          }),
+        );
+      return boardStatus(json<{ register: { status: string }; settled: { on_time: boolean } | null }>(wasm.bundleOnBoard(bundle, boardJson)));
+    } catch {
+      return null;
+    }
+  };
   const refreshInvoices = async () => {
     try {
       const list = await loadInvoices();
       if (!account.current?.store) return listOut.show(h("p", { class: "hint" }, "This browser blocks local storage, so received invoices are not kept."));
       if (!list.length) return listOut.show(h("p", { class: "hint" }, "No invoice yet. Check one in step 2 and it is kept here, encrypted on this device."));
       paintStage(list[0]);
+      const board = await loadBoard((u, i) => fetch(u, i)).catch(() => undefined);
+      // HNK-25.T5 (BL-D25-02): what falls due within a week, from this device only
+      const due = dueSoon(list, today());
+      const reminders = due.length
+        ? banner(
+            "warn",
+            due.length === 1 ? "Due soon" : `${due.length} invoices due soon`,
+            due.map((d) => `${d.rec.invoice_id}: ${zatToZec(d.rec.amount_zat)} ZEC ${d.days_left < 0 ? `${-d.days_left} day${d.days_left === -1 ? "" : "s"} past due` : d.days_left === 0 ? "due today" : `in ${d.days_left} day${d.days_left === 1 ? "" : "s"}`}`).join(" · ") + ". Pay in step 5.",
+            "期",
+          )
+        : null;
       listOut.show(
+        ...(reminders ? [reminders] : []),
         h(
           "div",
           { class: "deals" },
@@ -522,7 +554,7 @@ export function buyerPage(): HTMLElement {
                 h("span", {}, `${zatToZec(rec.amount_zat)} ZEC · due ${daysToDate(rec.due_date)} · key #${rec.key_index}`),
                 button("Open", () => open(rec), true),
               ),
-              h("small", {}, invoiceStatus(rec)),
+              h("small", {}, [invoiceStatus(rec), onBoard(rec, board?.json)].filter(Boolean).join(" · ")),
             ),
           ),
         ),
@@ -532,6 +564,37 @@ export function buyerPage(): HTMLElement {
     }
   };
   const listCard = card("Invoices", "Your invoices", "Invoices addressed to your keys, kept encrypted on this device after you check them.", listOut.el);
+
+  // HNK-25.T6 (BL-D26-09): my history as financiers see it, checked against the board here; the
+  // financiers named in my own certificates count, so every outcome shows
+  const mineOut = new Out();
+  const mineCard = card(
+    "History",
+    "My payment history",
+    "What a financier sees when you send your history: each invoice you financed, anchored on the board, and whether you paid it on time.",
+    actions(
+      button("Check my history", async () => {
+        try {
+          const hist = await loadHistory();
+          if (!hist.certs.length) return mineOut.show(h("p", { class: "hint" }, "No certificate yet: your history starts with the first invoice a financier finances."));
+          const fields = hist.certs.map(certFields);
+          const board = await loadBoard((u, i) => fetch(u, i));
+          const allow = [...new Set(fields.map((f) => f.financier_pk))];
+          const r = json<{ on_time: number; late: number; defaults: number; open: number; lines: Array<{ index: number; due_date: number; outcome: string }> }>(
+            wasm.verifyHistory(JSON.stringify(hist.certs), fields[0].identity_pk, JSON.stringify(allow), board.json, today(), 7),
+          );
+          const word: Record<string, string> = { PaidOnTime: "paid on time", PaidLate: "paid late", Default: "not paid past due", Open: "open, not due yet" };
+          mineOut.show(
+            banner(r.defaults ? "bad" : "ok", `${r.on_time} on time · ${r.late} late · ${r.open} open · ${r.defaults} defaulted`, `Checked against the ${board.source} board up to block ${board.tip}.`, r.defaults ? "滞" : "済"),
+            kv(r.lines.map((l) => [`#${l.index} · due ${daysToDate(l.due_date)} · ${zatToZec(fields[l.index]?.amount_zat ?? 0)} ZEC`, word[l.outcome] ?? l.outcome])),
+          );
+        } catch (e) {
+          mineOut.error(e);
+        }
+      }),
+    ),
+    mineOut.el,
+  );
   void refreshInvoices();
 
   return deskPage({
@@ -540,7 +603,7 @@ export function buyerPage(): HTMLElement {
     title: "Buyer",
     lede: "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.",
     stage,
-    docs: [mailCard, listCard, keysCard, signCard, sealCard, histCard, payCard],
+    docs: [mailCard, listCard, mineCard, keysCard, signCard, sealCard, histCard, payCard],
   });
 }
 

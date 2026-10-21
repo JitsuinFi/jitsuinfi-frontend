@@ -29,7 +29,7 @@ function board(): Promise<BoardData> {
 }
 
 
-export function tryPage(): HTMLElement {
+export function tryPage(autoplay = false): HTMLElement {
   const orig = json<Decoded>(wasm.invoiceDecode(KIT.invoice));
   const at = KIT.financierA;
 
@@ -243,7 +243,7 @@ export function tryPage(): HTMLElement {
     ),
   );
 
-  return page(
+  const root = page(
     "Try to double-finance",
     `${KIT.case}. Play the supplier who sells one invoice twice. No wallet, no account: every check runs in your browser against the Zcash testnet board.`,
     envelope,
@@ -253,4 +253,55 @@ export function tryPage(): HTMLElement {
     lens,
     limits,
   );
+  if (autoplay) void play({ amount: amount.input, offer, takeHome, out: out.el, exOut: exOut.el });
+  return root;
+}
+
+// The 20-second clip of the video (HNK-30.T9, M-01 then M-03): #/try/play runs the demo by itself
+// at a filmable pace, the same way every time: change the amount (偽), put it back (重), take
+// Exhibit A (PASS). Nothing else differs from the page a judge uses.
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function until(cond: () => boolean, ms = 8000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!cond() && Date.now() < end) await wait(100);
+}
+
+async function typeInto(input: HTMLInputElement | HTMLTextAreaElement, text: string): Promise<void> {
+  input.focus();
+  input.value = "";
+  for (const ch of text) {
+    input.value += ch;
+    await wait(110);
+  }
+}
+
+async function play(p: { amount: HTMLInputElement | HTMLTextAreaElement; offer: HTMLButtonElement; takeHome: HTMLButtonElement; out: HTMLElement; exOut: HTMLElement }): Promise<void> {
+  const original = p.amount.value;
+  const focus = (el: Element) => el.scrollIntoView({ behavior: "smooth", block: "center" });
+  const verdict = (box: HTMLElement, glyph: string) => () => box.querySelector(".banner .hanko")?.textContent === glyph;
+  await wait(1200);
+  focus(p.amount);
+  await wait(700);
+  await typeInto(p.amount, "0.0005");
+  await wait(500);
+  focus(p.offer);
+  await wait(600);
+  p.offer.click();
+  await until(verdict(p.out, "偽"));
+  await wait(2600);
+  focus(p.amount);
+  await wait(600);
+  await typeInto(p.amount, original);
+  await wait(400);
+  focus(p.offer);
+  await wait(500);
+  p.offer.click();
+  await until(verdict(p.out, "重"));
+  await wait(2800);
+  focus(p.takeHome);
+  await wait(600);
+  p.takeHome.click();
+  await until(() => p.exOut.querySelector(".banner") !== null);
+  focus(p.exOut);
 }

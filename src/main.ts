@@ -30,7 +30,7 @@ const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
 
 // The financier console moves to the financier's own node (P-11, HNK-26). Until then this
 // simulation stays reachable by address only, not in the navigation.
-const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage };
+const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage, "/try/play": () => tryPage(true) };
 
 function home(): HTMLElement {
   // Each screen wears a seal badge, as the roles on the sign-in sheet: 売 sell, 買 buy, 資 fund,

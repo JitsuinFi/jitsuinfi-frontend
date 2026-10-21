@@ -5,6 +5,26 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/node/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "https://financier-node-production.up.railway.app/node/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console.html"
+    },
+    {
       "source": "/api/board",
       "destination": "https://financier-node-production.up.railway.app/node/board"
     },
@@ -43,6 +63,41 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/(index.html|app.html)",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/console.html",
+      "missing": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/",
+      "permanent": false
     }
   ]
 }

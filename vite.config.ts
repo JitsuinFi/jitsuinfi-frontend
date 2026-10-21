@@ -9,6 +9,9 @@ import { resolve } from "node:path";
 // wins over /api. NODE_URL overrides the target.
 const relay = {
   "/api/board": { target: process.env.NODE_URL ?? "http://localhost:8788", changeOrigin: true, rewrite: () => "/node/board" },
+  // The financier console (console.html, HNK-26.T21) talks to the node through /node/*. The
+  // browser's Origin header is kept, so the node must run with NODE_ORIGIN = this server.
+  "/node": { target: process.env.NODE_URL ?? "http://localhost:8788" },
   "/api": { target: process.env.RELAY_URL ?? "http://localhost:8787", changeOrigin: true },
 };
 
@@ -22,6 +25,7 @@ export default defineConfig({
       input: {
         landing: resolve(import.meta.dirname, "index.html"),
         app: resolve(import.meta.dirname, "app.html"),
+        console: resolve(import.meta.dirname, "console.html"),
       },
     },
   },

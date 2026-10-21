@@ -15,10 +15,11 @@ import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
 import { discard, draft, send, type Received } from "../lib/relay";
 import { encodeMessage, verifyHeader } from "../lib/relay-message";
+import { deskPage, miniInvoice, route } from "./desk";
 import { mailboxCard } from "./mailbox";
 import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
-import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page, trustedSvg } from "../lib/ui";
+import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, trustedSvg } from "../lib/ui";
 
 // This tab only: the history check found the board ahead of this device, so issuing is blocked.
 let successorOnBoard = false;
@@ -343,9 +344,31 @@ export function buyerPage(): HTMLElement {
   };
   const mailCard = mailboxCard({ "invoice.sign_request": fromInbox });
 
+  // The stage (HNK-30.T17): the invoice in hand and its route along the counter rail. Only the
+  // first three stations are tracked on this device; sealing and paying follow in their steps.
+  const stage = h("section", { class: "ds", "aria-label": "The invoice in hand" });
+  const paintStage = (rec?: BuyerInvoice) => {
+    const done = rec ? [rec.terms_checked, !!rec.signature, !!rec.signature_sent_at] : [false, false, false];
+    const first = done.indexOf(false);
+    const state = (i: number): "done" | "next" | "later" => (i < 3 && done[i] ? "done" : i === (first < 0 ? 3 : first) ? "next" : "later");
+    const stations = [
+      { glyph: "受", label: "Checked with its PDF" },
+      { glyph: "署", label: "Signed" },
+      { glyph: "送", label: "Sent to the supplier" },
+      { glyph: "印", label: "Letter sealed" },
+      { glyph: "払", label: "Paid at maturity" },
+    ].map((x, i) => ({ ...x, state: state(i) }));
+    stage.replaceChildren(
+      miniInvoice(rec ? { id: rec.invoice_id, amount: `${zatToZec(rec.amount_zat)} ZEC`, due: daysToDate(rec.due_date), n: rec.n, sealed: !!rec.signature } : null),
+      route(stations, rec ? `${rec.invoice_id}: ${invoiceStatus(rec)}.` : "Invoices addressed to your keys arrive in your mailbox below."),
+    );
+  };
+  paintStage();
+
   // 0. the invoices received on this device, newest first; Open fills every step
   const listOut = new Out();
   const open = (rec: BuyerInvoice) => {
+    paintStage(rec);
     for (const f of [sInvoice, lInvoice, hInvoice, pInvoice]) {
       f.input.value = rec.invoice;
       f.input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -357,6 +380,7 @@ export function buyerPage(): HTMLElement {
       const list = await loadInvoices();
       if (!account.current?.store) return listOut.show(h("p", { class: "hint" }, "This browser blocks local storage, so received invoices are not kept."));
       if (!list.length) return listOut.show(h("p", { class: "hint" }, "No invoice yet. Check one in step 2 and it is kept here, encrypted on this device."));
+      paintStage(list[0]);
       listOut.show(
         h(
           "div",
@@ -384,7 +408,14 @@ export function buyerPage(): HTMLElement {
   const listCard = card("Invoices", "Your invoices", "Invoices addressed to your keys, kept encrypted on this device after you check them.", listOut.el);
   void refreshInvoices();
 
-  return page("Buyer", "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.", mailCard, listCard, keysCard, signCard, sealCard, histCard, payCard);
+  return deskPage({
+    glyph: "買",
+    eyebrow: "Buyer's counter",
+    title: "Buyer",
+    lede: "Confirm the invoice, acknowledge who you will pay, and pay at maturity, all from keys only you hold.",
+    stage,
+    docs: [mailCard, listCard, keysCard, signCard, sealCard, histCard, payCard],
+  });
 }
 
 function invoiceTable(f: Record<string, string | number>): HTMLElement {

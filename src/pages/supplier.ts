@@ -19,14 +19,16 @@ import {
   nextAction,
   nextStep,
   sortDeals,
+  STEPS,
   timeline,
   type SupplierDeal,
 } from "../lib/supplier-deal";
-import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page } from "../lib/ui";
+import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out } from "../lib/ui";
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { draft, send, signInWasm } from "../lib/relay";
 import { describeFiles, encodeMessage } from "../lib/relay-message";
 import { mailboxCard, useContact } from "./mailbox";
+import { deskPage, miniInvoice, route } from "./desk";
 
 // The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;
@@ -52,7 +54,7 @@ async function save(d: SupplierDeal): Promise<void> {
 }
 
 export function supplierPage(): HTMLElement {
-  const root = h("div");
+  const root = h("div", { "data-wide": "true" });
   const refresh = (): void => {
     void render(root, refresh);
   };
@@ -71,7 +73,23 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
     cards.unshift(banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes."));
   }
   if (open) cards.push(...dealCards(open, refresh));
-  root.replaceChildren(page("Supplier", LEAD, ...cards));
+  // The stage (HNK-30.T17): the open deal's 請求書 and its route along the counter rail.
+  const GLYPH = { signature: "買", offer: "送", entry: "登", seal: "印", advance: "金" } as const;
+  const stations = open
+    ? timeline(open).map((s) => ({ glyph: GLYPH[s.key], label: s.label, state: s.state }))
+    : STEPS.map((s) => ({ glyph: GLYPH[s.key], label: s.label, state: "later" as const }));
+  const next = open ? nextAction(open) : null;
+  const stage = h(
+    "section",
+    { class: "ds", "aria-label": "The open deal" },
+    miniInvoice(
+      open
+        ? { id: open.invoice_id, amount: `${zatToZec(open.amount_zat)} ZEC`, due: daysToDate(open.due_date), n: open.n, sealed: !!open.buyer_signature, stamp: open.advance?.matches ? "済" : undefined }
+        : null,
+    ),
+    route(stations, open ? (next ? `Next: ${next}.` : "Complete: the advance arrived as agreed.") : deals.length ? "Open a deal below to see where it stands." : "Issue your first invoice below."),
+  );
+  root.replaceChildren(deskPage({ glyph: "売", eyebrow: "Supplier's counter", title: "Supplier", lede: LEAD, stage, docs: cards }));
 }
 
 // ---------- deals and timeline (HNK-24.T9) ----------

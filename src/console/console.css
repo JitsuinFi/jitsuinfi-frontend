@@ -40,7 +40,7 @@ a.auth-button { display: inline-flex; align-items: center; justify-content: cent
 .mail-note { margin: 0; font-size: 13px; color: var(--ink-2); text-align: center; }
 .mail-note:empty { display: none; }
 .invite { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.invite-link { margin: 0; width: 100%; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); font-size: 12.5px; line-height: 1.5; color: var(--head); overflow-wrap: anywhere; user-select: all; }
+.invite-link { box-sizing: border-box; margin: 0; width: 100%; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); font-size: 12.5px; line-height: 1.5; color: var(--head); overflow-wrap: anywhere; user-select: all; }
 .invite .auth-link { padding: 4px 0; font-size: 13px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -50,13 +50,17 @@ a.auth-button { display: inline-flex; align-items: center; justify-content: cent
 .auth-facts:empty { display: none; }
 .name-form { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .name-form .auth-field { width: 100%; }
-.offer { grid-column: 2 / 4; display: flex; flex-direction: column; gap: 10px; padding-top: 6px; }
+.offer { grid-column: 2 / 4; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 6px; }
 .offer-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
 .offer-facts dt { color: var(--ink-2); }
 .offer-facts dd { margin: 0; min-width: 0; color: var(--head); font-weight: 600; overflow-wrap: anywhere; }
 .offer-checked { text-align: left; }
 .offer-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; align-items: start; }
+.offer-form > * { min-width: 0; }
+.offer-form input { width: 100%; box-sizing: border-box; }
 .offer-form .auth-link { grid-column: 1 / -1; justify-self: start; }
 @media (max-width: 420px) { .offer-form { grid-template-columns: 1fr; } }
 .offer-problem, .offer-done { grid-column: 2 / 4; margin: 0; font-size: 13px; line-height: 1.45; color: var(--head); }
 .offer-problem { color: var(--seal); }
+.kyc-ok { color: var(--head); font-weight: 600; }
+.kyc-flag { color: var(--seal); font-weight: 600; }

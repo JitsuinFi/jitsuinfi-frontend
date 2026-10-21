@@ -7,6 +7,7 @@
 // PDF go to the buyer through the relay, sealed to the buyer's mailbox, and the buyer's signature
 // comes back the same way (HNK-23.T7); later steps still travel by copy-paste until the financier
 // node exists (HNK-26).
+import { NET } from "../lib/network";
 import { financierFingerprint } from "../lib/account";
 import { rank, recordLine, verifyDirectory, type Directory, type Fit } from "../lib/directory";
 import { PROVIDER } from "../lib/provider";
@@ -442,7 +443,7 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   const contact = field("Financier's contact card", { area: true, placeholder: "jitsuin-contact-v1:…", help: "From the financier's console, under For suppliers." });
   const fin = field("Financier key", { placeholder: "64 hex characters from the same place", help: "Checked against the card's fingerprint before anything is sent." });
   const adv = field("Advance you ask (ZEC)", { type: "number", placeholder: "0.00038" });
-  const addr = field("Your shielded address for this deal", { placeholder: "utest1… / u1…", help: "Use a new address for every deal, so deals cannot be linked by address." });
+  const addr = field("Your shielded address for this deal", { placeholder: NET.addressHint, help: "Use a new address for every deal, so deals cannot be linked by address." });
   const out = new Out();
   // HNK-30.T20 (D-47): the financiers that chose to be listed, matched to this invoice here, in
   // the browser. Picking one fills its contact card and key; nothing about the invoice is sent.
@@ -497,7 +498,7 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
         try {
           const advanceZat = zecToZat(adv.value());
           if (advanceZat > d.amount_zat) throw new Error("the advance cannot be more than the invoice amount");
-          if (!looksShielded(addr.value())) throw new Error("use a shielded address (u1… / utest1…)");
+          if (!looksShielded(addr.value())) throw new Error(`use a shielded ${NET.noun} address (${NET.addressHint})`);
           const financierPk = hex64(fin.value(), "financier key");
           const c = await useContact(contact.value(), "financier");
           if ((await financierFingerprint(financierPk)) !== c.fingerprint) throw new Error("this key does not belong to that contact card: ask the financier again");

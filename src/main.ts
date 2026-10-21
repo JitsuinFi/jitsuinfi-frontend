@@ -1,3 +1,4 @@
+import { NET } from "./lib/network";
 import "./style.css";
 import "./pages/lobby.css";
 import { roleLabel, type Role } from "./lib/account";
@@ -103,7 +104,7 @@ function render(): void {
     { class: "top" },
     h("a", { class: "brand", href: "#/" }, h("img", { src: "/seal.svg", alt: "" }), "JitsuinFi"),
     nav,
-    h("span", { class: "net" }, "Testnet"),
+    h("span", { class: "net" }, NET.short),
   );
   const body = pageFor(path);
   // A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3).

@@ -8,6 +8,7 @@
 // The invoice number `k` is never typed (HNK-25.T2, P-09): the next one comes from the history
 // certificates kept in the encrypted deal store, checked against board data when given (wasm
 // `historyNext`); for an invoice already in hand, `k` is found from the key it is addressed to.
+import { NET } from "../lib/network";
 import { account } from "../lib/app-session";
 import { loadBoard } from "../lib/board";
 import { append, certFields, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
@@ -103,7 +104,7 @@ async function sendSignature(n: string, signature: string, replyTo: string): Pro
 
 export function buyerPage(): HTMLElement {
   // 1. keys and history
-  const board = fileField("Board data (optional)", "Without a file the live testnet board is read (the last one this browser saw, or a bundled copy, if the node does not answer). Checks which of your certificates are anchored.");
+  const board = fileField("Board data (optional)", `Without a file the live ${NET.noun} board is read (the last one this browser saw, or a bundled copy, if the node does not answer). Checks which of your certificates are anchored.`);
   const keysOut = new Out();
   const keysCard = card(
     "Step 1",

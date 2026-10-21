@@ -846,6 +846,10 @@ interface PrivateRules {
   min_discount_bps?: number;
   min_buyer_history?: number;
   buyer_kyc: boolean;
+  /** HNK-26.T9: the history policy. */
+  min_on_time_pct?: number;
+  grace_days?: number;
+  trusted_financiers?: string[];
 }
 
 /** The private mandate 内規 (HNK-30.T11, N-15): rules that stay on this node, matched to offers. */
@@ -856,6 +860,9 @@ function privateMandate(demo = false): HTMLElement {
   const discount = num({ placeholder: "none" });
   const history = num({ inputmode: "numeric", placeholder: "none" });
   const kyc = h("input", { type: "checkbox" }) as HTMLInputElement;
+  const onTime = num({ inputmode: "numeric", placeholder: "80" });
+  const grace = num({ inputmode: "numeric", placeholder: "7" });
+  const trusted = h("textarea", { rows: "2", spellcheck: "false", placeholder: "financier keys, one per line" }) as HTMLTextAreaElement;
   const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
   void get<{ mandate: PrivateRules }>("/node/console/mandate/private").then(
     ({ mandate: m }) => {
@@ -864,6 +871,9 @@ function privateMandate(demo = false): HTMLElement {
       if (m.min_discount_bps) discount.value = String(m.min_discount_bps / 100);
       if (m.min_buyer_history) history.value = String(m.min_buyer_history);
       kyc.checked = m.buyer_kyc;
+      if (m.min_on_time_pct !== undefined) onTime.value = String(m.min_on_time_pct);
+      if (m.grace_days !== undefined) grace.value = String(m.grace_days);
+      trusted.value = (m.trusted_financiers ?? []).join("\n");
     },
     () => undefined,
   );
@@ -882,6 +892,9 @@ function privateMandate(demo = false): HTMLElement {
     h("label", { class: "auth-field" }, h("span", {}, "Smallest discount (%)"), discount),
     h("label", { class: "auth-field" }, h("span", {}, "Buyer history (invoices)"), history),
     h("label", { class: "mandate-kyc" }, kyc, h("span", {}, "Buyer's identity must be in my KYC list")),
+    h("label", { class: "auth-field" }, h("span", {}, "Paid on time, at least (%)"), onTime),
+    h("label", { class: "auth-field" }, h("span", {}, "Grace after due date (days)"), grace),
+    h("label", { class: "auth-field mandate-wide" }, h("span", {}, "Also trust repayments to these financiers"), trusted, h("small", {}, "Besides you and the financiers in the provider's directory.")),
     demo ? h("span", {}) : save,
   );
   form.addEventListener("submit", async (e) => {
@@ -894,6 +907,9 @@ function privateMandate(demo = false): HTMLElement {
         min_discount_bps: opt(discount.value, (n) => Math.round(n * 100)),
         min_buyer_history: opt(history.value, Math.round),
         buyer_kyc: kyc.checked,
+        min_on_time_pct: opt(onTime.value, Math.round),
+        grace_days: opt(grace.value, Math.round),
+        trusted_financiers: trusted.value.split(/\s+/).map((k) => k.trim().toLowerCase()).filter(Boolean),
       };
       await post("/node/console/mandate/private", body);
       note.textContent = "Kept on this node only. Every offer in the mailbox is now matched against these rules.";

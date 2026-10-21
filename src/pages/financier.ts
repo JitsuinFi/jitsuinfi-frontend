@@ -1,6 +1,7 @@
 // Financier screen (HNK-05.T5 layout, HNK-05.T4 integration for the parts the browser does):
 // write the assignment letter, check the buyer's history, assemble the verification bundle.
 // Registering on the board and the Sign-to-Pay advance run in the financier's backend wallet.
+import { NET } from "../lib/network";
 import { fileHash, json, today, wasm } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, page } from "../lib/ui";
 
@@ -8,7 +9,7 @@ export function financierPage(): HTMLElement {
   // assignment letter
   const aInvoice = field("Invoice code", { area: true });
   const aKey = field("Your financier key", { placeholder: "64 hex characters" });
-  const aAddress = field("Your shielded pay address", { placeholder: "u1… / utest1…", help: "The buyer pays here at maturity." });
+  const aAddress = field("Your shielded pay address", { placeholder: NET.addressHint, help: "The buyer pays here at maturity." });
   const aTerms = fileField("Letter document (PDF)", "Hashed in your browser with SHA-256; never uploaded.");
   const aOut = new Out();
   const letterCard = card(

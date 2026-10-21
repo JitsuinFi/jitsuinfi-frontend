@@ -9,6 +9,7 @@
 // laid out as slips; the registry's side is the room behind the glass. The clerk's loupe (the
 // hairline figure) waits over a blank sheet; the result comes back as an inspection certificate
 // 検査証, one stamp per check, and the registry book opens at the entries the document claims.
+import { NET } from "../lib/network";
 import { loupe as hairlineLoupe } from "@lucasmarkes/hairline";
 import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
@@ -176,8 +177,8 @@ export function verifyPage(): HTMLElement {
   const code = h("textarea", { spellcheck: "false", rows: "6", placeholder: "JTSB…, JTSP… or JTSX…: paste what you were given" }) as HTMLTextAreaElement;
   const invoice = h("textarea", { spellcheck: "false", rows: "2", placeholder: "JTSI…, only for an exhibit, if you hold the invoice" }) as HTMLTextAreaElement;
   const file = h("input", { type: "file", accept: ".json,application/json" }) as HTMLInputElement;
-  const fileName = h("span", { class: "vf-env-name" }, "No file: the live testnet board is read");
-  file.addEventListener("change", () => (fileName.textContent = file.files?.[0]?.name ?? "No file: the live testnet board is read"));
+  const fileName = h("span", { class: "vf-env-name" }, `No file: the live ${NET.noun} board is read`);
+  file.addEventListener("change", () => (fileName.textContent = file.files?.[0]?.name ?? `No file: the live ${NET.noun} board is read`));
   const sample = h("button", { type: "button", class: "ink-link" }, `Use ${KIT.case}'s Exhibit A`) as HTMLButtonElement;
   sample.addEventListener("click", async () => {
     try {

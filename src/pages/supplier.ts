@@ -70,7 +70,7 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
   // the store also keeps contacts ("contact:" ids); deals are stored under their N
   const deals = sortDeals((await store.list<SupplierDeal>()).filter((r) => HEX64.test(r.id)).map((r) => r.doc));
   const open = deals.find((d) => d.n === current) ?? null;
-  const cards: HTMLElement[] = [mailboxCard({ "invoice.signature": signatureFromInbox(refresh) }), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
+  const cards: HTMLElement[] = [mailboxCard({ "invoice.signature": signatureFromInbox(refresh), "deal.decline": declineFromInbox(refresh) }), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
   if (!store.persistent) {
     cards.unshift(banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes."));
   }
@@ -231,6 +231,25 @@ function signatureFromInbox(refresh: () => void) {
   };
 }
 
+/** HNK-26.T6: a financier declined the offer; the invoice is free to offer to another one. */
+function declineFromInbox(refresh: () => void) {
+  return {
+    label: "Note and free the invoice",
+    run: async (r: import("../lib/relay").Received): Promise<string> => {
+      const h = r.message.header;
+      const d = await account.current?.store?.get<SupplierDeal>(h.n ?? "");
+      if (!d) throw new Error("no deal on this device has this fingerprint N");
+      if (!d.offer || d.offer.financier_pk !== h.signer) throw new Error("this decline is not from the financier you offered this invoice to");
+      if (d.entry_request || d.entry) throw new Error("this financier already moved the deal on; a late decline is ignored");
+      const reason = String(h.body.reason ?? "");
+      await save({ ...d, offer: undefined, declined: [...(d.declined ?? []), { financier_pk: d.offer.financier_pk, reason, at: Date.now() }] });
+      current = d.n;
+      refresh();
+      return `Declined: ${reason} You can offer ${d.invoice_id} to another financier.`;
+    },
+  };
+}
+
 /** T4: check the buyer's signature before offering the invoice to anyone. */
 function signatureCard(d: SupplierDeal, refresh: () => void): HTMLElement {
   if (d.buyer_signature) {
@@ -374,6 +393,8 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
     "Step 2",
     "Offer it to one financier",
     "Your offer goes sealed to the financier's mailbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you for the board entry.",
+    // HNK-26.T6: the last financier that declined; the invoice was never on the board, so it is free
+    d.declined?.length ? banner("warn", "Declined", `${d.declined[d.declined.length - 1].reason} Offer it to another financier.`) : null,
     finder,
     contact.el,
     fin.el,

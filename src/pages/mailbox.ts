@@ -19,6 +19,7 @@ export interface InboxAction {
 const TYPE_LABEL: Partial<Record<MessageType, string>> = {
   "invoice.sign_request": "Invoice to sign",
   "invoice.signature": "Buyer's signature",
+  "deal.decline": "Offer declined",
 };
 
 /** This session's contact card, to hand to a counterparty. */

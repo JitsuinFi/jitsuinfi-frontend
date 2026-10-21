@@ -51,6 +51,8 @@ interface Offer {
   advance_zat?: number;
   supplier_address?: string;
   accepted?: { advance_zat: number; min_confirmations: number; accepted_at: number } | null;
+  /** HNK-30.T11: the offer against the private mandate, checked on the node. */
+  mandate?: { verdict: "fits" | "breaks" | "waiting" | "none"; rules: Array<{ rule: string; ok: boolean | null; detail: string }>; decline_reason: string };
 }
 
 // ZEC amounts without the wasm bundle (core.ts): the console stays small.
@@ -82,7 +84,17 @@ function offerBlock(relayId: string, o: Offer, demo: boolean, reload: () => Prom
       h("p", { class: "offer-done" }, `Accepted: ${zec(o.accepted.advance_zat)} ZEC after ${o.accepted.min_confirmations} confirmation${o.accepted.min_confirmations === 1 ? "" : "s"}. The supplier has your commitment opening.`),
     );
   }
-  if (demo) return h("div", { class: "offer" }, facts, checked);
+  // the private mandate's verdict, rule by rule: 適 fits, 外 breaks, 待 waiting for the buyer
+  const m = o.mandate;
+  const rules =
+    m && m.verdict !== "none"
+      ? h(
+          "ul",
+          { class: `offer-rules is-${m.verdict}` },
+          ...m.rules.map((r) => h("li", { "data-ok": String(r.ok) }, h("b", { lang: "ja", "aria-hidden": "true" }, r.ok === true ? "適" : r.ok === false ? "外" : "待"), h("span", {}, `${r.rule}: ${r.detail}`))),
+        )
+      : null;
+  if (demo) return h("div", { class: "offer" }, facts, checked, rules);
   const advance = h("input", { inputmode: "decimal", value: zec(o.advance_zat ?? 0) }) as HTMLInputElement;
   const confirmations = h("input", { inputmode: "numeric", value: "1" }) as HTMLInputElement;
   const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
@@ -107,7 +119,20 @@ function offerBlock(relayId: string, o: Offer, demo: boolean, reload: () => Prom
       submit.disabled = false;
     }
   });
-  return h("div", { class: "offer" }, facts, checked, form, note);
+  const reason = h("input", { value: m?.decline_reason ?? "The financier declined this offer.", maxlength: "200", "aria-label": "Reason sent to the supplier" }) as HTMLInputElement;
+  const decline = h("button", { class: "auth-link is-quiet", type: "button" }, "Decline") as HTMLButtonElement;
+  decline.addEventListener("click", async () => {
+    decline.disabled = true;
+    try {
+      await post(`/node/console/offers/${encodeURIComponent(relayId)}/decline`, { reason: reason.value });
+      await reload();
+    } catch (err) {
+      note.textContent = err instanceof Error ? err.message : String(err);
+      decline.disabled = false;
+    }
+  });
+  const refuse = h("div", { class: "offer-decline" }, h("label", { class: "auth-field" }, h("span", {}, "Or decline, telling the supplier"), reason, h("small", {}, "Names only the kind of rule, never your numbers.")), decline);
+  return h("div", { class: "offer" }, facts, checked, rules, form, refuse, note);
 }
 
 // Message types (relay-message.ts) in the operator's words, and the role seals of the app.
@@ -657,6 +682,79 @@ function fundLedger(demo = false): HTMLElement {
   );
 }
 
+interface PrivateRules {
+  max_face_zat?: number;
+  max_tenor_days?: number;
+  min_discount_bps?: number;
+  min_buyer_history?: number;
+  buyer_kyc: boolean;
+}
+
+/** The private mandate 内規 (HNK-30.T11, N-15): rules that stay on this node, matched to offers. */
+function privateMandate(demo = false): HTMLElement {
+  const num = (attrs: Record<string, string>) => h("input", { inputmode: "decimal", ...attrs }) as HTMLInputElement;
+  const face = num({ placeholder: "no limit" });
+  const tenor = num({ inputmode: "numeric", placeholder: "no limit" });
+  const discount = num({ placeholder: "none" });
+  const history = num({ inputmode: "numeric", placeholder: "none" });
+  const kyc = h("input", { type: "checkbox" }) as HTMLInputElement;
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  void get<{ mandate: PrivateRules }>("/node/console/mandate/private").then(
+    ({ mandate: m }) => {
+      if (m.max_face_zat) face.value = zec(m.max_face_zat);
+      if (m.max_tenor_days) tenor.value = String(m.max_tenor_days);
+      if (m.min_discount_bps) discount.value = String(m.min_discount_bps / 100);
+      if (m.min_buyer_history) history.value = String(m.min_buyer_history);
+      kyc.checked = m.buyer_kyc;
+    },
+    () => undefined,
+  );
+  const opt = (v: string, f: (n: number) => number) => {
+    if (!v.trim()) return undefined;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0) throw new Error("rules are positive numbers, or empty for none");
+    return f(n);
+  };
+  const save = h("button", { class: "auth-link", type: "submit" }, "Keep these rules on the node") as HTMLButtonElement;
+  const form = h(
+    "form",
+    { class: "offer-form mandate-form" },
+    h("label", { class: "auth-field" }, h("span", {}, "Largest invoice (ZEC)"), face),
+    h("label", { class: "auth-field" }, h("span", {}, "Longest tenor (days)"), tenor),
+    h("label", { class: "auth-field" }, h("span", {}, "Smallest discount (%)"), discount),
+    h("label", { class: "auth-field" }, h("span", {}, "Buyer history (invoices)"), history),
+    h("label", { class: "mandate-kyc" }, kyc, h("span", {}, "Buyer's identity must be in my KYC list")),
+    demo ? h("span", {}) : save,
+  );
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    save.disabled = true;
+    try {
+      const body: PrivateRules = {
+        max_face_zat: opt(face.value, (n) => Math.round(n * 1e8)),
+        max_tenor_days: opt(tenor.value, Math.round),
+        min_discount_bps: opt(discount.value, (n) => Math.round(n * 100)),
+        min_buyer_history: opt(history.value, Math.round),
+        buyer_kyc: kyc.checked,
+      };
+      await post("/node/console/mandate/private", body);
+      note.textContent = "Kept on this node only. Every offer in the mailbox is now matched against these rules.";
+    } catch (err) {
+      note.textContent = err instanceof Error ? err.message : String(err);
+    } finally {
+      save.disabled = false;
+    }
+  });
+  return h(
+    "section",
+    { class: "mail is-rules", "aria-labelledby": "rules-title" },
+    h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "rules-title" }, "Private mandate")),
+    h("p", { class: "mail-note mandate-lede" }, "Your own rules for offers. They never leave this node: suppliers only learn which kind of rule an offer broke."),
+    form,
+    note,
+  );
+}
+
 /** What a supplier needs to offer this node an invoice: the contact card and the financier key. */
 function share(info: Info): HTMLElement {
   const item = (label: string, value: string, hint: string): HTMLElement => {
@@ -723,7 +821,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
       "div",
       { class: "dk-desk" },
       h("div", { class: "dk-left" }, mailbox(demo), fundLedger(demo)),
-      h("div", { class: "dk-right" }, share(info), mandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
+      h("div", { class: "dk-right" }, share(info), mandate(demo), privateMandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );
 }

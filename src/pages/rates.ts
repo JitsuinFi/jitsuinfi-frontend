@@ -1,6 +1,7 @@
 // Public rate index (HNK-08.T3): "price public, participants private". Recomputes the index from
 // board data in the browser with the same rule as `jitsuin index` (wasm `rateIndex`): each invoice
 // counts once, with its first entry, and a class is shown only with at least k = 5 invoices.
+import { boardLine, loadBoard } from "../lib/board";
 import { json, wasm } from "../lib/core";
 import { classRows, indexRows, summary, type RateIndex } from "../lib/rate-index";
 import { actions, banner, button, card, field, fileField, h, Out, page } from "../lib/ui";
@@ -19,13 +20,14 @@ function table(head: string[], rows: string[][]): HTMLElement {
 }
 
 export function ratesPage(): HTMLElement {
-  const board = fileField("Board data", "JSON snapshot of the board, as jitsuin verify --save-board writes it.");
+  const board = fileField("Board data (optional)", "Without a file the page reads the live testnet board from the financier node (the last one this browser saw, or a bundled copy, if the node does not answer).");
   const k = field("Smallest class (k)", { type: "number", value: "5", help: "A class is shown only with at least k invoices; k can be raised, not lowered below 5." });
   const out = new Out();
   const run = async () => {
     try {
-      const boardJson = await board.input.files?.[0]?.text();
-      if (!boardJson) throw new Error("choose a board snapshot first");
+      const file = await board.input.files?.[0]?.text();
+      const b = file ? undefined : await loadBoard((u, i) => fetch(u, i));
+      const boardJson = file ?? b!.json;
       const kv = Math.max(5, Math.floor(Number(k.value()) || 5));
       const idx = json<RateIndex>(wasm.rateIndex(boardJson, kv));
       const shown = idx.tenors.filter((t) => t.published).length;
@@ -34,6 +36,7 @@ export function ratesPage(): HTMLElement {
           ? banner("ok", `${shown} of ${idx.tenors.length} tenor classes published`, summary(idx))
           : banner("warn", "No class reaches k yet", `${summary(idx)}. Every class needs at least ${idx.k} invoices before it is shown.`),
         table(["Tenor", "Invoices", "Median discount", "Discount classes (invoices)"], indexRows(idx)),
+        h("p", { class: "note" }, `Board data: ${b ? boardLine(b) : "the file you added"}.`),
       );
     } catch (e) {
       out.error(e);

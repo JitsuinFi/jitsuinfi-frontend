@@ -9,6 +9,7 @@
 // certificates kept in the encrypted deal store, checked against board data when given (wasm
 // `historyNext`); for an invoice already in hand, `k` is found from the key it is addressed to.
 import { account } from "../lib/app-session";
+import { loadBoard } from "../lib/board";
 import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
@@ -101,7 +102,7 @@ async function sendSignature(n: string, signature: string, replyTo: string): Pro
 
 export function buyerPage(): HTMLElement {
   // 1. keys and history
-  const board = fileField("Board data (optional)", "JSON snapshot of the public board. Checks which of your certificates are anchored.");
+  const board = fileField("Board data (optional)", "Without a file the live testnet board is read (the last one this browser saw, or a bundled copy, if the node does not answer). Checks which of your certificates are anchored.");
   const keysOut = new Out();
   const keysCard = card(
     "Step 1",
@@ -117,7 +118,7 @@ export function buyerPage(): HTMLElement {
           const notes: Node[] = [];
           try {
             const id = json<{ identity_pk: string }>(wasm.buyerKeysBytes(m.slice(), 0)).identity_pk;
-            const boardJson = await board.input.files?.[0]?.text();
+            const boardJson = (await board.input.files?.[0]?.text()) ?? (await loadBoard((u, i) => fetch(u, i)).catch(() => undefined))?.json;
             if (boardJson) {
               const r = json<{ next_index: number; dropped: number[]; successor_on_board: boolean }>(wasm.historyNext(JSON.stringify(hist.certs), id, boardJson));
               if (r.dropped.length) {

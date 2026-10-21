@@ -8,6 +8,7 @@
 import { checkOffer, encodeEdited, KIT, loadBoard, type BoardData, type InvoiceFields } from "../lib/kit";
 import { dateToDays, daysToDate, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import { actions, banner, button, card, field, h, kv, Out, page } from "../lib/ui";
+import { exhibitView } from "./verify";
 
 const short = (x: string) => `${x.slice(0, 12)}…${x.slice(-6)}`;
 
@@ -149,8 +150,31 @@ export function tryPage(): HTMLElement {
     score,
   );
 
-  const limits = card(
+  const exOut = new Out();
+  const takeHome = button("Take Exhibit A", async () => {
+    takeHome.disabled = true;
+    try {
+      const r = await fetch(KIT.proofUrl, { credentials: "same-origin" });
+      if (!r.ok) throw new Error(`the proof answered ${r.status}`);
+      const exhibit = wasm.exhibitFromProof((await r.text()).trim());
+      const b = await board();
+      exOut.show(...exhibitView(exhibit, b.json, undefined, boardLine(b)));
+    } catch (e) {
+      exOut.error(e);
+    } finally {
+      takeHome.disabled = false;
+    }
+  });
+  const exhibit = card(
     "Step 4",
+    "What B takes home: Exhibit A",
+    "Kurogane also signed an entry for another financier, and it reached the board. B keeps the evidence: the two signatures and where they sit on the board. It names no invoice, amount, buyer or financier, so B can share it with anyone; whoever holds the invoice can check it is this one.",
+    actions(takeHome),
+    exOut.el,
+  );
+
+  const limits = card(
+    "Step 5",
     "What this does not stop",
     "The board stops one signed invoice from being financed twice. It is not credit diligence.",
     h(
@@ -168,6 +192,7 @@ export function tryPage(): HTMLElement {
     envelope,
     deskA,
     deskB,
+    exhibit,
     limits,
   );
 }

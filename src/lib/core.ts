@@ -55,7 +55,7 @@ export function json<T = Record<string, unknown>>(s: string): T {
   return JSON.parse(s) as T;
 }
 
-export type CodeKind = "bundle" | "proof" | "invoice" | "assignment" | "seal" | "history" | "unknown";
+export type CodeKind = "bundle" | "proof" | "exhibit" | "invoice" | "assignment" | "seal" | "history" | "unknown";
 
 /// Which JitsuinFi object a base64url code holds, from its 4 magic bytes.
 export function codeKind(code: string): CodeKind {
@@ -69,6 +69,7 @@ export function codeKind(code: string): CodeKind {
   const kinds: Record<string, CodeKind> = {
     JTSB: "bundle",
     JTSP: "proof",
+    JTSX: "exhibit",
     JTSI: "invoice",
     JTSA: "assignment",
     JTL1: "seal",

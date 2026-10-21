@@ -5,17 +5,24 @@
 // claimed only, never as facts.
 import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
+import { loadBoard } from "../lib/kit";
 import { actions, banner, button, card, download, field, fileField, h, kv, Out, page } from "../lib/ui";
 
 export function verifyPage(): HTMLElement {
-  const code = field("Bundle or proof", { area: true, placeholder: "Paste a JitsuinFi bundle (JTSB) or double-signature proof (JTSP)" });
-  const board = fileField("Board data (optional)", "JSON from the backend; adds the on-chain status. Without it the check is offline.");
+  const code = field("Bundle, proof or exhibit", { area: true, placeholder: "Paste a JitsuinFi bundle (JTSB), double-signature proof (JTSP) or Exhibit A (JTSX)" });
+  const invoice = field("Invoice (optional, for an exhibit)", { area: true, placeholder: "JTSI… if you hold the invoice the exhibit is about" });
+  const board = fileField("Board data (optional)", "Without a file the page reads the live testnet board from the financier node (a bundled copy if the node does not answer).");
   const out = new Out();
   const run = async () => {
     try {
       const c = code.value();
       const kind = codeKind(c);
-      const boardJson = await board.input.files?.[0]?.text();
+      // A file wins; otherwise the live board (HNK-28.T1), or the bundled copy (W-23).
+      const file = await board.input.files?.[0]?.text();
+      const live = file ? undefined : await loadBoard((u, i) => fetch(u, i)).catch(() => undefined);
+      const boardJson = file ?? live?.json;
+      const source = file ? "the file you added" : live ? (live.source === "live" ? `live testnet board up to block ${live.tip}` : `bundled copy of the testnet board up to block ${live.tip}`) : "none";
+      if (kind === "exhibit") return out.show(...exhibitView(c, boardJson, invoice.value() || undefined, source));
       if (kind === "proof") return out.show(...proofView(c, boardJson));
       if (kind === "bundle") return out.show(...bundleView(c, boardJson));
       throw new Error("not a bundle or a proof");
@@ -26,7 +33,7 @@ export function verifyPage(): HTMLElement {
   return page(
     "Verify",
     "Everything here runs in your browser with the same code as the backend. Nothing is sent anywhere.",
-    card("Check", "Verify a deal or catch a double financing", "Paste what you were given.", code.el, board.el, actions(button("Verify", run)), out.el),
+    card("Check", "Verify a deal or catch a double financing", "Paste what you were given.", code.el, invoice.el, board.el, actions(button("Verify", run)), out.el),
   );
 }
 
@@ -127,3 +134,45 @@ function proofView(c: string, boardJson?: string): Node[] {
     save,
   ];
 }
+
+interface ExhibitOnBoard extends Omit<ProofOnBoard, "board_entries"> {
+  board_entries: number | null;
+  binds: boolean | null;
+}
+
+/** Exhibit A (HNK-30.T5): the double signature without the deal; the invoice is optional. */
+export function exhibitView(c: string, boardJson: string | undefined, invoice: string | undefined, source: string): Node[] {
+  const r = json<ExhibitOnBoard>(wasm.verifyExhibitOnBoard(c, boardJson ?? null, invoice ?? null));
+  const line = (claim: { claimed_at: At | null; on_board: boolean | null }, none: string) =>
+    claim.claimed_at
+      ? claim.on_board === null
+        ? `claimed: ${at(claim.claimed_at)}; no board data`
+        : `${claim.on_board ? "on the board at" : "NOT on the board at"} ${at(claim.claimed_at)}`
+      : none;
+  const rows: Array<[string, string, boolean?]> = [
+    ["Signatures", r.signatures.ok ? "one key signed this fingerprint for 2 different financiers" : `do not check out: ${r.signatures.error}`],
+    ["Fingerprint N", r.signatures.nullifier ?? "", true],
+    ["Supplier key", r.signatures.supplier_pk ?? "", true],
+    ["First entry", line(r.first, "NO position given: the exhibit cannot be checked")],
+    ["Second entry", line(r.second, "offered privately to the financier that caught it, never posted")],
+  ];
+  if (r.ordered !== null) rows.push(["Order", r.ordered ? "the first entry came before the second" : "the \"first\" entry is NOT before the second"]);
+  rows.push([
+    "Which invoice",
+    r.binds === null
+      ? "not stated: the exhibit carries no invoice, amount or buyer. A holder of the invoice checks it on the Verify page by adding the invoice."
+      : r.binds
+        ? "the invoice you pasted: its fingerprint and supplier key are the exhibit's"
+        : "NOT the invoice you pasted",
+  ]);
+  rows.push(["Board data", source]);
+  const save = actions(button("Download exhibit", () => download("exhibit-a.txt", c), true));
+  return [
+    r.holds
+      ? banner("bad", "Double signature on the board", "The same supplier key registered this fingerprint for two different financiers, in this order, and both entries are on the board. Checked in your browser by the same rule as jitsuin verify --exhibit.", "重")
+      : banner("warn", "Exhibit does not hold here", r.board_entries === null ? "No board data could be read, so the positions are only claimed." : "At least one claim below fails."),
+    kv(rows),
+    save,
+  ];
+}
+

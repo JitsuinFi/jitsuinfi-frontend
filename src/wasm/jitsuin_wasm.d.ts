@@ -44,6 +44,8 @@ export function documentHash(file: Uint8Array): string;
  */
 export function doubleSignProof(invoice_b64: string, buyer_signature_hex: string, first_memo_b64: string, second_memo_b64: string, first_at?: string | null, second_at?: string | null): string;
 
+export function exhibitFromProof(proof_b64: string): string;
+
 export function financierCommitment(financier_secret_hex: string, invoice_b64: string): string;
 
 export function financierSealAssignment(financier_secret_hex: string, invoice_b64: string, assignment_b64: string, seals_json: string): string;
@@ -133,6 +135,8 @@ export function supplierSealAssignmentBytes(supplier_secret: Uint8Array, invoice
 
 export function verifyBundle(bundle_b64: string): string;
 
+export function verifyExhibitOnBoard(exhibit_b64: string, board_json?: string | null, invoice_b64?: string | null): string;
+
 export function verifyHistory(certs_json: string, identity_pk_hex: string, allowlist_json: string, board_json: string, today: number, grace_days: number): string;
 
 export function verifyProof(proof_b64: string): string;
@@ -161,6 +165,7 @@ export interface InitOutput {
     readonly buyerSignInvoiceBytes: (a: number, b: number, c: any, d: number, e: number, f: number) => [number, number, number, number];
     readonly documentHash: (a: number, b: number) => [number, number];
     readonly doubleSignProof: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number) => [number, number, number, number];
+    readonly exhibitFromProof: (a: number, b: number) => [number, number, number, number];
     readonly financierCommitment: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly financierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly financierSettle: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
@@ -188,6 +193,7 @@ export interface InitOutput {
     readonly supplierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly supplierSealAssignmentBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly verifyBundle: (a: number, b: number) => [number, number, number, number];
+    readonly verifyExhibitOnBoard: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly verifyHistory: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
     readonly verifyProof: (a: number, b: number) => [number, number, number, number];
     readonly verifyProofOnBoard: (a: number, b: number, c: number, d: number) => [number, number, number, number];

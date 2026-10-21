@@ -79,7 +79,9 @@ test("the next step reads as an action", () => {
 
 test("shielded address check", () => {
   assert.ok(looksShielded("utest1" + "q".repeat(40)));
-  assert.ok(looksShielded("u1" + "a".repeat(60)));
+  assert.ok(!looksShielded("u1" + "a".repeat(60))); // a mainnet address on a testnet build
+  assert.ok(looksShielded("u1" + "a".repeat(60), "main"));
+  assert.ok(!looksShielded("utest1" + "q".repeat(40), "main"));
   assert.ok(!looksShielded("tmQ9vB5kGuUqFdQ2UxQ1eVLdJfhJ4Tw7Rt"));
   assert.ok(!looksShielded("utest1short"));
 });

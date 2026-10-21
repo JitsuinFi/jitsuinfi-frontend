@@ -4,6 +4,7 @@
 // The offer code and the entry request code are interim copy-paste formats until the relay
 // message schema (HNK-23.T1, C-04) exists. The entry request is not signed yet: the signed
 // message from the financier node comes with HNK-23.T8.
+import { NETWORK, shieldedPrefixes, type Network } from "./network.ts";
 
 export interface SupplierDeal {
   /** N of the invoice (hex): the store id. */
@@ -106,9 +107,10 @@ export function invoiceIdTaken(deals: SupplierDeal[], invoiceId: string): boolea
   return deals.some((d) => d.invoice_id === id);
 }
 
-/** A shielded receiving address for the advance: unified (u1 / utest1) or Sapling (zs / ztestsapling). */
-export function looksShielded(address: string): boolean {
-  return /^(u1|utest1|zs1|ztestsapling1)[0-9a-z]{20,}$/.test(address.trim());
+/** A shielded receiving address for the advance on this build's network (HNK-26.T19): unified or Sapling. */
+export function looksShielded(address: string, net: Network = NETWORK): boolean {
+  const a = address.trim();
+  return /^[0-9a-z]+$/.test(a) && shieldedPrefixes(net).some((p) => a.startsWith(p) && a.length >= p.length + 20);
 }
 
 const OFFER_PREFIX = "jitsuin-offer-v1:";

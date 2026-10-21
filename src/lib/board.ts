@@ -2,6 +2,7 @@
 // scans, reached through /api/board on this origin. When the node does not answer, the last live
 // board this browser saw (kept in localStorage; the board is public data), else the copy bundled
 // with the site. Every screen says which one it used.
+import { NET } from "./network.ts";
 
 export const LIVE_BOARD = "/api/board";
 /** Same-origin copy shipped with the site (testnet, up to the block below). */
@@ -69,7 +70,7 @@ export async function loadBoard(f: Fetch, keep: Keep | null = defaultKeep()): Pr
 export function boardLine(b: BoardData, now = Date.now()): string {
   const mins = Math.max(0, Math.round((now / 1000 - b.at) / 60));
   const age = mins < 120 ? `${mins} min ago` : mins < 2880 ? `${Math.round(mins / 60)} h ago` : `${Math.round(mins / 1440)} days ago`;
-  if (b.source === "live") return `Zcash testnet board, live scan up to block ${b.tip} (${age})`;
+  if (b.source === "live") return `${NET.label} board, live scan up to block ${b.tip} (${age})`;
   if (b.source === "kept") return `Last live board this browser saw, up to block ${b.tip} (${age}): the node did not answer`;
-  return `Bundled copy of the testnet board up to block ${b.tip} (${BOARD_COPY.taken}): the node did not answer`;
+  return `Bundled copy of the ${NET.noun} board up to block ${b.tip} (${BOARD_COPY.taken}): the node did not answer`;
 }

@@ -265,3 +265,18 @@ html main:has(> .auth) { padding-bottom: var(--tabbar-h); }
 ul.limits { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; max-width: 60ch; }
 ul.limits li { position: relative; padding-left: 22px; font-size: 15px; line-height: 1.5; color: var(--ink); }
 ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(--seal); }
+
+/* try page, the lens (HNK-30.T6, M-04): paper is what the parties hold; the pool is what the
+   published board key shows. Holding the button lets the paper fade and the pool rise. */
+.lens { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-2); margin-top: var(--s-2); }
+.lens-side { min-width: 0; display: flex; flex-direction: column; gap: 8px; border-radius: var(--r-sheet); padding: 16px; transition: opacity var(--dur-fade) ease, filter var(--dur-fade) ease, transform var(--dur-fade) ease; }
+.lens-paper { background: var(--sheet); box-shadow: var(--sheet-shadow); }
+.lens-pool { background: var(--pool); color: var(--mist); box-shadow: var(--pool-shadow); opacity: .55; }
+.lens-pool .label { color: var(--mist); }
+.lens-pool table.kv { background: rgba(252, 252, 254, .06); }
+.lens-pool table.kv td { color: var(--mist); border-top-color: rgba(196, 199, 242, .16); }
+.lens-pool table.kv td:first-child { color: rgba(196, 199, 242, .75); }
+.lens-also { margin: 0; font-size: 13px; line-height: 1.5; color: var(--mist); }
+.lens[data-world="true"] .lens-paper { opacity: .12; filter: blur(3px); transform: scale(.98); }
+.lens[data-world="true"] .lens-pool { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .lens-side { transition: none; } }

@@ -40,6 +40,8 @@ export interface BuyerInvoice {
   };
   /** HNK-26.T18: the verification bundle the financier sent once the repayment settled. */
   bundle?: string;
+  /** HNK-26.T8: the history certificate issued for this invoice (its index) and to which financier. */
+  history_cert?: { index: number; financier_pk: string };
 }
 
 const PREFIX = "invoice:";
@@ -76,6 +78,7 @@ export function invoiceRecord(
     ...(previous?.signature_sent_at ? { signature_sent_at: previous.signature_sent_at } : {}),
     ...(previous?.assignment ? { assignment: previous.assignment } : {}),
     ...(previous?.bundle ? { bundle: previous.bundle } : {}),
+    ...(previous?.history_cert ? { history_cert: previous.history_cert } : {}),
   };
 }
 

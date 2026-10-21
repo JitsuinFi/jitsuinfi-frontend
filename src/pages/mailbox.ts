@@ -25,6 +25,7 @@ const TYPE_LABEL: Partial<Record<MessageType, string>> = {
   "deal.seal": "Seal on the letter",
   "deal.advance": "Advance paid",
   "deal.bundle": "Settlement bundle",
+  "history.request": "History request",
 };
 
 /** This session's contact card, to hand to a counterparty. */

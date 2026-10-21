@@ -415,6 +415,44 @@ export function buyerPage(): HTMLElement {
       }
       throw new Error("not a seal this device expects for this invoice");
     }),
+    // HNK-26.T8: a financier asks for this buyer's history before it registers the invoice
+    "history.request": {
+      label: "Send my history",
+      run: async (r: Received): Promise<string> => {
+        const hd = r.message.header;
+        const fin = String(hd.body.financier_pk);
+        const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+        if (!rec) throw new Error("no invoice on this device has this fingerprint N");
+        if (!rec.signature) throw new Error("you have not signed this invoice: there is nothing to finance");
+        if (successorOnBoard) throw new Error("your history on the board is ahead of this device; restore your certificates first");
+        let hist = await loadHistory();
+        let index = rec.history_cert?.financier_pk === fin ? rec.history_cert.index : null;
+        let identity = "";
+        if (index === null || index >= hist.certs.length) {
+          const next = localNextIndex(hist);
+          const made = await withInvoiceIndex(rec.invoice, (m, k) => {
+            const id = json<{ identity_pk: string }>(wasm.buyerKeysBytes(m.slice(), 0)).identity_pk;
+            if (k !== next) {
+              m.fill(0);
+              throw new Error(`this invoice is #${k} in your history, but the next certificate is #${next}`);
+            }
+            return { cert: wasm.buyerHistoryCertBytes(m, k, rec.invoice, fin, head(hist)), k, id };
+          });
+          hist = append(hist, made.k, made.cert);
+          await saveHistory(hist);
+          index = made.k;
+          identity = made.id;
+          await saveInvoice((prev) => ({ ...(prev ?? rec), history_cert: { index: made.k, financier_pk: fin } }), rec.n);
+        }
+        const certs = hist.certs.slice(0, index + 1);
+        const hdOut = draft("history.chain", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, hd.from.mailbox_pk, relayDeps, {
+          n: rec.n,
+          body: identity ? { certs, identity_pk: identity } : { certs },
+        });
+        await send(hd.from.mailbox_pk, await encodeMessage(hdOut as Header), relayDeps);
+        return `Your history (${certs.length - 1} earlier invoice${certs.length === 2 ? "" : "s"} and the certificate for ${rec.invoice_id}) went to the financier. It checks them on the board; the supplier signs the entry next.`;
+      },
+    },
     "deal.bundle": {
       label: "Keep the settlement bundle",
       run: async (r: Received): Promise<string> => {

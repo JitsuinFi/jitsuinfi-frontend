@@ -74,8 +74,9 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
       "invoice.signature": signatureFromInbox(refresh),
       "deal.decline": declineFromInbox(refresh),
       "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", async (d, h) => {
-        const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number };
-        const r = { n: d.n, financier_pk: b.financier_pk, salt: b.salt, ...(b.discount !== undefined ? { discount: b.discount, tenor: b.tenor } : {}) };
+        const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number; history_tag?: string };
+        // HNK-26.T8: with the buyer's history checked, the entry must carry the certificate's tag
+        const r = { n: d.n, financier_pk: b.financier_pk, salt: b.salt, ...(b.discount !== undefined ? { discount: b.discount, tenor: b.tenor } : {}), ...(b.history_tag ? { history_tag: b.history_tag } : {}) };
         const problems = entryRequestProblems(d, r);
         if (problems.length) throw new Error(problems.join("; "));
         await save({ ...d, entry_request: r });

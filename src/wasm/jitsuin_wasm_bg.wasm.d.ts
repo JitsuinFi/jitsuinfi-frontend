@@ -19,6 +19,7 @@ export const buyerSignInvoice: (a: number, b: number, c: number, d: number, e: n
 export const buyerSignInvoiceBytes: (a: number, b: number, c: any, d: number, e: number, f: number) => [number, number, number, number];
 export const documentHash: (a: number, b: number) => [number, number];
 export const doubleSignProof: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number) => [number, number, number, number];
+export const exhibitFromProof: (a: number, b: number) => [number, number, number, number];
 export const financierCommitment: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const financierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
 export const financierSettle: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
@@ -46,6 +47,7 @@ export const supplierRegisterTaggedEntryBytes: (a: number, b: number, c: any, d:
 export const supplierSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
 export const supplierSealAssignmentBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];
 export const verifyBundle: (a: number, b: number) => [number, number, number, number];
+export const verifyExhibitOnBoard: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
 export const verifyHistory: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
 export const verifyProof: (a: number, b: number) => [number, number, number, number];
 export const verifyProofOnBoard: (a: number, b: number, c: number, d: number) => [number, number, number, number];

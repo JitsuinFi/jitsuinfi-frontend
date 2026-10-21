@@ -15,6 +15,8 @@ export const KIT = {
   buyerSignature:
     "82ff801a19c5ca32a72c27716a29b118ed64a32997b93e5f2cdec312eaa594a37c10cad8169b9e6d47df1490ebafe07ff3f27327e1a734967c9c8df68ebc1f07",
   financierA: { txid: "33b8f3b0aa754e790e9c7fac0ae7dc08ce8612a8c26620d551d790e1ea390a56", height: 4509299, tx_index: 2, output_index: 0 },
+  /** The full double-signature proof of this invoice (JTSP), from which Exhibit A is made. */
+  proofUrl: "/demo/proof-tes-inv-0003.txt",
   /** Live board from the financier node (HNK-30.T4), through the app's own origin. */
   liveBoard: "/api/board",
   /** Same-origin copy used when the node cannot be reached (W-23). */

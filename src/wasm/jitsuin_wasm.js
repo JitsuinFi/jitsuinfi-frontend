@@ -295,6 +295,36 @@ export function buyerKeysBytes(master, index) {
 }
 
 /**
+ * Signs a relay header with the buyer's invoice key `index` from the master (wiped).
+ * @param {Uint8Array} master
+ * @param {number} index
+ * @param {Uint8Array} signing_bytes
+ * @returns {string}
+ */
+export function buyerMessageSignBytes(master, index, signing_bytes) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        var ptr0 = passArray8ToWasm0(master, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(signing_bytes, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.buyerMessageSignBytes(ptr0, len0, master, index, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * @param {string} master_hex
  * @param {number} index
  * @param {string} invoice_b64

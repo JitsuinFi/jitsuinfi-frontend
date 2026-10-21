@@ -38,6 +38,8 @@ import { seikyusho } from "./try/seikyusho";
 
 // The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;
+// HNK-25.T2 (BL-D22-01): the buyer key that arrived through the mailbox, for the next invoice.
+let arrivedBuyerKey: string | null = null;
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
@@ -77,6 +79,16 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
   const cards: HTMLElement[] = [mailboxCard({
       "invoice.signature": signatureFromInbox(refresh),
       "deal.decline": declineFromInbox(refresh),
+      "key.invoice_pk": {
+        label: "Use for my next invoice",
+        run: async (r: import("../lib/relay").Received): Promise<string> => {
+          const k = String(r.message.header.body.invoice_pk);
+          if (r.message.header.signer !== k) throw new Error("this key did not sign its own message");
+          arrivedBuyerKey = k;
+          refresh();
+          return `The buyer's key ${k.slice(0, 10)}… is on your next invoice (Write an invoice).`;
+        },
+      },
       "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", async (d, h) => {
         const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number; history_tag?: string };
         // HNK-26.T8: with the buyer's history checked, the entry must carry the certificate's tag
@@ -211,7 +223,8 @@ function newInvoiceCard(deals: SupplierDeal[], refresh: () => void): HTMLElement
   if (to) to.textContent = "the buyer's key, below";
   if (by) by.textContent = "your key for this invoice, from your passkey";
   if (note) note.textContent = "The buyer's seal 買 goes in the box once the buyer signs these exact bytes.";
-  const buyer = field("Buyer key for this invoice", { placeholder: "64 hex characters from the buyer's screen" });
+  const buyer = field("Buyer key for this invoice", { placeholder: "64 hex characters from the buyer's screen", value: arrivedBuyerKey ?? undefined });
+  if (arrivedBuyerKey && to) to.textContent = `${arrivedBuyerKey.slice(0, 10)}…${arrivedBuyerKey.slice(-6)}`;
   buyer.input.addEventListener("input", () => {
     if (to) to.textContent = HEX64.test(buyer.value()) ? `${buyer.value().slice(0, 10)}…${buyer.value().slice(-6)}` : "the buyer's key, below";
   });
@@ -264,6 +277,7 @@ function newInvoiceCard(deals: SupplierDeal[], refresh: () => void): HTMLElement
             created_at: Date.now(),
           });
           current = n;
+          arrivedBuyerKey = null;
           refresh();
         } catch (e) {
           out.error(e);

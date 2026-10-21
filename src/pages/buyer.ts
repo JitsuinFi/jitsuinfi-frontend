@@ -15,9 +15,9 @@ import { append, certFields, dropTail, emptyHistory, head, HISTORY_ID, localNext
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
 import { discard, draft, send, type Received } from "../lib/relay";
-import { encodeMessage, verifyHeader, type Header } from "../lib/relay-message";
+import { encodeMessage, signingBytes, verifyHeader, type Header } from "../lib/relay-message";
 import { deskPage, miniInvoice, route } from "./desk";
-import { mailboxCard } from "./mailbox";
+import { mailboxCard, useContact } from "./mailbox";
 import { boardStatus, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { actions, banner, button, card, codeBlock, field, fileField, h, kv, Out, trustedSvg } from "../lib/ui";
@@ -147,6 +147,7 @@ export function buyerPage(): HTMLElement {
                 [`Key for invoice #${k}`, next, true],
               ]),
               h("p", { class: "hint" }, "Give this key to the supplier for your next invoice. Each invoice uses a different key, so the public board cannot link your invoices."),
+              shareKey(k, next),
             );
           } finally {
             m.fill(0);
@@ -245,10 +246,13 @@ export function buyerPage(): HTMLElement {
   const lLetter = field("Assignment letter code", { area: true });
   const lSeal = field("Supplier seal", { area: true });
   const sealOut = new Out();
+  // HNK-25.T3 (BL-D24-06): the letter as a document before the buyer seals it
+  const letterOut = new Out();
   const sealCard = card(
     "Step 3",
     "Acknowledge the assignment",
     "Sealing the letter is your written acknowledgment that you will pay the financier named in it at maturity. The financier pays the supplier only after this.",
+    letterOut.el,
     lInvoice.el,
     lLetter.el,
     lSeal.el,
@@ -374,7 +378,30 @@ export function buyerPage(): HTMLElement {
       return;
     }
     lInvoice.input.value = rec.invoice;
-    if (rec.assignment?.letter) lLetter.input.value = rec.assignment.letter;
+    if (rec.assignment?.letter) {
+      lLetter.input.value = rec.assignment.letter;
+      const f = json<{ financier_pk: string; financier_address: string; amount_zat: number; due_date: number; terms_hash: string }>(wasm.assignmentDecode(rec.assignment.letter, rec.invoice));
+      const pdf = rec.assignment.pdf;
+      letterOut.show(
+        h("p", { class: "hint" }, `Assignment letter for ${rec.invoice_id}: from now on you pay the financier below, at this address, and nobody else.`),
+        kv([
+          ["Financier", f.financier_pk, true],
+          ["You pay at", f.financier_address, true],
+          ["Amount", `${zatToZec(f.amount_zat)} ZEC`],
+          ["Due", daysToDate(f.due_date)],
+          ["Letter document (SHA-256, checked)", f.terms_hash, true],
+        ]),
+        pdf
+          ? actions(
+              button("Read the letter (PDF)", () => {
+                const url = URL.createObjectURL(new Blob([Uint8Array.from(atob(pdf), (c) => c.charCodeAt(0))], { type: "application/pdf" }));
+                window.open(url, "_blank", "noopener");
+                setTimeout(() => URL.revokeObjectURL(url), 60_000);
+              }, true),
+            )
+          : h("span", {}),
+      );
+    }
     if (rec.assignment?.supplier_seal) lSeal.input.value = rec.assignment.supplier_seal;
     sealCard.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -419,6 +446,15 @@ export function buyerPage(): HTMLElement {
     // HNK-26.T8: a financier asks for this buyer's history before it registers the invoice
     "history.request": {
       label: "Send my history",
+      // BL-D26-02: who asks, for which invoice, before the buyer agrees; declining is not answering
+      describe: async (r: Received) => {
+        const hd = r.message.header;
+        const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+        const known = (await account.current?.store?.list<{ mailbox_pk: string; username?: string; fingerprint: string }>())?.find((x) => x.id === `contact:${hd.from.mailbox_pk}`)?.doc;
+        const who = known ? `${known.username ? `@${known.username}` : "A financier"} (fingerprint ${known.fingerprint})` : `A financier you have no card for (key ${String(hd.body.financier_pk).slice(0, 10)}…)`;
+        const what = rec ? `${rec.invoice_id}, ${zatToZec(rec.amount_zat)} ZEC due ${daysToDate(rec.due_date)}` : "an invoice this device does not hold";
+        return `${who} asks for your payment history before financing ${what}. Sending shows how your earlier invoices were paid, not who they were with. To decline, do nothing: no answer is sent.`;
+      },
       run: async (r: Received): Promise<string> => {
         const hd = r.message.header;
         const fin = String(hd.body.financier_pk);
@@ -619,3 +655,35 @@ function invoiceTable(f: Record<string, string | number>): HTMLElement {
     ["Fingerprint N", String(f.nullifier), true],
   ]);
 }
+
+/**
+ * HNK-25.T2 (BL-D22-01): the next invoice key goes to a supplier through the relay, signed with
+ * that very key (one more passkey touch), so the supplier knows it comes from its holder.
+ */
+function shareKey(k: number, invoicePk: string): HTMLElement {
+  const card_ = h("textarea", { rows: "2", spellcheck: "false", placeholder: "the supplier's jitsuin-contact-v1:…", "aria-label": "The supplier's contact card" }) as HTMLTextAreaElement;
+  const out = new Out();
+  return h(
+    "div",
+    { class: "contacts" },
+    card_,
+    actions(
+      button("Send this key to the supplier", async () => {
+        try {
+          const c = await useContact(card_.value, "supplier");
+          const hd = draft("key.invoice_pk", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, c.mailbox_pk, relayDeps, { body: { invoice_pk: invoicePk } });
+          const withSigner = { ...hd, signer: invoicePk } as Header;
+          const m = await account.stamp();
+          const r = json<{ signer: string; sig: string }>(wasm.buyerMessageSignBytes(m, k, signingBytes(withSigner)));
+          if (r.signer !== invoicePk) throw new Error("this key is not your invoice key");
+          await send(c.mailbox_pk, await encodeMessage({ ...withSigner, sig: r.sig }), relayDeps);
+          out.show(banner("ok", "Key sent", `Sealed to the supplier's mailbox: it fills the invoice's buyer line there. Key #${k}.`));
+        } catch (e) {
+          out.error(e);
+        }
+      }, true),
+    ),
+    out.el,
+  );
+}
+

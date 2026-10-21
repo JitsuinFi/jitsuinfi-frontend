@@ -24,6 +24,11 @@ export function buyerKeys(master_hex: string, index: number): string;
 
 export function buyerKeysBytes(master: Uint8Array, index: number): string;
 
+/**
+ * Signs a relay header with the buyer's invoice key `index` from the master (wiped).
+ */
+export function buyerMessageSignBytes(master: Uint8Array, index: number, signing_bytes: Uint8Array): string;
+
 export function buyerRepayment(master_hex: string, index: number, invoice_b64: string, assignment_b64: string, date: number): string;
 
 export function buyerRepaymentBytes(master: Uint8Array, index: number, invoice_b64: string, assignment_b64: string, date: number): string;
@@ -167,6 +172,7 @@ export interface InitOutput {
     readonly buyerHistoryCertBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
     readonly buyerKeys: (a: number, b: number, c: number) => [number, number, number, number];
     readonly buyerKeysBytes: (a: number, b: number, c: any, d: number) => [number, number, number, number];
+    readonly buyerMessageSignBytes: (a: number, b: number, c: any, d: number, e: number, f: number) => [number, number, number, number];
     readonly buyerRepayment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly buyerRepaymentBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly buyerSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];

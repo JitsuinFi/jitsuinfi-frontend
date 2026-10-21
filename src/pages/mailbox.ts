@@ -15,11 +15,14 @@ export interface InboxAction {
   run: (r: Received) => Promise<string>;
   /** Leave the message in the mailbox after `run` (the screen removes it when it is done). */
   keep?: boolean;
+  /** What accepting means, shown before the button is pressed (HNK-25.T2, BL-D26-02). */
+  describe?: (r: Received) => Promise<string | null>;
 }
 
 const TYPE_LABEL: Partial<Record<MessageType, string>> = {
   "invoice.sign_request": "Invoice to sign",
   "invoice.signature": "Buyer's signature",
+  "key.invoice_pk": "Buyer's invoice key",
   "deal.decline": "Offer declined",
   "deal.commitment_opening": "Entry request",
   "deal.letter": "Assignment letter",
@@ -103,7 +106,9 @@ export function mailboxCard(handlers: Partial<Record<MessageType, InboxAction>>)
           : !action
             ? h("small", {}, "This screen has nothing to do with this message.")
             : null;
-        return h("div", { class: "deal" }, head, note, out.el);
+        const about = h("small", { class: "deal-about" });
+        if (action?.describe && r.signatureOk) void action.describe(r).then((t) => (about.textContent = t ?? ""), () => undefined);
+        return h("div", { class: "deal" }, head, note, about, out.el);
       });
       inbox.show(
         ...(got.refused ? [banner("warn", `${got.refused} message${got.refused > 1 ? "s" : ""} could not be opened`, "Not sealed to your mailbox or not a JitsuinFi message; ignored.")] : []),

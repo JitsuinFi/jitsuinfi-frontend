@@ -215,6 +215,31 @@ function loginView(session: Session, rerender: () => void): HTMLElement {
   );
 }
 
+/** The financier's own display name: shown only here and at log in on this browser. */
+function nameSection(current: string | null | undefined, onSaved: (name: string) => void): HTMLElement {
+  const input = h("input", { maxlength: "60", placeholder: "e.g. Kurogane Capital", autocomplete: "organization" }) as HTMLInputElement;
+  input.value = current ?? "";
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  const form = h(
+    "form",
+    { class: "name-form" },
+    h("label", { class: "auth-field" }, h("span", {}, "Your name"), input, h("small", {}, "Shown only in your own console.")),
+    h("button", { class: "auth-link", type: "submit" }, "Save"),
+  );
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const r = await post<{ name: string }>("/node/console/name", { name: input.value });
+      keepName(r.name);
+      note.textContent = "Saved.";
+      onSaved(r.name);
+    } catch (err) {
+      note.textContent = err instanceof Error ? err.message : String(err);
+    }
+  });
+  return h("section", { class: "mail", "aria-labelledby": "name-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "name-title" }, "Profile")), form, note);
+}
+
 export async function homeView(rerender: () => void): Promise<HTMLElement> {
   const s = sheet("Financier console", "Sign in with the passkey paired to this node.");
   const [session, info] = await Promise.all([get<Session>("/node/console/session"), get<Info>("/node/info")]);
@@ -227,7 +252,12 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
   s.lede.textContent = "This node's keys and wallet stay on the node.";
   fact(s.facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
   fact(s.facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
-  s.body.append(verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."), mailbox(), devices());
+  s.body.append(
+    verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."),
+    mailbox(),
+    devices(),
+    nameSection(session.name, (n) => (s.title.textContent = `Welcome, ${n}`)),
+  );
   const out = h("button", { class: "auth-link", type: "button" }, "Sign out");
   out.addEventListener("click", async () => {
     await post("/node/console/logout").catch(() => undefined);

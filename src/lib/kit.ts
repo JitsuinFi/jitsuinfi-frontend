@@ -17,40 +17,9 @@ export const KIT = {
   financierA: { txid: "33b8f3b0aa754e790e9c7fac0ae7dc08ce8612a8c26620d551d790e1ea390a56", height: 4509299, tx_index: 2, output_index: 0 },
   /** The full double-signature proof of this invoice (JTSP), from which Exhibit A is made. */
   proofUrl: "/demo/proof-tes-inv-0003.txt",
-  /** Live board from the financier node (HNK-30.T4), through the app's own origin. */
-  liveBoard: "/api/board",
-  /** Same-origin copy used when the node cannot be reached (W-23). */
-  board: { url: "/demo/board-testnet-4511024.json", upToHeight: 4511024, taken: "2026-10-20" },
 } as const;
 
-/** Board data for the check, and where it came from. */
-export interface BoardData {
-  json: string;
-  source: "live" | "copy";
-  tip: number;
-  /** Seconds since the epoch of the scan (live) or of the copy. */
-  at: number;
-}
-
-type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
-
-/** The live board from the node; the bundled copy when the node does not answer (W-23). */
-export async function loadBoard(f: Fetch): Promise<BoardData> {
-  try {
-    const r = await f(KIT.liveBoard, { credentials: "same-origin" });
-    if (r.ok) {
-      const j = (await r.json()) as { entries?: unknown[]; tip?: number; scanned_at?: number };
-      if (Array.isArray(j.entries) && typeof j.tip === "number" && typeof j.scanned_at === "number") {
-        return { json: JSON.stringify(j.entries), source: "live", tip: j.tip, at: j.scanned_at };
-      }
-    }
-  } catch {
-    /* the node is down or unreachable: use the copy */
-  }
-  const r = await f(KIT.board.url, { credentials: "same-origin" });
-  if (!r.ok) throw new Error(`board data answered ${r.status}`);
-  return { json: await r.text(), source: "copy", tip: KIT.board.upToHeight, at: Date.parse(`${KIT.board.taken}T00:00:00Z`) / 1000 };
-}
+export { loadBoard, type BoardData } from "./board.ts";
 
 /** The invoice fields a supplier can change in the envelope (M-01). */
 export interface InvoiceFields {

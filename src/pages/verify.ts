@@ -5,13 +5,13 @@
 // claimed only, never as facts.
 import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
-import { loadBoard } from "../lib/kit";
+import { boardLine, loadBoard } from "../lib/board";
 import { actions, banner, button, card, download, field, fileField, h, kv, Out, page } from "../lib/ui";
 
 export function verifyPage(): HTMLElement {
   const code = field("Bundle, proof or exhibit", { area: true, placeholder: "Paste a JitsuinFi bundle (JTSB), double-signature proof (JTSP) or Exhibit A (JTSX)" });
   const invoice = field("Invoice (optional, for an exhibit)", { area: true, placeholder: "JTSI… if you hold the invoice the exhibit is about" });
-  const board = fileField("Board data (optional)", "Without a file the page reads the live testnet board from the financier node (a bundled copy if the node does not answer).");
+  const board = fileField("Board data (optional)", "Without a file the page reads the live testnet board from the financier node (the last one this browser saw, or a bundled copy, if the node does not answer).");
   const out = new Out();
   const run = async () => {
     try {
@@ -21,7 +21,7 @@ export function verifyPage(): HTMLElement {
       const file = await board.input.files?.[0]?.text();
       const live = file ? undefined : await loadBoard((u, i) => fetch(u, i)).catch(() => undefined);
       const boardJson = file ?? live?.json;
-      const source = file ? "the file you added" : live ? (live.source === "live" ? `live testnet board up to block ${live.tip}` : `bundled copy of the testnet board up to block ${live.tip}`) : "none";
+      const source = file ? "the file you added" : live ? boardLine(live) : "none";
       if (kind === "exhibit") return out.show(...exhibitView(c, boardJson, invoice.value() || undefined, source));
       if (kind === "proof") return out.show(...proofView(c, boardJson));
       if (kind === "bundle") return out.show(...bundleView(c, boardJson));

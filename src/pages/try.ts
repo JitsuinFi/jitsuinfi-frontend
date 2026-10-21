@@ -5,7 +5,8 @@
 // already holds the invoice's fingerprint). Nothing to install, no wallet, nothing recorded: the
 // checks run in this browser with the same code as the node and `jitsuin verify`, against the
 // live board scanned by the financier node (or a bundled copy when the node does not answer).
-import { checkOffer, encodeEdited, KIT, loadBoard, type BoardData, type InvoiceFields } from "../lib/kit";
+import { boardLine, loadBoard, type BoardData } from "../lib/board";
+import { checkOffer, encodeEdited, KIT, type InvoiceFields } from "../lib/kit";
 import { dateToDays, daysToDate, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import { actions, banner, button, card, field, h, kv, Out, page } from "../lib/ui";
 import { exhibitView } from "./verify";
@@ -27,13 +28,6 @@ function board(): Promise<BoardData> {
   return boardCache;
 }
 
-function boardLine(b: BoardData): string {
-  if (b.source === "live") {
-    const mins = Math.max(0, Math.round((Date.now() / 1000 - b.at) / 60));
-    return `Zcash testnet board, live scan up to block ${b.tip} (${mins} min ago)`;
-  }
-  return `Bundled copy of the testnet board up to block ${b.tip} (${daysToDate(Math.floor(b.at / 86400))}): the node did not answer`;
-}
 
 export function tryPage(): HTMLElement {
   const orig = json<Decoded>(wasm.invoiceDecode(KIT.invoice));

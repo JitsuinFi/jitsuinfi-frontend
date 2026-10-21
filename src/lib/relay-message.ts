@@ -27,9 +27,9 @@ export const MAX_PLAINTEXT = 9 + MAX_HEADER + MAX_ATTACHMENTS * MAX_ATTACHMENT;
 export const ATTACHMENT_MIME = ["application/pdf"] as const;
 const SIG_DOMAIN = "JitsuinMsgSig_v1\n";
 
-export type Party = "supplier" | "buyer" | "financier" | "member" | "fund";
+export type Party = "supplier" | "buyer" | "financier" | "member" | "fund" | "applicant" | "provider";
 /** Who must sign the header: a party key, or nobody because the body signs itself. */
-export type Signer = "supplier" | "buyer-invoice-key" | "financier" | "fund" | "none";
+export type Signer = "supplier" | "buyer-invoice-key" | "financier" | "fund" | "provider" | "none";
 
 export interface Attachment {
   name: string;
@@ -174,6 +174,18 @@ export const TYPES = {
     from: ["fund"], to: ["member"], n: "none",
     body: { period: req(uint), root: req(H32), path: req(list(H32, 0, 64)) },
     attachments: { min: 0, max: 0 }, signer: "fund",
+  },
+  "financier.apply": {
+    flows: "D-46 B (HNK-26.T25): applicant to node provider",
+    from: ["applicant"], to: ["provider"], n: "none",
+    body: { name: req(text(80)), contact: req(text(120)), note: opt(text(1000)) },
+    attachments: { min: 0, max: 0 }, signer: "none",
+  },
+  "financier.invite": {
+    flows: "D-46 B (HNK-26.T25): node provider to applicant",
+    from: ["provider"], to: ["applicant"], n: "none",
+    body: { link: req(text(300)) },
+    attachments: { min: 0, max: 0 }, signer: "provider",
   },
 } satisfies Record<string, Spec>;
 

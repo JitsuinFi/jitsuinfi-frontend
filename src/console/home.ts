@@ -51,6 +51,8 @@ interface Offer {
   advance_zat?: number;
   supplier_address?: string;
   accepted?: { advance_zat: number; min_confirmations: number; accepted_at: number } | null;
+  /** HNK-26.T6: when the node declines it unanswered (seconds since the epoch). */
+  expires_at?: number;
   /** HNK-30.T11: the offer against the private mandate, checked on the node. */
   mandate?: { verdict: "fits" | "breaks" | "waiting" | "none"; rules: Array<{ rule: string; ok: boolean | null; detail: string }>; decline_reason: string };
 }
@@ -75,7 +77,13 @@ function offerBlock(relayId: string, o: Offer, demo: boolean, reload: () => Prom
     h("dt", {}, "Due"), h("dd", {}, dueDay(o.due_date ?? 0)),
     h("dt", {}, "Advance asked"), h("dd", {}, `${zec(o.advance_zat ?? 0)} ZEC`),
   );
-  const checked = h("p", { class: "mail-note offer-checked" }, "The supplier's key signed this offer and the buyer signed this exact invoice.");
+  const days = o.expires_at ? Math.max(0, Math.ceil((o.expires_at * 1000 - Date.now()) / 86_400_000)) : null;
+  const checked = h(
+    "p",
+    { class: "mail-note offer-checked" },
+    "The supplier's key signed this offer and the buyer signed this exact invoice.",
+    days !== null && !o.accepted ? ` Unanswered, it expires in ${days} day${days === 1 ? "" : "s"}.` : "",
+  );
   if (o.accepted) {
     return h(
       "div",

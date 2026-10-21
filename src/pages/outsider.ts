@@ -1,6 +1,7 @@
 // "What outsiders see" (HNK-11.T2, HNK-28.T5): what the public board shows to anyone holding its viewing key.
 import { json, wasm } from "../lib/core";
-import { actions, button, card, field, h, kv, Out, page } from "../lib/ui";
+import { actions, button, card, field, h, kv, Out } from "../lib/ui";
+import { deskPage } from "./desk";
 
 // What anyone holding the board's public viewing key learns (HNK-28.T5, BL-D28-07; threat model
 // rows "viewing key holder" and TM #13 – #14). The key is published (D-11), so "outsider" means
@@ -20,46 +21,70 @@ const TABLE: Array<[string, string, string]> = [
 ];
 
 export function outsiderPage(): HTMLElement {
-  const table = h(
-    "table",
-    { class: "kv" },
-    h("tbody", {}, ...TABLE.map(([what, status, why]) => h("tr", {}, h("td", {}, what), h("td", {}, h("strong", {}, status), " · ", why)))),
+  // The stage (HNK-30.T17, MASTER.md §8): the 登記所 window seen from the street. What anyone with
+  // the board's key can read is lit on clear glass; what stays with the parties is behind frosted
+  // glass, its content struck through, the reason still readable.
+  const fact = ([what, status, why]: [string, string, string]) => {
+    const shown = status === "Visible";
+    return h(
+      "li",
+      { class: shown ? "os-fact is-shown" : "os-fact is-hidden" },
+      h("span", { class: "os-mark", lang: "ja", "aria-hidden": "true" }, shown ? "見" : status === "Hidden by default" ? "選" : "秘"),
+      h("strong", {}, what),
+      h("span", { class: "os-status" }, status),
+      h("span", { class: "os-why" }, why),
+    );
+  };
+  const stage = h(
+    "section",
+    { class: "os", "aria-label": "Public and hidden, seen from outside the registry" },
+    h("p", { class: "ct-plaque os-plaque" }, h("span", { lang: "ja" }, "登記所"), h("small", {}, "seen from the street")),
+    h(
+      "div",
+      { class: "os-window" },
+      h("div", { class: "os-pane is-clear" }, h("p", { class: "os-pane-k" }, h("b", { lang: "ja" }, "見える"), "Anyone with the board key reads"), h("ol", {}, ...TABLE.filter((r) => r[1] === "Visible").map(fact))),
+      h("div", { class: "os-pane is-frosted" }, h("p", { class: "os-pane-k" }, h("b", { lang: "ja" }, "見えない"), "Stays with the parties"), h("ol", {}, ...TABLE.filter((r) => r[1] !== "Visible").map(fact))),
+    ),
   );
   const memo = field("A board memo (base64url)", { area: true, placeholder: "Paste a memo read with the board's public viewing key" });
   const out = new Out();
-  return page(
-    "What outsiders see",
-    "The registry board is public so anyone can audit it: its viewing key is published. This is everything anyone can learn from it.",
-    card("Privacy", "Public vs hidden", "Zcash shields the money; JitsuinFi keeps the documents with the parties.", table),
-    card(
-      "Explorer",
-      "What a block explorer shows for an advance",
-      "Testnet advance 7b5687991a8df84c… paid a supplier 0.00015 TAZ with a receipt, a seal and a receivable note in its memo. An explorer sees this:",
-      kv([
-        ["Transaction", "7b5687991a8df84cdb334d910f5d08850b98d5d02c7df09cd1bff4f2c167dbd9", true],
-        ["Transparent inputs / outputs", "none / none"],
-        ["Shielded pool", "Ironwood"],
-        ["Fee", "0.0001 TAZ (ZIP-317)"],
-        ["Amount, sender, recipient", "encrypted"],
-        ["Memo (receipt, seal, note)", "encrypted"],
-      ]),
-    ),
-    card(
-      "Try it",
-      "Read a board entry as an outsider",
-      "You will see the entry's kind, N, the financier commitment, the two classes and any history tag, or a settlement's tag and on-time flag. No party, amount or document. Checking a signature needs the supplier's key, which is only inside the invoice.",
-      memo.el,
-      actions(
-        button("Read entry", () => {
-          try {
-            const d = json<Record<string, unknown>>(wasm.boardMemoDescribe(memo.value()));
-            out.show(kv(Object.entries(d).map(([k, v]): [string, string, boolean] => [k, String(v ?? "—"), true])));
-          } catch (e) {
-            out.error(e);
-          }
-        }),
+  return deskPage({
+    glyph: "外",
+    eyebrow: "Outside the registry",
+    title: "What outsiders see",
+    lede: "The registry board is public so anyone can audit it: its viewing key is published. This is everything anyone can learn from it.",
+    stage,
+    docs: [
+      card(
+        "Explorer",
+        "What a block explorer shows for an advance",
+        "Testnet advance 7b5687991a8df84c… paid a supplier 0.00015 TAZ with a receipt, a seal and a receivable note in its memo. An explorer sees this:",
+        kv([
+          ["Transaction", "7b5687991a8df84cdb334d910f5d08850b98d5d02c7df09cd1bff4f2c167dbd9", true],
+          ["Transparent inputs / outputs", "none / none"],
+          ["Shielded pool", "Ironwood"],
+          ["Fee", "0.0001 TAZ (ZIP-317)"],
+          ["Amount, sender, recipient", "encrypted"],
+          ["Memo (receipt, seal, note)", "encrypted"],
+        ]),
       ),
-      out.el,
-    ),
-  );
+      card(
+        "Try it",
+        "Read a board entry as an outsider",
+        "You will see the entry's kind, N, the financier commitment, the two classes and any history tag, or a settlement's tag and on-time flag. No party, amount or document. Checking a signature needs the supplier's key, which is only inside the invoice.",
+        memo.el,
+        actions(
+          button("Read entry", () => {
+            try {
+              const d = json<Record<string, unknown>>(wasm.boardMemoDescribe(memo.value()));
+              out.show(kv(Object.entries(d).map(([k, v]): [string, string, boolean] => [k, String(v ?? "—"), true])));
+            } catch (e) {
+              out.error(e);
+            }
+          }),
+        ),
+        out.el,
+      ),
+    ],
+  });
 }

@@ -16,10 +16,15 @@
   --seal: #7E2A53;
   --seal-hi: #6B2347;
   --glint: #1D97F1;
+  --pool: #020D2F;   /* the registry room of the 登記所 (MASTER.md §8): console desk, app counter */
+  --pool-2: #032C7D;
+  --wave: #0841C9;
+  --mist: #C4C7F2;
   --rule: rgba(70, 29, 58, .14);
   --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;
   --f-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-seal: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
   --dur-press: 67ms;
   --dur-fade: 200ms;
   --dur-seal: 367ms;

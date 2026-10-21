@@ -6,7 +6,8 @@ import { chevron, head, link, lockIcon, Message, passkeyIcon, row, sheet as auth
 import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
 import { assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
-import { fact, sheet, verdict } from "./sheet";
+import { fact, seal } from "./sheet";
+import "./desk.css";
 
 interface Session {
   signed_in: boolean;
@@ -183,7 +184,7 @@ function mailbox(demo = false): HTMLElement {
   const refresh = h("button", { class: "auth-link", type: "button" }, "Refresh");
   refresh.addEventListener("click", load);
   void load();
-  return h("section", { class: "mail", "aria-labelledby": "mail-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "mail-title" }, "Mailbox"), refresh), list, note);
+  return h("section", { class: "mail is-tray", "aria-labelledby": "mail-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "mail-title" }, "Mailbox"), refresh), list, note);
 }
 
 interface Buyer {
@@ -259,7 +260,7 @@ function buyers(demo = false): HTMLElement {
   }
   parts.push(note);
   void load();
-  return h("section", { class: "mail", "aria-labelledby": "buyers-title" }, ...parts);
+  return h("section", { class: "mail is-index", "aria-labelledby": "buyers-title" }, ...parts);
 }
 
 interface Device {
@@ -337,7 +338,7 @@ function devices(demo = false): HTMLElement {
     }
   });
   void load();
-  return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), demo ? null : add), list, invite, note);
+  return h("section", { class: "mail is-keys", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), demo ? null : add), list, invite, note);
 }
 
 function loginView(session: Session, rerender: () => void): HTMLElement {
@@ -431,7 +432,7 @@ function nameSection(current: string | null | undefined, onSaved: (name: string)
       note.textContent = err instanceof Error ? err.message : String(err);
     }
   });
-  return h("section", { class: "mail", "aria-labelledby": "name-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "name-title" }, "Profile")), form, note);
+  return h("section", { class: "mail is-name", "aria-labelledby": "name-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "name-title" }, "Profile")), form, note);
 }
 
 /** What a supplier needs to offer this node an invoice: the contact card and the financier key. */
@@ -451,7 +452,7 @@ function share(info: Info): HTMLElement {
   };
   return h(
     "section",
-    { class: "mail", "aria-labelledby": "share-title" },
+    { class: "mail is-meishi", "aria-labelledby": "share-title" },
     h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "share-title" }, "For suppliers")),
     item("Contact card.", info.contact, "Suppliers send their offers sealed to this mailbox."),
     item("Financier key.", info.financier_pk, "The supplier's app checks it against the card's fingerprint."),
@@ -459,33 +460,48 @@ function share(info: Info): HTMLElement {
 }
 
 export async function homeView(rerender: () => void): Promise<HTMLElement> {
-  const s = sheet("Financier console", "Sign in with the passkey paired to this node.");
   const [session, info] = await Promise.all([get<Session>("/node/console/session"), get<Info>("/node/info")]);
-  fact(s.facts, "Network", info.network === "main" ? "Zcash mainnet" : "Zcash testnet");
-  fact(s.facts, "Node key", contactFingerprint(info.contact), true);
-
   if (!session.signed_in) return loginView(session, rerender);
   keepName(session.name);
-  if (session.name) s.title.textContent = `Welcome, ${session.name}`;
-  s.lede.textContent = "This node's keys and wallet stay on the node.";
-  fact(s.facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
-  fact(s.facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
   const demo = session.demo === true;
-  s.body.append(
-    demo
-      ? verdict("試", "Demo console", "Anyone can sign in here. Payments, invites, removing devices and the profile are turned off.")
-      : verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."),
-    mailbox(demo),
-    buyers(demo),
-    share(info),
-    devices(demo),
-    demo ? h("span", {}) : nameSection(session.name, (n) => (s.title.textContent = `Welcome, ${n}`)),
-  );
+
+  // Signed in (HNK-30.T16, MASTER.md §8): the financier sits on B's side of the 登記所 counter,
+  // in the registry room. The mailbox is the in-tray of letters, the contact card a meishi, the
+  // KYC registry an index box, the paired passkeys keys on a rack.
+  const title = h("h1", { class: "dk-title" }, session.name ? `Welcome, ${session.name}` : "Financier console");
+  const facts = h("dl", { class: "dk-facts" });
+  fact(facts, "Network", info.network === "main" ? "Zcash mainnet" : "Zcash testnet");
+  fact(facts, "Node key", contactFingerprint(info.contact), true);
+  fact(facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
+  fact(facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
   const out = h("button", { class: "auth-link", type: "button" }, "Sign out");
   out.addEventListener("click", async () => {
     await post("/node/console/logout").catch(() => undefined);
     rerender();
   });
-  s.foot.prepend(out);
-  return s.root;
+  const plaque = h(
+    "header",
+    { class: "dk-plaque" },
+    seal(),
+    h(
+      "div",
+      { class: "dk-who" },
+      h("p", { class: "dk-eyebrow" }, h("span", { lang: "ja" }, "登記所"), demo ? "Demo console: payments, invites, removals and the profile are off" : "Financier node · the keys and wallet stay on the node"),
+      title,
+      facts,
+    ),
+    out,
+  );
+  return h(
+    "main",
+    { class: "auth dk" },
+    h("span", { class: "dk-lamp", "aria-hidden": "true" }),
+    plaque,
+    h(
+      "div",
+      { class: "dk-desk" },
+      h("div", { class: "dk-left" }, mailbox(demo)),
+      h("div", { class: "dk-right" }, share(info), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
+    ),
+  );
 }

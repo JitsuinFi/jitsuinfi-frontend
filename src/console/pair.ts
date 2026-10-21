@@ -1,65 +1,101 @@
-// Pairing a passkey with the console (HNK-26.T2, T20, D-43): the code comes in an invite link
-// (`/console/pair#<code>`, the fragment never reaches a server) or is typed; the node checks it,
-// the browser creates a passkey for this origin, and the node verifies and keeps it.
+// Joining the console from an invite (HNK-26.T2, T20, D-43): the consumer sign-up of the app,
+// in three steps (invite, passkey, ready). The code comes in the invite link (`/console/pair#…`,
+// the fragment never reaches a server) or is typed. Pairing also signs in.
+import { chevron, fingerIcon, head, keyIcon, link, lockIcon, Message, primary, row, sheet } from "../lib/auth-sheet";
 import { h } from "../lib/ui";
 import { creationOptions, NodeError, post, registrationJson } from "./node";
-import { sheet, verdict } from "./sheet";
+import { keepName } from "./name";
+
+const STEPS = ["Invite", "Passkey", "Ready"];
+
+function protectedNote(): HTMLElement {
+  return h("div", { class: "auth-foot" }, h("p", { class: "auth-protected" }, lockIcon(), "Protected by your device passkey"), h("p", { class: "auth-host" }, `Works only on ${location.host}`));
+}
 
 export function pairView(): HTMLElement {
-  const s = sheet("Pair a passkey with this console", "The console opens only with a passkey paired here. Your node provider sends you an invite link with the code; a signed-in console makes codes for more devices.");
-  const input = h("input", { id: "code", class: "is-code", autocomplete: "one-time-code", autocapitalize: "characters", spellcheck: "false", maxlength: "24", placeholder: "XXXX-XXXX-XXXX-XXXX", "aria-describedby": "code-help" }) as HTMLInputElement;
-  const fromLink = decodeURIComponent(location.hash.slice(1)).trim();
-  if (fromLink) {
-    input.value = fromLink;
-    history.replaceState(null, "", location.pathname + location.search);
-  }
-  const msg = h("p", { class: "auth-msg", role: "status", "aria-live": "polite" });
-  const go = h("button", { class: "auth-button is-primary", type: "submit" }, "Create passkey") as HTMLButtonElement;
-  const form = h(
-    "form",
-    { class: "auth-form", novalidate: true },
-    h("label", { class: "auth-field" }, h("span", {}, "Pairing code"), input, h("small", { id: "code-help" }, fromLink ? "Filled in from your invite link." : "Type the code from your invite link.")),
-    go,
-    msg,
-  );
-  form.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const code = input.value.trim();
-    if (code.replace(/[^a-z0-9]/gi, "").length < 16) {
-      input.setAttribute("aria-invalid", "true");
-      msg.textContent = "Type the 16 characters of the pairing code.";
-      return;
-    }
-    input.removeAttribute("aria-invalid");
-    go.disabled = true;
-    go.classList.add("is-waiting");
-    go.textContent = "Waiting for the passkey";
-    msg.textContent = "";
-    try {
-      const start = await post<{ ceremony: string; options: { publicKey: Record<string, unknown> } }>("/node/console/pair/start", { code });
-      let cred: PublicKeyCredential;
-      try {
-        cred = (await navigator.credentials.create({ publicKey: creationOptions(start.options.publicKey) })) as PublicKeyCredential;
-      } catch (e) {
-        const why = e instanceof DOMException && e.name === "InvalidStateError" ? "This device already holds a passkey for this console." : e instanceof DOMException && e.name === "NotAllowedError" ? "The passkey was not created." : "This browser could not create the passkey.";
-        throw new NodeError(`${why} Ask for a new invite link for another try.`);
+  const root = h("main", { class: "auth" });
+  let code = decodeURIComponent(location.hash.slice(1)).trim();
+  if (code) history.replaceState(null, "", location.pathname + location.search);
+  const show = (el: HTMLElement) => root.replaceChildren(el);
+
+  const inviteSheet = (problem?: string): HTMLElement => {
+    const input = h("input", { class: "is-code", autocomplete: "one-time-code", autocapitalize: "characters", spellcheck: "false", maxlength: "24", placeholder: "XXXX-XXXX-XXXX-XXXX" }) as HTMLInputElement;
+    input.value = code;
+    const msg = new Message();
+    if (problem) msg.show(problem);
+    const form = h("form", { class: "auth-form", novalidate: true }, h("label", { class: "auth-field" }, h("span", {}, "Invite code"), input, h("small", {}, "It is in the invite link your node provider sent you.")), primary("Next", () => undefined, "submit"), msg.el);
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (input.value.replace(/[^a-z0-9]/gi, "").length < 16) {
+        input.setAttribute("aria-invalid", "true");
+        msg.show("Type the 16 characters of the invite code.");
+        return;
       }
-      const done = await post<{ credentials: number }>("/node/console/pair/finish", { ceremony: start.ceremony, credential: registrationJson(cred) });
-      form.replaceWith(
-        verdict("認", "Passkey paired", done.credentials === 1 ? "This node now keeps one console passkey." : `This node now keeps ${done.credentials} console passkeys.`),
-        h("a", { class: "auth-button is-primary", href: "/console" }, "Sign in to the console"),
-      );
-    } catch (e) {
-      msg.textContent = e instanceof Error ? e.message : String(e);
-      go.disabled = false;
-      go.classList.remove("is-waiting");
-      go.textContent = "Create passkey";
+      code = input.value.trim();
+      show(passkeySheet());
+    });
+    queueMicrotask(() => input.focus());
+    return sheet(head("Join your financier console", "Open the invite link, or type its code.", 1, STEPS), form, protectedNote());
+  };
+
+  const passkeySheet = (): HTMLElement => {
+    const msg = new Message();
+    const point = (ico: SVGElement, title: string, text: string) => h("li", {}, ico, h("span", {}, h("strong", {}, title), text));
+    const create = primary("Create passkey", async () => {
+      msg.clear();
+      try {
+        const start = await post<{ ceremony: string; options: { publicKey: Record<string, unknown> }; name?: string | null }>("/node/console/pair/start", { code });
+        keepName(start.name);
+        let cred: PublicKeyCredential;
+        try {
+          cred = (await navigator.credentials.create({ publicKey: creationOptions(start.options.publicKey) })) as PublicKeyCredential;
+        } catch (e) {
+          const why = e instanceof DOMException && e.name === "InvalidStateError" ? "This device already has a passkey for this console: log in instead." : e instanceof DOMException && e.name === "NotAllowedError" ? "The passkey was not created." : "This browser could not create the passkey.";
+          throw new NodeError(`${why} Your invite code is used up; ask for a new invite link to try again.`);
+        }
+        const done = await post<{ credentials: number; name?: string | null }>("/node/console/pair/finish", { ceremony: start.ceremony, credential: registrationJson(cred) });
+        keepName(done.name);
+        show(readySheet(done.name ?? start.name ?? null));
+      } catch (e) {
+        msg.error(e);
+      }
+    });
+    if (!window.PublicKeyCredential) {
+      create.disabled = true;
+      msg.show("This browser has no passkeys. Open the invite link in a current browser.");
     }
-  });
-  if (!window.PublicKeyCredential) {
-    msg.textContent = "This browser has no passkeys. Open this page in a current browser.";
-    go.disabled = true;
-  }
-  s.body.append(form);
-  return s.root;
+    return sheet(
+      head("Set up your passkey", "It replaces a password for your financier console.", 2, STEPS),
+      h(
+        "ul",
+        { class: "auth-points" },
+        point(fingerIcon(), "Unlock it your way", "Your device asks for your fingerprint, your face, or your device PIN."),
+        point(keyIcon(), "The keys stay on your node", "The passkey opens the console. The wallet and its keys never leave the node."),
+        point(lockIcon(), "Every payment asks you", "An advance is paid only after you approve it with this passkey, payment by payment."),
+      ),
+      msg.el,
+      create,
+      h("p", { class: "auth-switch" }, link("Use another invite code", () => show(inviteSheet()))),
+      protectedNote(),
+    );
+  };
+
+  const readySheet = (name: string | null): HTMLElement => {
+    const open = row(h("span", { class: "auth-badge", "aria-hidden": "true" }, "証"), "Open your console", "Your mailbox, your devices and your node.", chevron(), () => {
+      location.href = "/console";
+    });
+    return sheet(
+      head(name ? `You're set, ${name}` : "You're set", "Your passkey is paired and you are signed in.", 3, STEPS),
+      h(
+        "ol",
+        { class: "auth-onboard" },
+        h("li", {}, h("strong", {}, "Your passkey is your password"), "Each time you log in or approve a payment, your device asks for your fingerprint, face, or device PIN. Nothing to remember."),
+        h("li", {}, h("strong", {}, "More devices"), "In the console, Add a device makes a one-time link for your other phone or computer."),
+        h("li", {}, h("strong", {}, "Your first step"), h("div", { class: "auth-list" }, open)),
+      ),
+    );
+  };
+
+  show(code ? passkeySheet() : inviteSheet());
+  return root;
 }

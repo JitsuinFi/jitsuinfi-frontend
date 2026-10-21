@@ -13,6 +13,7 @@ import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID,
 import { account } from "../lib/app-session";
 import { NoPrfError, passkeysAvailable } from "../lib/passkey";
 import { h } from "../lib/ui";
+import { busy, check, chevron, fingerIcon, head, keyIcon, link, lockIcon, Message, passkeyIcon, primary, row, sheet, syncIcon } from "../lib/auth-sheet";
 
 // ---------- screen state (this tab only) ----------
 type View = "login" | "login-passkey" | "signup" | "signup-passkey";
@@ -34,7 +35,6 @@ const FIRST_STEP: Record<Role, { label: string; line: string }> = {
   buyer: { label: "Share your invoice key", line: "Your supplier needs it to address an invoice to you." },
   member: { label: "Open your inbox", line: "Receipts from the fund arrive here." },
 };
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** True right after sign-up, until the onboarding sheet is left: the router keeps showing it. */
 export function onboardingPending(): boolean {
@@ -78,104 +78,8 @@ function sheetFor(want: Role | undefined, paint: () => void): HTMLElement {
 
 // ---------- pieces ----------
 
-function svg(tag: string, attrs: Record<string, string | number>, ...kids: SVGElement[]): SVGElement {
-  const e = document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
-  e.append(...kids);
-  return e;
-}
-
-/** The JitsuinFi seal mark: heavy ring, fine ring, 印. */
-function logo(): SVGElement {
-  const t = svg("text", { x: 50, y: 67, "text-anchor": "middle", class: "kanji" });
-  t.textContent = "印";
-  return svg("svg", { viewBox: "0 0 100 100", class: "auth-logo", "aria-hidden": "true" }, svg("circle", { cx: 50, cy: 50, r: 44, class: "ring" }), svg("circle", { cx: 50, cy: 50, r: 36, class: "ring-fine" }), t);
-}
-
-function icon(...paths: SVGElement[]): SVGElement {
-  return svg("svg", { viewBox: "0 0 24 24", class: "auth-ico", "aria-hidden": "true" }, ...paths);
-}
-const passkeyIcon = () => icon(svg("circle", { cx: 9, cy: 8, r: 3.5 }), svg("path", { d: "M3 19.5c0-3.3 2.7-5.5 6-5.5 1.2 0 2.3.3 3.2.8" }), svg("circle", { cx: 17.5, cy: 13.5, r: 2.5 }), svg("path", { d: "M17.5 16v5M17.5 18.5h2M17.5 20.5h1.5" }));
-const fingerIcon = () => icon(svg("path", { d: "M8 20c1-2 1.5-4.2 1.5-7a2.5 2.5 0 0 1 5 0c0 1.6-.2 3.2-.6 4.7M12 13c0 3.2-.6 5.6-1.8 7.6M5.5 16.5c.6-1.2 1-2.6 1-4.3a5.5 5.5 0 0 1 11 0c0 .8 0 1.6-.1 2.4M16.5 19.5c.3-.8.5-1.6.7-2.5" }));
-const keyIcon = () => icon(svg("circle", { cx: 8, cy: 12, r: 3.5 }), svg("path", { d: "M11.5 12H21M18 12v3M15 12v2" }));
-const syncIcon = () => icon(svg("path", { d: "M19 8a7.5 7.5 0 0 0-13.4-1.6M5 16a7.5 7.5 0 0 0 13.4 1.6M5 4v3.5h3.5M19 20v-3.5h-3.5" }));
-const lockIcon = () => svg("svg", { viewBox: "0 0 24 24", class: "auth-ico is-small", "aria-hidden": "true" }, svg("rect", { x: 5, y: 10.5, width: 14, height: 9.5, rx: 2 }), svg("path", { d: "M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" }));
-const chevron = () => svg("svg", { viewBox: "0 0 24 24", class: "auth-ico is-chevron", "aria-hidden": "true" }, svg("path", { d: "M9.5 6l6 6-6 6" }));
-const check = () => svg("svg", { viewBox: "0 0 24 24", class: "auth-ico is-check", "aria-hidden": "true" }, svg("path", { d: "M5.5 12.5l4 4 9-9" }));
-
 function badge(role: Role): HTMLElement {
   return h("span", { class: "auth-badge", "aria-hidden": "true" }, KANJI[role]);
-}
-
-/** A list row button: icon, label (and a line under it), trailing mark. Shows "waiting" while it runs. */
-function row(lead: Node, label: string, line: string | null, trail: Node | null, run: () => void | Promise<void>): HTMLButtonElement {
-  const text = h("span", { class: "auth-row-text" }, h("span", { class: "auth-row-label" }, label), line ? h("span", { class: "auth-row-line" }, line) : null);
-  const b = h("button", { type: "button", class: "auth-row" }, lead, text, trail ?? h("span", {}));
-  b.addEventListener("click", () => busy(b, run));
-  return b;
-}
-
-/** Disables the sheet's buttons while `run` works; `b` shows the waiting mark. */
-async function busy(b: HTMLButtonElement, run: () => void | Promise<void>): Promise<void> {
-  const sheet = b.closest(".auth-sheet");
-  sheet?.querySelectorAll("button").forEach((x) => (x.disabled = true));
-  b.classList.add("is-waiting");
-  try {
-    await run();
-  } finally {
-    b.classList.remove("is-waiting");
-    sheet?.querySelectorAll("button").forEach((x) => (x.disabled = false));
-  }
-}
-
-function primary(label: string, run: () => void | Promise<void>, type: "button" | "submit" = "button"): HTMLButtonElement {
-  const b = h("button", { type, class: "auth-button is-primary" }, label);
-  if (type === "button") b.addEventListener("click", () => busy(b, run));
-  return b;
-}
-
-function link(label: string, run: () => void): HTMLButtonElement {
-  const b = h("button", { type: "button", class: "auth-link" }, label);
-  b.addEventListener("click", run);
-  return b;
-}
-
-class Message {
-  readonly el = h("p", { class: "auth-msg", role: "status", "aria-live": "polite" });
-  show(text: string): void {
-    this.el.textContent = text;
-  }
-  error(e: unknown): void {
-    const m = e instanceof Error ? e.message : String(e);
-    this.show(m.charAt(0).toUpperCase() + m.slice(1));
-  }
-  clear(): void {
-    this.el.textContent = "";
-  }
-}
-
-function sheet(...children: Array<Node | null>): HTMLElement {
-  return h("div", { class: "auth-sheet", role: "dialog", "aria-labelledby": "auth-title" }, ...children);
-}
-
-function head(title: string, sub: string | null, step?: number): HTMLElement {
-  return h(
-    "div",
-    { class: "auth-head" },
-    step ? steps(step) : logo(),
-    h("h1", { class: "auth-title", id: "auth-title" }, title),
-    sub ? h("p", { class: "auth-sub" }, sub) : null,
-  );
-}
-
-/** Sign-up progress: account, passkey, ready. */
-function steps(n: number): HTMLElement {
-  const names = ["Account", "Passkey", "Ready"];
-  return h(
-    "ol",
-    { class: "auth-steps", "aria-label": `Step ${n} of 3` },
-    ...names.map((name, i) => h("li", { class: i + 1 < n ? "is-done" : i + 1 === n ? "is-now" : undefined }, h("span", { class: "auth-steps-bar" }), name)),
-  );
 }
 
 function field(label: string, input: HTMLInputElement, help?: string): { el: HTMLElement; error: (m: string | null) => void } {

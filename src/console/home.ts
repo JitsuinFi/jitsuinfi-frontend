@@ -1,13 +1,16 @@
 // Console home (HNK-26.T3, T4, T20, D-45): sign in with the paired passkey; signed in, the
 // financier mailbox read through the node, adding devices, and the node's public facts.
+import { chevron, head, link, lockIcon, Message, passkeyIcon, row, sheet as authSheet } from "../lib/auth-sheet";
 import { h } from "../lib/ui";
-import { assert, contactFingerprint, del, get, NodeError, post } from "./node";
+import { keepName, keptName } from "./name";
+import { assert, contactFingerprint, del, get, post } from "./node";
 import { fact, sheet, verdict } from "./sheet";
 
 interface Session {
   signed_in: boolean;
   paired: boolean;
   console: boolean;
+  name?: string | null;
 }
 
 interface Info {
@@ -179,51 +182,57 @@ function devices(): HTMLElement {
   return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), add), list, invite, note);
 }
 
+function loginView(session: Session, rerender: () => void): HTMLElement {
+  const name = keptName();
+  const msg = new Message();
+  const foot = h("div", { class: "auth-foot" }, h("p", { class: "auth-protected" }, lockIcon(), "Protected by your device passkey"), h("p", { class: "auth-host" }, `Works only on ${location.host}`));
+  if (!session.console) {
+    msg.show("The console is off on this node. Ask your node provider.");
+    return h("main", { class: "auth" }, authSheet(head("Financier console", null), msg.el, foot));
+  }
+  if (!session.paired) {
+    return h("main", { class: "auth" }, authSheet(head("Financier console", "No passkey is set up for this console yet. Open the invite link your node provider sent you."), foot));
+  }
+  const go = row(passkeyIcon(), "Continue with passkey", "Fingerprint, face or device PIN", chevron(), async () => {
+    msg.clear();
+    try {
+      await assert("/node/console/login/start", "/node/console/login/finish");
+      rerender();
+    } catch (e) {
+      msg.error(e);
+    }
+  });
+  return h(
+    "main",
+    { class: "auth" },
+    authSheet(
+      head(name ? `Welcome back, ${name}` : "Log in to your console", "Use the passkey you set up for this console."),
+      h("div", { class: "auth-list" }, go),
+      msg.el,
+      h("p", { class: "auth-switch" }, "New device? ", link("Open an invite link", () => (location.href = "/console/pair"))),
+      foot,
+    ),
+  );
+}
+
 export async function homeView(rerender: () => void): Promise<HTMLElement> {
   const s = sheet("Financier console", "Sign in with the passkey paired to this node.");
   const [session, info] = await Promise.all([get<Session>("/node/console/session"), get<Info>("/node/info")]);
   fact(s.facts, "Network", info.network === "main" ? "Zcash mainnet" : "Zcash testnet");
   fact(s.facts, "Node key", contactFingerprint(info.contact), true);
 
-  if (session.signed_in) {
-    s.lede.textContent = "This node's keys and wallet stay on the node.";
-    fact(s.facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
-    fact(s.facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
-    s.body.append(verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."), mailbox(), devices());
-    const out = h("button", { class: "auth-link", type: "button" }, "Sign out");
-    out.addEventListener("click", async () => {
-      await post("/node/console/logout").catch(() => undefined);
-      rerender();
-    });
-    s.foot.prepend(out);
-    return s.root;
-  }
-
-  const msg = h("p", { class: "auth-msg", role: "status", "aria-live": "polite" });
-  if (!session.console) {
-    msg.textContent = "The console is off on this node.";
-    s.body.append(msg);
-    return s.root;
-  }
-  if (!session.paired) {
-    s.lede.textContent = "No passkey is paired with this console yet. Open the invite link from your node provider.";
-    return s.root;
-  }
-  const go = h("button", { class: "auth-button is-primary", type: "button" }, "Sign in with passkey") as HTMLButtonElement;
-  go.addEventListener("click", async () => {
-    go.disabled = true;
-    go.classList.add("is-waiting");
-    msg.textContent = "";
-    try {
-      await assert("/node/console/login/start", "/node/console/login/finish");
-      rerender();
-    } catch (e) {
-      msg.textContent = e instanceof NodeError || e instanceof Error ? e.message : String(e);
-    } finally {
-      go.disabled = false;
-      go.classList.remove("is-waiting");
-    }
+  if (!session.signed_in) return loginView(session, rerender);
+  keepName(session.name);
+  if (session.name) s.title.textContent = `Welcome, ${session.name}`;
+  s.lede.textContent = "This node's keys and wallet stay on the node.";
+  fact(s.facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
+  fact(s.facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
+  s.body.append(verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."), mailbox(), devices());
+  const out = h("button", { class: "auth-link", type: "button" }, "Sign out");
+  out.addEventListener("click", async () => {
+    await post("/node/console/logout").catch(() => undefined);
+    rerender();
   });
-  s.body.append(h("div", { class: "auth-form" }, go, msg));
+  s.foot.prepend(out);
   return s.root;
 }

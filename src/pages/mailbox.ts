@@ -53,16 +53,29 @@ export function mailboxCard(handlers: Partial<Record<MessageType, InboxAction>>)
     status.error(e);
   }
   myMailbox().then(
-    () => status.show(banner("ok", "Mailbox ready", "Counterparties with your contact card can send you documents. Only you can open them.")),
+    () => {
+      status.show(banner("ok", "Mailbox ready", "Counterparties with your contact card can send you documents. Only you can open them."));
+      // HNK-22.T6 (BL-S00-02): the inbox opens on its own after sign-in, then every minute while
+      // this screen is open and visible; a new message redraws the list, the same list does not
+      void check(true);
+      const timer = setInterval(() => {
+        if (!card_.isConnected) return clearInterval(timer);
+        if (document.visibilityState === "visible") void check(true);
+      }, 60_000);
+    },
     (e) => status.show(banner("warn", "Mailbox not reachable", `${e instanceof Error ? e.message : String(e)}. Your documents stay on this device; try again later.`)),
   );
 
-  const check = async () => {
+  let shown: string | null = null; // the relay ids last drawn
+  const check = async (auto = false) => {
     try {
       await myMailbox();
       const s = account.current;
       if (!s) throw new Error("sign in first");
       const got = await receive(s.inbox, relayDeps);
+      const ids = got.messages.map((m) => m.relayId).join(",") + `|${got.refused}`;
+      if (auto && ids === shown) return;
+      shown = ids;
       const rows = got.messages.map((r) => {
         const t = r.message.header.type;
         const action = handlers[t];
@@ -96,17 +109,18 @@ export function mailboxCard(handlers: Partial<Record<MessageType, InboxAction>>)
         rows.length ? h("div", { class: "deals" }, ...rows) : h("p", { class: "hint" }, "Nothing new."),
       );
     } catch (e) {
-      inbox.error(e);
+      if (!auto) inbox.error(e);
     }
   };
 
-  return card(
+  const card_ = card(
     "Mailbox",
     "Contact card and inbox",
     "Give your contact card to the people you deal with; compare the key fingerprint with them by phone or in person. Documents they send arrive sealed to you.",
     status.el,
     contact ? codeBlock("Your contact card", contact, "contact-card.txt") : null,
-    actions(button("Check inbox", check, true)),
+    actions(button("Check inbox", () => check(), true)),
     inbox.el,
   );
+  return card_;
 }

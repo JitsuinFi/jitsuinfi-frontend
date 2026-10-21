@@ -10,10 +10,12 @@ import { memberPage } from "./pages/member";
 import { outsiderPage } from "./pages/outsider";
 import { ratesPage } from "./pages/rates";
 import { supplierPage } from "./pages/supplier";
+import { tryPage } from "./pages/try";
 import { verifyPage } from "./pages/verify";
 
 // Public pages need no account (BL-PG-01).
 const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
+  "/try": { label: "Try it", page: tryPage },
   "/verify": { label: "Verify", page: verifyPage },
   "/outsider": { label: "What outsiders see", page: outsiderPage },
   "/index": { label: "Rate index", page: ratesPage },
@@ -32,8 +34,9 @@ const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage 
 
 function home(): HTMLElement {
   // Each screen wears a seal badge, as the roles on the sign-in sheet: 売 sell, 買 buy, 資 fund,
-  // 証 prove, 外 outside, 価 price.
+  // 証 prove, 外 outside, 価 price, 試 try.
   const tiles: Array<[string, string, string, string]> = [
+    ["/try", "試", "Try to double-finance", "Sell one invoice twice and watch it fail. No wallet needed."],
     ["/supplier", "売", "Supplier", "Issue an invoice and get it financed once."],
     ["/buyer", "買", "Buyer", "Sign, acknowledge and pay with keys from your passkey."],
     ["/member", "資", "Fund member", "See what the fund holds for you."],

@@ -23,7 +23,7 @@ export interface SupplierDeal {
   /** T4: the buyer's signature, checked with `bundleBuild`. */
   buyer_signature?: string;
   /** T5: the offer sent to one financier. */
-  offer?: { financier_pk: string; advance_zat: number; supplier_address: string };
+  offer?: { financier_pk: string; advance_zat: number; supplier_address: string; sent?: { to: string; at: number } };
   /** T6: the financier's request for the board entry, sent after it checked the board (SEQ-03). */
   entry_request?: EntryRequest;
   /** T6: the signed register entry for that financier's commitment. */

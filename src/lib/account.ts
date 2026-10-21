@@ -188,6 +188,23 @@ export async function fingerprint(role: Role, master: Uint8Array): Promise<strin
   return base32(mac.slice(0, 10)).match(/.{4}/g)!.join("-");
 }
 
+/**
+ * Fingerprint of a financier node's public key, as its contact card carries it (jitsuinfi-node
+ * `relay::fingerprint`): SHA-256("jitsuin-fingerprint-v1:financier:" ‖ financier_pk), first 10
+ * bytes, in base32 groups. A node has one public financier key, so anyone holding the key can
+ * check the card.
+ */
+export async function financierFingerprint(financierPkHex: string): Promise<string> {
+  if (!/^[0-9a-f]{64}$/.test(financierPkHex)) throw new Error("the financier key must be 64 hex characters");
+  const pk = Uint8Array.from(financierPkHex.match(/../g)!, (b) => parseInt(b, 16));
+  const prefix = enc.encode("jitsuin-fingerprint-v1:financier:");
+  const msg = new Uint8Array(prefix.length + 32);
+  msg.set(prefix);
+  msg.set(pk, prefix.length);
+  const d = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", msg));
+  return base32(d.slice(0, 10)).match(/.{4}/g)!.join("-");
+}
+
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function base32(bytes: Uint8Array): string {

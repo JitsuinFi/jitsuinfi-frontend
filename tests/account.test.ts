@@ -7,6 +7,7 @@ import {
   emailProblem,
   emptyProfile,
   fingerprint,
+  financierFingerprint,
   fromB64url,
   inboxSalt,
   isNonProductionHost,
@@ -275,4 +276,9 @@ test("a passkey known under another username is refused, not renamed", async () 
   await assert.rejects(acct.signInAs("someoneelse"), /belongs to @hans/);
   assert.ok(acct.usernameKnown("hans"));
   assert.ok(!acct.usernameKnown("someoneelse"));
+});
+
+test("financierFingerprint: the node's contact card fingerprint (same vector as jitsuinfi-node relay.rs)", async () => {
+  assert.equal(await financierFingerprint("09".repeat(32)), "XEUS-G6UK-2CXX-G237");
+  await assert.rejects(financierFingerprint("xyz"));
 });

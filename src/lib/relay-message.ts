@@ -123,7 +123,7 @@ export const TYPES = {
   "deal.commitment_opening": {
     flows: "3.2 → 3.6",
     from: ["financier"], to: ["supplier"], n: "required",
-    body: { financier_pk: req(H32), salt: req(H32), discount: opt(cls), tenor: opt(cls) },
+    body: { financier_pk: req(H32), salt: req(H32), discount: opt(cls), tenor: opt(cls), history_tag: opt(H32) },
     attachments: { min: 0, max: 0 }, signer: "financier",
   },
   "deal.entry_request": {

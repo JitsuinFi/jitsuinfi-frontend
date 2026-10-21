@@ -9,6 +9,26 @@
       "has": [
         {
           "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "https://financier-node-demo-production.up.railway.app/node/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console.html"
+    },
+    {
+      "source": "/node/:path*",
+      "has": [
+        {
+          "type": "host",
           "value": "jitsuinfi-console.vercel.app"
         }
       ],
@@ -71,6 +91,28 @@
       "has": [
         {
           "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/(index.html|app.html)",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
           "value": "jitsuinfi-console.vercel.app"
         }
       ],
@@ -94,6 +136,12 @@
         {
           "type": "host",
           "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi.vercel.app"
         }
       ],
       "destination": "/",

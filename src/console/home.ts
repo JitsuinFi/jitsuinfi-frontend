@@ -577,6 +577,7 @@ interface DealRow {
   repayment?: string | null;
   paid_zat?: number | null;
   settled_txid?: string | null;
+  evidence?: string | null;
   bundle_sent?: boolean;
   history_requested?: boolean;
   history?: string | null;
@@ -638,6 +639,34 @@ function evidence(exhibit: string, proof: string): HTMLElement {
   );
 }
 
+/**
+ * HNK-26.T13: a repayment claimed without a covering payment, disputed or overdue. The evidence
+ * file (JTSE) carries the buyer's signed claims and every repayment output with its receipt, so
+ * whoever receives it recomputes the status instead of trusting this console.
+ */
+function repaymentEvidence(status: string, file: string): HTMLElement {
+  const word: Record<string, string> = {
+    Claimed: "The buyer says it paid, but no mined payment covers the amount yet.",
+    Disputed: "The buyer's claim is past the grace period and still not covered: a dispute.",
+    Overdue: "Past the due date and the grace period, with no claim from the buyer.",
+  };
+  const copy = h("button", { type: "button" }, "Copy the evidence (JTSE)") as HTMLButtonElement;
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(file);
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Copy failed";
+    }
+  });
+  return h(
+    "div",
+    { class: "pl-proof" },
+    h("b", { class: "pl-proof-stamp", lang: "ja", "aria-hidden": "true" }, status === "Claimed" ? "待" : "滞"),
+    h("div", {}, h("p", { class: "pl-proof-k" }, `Repayment ${status.toLowerCase()}`), h("p", { class: "mail-note" }, word[status] ?? ""), h("div", { class: "mail-actions" }, copy)),
+  );
+}
+
 /** The deals after Accept, moved by the node; the advance waits for the operator's passkey. */
 function pipeline(demo = false): HTMLElement {
   const list = h("ol", { class: "pl-list" });
@@ -694,6 +723,7 @@ function pipeline(demo = false): HTMLElement {
         ? h("p", { class: "mail-note" }, d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`)
         : null,
       d.exhibit ? evidence(d.exhibit, d.proof ?? "") : null,
+      d.evidence ? repaymentEvidence(d.repayment ?? "", d.evidence) : null,
       d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
       d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
       actions,

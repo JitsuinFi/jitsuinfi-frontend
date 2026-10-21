@@ -580,6 +580,8 @@ interface DealRow {
   bundle_sent?: boolean;
   history_requested?: boolean;
   history?: string | null;
+  proof?: string | null;
+  exhibit?: string | null;
   problem: string | null;
   intent?: { n: string; amount_zat: number; address: string };
 }
@@ -604,6 +606,37 @@ const WAITING: Record<string, string> = {
   AwaitAdvanceConfirmation: "Advance sent; waiting for it to be mined.",
   Done: "Advance paid and mined. The buyer pays you at maturity.",
 };
+
+/**
+ * HNK-26.T14: another financier registered this invoice first, so the supplier signed it twice.
+ * Exhibit A shows that without the deal; the full proof stays with you.
+ */
+function evidence(exhibit: string, proof: string): HTMLElement {
+  const copy = (label: string, value: string) => {
+    const b = h("button", { type: "button" }, label) as HTMLButtonElement;
+    b.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(value);
+        b.textContent = "Copied";
+      } catch {
+        b.textContent = "Copy failed: select the code";
+      }
+    });
+    return b;
+  };
+  return h(
+    "div",
+    { class: "pl-proof" },
+    h("b", { class: "pl-proof-stamp", lang: "ja", "aria-hidden": "true" }, "重"),
+    h(
+      "div",
+      {},
+      h("p", { class: "pl-proof-k" }, "Financed twice: not paid"),
+      h("p", { class: "mail-note" }, "Another financier registered this invoice first; the supplier signed it for both of you. No money left this node. Exhibit A proves it to anyone without showing the deal."),
+      h("div", { class: "mail-actions" }, copy("Copy Exhibit A", exhibit), proof ? copy("Copy the full proof", proof) : null, h("a", { href: "https://jitsuinfi.vercel.app/app.html#/verify", target: "_blank", rel: "noopener" }, "Open the Verify page")),
+    ),
+  );
+}
 
 /** The deals after Accept, moved by the node; the advance waits for the operator's passkey. */
 function pipeline(demo = false): HTMLElement {
@@ -660,6 +693,7 @@ function pipeline(demo = false): HTMLElement {
       d.state === "Done" && d.repayment
         ? h("p", { class: "mail-note" }, d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`)
         : null,
+      d.exhibit ? evidence(d.exhibit, d.proof ?? "") : null,
       d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
       d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
       actions,

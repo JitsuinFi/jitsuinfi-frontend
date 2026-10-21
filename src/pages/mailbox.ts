@@ -6,7 +6,8 @@ import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
 import { contactId, decodeContact, encodeContact, type Contact } from "../lib/contact";
 import { receive, remove, type Received } from "../lib/relay";
 import type { MessageType } from "../lib/relay-message";
-import { actions, banner, button, card, codeBlock, h, Out } from "../lib/ui";
+import { actions, banner, button, card, codeBlock, h, Out, trustedSvg } from "../lib/ui";
+import { wasm } from "../lib/core";
 
 export interface InboxAction {
   label: string;
@@ -119,8 +120,87 @@ export function mailboxCard(handlers: Partial<Record<MessageType, InboxAction>>)
     "Give your contact card to the people you deal with; compare the key fingerprint with them by phone or in person. Documents they send arrive sealed to you.",
     status.el,
     contact ? codeBlock("Your contact card", contact, "contact-card.txt") : null,
+    contact ? qrToggle(contact) : null,
+    contactsBook(),
     actions(button("Check inbox", () => check(), true)),
     inbox.el,
   );
   return card_;
 }
+
+/** HNK-22.T5: the contact card as a QR, for a phone across the table. */
+function qrToggle(code: string): HTMLElement {
+  const box = h("div", { class: "contact-qr", hidden: true });
+  const b = button("Show as QR", () => {
+    if (box.hidden && !box.firstChild) box.append(trustedSvg(wasm.qrSvg(code)));
+    box.hidden = !box.hidden;
+    b.textContent = box.hidden ? "Show as QR" : "Hide the QR";
+  }, true);
+  return h("div", {}, actions(b), box);
+}
+
+interface Kept extends Contact {
+  /** When the fingerprint was compared with the person, out of band. */
+  verified_at?: number;
+}
+
+/**
+ * HNK-22.T5: the people this role deals with, kept encrypted on this device. A card counts as
+ * compared only after you read its fingerprint with the person by phone or in person: the relay
+ * cannot vouch for whose card it is.
+ */
+function contactsBook(): HTMLElement {
+  const list = h("div", { class: "deals" });
+  const code = h("textarea", { rows: "2", spellcheck: "false", placeholder: "jitsuin-contact-v1:…", "aria-label": "A counterparty's contact card" }) as HTMLTextAreaElement;
+  const out = new Out();
+  const draw = async () => {
+    const store = account.current?.store;
+    if (!store) return list.replaceChildren(h("p", { class: "hint" }, "This browser keeps nothing here, so contacts are not saved."));
+    const all = (await store.list<Kept>()).filter((x) => x.id.startsWith("contact:")).map((x) => x.doc);
+    list.replaceChildren(
+      ...(all.length
+        ? all.map((c) =>
+            h(
+              "div",
+              { class: "deal" },
+              h(
+                "div",
+                { class: "deal-head" },
+                h("strong", {}, `${c.username ? `@${c.username} · ` : ""}${c.role}`),
+                h("span", { class: "is-mono" }, c.fingerprint),
+                c.verified_at
+                  ? h("small", {}, `compared ${new Date(c.verified_at).toLocaleDateString()}`)
+                  : button("I read this fingerprint with them", async () => {
+                      await store.put(contactId(c), { ...c, verified_at: Date.now() });
+                      await draw();
+                    }, true),
+              ),
+            ),
+          )
+        : [h("p", { class: "hint" }, "No contact yet. Paste a card you were given.")]),
+    );
+  };
+  void draw();
+  return h(
+    "div",
+    { class: "contacts" },
+    h("p", { class: "hint" }, "Your contacts. Compare each fingerprint with the person, by phone or in person, before you send them a document."),
+    list,
+    code,
+    actions(
+      button("Keep this contact", async () => {
+        try {
+          const c = decodeContact(code.value);
+          await account.current?.store?.put(contactId(c), c);
+          code.value = "";
+          out.show(banner("warn", `Fingerprint ${c.fingerprint}`, "Read it with them now; mark it compared only if it matches what they see on their screen."));
+          await draw();
+        } catch (e) {
+          out.error(e);
+        }
+      }, true),
+    ),
+    out.el,
+  );
+}
+

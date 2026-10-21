@@ -286,6 +286,7 @@ ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(-
 .banner .banner-detail { display: block; margin-top: 4px; font: 400 11px/1.4 var(--f-mono, ui-monospace, monospace); opacity: .7; overflow-wrap: anywhere; }
 
 /* HNK-22.T5: the contact card as a QR, and the contacts kept on this device */
+.contact-qr[hidden] { display: none; }
 .contact-qr { display: grid; place-items: center; padding: 12px; background: #fff; border-radius: 8px; max-width: 280px; }
 .contact-qr svg { width: 100%; height: auto; }
 .contacts { display: grid; gap: 10px; margin-top: 12px; }

@@ -132,3 +132,27 @@ Rules: headings in `--head` (navy), body in `--ink`; hierarchy by scale and the 
 5. **Pressed twice**: the second press cracks, two ripples interfere, the proof flares.
 6. **Paid and remembered**: the repayment returns as a ripple, both signatures settle it, and the buyer's history sinks as anchored rings.
 7. **Close**: real testnet txids written in ink; open the demo, read the spec, see the repo.
+
+## 8. App stage: the 登記所 counter (HNK-30.T13 – T17, validated 2026-10-21)
+
+The app's stage pages (`#/try` first) share one world, chosen by the user from three (counter, 3D town, evidence board) through genjutsu paint.
+
+**Visual thesis.** The judge stands at financier B's 登記所 counter in first person, on day paper and ink. The invoice is typeset as a real Japanese 請求書 (spaced 請 求 書 title, 御中 line, one ruled ご請求金額 total, the buyer's seal 買 pressed in the 受領印 box) in Shippori Mincho B1 for document headings, Geist for fields, Geist Mono only for N and txids. The Zcash board is the registry book behind the counter window: Catalina-ruled pages printed in Absolute Zero ink, lit by a Button Blue lamp, the only blue on the page and never a dark rounded card. Calm but dense on the 8px base, no panels: every object is a physical thing (paper, book, loupe, stamp, receipt, a phone at a true 19.5:9), straight edges, shadows only on lifted objects. Reference images: vault `09-Design/DS-10` (PIN-01 counter layout, PIN-04 請求書, PIN-05 ledger, PIN-06 receipt).
+
+**Interaction thesis.** Physical, weighted motion. The copy slides through the slot in 400ms (softLand); the loupe sweeps the seal in 900ms (softInOut); registry pages flip 280ms each (snapSettle, at most 5); the stamp slams in 367ms (snapSettle) with a 67ms squash and a 3px counter shake; a returned sheet skids to the pile in 433ms (accelExit). Hover lifts paper 2px and tilts the stamp handle. Chapters below the counter each move in their own way when they enter: Exhibit A prints line by line from a receipt printer over 1.2s (linear); the lens burns the invoice from its edges into the board memo while the hanko is held for 1.5s; the notice and the phone settle in. Forbidden: cards and panels, dark rounded boxes, glass, glow, bounce or elastic, uniform fade-up, numbered chapter eyebrows, loops other than the lamp. Reduced motion renders every end state.
+
+**Allowed patterns.** Paper ground with fibers; mono for real data only; one torn edge per sheet; hanko stamps; the lamp's flicker (the one loop); the drawn phone at true proportions; clause numbers 第一 – 第三 on the official notice (an official notice cites its clauses).
+
+**Dials** (genjutsu paint, from the theses): variance 8 (asymmetric physical scene), motion 8 (choreographed), density 5 ("calm but dense"). The `ui-ux-pro-max` proposal was read through `tells`: kept the immersive-experience pattern (skip and mobile fallback), reduced motion, four test widths; dropped Bento grids, Nunito/DM Sans, the slate palette and GSAP Flip.
+
+### Counter tokens (all from §2)
+| Token | Value | Role |
+|---|---|---|
+| `--desk` | `--ink` `#461D3A` | The counter top (wood, the human side) |
+| `--desk-grain` | `rgba(80, 42, 80, .55)` (Japanese Violet) | Wood grain lines on the counter |
+| `--room` | `--pool` → `--pool-2` | The registry room behind the window (Zcash side) |
+| `--frame` | `--head` `#020D2F` | Window frame, phone body, printer body |
+| `--page` | `--sheet` | Registry pages, the 請求書, the receipt |
+| `--rule-blue` | `rgba(3, 44, 125, .28)` (Catalina) | Registry page ruling |
+| `--ink-blue` | `--wave` `#0841C9` | Registry entries (the board's ink) |
+| `--lamp` | `rgba(29, 151, 241, .16)` (Button Blue) | The lamp's light cone, inside the room only |

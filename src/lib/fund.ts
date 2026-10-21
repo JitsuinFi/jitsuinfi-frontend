@@ -26,7 +26,7 @@ export interface Holding {
   deposit_txid?: string;
   amount_zat?: number;
   /** The last path checked for this leaf. */
-  path?: { period: number; root: string; total: number; ok: boolean };
+  path?: { period: number; root: string; total: number; ok: boolean; body?: Record<string, unknown> };
   /** A withdrawal sent and not paid yet. */
   pending?: { units: number | "all"; period: number; sent_at: number };
 }
@@ -86,7 +86,7 @@ export async function addPath(w: Wallet, h: Header): Promise<{ wallet: Wallet; o
   const mine = w.holdings[i];
   const ok = b.units === mine.units && (await verifyPath(b.leaf_id, BigInt(b.units), b.path, b.root, BigInt(b.total)));
   const holdings = w.holdings.slice();
-  holdings[i] = { ...mine, path: { period: b.period, root: b.root, total: b.total, ok } };
+  holdings[i] = { ...mine, path: { period: b.period, root: b.root, total: b.total, ok, body: { ...b } } };
   return { wallet: { ...w, holdings }, ok };
 }
 

@@ -14,7 +14,7 @@ import { myIdentity, relayDeps } from "../lib/app-relay";
 import { addPath, addPayout, addReceipt, EMPTY, openPeriod, valueOf, withdrawBody, type Holding, type Wallet } from "../lib/fund";
 import { draft, send } from "../lib/relay";
 import { encodeMessage, type Header } from "../lib/relay-message";
-import { banner, card, h, Out } from "../lib/ui";
+import { banner, card, download, h, Out } from "../lib/ui";
 import { deskPage } from "./desk";
 import { mailboxCard } from "./mailbox";
 
@@ -65,6 +65,13 @@ export function memberPage(): HTMLElement {
       x.pending ? h("p", { class: "mb-doc-note" }, `Withdrawal of ${x.pending.units === "all" ? "all units" : `${x.pending.units} units`} asked for period ${x.pending.period}: paid at the end of that period.`) : null,
       out.el,
     );
+    // HNK-29.T2: the same path, checked against the root on chain with the fund's viewing key
+    const body = x.path?.body;
+    if (body) {
+      const keep = h("button", { type: "button", class: "mb-doc-save" }, "Save the path for jitsuin fund");
+      keep.addEventListener("click", () => download(`fund-path-period-${x.path!.period}.json`, JSON.stringify(body, null, 2)));
+      el.append(keep);
+    }
     if (!x.pending) {
       const ask = h("button", { type: "button", class: "mb-doc-ask" }, "Ask to withdraw");
       ask.addEventListener("click", () => {
@@ -156,7 +163,13 @@ export function memberPage(): HTMLElement {
         card(
           "Limits",
           "What this does not prove",
-          "The path proves your units are counted in the root the fund sent you. That this root is the one the manager signed on chain (JTLR), and that the fund's assets cover it, you check with the fund's viewing key on your own device (`jitsuin fund`), never on a server. Units are paid from cash only: money lent out comes back when buyers repay.",
+          "The path proves your units are counted in the root the fund sent you. That this root is the one the manager signed on chain (JTLR), and that the fund's assets cover it, you check with the fund's viewing key on your own device: save the path from a slip and run `jitsuin fund --path <file>`, never on a server. Units are paid from cash only: money lent out comes back when buyers repay. The receivables in that check are the manager's own notes: a bad one only shows once it is overdue.",
+        ),
+        // HNK-29.T3 (BL-S05-01, BL-D0-06): what the fund's records leak, and how the key travels
+        card(
+          "Privacy",
+          "What others can see",
+          "Anyone holding the fund's viewing key (other members, the auditor) sees the amount of every deposit and payout, never who made it, and the shielded address each advance went to, never the supplier's name. Your path shows the units of a neighbouring part of the tree, so at least one other member's total. Take the viewing key from the manager only over a private channel, and give it only to `jitsuin fund` on your own device, never to a website.",
         ),
       ],
     }),

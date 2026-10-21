@@ -12,7 +12,7 @@
 //
 // Self-contained on purpose (no wasm import): tests run it under Node (`npm test`).
 
-export type Role = "supplier" | "buyer";
+export type Role = "supplier" | "buyer" | "member";
 
 /** One stored record: HMAC name, IV and AES-GCM ciphertext. */
 export interface StoredRecord {

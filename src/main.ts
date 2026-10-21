@@ -94,7 +94,9 @@ function render(): void {
     nav,
     h("span", { class: "net" }, "Testnet"),
   );
-  const main = h("main", {}, pageFor(path));
+  const body = pageFor(path);
+  // A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3).
+  const main = h("main", { class: body.dataset.wide ? "wide" : undefined }, body);
   const foot = h("footer", {}, "Runs entirely in your browser. No trackers, no third-party requests.");
   document.getElementById("app")!.replaceChildren(top, main, foot);
 }

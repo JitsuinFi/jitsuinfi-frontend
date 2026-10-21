@@ -58,6 +58,7 @@ header.top nav a.active { color: var(--sheet); background: var(--head); }
 .net::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--seal); margin-right: 6px; vertical-align: 1px; }
 
 main { max-width: 880px; margin: 0 auto; padding: var(--s-6) var(--gutter) calc(var(--s-12) + var(--tabbar-h)); }
+main.wide { max-width: 1440px; }
 
 /* large title, as iOS */
 h1 {

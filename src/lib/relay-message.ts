@@ -114,6 +114,12 @@ export const TYPES = {
     body: { invoice: req(b64url), buyer_signature: req(hex(64)), advance_zat: req(pos), supplier_address: req(text(512)) },
     attachments: { min: 0, max: 1 }, signer: "supplier",
   },
+  "deal.decline": {
+    flows: "HNK-26.T6, N-15: financier to supplier, the offer is outside its terms",
+    from: ["financier"], to: ["supplier"], n: "required",
+    body: { reason: req(text(200)) },
+    attachments: { min: 0, max: 0 }, signer: "financier",
+  },
   "deal.commitment_opening": {
     flows: "3.2 → 3.6",
     from: ["financier"], to: ["supplier"], n: "required",

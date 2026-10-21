@@ -22,6 +22,8 @@ export interface SupplierDeal {
   sign_request?: { to: string; at: number };
   /** T4: the buyer's signature, checked with `bundleBuild`. */
   buyer_signature?: string;
+  /** HNK-26.T6: financiers that declined this invoice, newest last; the offer is cleared so it can go to another. */
+  declined?: Array<{ financier_pk: string; reason: string; at: number }>;
   /** T5: the offer sent to one financier. */
   offer?: { financier_pk: string; advance_zat: number; supplier_address: string; sent?: { to: string; at: number } };
   /** T6: the financier's request for the board entry, sent after it checked the board (SEQ-03). */

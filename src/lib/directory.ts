@@ -11,12 +11,27 @@ export interface Mandate {
   buyer_kyc: boolean;
 }
 
+/** The provider's attested record (HNK-30.T21, D-48): coarse classes only. */
+export interface Reputation {
+  settled: "1-4" | "5-19" | "20+";
+  on_time: "95+" | "80-95" | "<80";
+  up_to_height: number;
+  attested_at: number;
+}
+
 export interface Listing {
   name: string;
   contact: string;
   financier_pk: string;
   mandate: Mandate;
   listed_at: number;
+  reputation?: Reputation;
+}
+
+/** How a listing's record reads to a supplier. */
+export function recordLine(l: Listing): string {
+  const r = l.reputation;
+  return r ? `${r.settled} deals settled, ${r.on_time}% on time (attested by the node provider up to block ${r.up_to_height})` : "No attested record yet";
 }
 
 export interface Directory {

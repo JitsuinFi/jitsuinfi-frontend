@@ -8,7 +8,7 @@
 // comes back the same way (HNK-23.T7); later steps still travel by copy-paste until the financier
 // node exists (HNK-26).
 import { financierFingerprint } from "../lib/account";
-import { rank, verifyDirectory, type Directory, type Fit } from "../lib/directory";
+import { rank, recordLine, verifyDirectory, type Directory, type Fit } from "../lib/directory";
 import { PROVIDER } from "../lib/provider";
 import { account } from "../lib/app-session";
 import { dateToDays, daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../lib/core";
@@ -361,6 +361,7 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
               h("strong", {}, f.listing.name),
               h("span", { class: "fd-m" }, `${zatToZec(m.min_zat)} – ${zatToZec(m.max_zat)} ZEC · up to ${m.max_tenor_days} days${m.buyer_kyc ? " · buyers it knows from KYC" : ""}`),
               h("span", { class: "fd-why" }, f.fits ? "Fits this invoice." : f.misses.join("; ")),
+              h("span", { class: f.listing.reputation ? "fd-rep is-attested" : "fd-rep" }, h("b", { lang: "ja", "aria-hidden": "true" }, "績"), recordLine(f.listing)),
               use,
             );
           }),

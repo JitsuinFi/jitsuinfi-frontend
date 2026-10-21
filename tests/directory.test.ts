@@ -35,3 +35,10 @@ test("the published public/directory.json is signed by the node provider of prov
   const published = JSON.parse(readFileSync(new URL("../public/directory.json", import.meta.url), "utf8")) as Directory;
   assert.equal(await verifyDirectory(published, PROVIDER.signer_pk), true);
 });
+
+test("recordLine: the attested classes, or no record", async () => {
+  const { recordLine } = await import("../src/lib/directory.ts");
+  const base = l("K", 0, 1, 1);
+  assert.equal(recordLine(base), "No attested record yet");
+  assert.match(recordLine({ ...base, reputation: { settled: "5-19", on_time: "95+", up_to_height: 9, attested_at: 1 } }), /^5-19 deals settled, 95\+% on time/);
+});

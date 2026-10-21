@@ -8,6 +8,7 @@
 // No account server exists yet (relay HNK-23): username and email stay in this browser's profile
 // (D-34). The passkey is named after the username, so a synced passkey finds the account on a new
 // device.
+import { sealCard } from "./seal-card";
 import "../auth.css";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account } from "../lib/app-session";
@@ -52,9 +53,11 @@ function bytesFromHex(s: string): Uint8Array {
 
 /** `want`: the role screen the user tried to open. */
 export function accountPage(want?: Role): HTMLElement {
-  const root = h("section", { class: "auth" });
+  // The sheet sits on the registry counter beside the seal registration card (HNK-30.T15).
+  const host = h("div", { class: "reg-sheet" });
+  const root = h("section", { class: "auth reg" }, host, sealCard(host));
   const paint = (): void => {
-    root.replaceChildren(sheetFor(want, paint));
+    host.replaceChildren(sheetFor(want, paint));
   };
   paint();
   return root;

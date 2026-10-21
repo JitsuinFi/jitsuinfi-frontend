@@ -1,0 +1,65 @@
+/* #/apply as the 登記所's application window (HNK-30.T15, MASTER.md §8): the 申請書 on the
+   counter, the relay's post box and the reply tray behind the glass. Builds on try.css. */
+.ap-desk { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; align-content: start; gap: 24px; }
+.ap-desk .ct-act { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.ap-form {
+  display: grid; gap: 16px; padding: clamp(24px, 2.6vw, 36px); background: var(--page); color: var(--ink);
+  box-shadow: 0 24px 36px rgba(2, 13, 47, .45); transform: rotate(-1deg); transform-origin: 50% 0;
+}
+.ap-form header { display: grid; gap: 6px; justify-items: center; padding-bottom: 10px; border-bottom: 1.5px solid var(--head); }
+.ap-t { margin: 0; font: 800 clamp(28px, 2.6vw, 38px)/1 var(--f-seal); letter-spacing: .32em; text-indent: .32em; color: var(--head); }
+.ap-sub { margin: 0; font: 500 12px/1 var(--f-body); color: var(--ink-2); }
+.ap-line { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); gap: 14px; align-items: start; padding-bottom: 10px; border-bottom: 1px solid rgba(2, 13, 47, .14); }
+.ap-line > span { display: grid; gap: 3px; font: 400 11px/1.25 var(--f-body); color: var(--ink-2); }
+.ap-line b { font: 800 15px/1 var(--f-seal); color: var(--head); letter-spacing: .1em; }
+.ap-line input, .ap-line textarea {
+  width: 100%; min-width: 0; padding: 4px 0 6px; border: 0; border-bottom: 1px dotted rgba(2, 13, 47, .35); border-radius: 0;
+  background: transparent; color: var(--head); font: 500 16px/1.4 var(--f-body); resize: vertical;
+}
+.ap-line input:focus, .ap-line textarea:focus { outline: none; border-bottom: 2px solid var(--seal); }
+.ap-line :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+.ap-small { margin: 0; font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
+
+.ap { min-height: 0; }
+.ap-room { min-height: 640px; }
+.ap-route {
+  position: absolute; left: 22%; right: 22%; top: 52%; aspect-ratio: 5 / 4; max-height: 34%; margin: 0 auto;
+  --hairline-plate: var(--pool-2); --hairline-hi: var(--sheet); --hairline-edge: var(--mist);
+  --hairline-mid: rgba(196, 199, 242, .55); --hairline-lo: var(--pool); --hairline-stroke: 1.1;
+}
+.ap-box {
+  position: absolute; left: 10%; top: 18%; width: 150px; height: 230px; display: grid; justify-items: center; align-content: start; gap: 6px; padding-top: 70px;
+  border-radius: 70px 70px 10px 10px; background: var(--pool-2); box-shadow: inset -14px 0 0 rgba(2, 13, 47, .35), inset 0 3px 0 rgba(196, 199, 242, .3), 0 24px 30px rgba(2, 13, 47, .55);
+}
+.ap-box-mouth { position: absolute; top: 36px; left: 26px; right: 26px; height: 12px; border-radius: 6px; background: var(--pool); box-shadow: inset 0 4px 4px rgba(2, 13, 47, .9); }
+.ap-box-label { font: 800 26px/1 var(--f-seal); color: var(--sheet); letter-spacing: .2em; text-indent: .2em; }
+.ap-box-sub { font: 500 12px/1 var(--f-body); color: var(--mist); }
+.ap-box-count { margin-top: 30px; padding: 6px 12px; border-radius: 999px; background: rgba(196, 199, 242, .12); font: 500 11.5px/1 var(--f-mono); color: var(--mist); }
+.ap-tray {
+  position: absolute; right: 8%; top: 16%; width: min(52%, 340px); min-height: 260px; padding: 16px; display: grid; align-content: start; gap: 10px;
+  border-radius: 6px; box-shadow: inset 0 0 0 2px rgba(196, 199, 242, .35), inset 0 -40px 0 rgba(8, 65, 201, .25);
+}
+.ap-tray-k { margin: 0; display: flex; align-items: baseline; gap: 10px; font: 500 12px/1 var(--f-body); color: var(--mist); }
+.ap-tray-k b { font: 800 18px/1 var(--f-seal); color: var(--sheet); letter-spacing: .2em; }
+.ap-letter { position: relative; display: grid; gap: 12px; padding: 22px 20px; background: var(--page); color: var(--ink); box-shadow: 0 18px 26px rgba(2, 13, 47, .5); transform: rotate(-1deg); }
+.ap-letter p { margin: 0; font: 400 14px/1.5 var(--f-body); }
+.ap-letter .ap-t { font-size: 24px; }
+.ap-letter .seal-btn { justify-self: start; }
+.ap-letter-seal { position: absolute; right: 16px; top: 14px; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 6px; box-shadow: inset 0 0 0 3px var(--seal); font: 800 13px/1.1 var(--f-seal); color: var(--seal); transform: rotate(6deg); text-align: center; }
+.ap-env {
+  position: absolute; z-index: 9; width: 140px; height: 92px; display: grid; place-items: center; pointer-events: none;
+  background: var(--fiber); box-shadow: 0 14px 20px rgba(2, 13, 47, .4);
+}
+.ap-env::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 50%; background: var(--fold); clip-path: polygon(0 0, 100% 0, 50% 100%); opacity: .7; }
+.ap-env b { position: relative; font: 800 30px/1 var(--f-seal); color: var(--seal); }
+
+@media (max-width: 980px) {
+  .ap-room { min-height: 760px; }
+  .ap-route { top: 40%; left: 18%; right: 18%; }
+  .ap-box { left: 8%; top: 10%; }
+  .ap-tray { top: auto; bottom: 120px; right: 6%; left: 6%; width: auto; min-height: 200px; }
+}
+@media (max-width: 560px) {
+  .ap-line { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .ap-box { width: 120px; height: 190px; padding-top: 60px; }
+}

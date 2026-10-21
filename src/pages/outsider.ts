@@ -10,7 +10,7 @@ const TABLE: Array<[string, string, string]> = [
   ["Invoice amount, dates, terms", "Hidden", "Only inside the signed invoice the parties hold"],
   ["Which invoice an entry is about", "Hidden", "N is a hash of the whole invoice, including a per-invoice key; it cannot be guessed"],
   ["That an invoice was registered, and when", "Visible", "A register entry appears on the board in a block"],
-  ["Discount class and tenor class of each registration", "Visible", "Every entry carries both codes (or 0/0). The public index shows a class only from 5 invoices, but each entry's codes can be read"],
+  ["Discount class and tenor class of each registration", "Hidden by default", "Entries carry 0/0 unless the supplier opts in to the public index (D-42). An opted-in entry's codes can be read by anyone holding the invoice; the index shows a class only from 5 invoices"],
   ["Whether the buyer brought a payment history", "Visible", "The entry kind: plain register, or register with a history tag"],
   ["That an invoice was settled, on time or late", "Visible", "A settled entry appears, with its on-time flag and two signatures"],
   ["Which registration a settlement closes", "Hidden", "The settled tag is a hash of N. Whoever holds N (the financiers who saw the invoice, a fund member, a lender shown the buyer's history) can link the two; timing and tenor class can hint"],

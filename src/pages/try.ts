@@ -173,8 +173,71 @@ export function tryPage(): HTMLElement {
     exOut.el,
   );
 
-  const limits = card(
+  // M-04 (HNK-30.T6): the same deal as the parties hold it, and as anyone holding the published
+  // board key sees it. Honest by addition: what the key also reveals is listed under the lens.
+  const lensOut = h("div", { class: "lens", "data-world": "false" });
+  const hold = h("button", { class: "secondary", type: "button", "aria-pressed": "false" }, "Hold to see it as the world does") as HTMLButtonElement;
+  const setWorld = (on: boolean) => {
+    lensOut.dataset.world = String(on);
+    hold.setAttribute("aria-pressed", String(on));
+  };
+  hold.addEventListener("pointerdown", () => setWorld(true));
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) hold.addEventListener(ev, () => setWorld(false));
+  hold.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      setWorld(lensOut.dataset.world !== "true");
+    }
+  });
+  const lensLoad = async () => {
+    try {
+      const b = await board();
+      const entries = JSON.parse(b.json) as Array<{ txid: string; height: number; tx_index: number; memo: string }>;
+      const mine = entries.find((e) => e.txid === KIT.financierA.txid);
+      if (!mine) throw new Error("the entry is not in this board data");
+      const d = json<{ kind: string; nullifier: string; financier_commitment: string; discount_bucket: number; tenor_bucket: number; signature: string }>(wasm.boardMemoDescribe(mine.memo));
+      const hidden = h(
+        "div",
+        { class: "lens-side lens-paper" },
+        h("div", { class: "label" }, "What the parties hold"),
+        kv([
+          ["Invoice", orig.invoice_id],
+          ["Amount", `${zatToZec(orig.amount_zat)} ZEC`],
+          ["Buyer", short(orig.buyer_pk), true],
+          ["Due", daysToDate(orig.due_date)],
+          ["Financier", "A (by name, in the letter)"],
+        ]),
+      );
+      const world = h(
+        "div",
+        { class: "lens-side lens-pool" },
+        h("div", { class: "label" }, "What anyone with the board key sees"),
+        kv([
+          ["Entry", d.kind === "RegisterWithHistory" ? "register, with a buyer history tag" : "register"],
+          ["Fingerprint N", short(d.nullifier), true],
+          ["Financier", `commitment ${short(d.financier_commitment)}`, true],
+          ["Classes", d.discount_bucket === 0 && d.tenor_bucket === 0 ? "not disclosed (0/0)" : `discount ${d.discount_bucket}, tenor ${d.tenor_bucket}`],
+          ["Supplier signature", short(d.signature), true],
+          ["Where", `block ${mine.height}, transaction ${mine.tx_index}`],
+        ]),
+        h("p", { class: "lens-also" }, "The key also shows the small amount each post sends to the board address, the memo's length and layout, and the block's time. Nothing on the paper side."),
+      );
+      lensOut.replaceChildren(hidden, world);
+    } catch (e) {
+      lensOut.replaceChildren(h("p", { class: "note" }, e instanceof Error ? e.message : String(e)));
+    }
+  };
+  void lensLoad();
+  const lens = card(
     "Step 5",
+    "What the world sees",
+    "The board's viewing key is published so anyone can audit it. Press and hold to see financier A's registration of this invoice the way everyone else does.",
+    actions(hold),
+    lensOut,
+  );
+
+  const limits = card(
+    "Step 6",
     "What this does not stop",
     "The board stops one signed invoice from being financed twice. It is not credit diligence.",
     h(
@@ -193,6 +256,7 @@ export function tryPage(): HTMLElement {
     deskA,
     deskB,
     exhibit,
+    lens,
     limits,
   );
 }

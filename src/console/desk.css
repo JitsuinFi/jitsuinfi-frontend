@@ -130,3 +130,24 @@ main.auth:not(.dk) { background: linear-gradient(180deg, var(--pool) 0%, var(--p
 .dk .offer-rules li[data-ok="false"] span { color: var(--seal-hi); font-weight: 600; }
 .dk .offer-decline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 8px; padding-top: 10px; border-top: 1.5px dashed rgba(70, 29, 58, .25); }
 @media (max-width: 480px) { .dk .offer-decline { grid-template-columns: minmax(0, 1fr); } }
+
+/* the deal pipeline 案件: each deal walks its route along the desk (HNK-26.T16) */
+.dk .is-deals .mail-title::before { content: "案件"; }
+.dk .pl-list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.dk .pl-deal { display: grid; gap: 8px; padding: 14px 16px; background: var(--sheet); color: var(--ink); border-radius: 3px; box-shadow: 0 12px 20px rgba(2, 13, 47, .45); }
+.dk .pl-deal .mail-note { color: var(--ink-2); margin: 0; }
+.dk .pl-head { margin: 0; font-size: 13px; color: var(--ink-2); }
+.dk .pl-head strong { color: var(--head); font-size: 15px; }
+.dk .pl-route { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; margin: 4px 0; padding: 0; list-style: none; counter-reset: s; }
+.dk .pl-route li { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 10.5px; line-height: 1.2; color: var(--ink-2); }
+.dk .pl-route li::before { content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px; background: rgba(70, 29, 58, .18); z-index: 0; }
+.dk .pl-route li:first-child::before { display: none; }
+.dk .pl-route b { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--sheet); font: 800 14px/1 var(--f-seal); color: rgba(70, 29, 58, .35); box-shadow: inset 0 0 0 1.5px rgba(70, 29, 58, .25); }
+.dk .pl-route li[data-at="done"] b { color: var(--sheet); background: var(--seal); box-shadow: none; }
+.dk .pl-route li[data-at="done"]::before, .dk .pl-route li[data-at="now"]::before { background: var(--seal); }
+.dk .pl-route li[data-at="now"] b { color: var(--seal); box-shadow: inset 0 0 0 2.5px var(--seal); animation: pl-pulse 1.8s ease-in-out infinite; }
+.dk .pl-route li[data-at="now"] span { color: var(--head); font-weight: 600; }
+.dk .pl-empty { color: var(--mist); font-size: 13px; }
+@keyframes pl-pulse { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .dk .pl-route li[data-at="now"] b { animation: none; } }
+@media (max-width: 480px) { .dk .pl-route span { display: none; } }

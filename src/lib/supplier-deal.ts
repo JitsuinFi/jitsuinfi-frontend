@@ -29,9 +29,13 @@ export interface SupplierDeal {
   /** T6: the financier's request for the board entry, sent after it checked the board (SEQ-03). */
   entry_request?: EntryRequest;
   /** T6: the signed register entry for that financier's commitment. */
-  entry?: { memo: string; commitment: string; tagged: boolean; discount: number; tenor: number };
+  entry?: { memo: string; commitment: string; tagged: boolean; discount: number; tenor: number; sent?: number };
+  /** HNK-26.T16: the letter and its PDF (base64) as the financier's node sent them (`deal.letter`). */
+  letter_in?: { letter: string; pdf: string; at: number };
   /** T7: the assignment letter, its PDF check and the supplier's seal s0. */
-  seal?: { letter: string; s0: string };
+  seal?: { letter: string; s0: string; sent?: number };
+  /** HNK-26.T16: the financier's node said it paid the advance (`deal.advance`), not yet checked. */
+  advance_notice?: { txid: string; advance_zat: number; at: number };
   /** T8: what the supplier received. */
   advance?: { txid: string; received_zat: number; matches: boolean };
 }

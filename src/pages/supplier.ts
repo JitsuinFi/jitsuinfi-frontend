@@ -70,7 +70,28 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
   // the store also keeps contacts ("contact:" ids); deals are stored under their N
   const deals = sortDeals((await store.list<SupplierDeal>()).filter((r) => HEX64.test(r.id)).map((r) => r.doc));
   const open = deals.find((d) => d.n === current) ?? null;
-  const cards: HTMLElement[] = [mailboxCard({ "invoice.signature": signatureFromInbox(refresh), "deal.decline": declineFromInbox(refresh) }), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
+  const cards: HTMLElement[] = [mailboxCard({
+      "invoice.signature": signatureFromInbox(refresh),
+      "deal.decline": declineFromInbox(refresh),
+      "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", async (d, h) => {
+        const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number };
+        const r = { n: d.n, financier_pk: b.financier_pk, salt: b.salt, ...(b.discount !== undefined ? { discount: b.discount, tenor: b.tenor } : {}) };
+        const problems = entryRequestProblems(d, r);
+        if (problems.length) throw new Error(problems.join("; "));
+        await save({ ...d, entry_request: r });
+        return `The financier checked the board: sign the entry for ${d.invoice_id} (Step 3).`;
+      }),
+      "deal.letter": fromFinancier(refresh, "Keep the letter", async (d, h, files) => {
+        if (!files[0]) throw new Error("the letter came without its PDF");
+        await save({ ...d, letter_in: { letter: String(h.body.letter), pdf: bytesToB64(files[0]), at: Date.now() } });
+        return `The assignment letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
+      }),
+      "deal.advance": fromFinancier(refresh, "Note the advance", async (d, h) => {
+        const b = h.body as { txid: string; advance_zat: number };
+        await save({ ...d, advance_notice: { txid: b.txid, advance_zat: b.advance_zat, at: Date.now() } });
+        return `The financier paid ${zatToZec(b.advance_zat)} ZEC in ${b.txid.slice(0, 10)}…: check it in your wallet (Step 5).`;
+      }),
+    }), dealsCard(deals, refresh), newInvoiceCard(deals, refresh)];
   if (!store.persistent) {
     cards.unshift(banner("warn", "Not saved", "This browser blocks local storage here (private window?). Deals stay only until the tab closes."));
   }
@@ -227,6 +248,33 @@ function signatureFromInbox(refresh: () => void) {
       current = d.n;
       refresh();
       return `The buyer signed ${d.invoice_id}. Next: offer it to one financier.`;
+    },
+  };
+}
+
+const bytesToB64 = (b: Uint8Array) => btoa(Array.from(b, (x) => String.fromCharCode(x)).join(""));
+const b64ToBytes = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+/**
+ * HNK-26.T16: a message from the financier's node about one of this device's deals, accepted only
+ * from the financier the invoice was offered to (its key signed the header).
+ */
+function fromFinancier(
+  refresh: () => void,
+  label: string,
+  use: (d: SupplierDeal, h: import("../lib/relay-message").Header, files: Uint8Array[]) => Promise<string>,
+) {
+  return {
+    label,
+    run: async (r: import("../lib/relay").Received): Promise<string> => {
+      const h = r.message.header;
+      const d = await account.current?.store?.get<SupplierDeal>(h.n ?? "");
+      if (!d) throw new Error("no deal on this device has this fingerprint N");
+      if (!d.offer || d.offer.financier_pk !== h.signer) throw new Error("this message is not from the financier you offered this invoice to");
+      const done = await use(d, h, r.message.attachments);
+      current = d.n;
+      refresh();
+      return done;
     },
   };
 }
@@ -413,7 +461,8 @@ function offerCard(d: SupplierDeal, refresh: () => void): HTMLElement {
           const header = signInWasm(
             draft("deal.offer", { role: "supplier", mailbox_pk: me.mailbox_pk }, c.mailbox_pk, relayDeps, {
               n: d.n,
-              body: { invoice: d.invoice, buyer_signature: d.buyer_signature!, advance_zat: offer.advance_zat, supplier_address: offer.supplier_address },
+              // the buyer's mailbox (from the sign request) lets the node send the letter there too
+              body: { invoice: d.invoice, buyer_signature: d.buyer_signature!, advance_zat: offer.advance_zat, supplier_address: offer.supplier_address, ...(d.sign_request ? { buyer_mailbox_pk: d.sign_request.to } : {}) },
             }),
             d.supplier_pk,
             await secretFor(d),
@@ -508,10 +557,14 @@ function entryCard(d: SupplierDeal, refresh: () => void): HTMLElement {
               ? wasm.supplierRegisterTaggedEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, req.history_tag, disc, ten)
               : wasm.supplierRegisterEntryBytes(await secretFor(d), d.invoice, req.financier_pk, req.salt, disc, ten),
           );
-          await save({
-            ...d,
-            entry: { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: disc ?? 0, tenor: ten ?? 0 },
-          });
+          const entry = { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: disc ?? 0, tenor: ten ?? 0 };
+          await save({ ...d, entry });
+          // HNK-26.T16: straight to the financier's node, which posts it to the board
+          if (d.offer?.sent) {
+            const hd = draft("deal.entry", { role: "supplier", mailbox_pk: myIdentity().mailbox_pk }, d.offer.sent.to, relayDeps, { n: d.n, body: { memo: r.memo } });
+            await send(d.offer.sent.to, await encodeMessage(hd as import("../lib/relay-message").Header), relayDeps);
+            await save({ ...d, entry: { ...entry, sent: Date.now() } });
+          }
           refresh();
         } catch (e) {
           out.error(e);
@@ -542,8 +595,8 @@ function sealCard(d: SupplierDeal, refresh: () => void): HTMLElement {
       codeBlock("Your seal (s0)", d.seal.s0, `${d.invoice_id}.supplier.seal.txt`),
     );
   }
-  const letter = field("Assignment letter code (from the financier)", { area: true });
-  const pdf = fileField("Assignment letter document (PDF)", "Hashed in your browser and compared with the letter. Never uploaded.");
+  const letter = field("Assignment letter code (from the financier)", { area: true, value: d.letter_in?.letter });
+  const pdf = fileField("Assignment letter document (PDF)", d.letter_in ? "Already here: it came sealed with the letter. Hashed in your browser and compared with the letter." : "Hashed in your browser and compared with the letter. Never uploaded.");
   const out = new Out();
   return card(
     "Step 4",
@@ -556,7 +609,8 @@ function sealCard(d: SupplierDeal, refresh: () => void): HTMLElement {
         try {
           const code = letter.value();
           const f = json<LetterFields>(wasm.assignmentDecode(code, d.invoice));
-          const file = pdf.input.files?.[0];
+          const arrived = d.letter_in && d.letter_in.letter === code ? new File([b64ToBytes(d.letter_in.pdf)], "letter.pdf", { type: "application/pdf" }) : undefined;
+          const file = pdf.input.files?.[0] ?? arrived;
           const pdfOk = file ? (await fileHash(file)) === f.terms_hash : false;
           const finOk = f.financier_pk === d.offer!.financier_pk;
           const ok = f.matches_invoice === true && pdfOk && finOk;
@@ -584,6 +638,13 @@ function sealCard(d: SupplierDeal, refresh: () => void): HTMLElement {
                 try {
                   const s0 = wasm.supplierSealAssignmentBytes(await secretFor(d), d.invoice, code);
                   await save({ ...d, seal: { letter: code, s0 } });
+                  // HNK-26.T16: the seal goes to the buyer (who seals next) and the financier
+                  const to = [d.offer?.sent?.to, d.sign_request?.to].filter((x): x is string => !!x);
+                  for (const t of to) {
+                    const hd = draft("deal.seal", { role: "supplier", mailbox_pk: myIdentity().mailbox_pk }, t, relayDeps, { n: d.n, body: { seal: s0, index: 0 } });
+                    await send(t, await encodeMessage(hd as import("../lib/relay-message").Header), relayDeps);
+                  }
+                  if (to.length) await save({ ...d, seal: { letter: code, s0, sent: Date.now() } });
                   refresh();
                 } catch (e) {
                   out.error(e);
@@ -614,7 +675,7 @@ function advanceCard(d: SupplierDeal, refresh: () => void): HTMLElement {
       ]),
     );
   }
-  const txid = field("Advance transaction id", { placeholder: "64 hex characters, from the financier or your wallet" });
+  const txid = field("Advance transaction id", { placeholder: "64 hex characters, from the financier or your wallet", value: d.advance_notice?.txid });
   const got = field("Amount your wallet received (ZEC)", { type: "number", placeholder: zatToZec(agreed) });
   const out = new Out();
   return card(

@@ -111,7 +111,7 @@ export const TYPES = {
   "deal.offer": {
     flows: "SEQ-03 bagian 1 → 3.1",
     from: ["supplier"], to: ["financier"], n: "required",
-    body: { invoice: req(b64url), buyer_signature: req(hex(64)), advance_zat: req(pos), supplier_address: req(text(512)) },
+    body: { invoice: req(b64url), buyer_signature: req(hex(64)), advance_zat: req(pos), supplier_address: req(text(512)), buyer_mailbox_pk: opt(H32) },
     attachments: { min: 0, max: 1 }, signer: "supplier",
   },
   "deal.decline": {

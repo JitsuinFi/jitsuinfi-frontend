@@ -22,6 +22,19 @@ export interface BuyerInvoice {
   reply_to?: string;
   /** When the signature went back to the supplier (ms since epoch). */
   signature_sent_at?: number;
+  /**
+   * HNK-26.T16: the assignment letter as the financier's node sent it (`deal.letter`, PDF in
+   * base64), the supplier's seal (`deal.seal` index 0), and when the buyer sent its own seal.
+   */
+  assignment?: {
+    letter?: string;
+    pdf?: string;
+    financier_pk?: string;
+    financier_mailbox?: string;
+    supplier_seal?: string;
+    supplier_mailbox?: string;
+    sealed_at?: number;
+  };
 }
 
 const PREFIX = "invoice:";
@@ -56,6 +69,7 @@ export function invoiceRecord(
     ...(previous?.signature ? { signature: previous.signature } : {}),
     ...(previous?.reply_to ? { reply_to: previous.reply_to } : {}),
     ...(previous?.signature_sent_at ? { signature_sent_at: previous.signature_sent_at } : {}),
+    ...(previous?.assignment ? { assignment: previous.assignment } : {}),
   };
 }
 

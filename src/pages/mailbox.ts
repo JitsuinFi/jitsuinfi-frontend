@@ -20,6 +20,10 @@ const TYPE_LABEL: Partial<Record<MessageType, string>> = {
   "invoice.sign_request": "Invoice to sign",
   "invoice.signature": "Buyer's signature",
   "deal.decline": "Offer declined",
+  "deal.commitment_opening": "Entry request",
+  "deal.letter": "Assignment letter",
+  "deal.seal": "Seal on the letter",
+  "deal.advance": "Advance paid",
 };
 
 /** This session's contact card, to hand to a counterparty. */

@@ -14,7 +14,7 @@ import { append, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type 
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
 import { discard, draft, send, type Received } from "../lib/relay";
-import { encodeMessage, verifyHeader } from "../lib/relay-message";
+import { encodeMessage, verifyHeader, type Header } from "../lib/relay-message";
 import { deskPage, miniInvoice, route } from "./desk";
 import { mailboxCard } from "./mailbox";
 import { invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
@@ -255,7 +255,19 @@ export function buyerPage(): HTMLElement {
       button("Seal as buyer", async () => {
         try {
           const seal = await withInvoiceIndex(lInvoice.value(), (m, k) => wasm.buyerSealAssignmentBytes(m, k, lInvoice.value(), lLetter.value(), lSeal.value()));
-          sealOut.show(codeBlock("Your seal: send it to the financier", seal, "buyer.seal.txt"));
+          // HNK-26.T16: when the letter came through the mailbox, the seal goes back the same way
+          const n = json<{ nullifier: string }>(wasm.invoiceDecode(lInvoice.value())).nullifier;
+          const rec = await account.current?.store?.get<BuyerInvoice>(storeId(n));
+          const a = rec?.assignment;
+          const to = a && a.letter === lLetter.value() ? [a.financier_mailbox, a.supplier_mailbox].filter((x): x is string => !!x) : [];
+          for (const t of to) {
+            const hd = draft("deal.seal", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, t, relayDeps, { n, body: { seal, index: 1 } });
+            await send(t, await encodeMessage(hd as Header), relayDeps);
+          }
+          if (to.length && rec) {
+            await saveInvoice((prev) => ({ ...(prev ?? rec), assignment: { ...a, sealed_at: Date.now() } }), n);
+            sealOut.show(banner("ok", "Sealed and sent", "Your seal went to the financier and the supplier. The financier pays the advance next, with its own seal."));
+          } else sealOut.show(codeBlock("Your seal: send it to the financier", seal, "buyer.seal.txt"));
         } catch (e) {
           sealOut.error(e);
         }
@@ -342,7 +354,43 @@ export function buyerPage(): HTMLElement {
       return `${f.invoice_id} is in step 2 with its PDF. Check it, then sign.`;
     },
   };
-  const mailCard = mailboxCard({ "invoice.sign_request": fromInbox });
+  // HNK-26.T16: the letter from the financier's node and the supplier's seal fill step 3
+  const fillSeal = (rec: BuyerInvoice) => {
+    lInvoice.input.value = rec.invoice;
+    if (rec.assignment?.letter) lLetter.input.value = rec.assignment.letter;
+    if (rec.assignment?.supplier_seal) lSeal.input.value = rec.assignment.supplier_seal;
+    sealCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const keepAssignment = (label: string, take: (hd: Received["message"]["header"], files: Uint8Array[], rec: BuyerInvoice) => Promise<NonNullable<BuyerInvoice["assignment"]>>) => ({
+    label,
+    run: async (r: Received): Promise<string> => {
+      const hd = r.message.header;
+      const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+      if (!rec) throw new Error("no invoice on this device has this fingerprint N");
+      const add = await take(hd, r.message.attachments, rec);
+      const next = { ...rec, assignment: { ...rec.assignment, ...add } };
+      await saveInvoice(() => next, rec.n);
+      fillSeal(next);
+      return next.assignment.letter && next.assignment.supplier_seal
+        ? `${rec.invoice_id}: letter and the supplier's seal are in step 3. Read the letter, then seal.`
+        : `${rec.invoice_id}: kept. Step 3 waits for ${next.assignment.letter ? "the supplier's seal" : "the financier's letter"}.`;
+    },
+  });
+  const mailCard = mailboxCard({
+    "invoice.sign_request": fromInbox,
+    "deal.letter": keepAssignment("Keep the letter", async (hd, files, rec) => {
+      const letter = String(hd.body.letter);
+      const f = json<{ financier_pk: string; terms_hash: string; matches_invoice: boolean | null }>(wasm.assignmentDecode(letter, rec.invoice));
+      if (f.matches_invoice !== true) throw new Error("this letter is for another invoice");
+      if (f.financier_pk !== hd.signer) throw new Error("the letter was not sent by the financier it names");
+      if (!files[0] || (await fileHash(new File([new Uint8Array(files[0])], "letter.pdf"))) !== f.terms_hash) throw new Error("the PDF is not the letter's document");
+      return { letter, pdf: btoa(Array.from(files[0], (x) => String.fromCharCode(x)).join("")), financier_pk: f.financier_pk, financier_mailbox: hd.from.mailbox_pk };
+    }),
+    "deal.seal": keepAssignment("Keep the supplier's seal", async (hd) => {
+      if (hd.from.role !== "supplier" || hd.body.index !== 0) throw new Error("only the supplier's seal (the first) is kept here");
+      return { supplier_seal: String(hd.body.seal), supplier_mailbox: hd.from.mailbox_pk };
+    }),
+  });
 
   // The stage (HNK-30.T17): the invoice in hand and its route along the counter rail. Only the
   // first three stations are tracked on this device; sealing and paying follow in their steps.

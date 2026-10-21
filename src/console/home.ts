@@ -5,7 +5,7 @@
 import { chevron, head, link, lockIcon, Message, passkeyIcon, row, sheet as authSheet } from "../lib/auth-sheet";
 import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
-import { approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
+import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
 import { fact, seal } from "./sheet";
 import "./desk.css";
 
@@ -555,6 +555,112 @@ function mandate(demo = false): HTMLElement {
   );
 }
 
+interface DealRow {
+  n: string;
+  invoice_id: string;
+  amount_zat: number;
+  advance_zat: number;
+  due_date: number;
+  state: string;
+  entry_txid?: string;
+  advance_txid?: string;
+  stopped?: string;
+  letter_sent: boolean;
+  problem: string | null;
+  intent?: { n: string; amount_zat: number; address: string };
+}
+
+// The deal's route on B's desk (HNK-26.T16, SEQ-03): one station per state of the node's flow.
+const ROUTE: Array<{ glyph: string; label: string; states: string[] }> = [
+  { glyph: "照", label: "Board checked", states: ["Check"] },
+  { glyph: "署", label: "Supplier signed the entry", states: ["AwaitSupplierSignature"] },
+  { glyph: "登", label: "Entry on the board", states: ["Register", "AwaitConfirmation"] },
+  { glyph: "印", label: "Letter sealed by supplier and buyer", states: ["AwaitAssignment"] },
+  { glyph: "金", label: "Advance paid", states: ["Pay", "AwaitAdvanceConfirmation"] },
+  { glyph: "済", label: "Done", states: ["Done"] },
+];
+
+const WAITING: Record<string, string> = {
+  Check: "Checking the board for this invoice.",
+  AwaitSupplierSignature: "Waiting for the supplier to sign the board entry.",
+  Register: "Posting the entry to the board.",
+  AwaitConfirmation: "Entry posted; waiting for its confirmations.",
+  AwaitAssignment: "Letter sent; waiting for the supplier's and the buyer's seals.",
+  Pay: "Sealed by both. Your passkey approves the advance.",
+  AwaitAdvanceConfirmation: "Advance sent; waiting for it to be mined.",
+  Done: "Advance paid and mined. The buyer pays you at maturity.",
+};
+
+/** The deals after Accept, moved by the node; the advance waits for the operator's passkey. */
+function pipeline(demo = false): HTMLElement {
+  const list = h("ol", { class: "pl-list" });
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  const say = (e: unknown) => (note.textContent = e instanceof Error ? e.message : String(e));
+  const row = (d: DealRow): HTMLElement => {
+    const at = ROUTE.findIndex((r) => r.states.includes(d.state));
+    const stations = h(
+      "ol",
+      { class: "pl-route", "aria-label": "Where this deal is" },
+      ...ROUTE.map((r, i) =>
+        h("li", { "data-at": d.state === "Stopped" ? "stopped" : i < at ? "done" : i === at ? "now" : "later", title: r.label }, h("b", { lang: "ja", "aria-hidden": "true" }, r.glyph), h("span", {}, r.label)),
+      ),
+    );
+    const actions = h("div", { class: "mail-actions" });
+    if (!demo && d.state === "Pay" && d.intent) {
+      const intent = d.intent;
+      const pay = h("button", { class: "auth-link", type: "button" }, `Approve with passkey: pay ${zec(d.advance_zat)} ZEC`) as HTMLButtonElement;
+      pay.addEventListener("click", async () => {
+        pay.disabled = true;
+        try {
+          const approval = await approvePayment(intent);
+          await post(`/node/console/deals/${d.n}/pay`, { approval });
+          await load();
+        } catch (e) {
+          say(e);
+          pay.disabled = false;
+        }
+      });
+      actions.append(pay);
+    }
+    if (!demo && !["Pay", "Done", "Stopped"].includes(d.state)) {
+      const step = h("button", { type: "button" }, "Move on now") as HTMLButtonElement;
+      step.addEventListener("click", async () => {
+        step.disabled = true;
+        try {
+          await post(`/node/console/deals/${d.n}/step`);
+          await load();
+        } catch (e) {
+          say(e);
+          step.disabled = false;
+        }
+      });
+      actions.append(step);
+    }
+    return h(
+      "li",
+      { class: "pl-deal" },
+      h("p", { class: "pl-head" }, h("strong", {}, d.invoice_id), ` · ${zec(d.amount_zat)} ZEC due ${dueDay(d.due_date)} · advance ${zec(d.advance_zat)} ZEC`),
+      stations,
+      h("p", { class: "mail-note" }, d.state === "Stopped" ? `Stopped: ${d.stopped}` : (WAITING[d.state] ?? d.state)),
+      d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
+      d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
+      actions,
+    );
+  };
+  const load = async () => {
+    try {
+      const r = await get<{ deals: DealRow[] }>("/node/console/deals");
+      list.replaceChildren(...(r.deals.length ? r.deals.map(row) : [h("li", { class: "pl-empty" }, "No deal yet: accept an offer from the mailbox.")]));
+    } catch (e) {
+      say(e);
+    }
+  };
+  const refresh = h("button", { class: "auth-link", type: "button" }, "Refresh");
+  refresh.addEventListener("click", load);
+  void load();
+  return h("section", { class: "mail is-deals", "aria-labelledby": "deals-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "deals-title" }, "Deals"), refresh), list, note);
+}
+
 interface FundNav {
   assets_zat: number;
   units: number;
@@ -820,7 +926,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
     h(
       "div",
       { class: "dk-desk" },
-      h("div", { class: "dk-left" }, mailbox(demo), fundLedger(demo)),
+      h("div", { class: "dk-left" }, mailbox(demo), pipeline(demo), fundLedger(demo)),
       h("div", { class: "dk-right" }, share(info), mandate(demo), privateMandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );

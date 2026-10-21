@@ -101,11 +101,62 @@ function mailbox(): HTMLElement {
   return h("section", { class: "mail", "aria-labelledby": "mail-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "mail-title" }, "Mailbox"), refresh), list, note);
 }
 
+interface Device {
+  id: string;
+  paired_at: number;
+  last_used: number | null;
+  usable: boolean;
+  current: boolean;
+}
+
+const day = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
+
 function devices(): HTMLElement {
+  const list = h("ul", { class: "mail-list" });
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  const load = async () => {
+    try {
+      const j = await get<{ devices: Device[] }>("/node/console/devices");
+      list.replaceChildren(...j.devices.map(row));
+    } catch (e) {
+      note.textContent = e instanceof Error ? e.message : String(e);
+    }
+  };
+  const row = (d: Device): HTMLElement => {
+    const what = d.current ? "This device" : d.usable ? "Passkey" : "Old passkey";
+    const line = d.usable
+      ? `paired ${day(d.paired_at)}${d.last_used ? ` · last used ${day(d.last_used)}` : " · not used yet"}`
+      : `paired ${day(d.paired_at)} on another address; it cannot sign in here`;
+    const actions = h("div", { class: "mail-actions" });
+    if (!d.current) {
+      const remove = h("button", { type: "button" }, "Remove") as HTMLButtonElement;
+      remove.addEventListener("click", async () => {
+        remove.disabled = true;
+        try {
+          await del(`/node/console/devices/${encodeURIComponent(d.id)}`);
+          note.textContent = "Passkey removed.";
+          await load();
+        } catch (e) {
+          note.textContent = e instanceof Error ? e.message : String(e);
+          remove.disabled = false;
+        }
+      });
+      actions.append(remove);
+    }
+    return h(
+      "li",
+      { class: "mail-row" },
+      h("span", { class: "mail-badge", "aria-hidden": "true" }, "鍵"),
+      h("span", { class: "mail-what" }, what),
+      h("span", {}),
+      h("span", { class: "mail-line" }, line, " · ", h("span", { class: "is-mono" }, `${d.id.slice(0, 8)}…`)),
+      actions,
+    );
+  };
+
   const link = h("p", { class: "invite-link is-mono" });
   const copy = h("button", { class: "auth-link", type: "button" }, "Copy link");
-  const note = h("p", { class: "mail-note" });
-  const invite = h("div", { class: "invite", hidden: true }, h("p", { class: "mail-note" }, "Open this link on the new device within 15 minutes. It works once."), link, copy, note);
+  const invite = h("div", { class: "invite", hidden: true }, h("p", { class: "mail-note" }, "Open this link on the new device within 15 minutes. It works once."), link, copy);
   const add = h("button", { class: "auth-link", type: "button" }, "Add a device");
   add.addEventListener("click", async () => {
     try {
@@ -114,7 +165,6 @@ function devices(): HTMLElement {
       invite.hidden = false;
     } catch (e) {
       note.textContent = e instanceof Error ? e.message : String(e);
-      invite.hidden = false;
     }
   });
   copy.addEventListener("click", async () => {
@@ -125,7 +175,8 @@ function devices(): HTMLElement {
       getSelection()?.selectAllChildren(link);
     }
   });
-  return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), add), invite);
+  void load();
+  return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), add), list, invite, note);
 }
 
 export async function homeView(rerender: () => void): Promise<HTMLElement> {

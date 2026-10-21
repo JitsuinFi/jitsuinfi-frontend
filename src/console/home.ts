@@ -663,7 +663,7 @@ function repaymentEvidence(status: string, file: string): HTMLElement {
     "div",
     { class: "pl-proof" },
     h("b", { class: "pl-proof-stamp", lang: "ja", "aria-hidden": "true" }, status === "Claimed" ? "待" : "滞"),
-    h("div", {}, h("p", { class: "pl-proof-k" }, `Repayment ${status.toLowerCase()}`), h("p", { class: "mail-note" }, word[status] ?? ""), h("div", { class: "mail-actions" }, copy)),
+    h("div", {}, h("p", { class: "pl-proof-k" }, `Repayment ${status.toLowerCase()}`), h("p", { class: "mail-note" }, word[status] ?? ""), h("p", { class: "mail-note" }, "Anyone you give it to rechecks it with `jitsuin verify --evidence <file>`: the buyer's signatures, and the status from the file itself."), h("div", { class: "mail-actions" }, copy)),
   );
 }
 

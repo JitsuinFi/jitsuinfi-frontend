@@ -566,6 +566,10 @@ interface DealRow {
   advance_txid?: string;
   stopped?: string;
   letter_sent: boolean;
+  repayment?: string | null;
+  paid_zat?: number | null;
+  settled_txid?: string | null;
+  bundle_sent?: boolean;
   problem: string | null;
   intent?: { n: string; amount_zat: number; address: string };
 }
@@ -642,6 +646,9 @@ function pipeline(demo = false): HTMLElement {
       h("p", { class: "pl-head" }, h("strong", {}, d.invoice_id), ` · ${zec(d.amount_zat)} ZEC due ${dueDay(d.due_date)} · advance ${zec(d.advance_zat)} ZEC`),
       stations,
       h("p", { class: "mail-note" }, d.state === "Stopped" ? `Stopped: ${d.stopped}` : (WAITING[d.state] ?? d.state)),
+      d.state === "Done" && d.repayment
+        ? h("p", { class: "mail-note" }, d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`)
+        : null,
       d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
       d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
       actions,

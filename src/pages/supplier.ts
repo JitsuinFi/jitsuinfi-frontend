@@ -86,6 +86,12 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
         await save({ ...d, letter_in: { letter: String(h.body.letter), pdf: bytesToB64(files[0]), at: Date.now() } });
         return `The assignment letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
       }),
+      "deal.bundle": fromFinancier(refresh, "Keep the settlement bundle", async (d, h) => {
+        const bundle = String(h.body.bundle);
+        if (json<{ nullifier: string }>(wasm.verifyBundle(bundle)).nullifier !== d.n) throw new Error("this bundle is for another invoice");
+        await save({ ...d, bundle });
+        return `${d.invoice_id}: the buyer repaid and the financier posted the settled entry. The bundle proves the whole deal on the Verify page.`;
+      }),
       "deal.advance": fromFinancier(refresh, "Note the advance", async (d, h) => {
         const b = h.body as { txid: string; advance_zat: number };
         await save({ ...d, advance_notice: { txid: b.txid, advance_zat: b.advance_zat, at: Date.now() } });

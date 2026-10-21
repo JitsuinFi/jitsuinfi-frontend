@@ -34,6 +34,8 @@ export interface SupplierDeal {
   letter_in?: { letter: string; pdf: string; at: number };
   /** T7: the assignment letter, its PDF check and the supplier's seal s0. */
   seal?: { letter: string; s0: string; sent?: number };
+  /** HNK-26.T18: the verification bundle the financier sent once the repayment settled. */
+  bundle?: string;
   /** HNK-26.T16: the financier's node said it paid the advance (`deal.advance`), not yet checked. */
   advance_notice?: { txid: string; advance_zat: number; at: number };
   /** T8: what the supplier received. */

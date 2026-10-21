@@ -3,7 +3,7 @@
 import { chevron, head, link, lockIcon, Message, passkeyIcon, row, sheet as authSheet } from "../lib/auth-sheet";
 import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
-import { assert, contactFingerprint, del, get, post } from "./node";
+import { assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
 import { fact, sheet, verdict } from "./sheet";
 
 interface Session {
@@ -11,6 +11,8 @@ interface Session {
   paired: boolean;
   console: boolean;
   name?: string | null;
+  /** The judges' demo console (HNK-26.T26): no invite, nothing that moves money. */
+  demo?: boolean;
 }
 
 interface Info {
@@ -56,7 +58,7 @@ function ago(iso: string): string {
 
 const kib = (n: number) => (n < 1024 ? `${n} B` : `${Math.round(n / 1024)} KB`);
 
-function mailbox(): HTMLElement {
+function mailbox(demo = false): HTMLElement {
   const list = h("ul", { class: "mail-list" });
   const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
   const load = async () => {
@@ -87,7 +89,7 @@ function mailbox(): HTMLElement {
         remove.disabled = false;
       }
     });
-    actions.append(remove);
+    if (!demo) actions.append(remove);
     return h(
       "li",
       { class: "mail-row" },
@@ -114,7 +116,7 @@ interface Device {
 
 const day = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
 
-function devices(): HTMLElement {
+function devices(demo = false): HTMLElement {
   const list = h("ul", { class: "mail-list" });
   const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
   const load = async () => {
@@ -131,7 +133,7 @@ function devices(): HTMLElement {
       ? `paired ${day(d.paired_at)}${d.last_used ? ` · last used ${day(d.last_used)}` : " · not used yet"}`
       : `paired ${day(d.paired_at)} on another address; it cannot sign in here`;
     const actions = h("div", { class: "mail-actions" });
-    if (!d.current) {
+    if (!d.current && !demo) {
       const remove = h("button", { type: "button" }, "Remove") as HTMLButtonElement;
       remove.addEventListener("click", async () => {
         remove.disabled = true;
@@ -179,7 +181,7 @@ function devices(): HTMLElement {
     }
   });
   void load();
-  return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), add), list, invite, note);
+  return h("section", { class: "mail", "aria-labelledby": "devices-title" }, h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "devices-title" }, "Devices"), demo ? null : add), list, invite, note);
 }
 
 function loginView(session: Session, rerender: () => void): HTMLElement {
@@ -190,6 +192,7 @@ function loginView(session: Session, rerender: () => void): HTMLElement {
     msg.show("The console is off on this node. Ask your node provider.");
     return h("main", { class: "auth" }, authSheet(head("Financier console", null), msg.el, foot));
   }
+  if (session.demo) return demoLogin(rerender, foot);
   if (!session.paired) {
     return h("main", { class: "auth" }, authSheet(head("Financier console", "No passkey is set up for this console yet. Open the invite link your node provider sent you."), foot));
   }
@@ -210,6 +213,41 @@ function loginView(session: Session, rerender: () => void): HTMLElement {
       h("div", { class: "auth-list" }, go),
       msg.el,
       h("p", { class: "auth-switch" }, "New device? ", link("Open an invite link", () => (location.href = "/console/pair"))),
+      foot,
+    ),
+  );
+}
+
+/** The demo console's door: a visitor creates a passkey (no invite) or comes back with one. */
+function demoLogin(rerender: () => void, foot: HTMLElement): HTMLElement {
+  const msg = new Message();
+  const create = row(h("span", { class: "auth-badge", "aria-hidden": "true" }, "証"), "Create a passkey to try it", "No invite and no account: a passkey for this demo only", chevron(), async () => {
+    msg.clear();
+    try {
+      const start = await post<{ ceremony: string; options: { publicKey: Record<string, unknown> } }>("/node/console/pair/start", { code: "" });
+      const cred = (await navigator.credentials.create({ publicKey: creationOptions(start.options.publicKey) })) as PublicKeyCredential;
+      await post("/node/console/pair/finish", { ceremony: start.ceremony, credential: registrationJson(cred) });
+      rerender();
+    } catch (e) {
+      msg.error(e instanceof DOMException && e.name === "NotAllowedError" ? new Error("The passkey was not created.") : e);
+    }
+  });
+  const back = row(passkeyIcon(), "I tried it before", "Continue with the passkey you made here", chevron(), async () => {
+    msg.clear();
+    try {
+      await assert("/node/console/login/start", "/node/console/login/finish");
+      rerender();
+    } catch (e) {
+      msg.error(e);
+    }
+  });
+  return h(
+    "main",
+    { class: "auth" },
+    authSheet(
+      head("Try the financier console", "A demo node on Zcash testnet. Sign in as its financier: read its sealed mailbox and see how payments wait for your passkey. Nothing here moves money."),
+      h("div", { class: "auth-list" }, create, back),
+      msg.el,
       foot,
     ),
   );
@@ -252,11 +290,14 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
   s.lede.textContent = "This node's keys and wallet stay on the node.";
   fact(s.facts, "Mailbox", short(info.mailbox_id), true, info.mailbox_id);
   fact(s.facts, "Wallet", short(info.wallet_address), true, info.wallet_address);
+  const demo = session.demo === true;
   s.body.append(
-    verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."),
-    mailbox(),
-    devices(),
-    nameSection(session.name, (n) => (s.title.textContent = `Welcome, ${n}`)),
+    demo
+      ? verdict("試", "Demo console", "Anyone can sign in here. Payments, invites, removing devices and the profile are turned off.")
+      : verdict("認", "Signed in", "The session ends after 8 hours, or when the node restarts."),
+    mailbox(demo),
+    devices(demo),
+    demo ? h("span", {}) : nameSection(session.name, (n) => (s.title.textContent = `Welcome, ${n}`)),
   );
   const out = h("button", { class: "auth-link", type: "button" }, "Sign out");
   out.addEventListener("click", async () => {

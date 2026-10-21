@@ -5,7 +5,7 @@
 import { chevron, head, link, lockIcon, Message, passkeyIcon, row, sheet as authSheet } from "../lib/auth-sheet";
 import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
-import { assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
+import { approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
 import { fact, seal } from "./sheet";
 import "./desk.css";
 
@@ -119,6 +119,7 @@ const TYPE_LABEL: Record<string, string> = {
   "invoice.signature": "Buyer signature",
   "key.invoice_pk": "Invoice key",
   "invoice.sign_request": "Signing request",
+  "fund.withdraw": "Withdrawal request",
 };
 const ROLE_BADGE: Record<string, string> = { supplier: "売", buyer: "買", fund: "資", member: "資", financier: "証" };
 
@@ -170,6 +171,22 @@ function mailbox(demo = false): HTMLElement {
       }
     });
     if (!demo) actions.append(remove);
+    // HNK-30.T23: a member's withdrawal waits in the fund ledger for the end of the period
+    if (m.type === "fund.withdraw" && !demo) {
+      const queue = h("button", { type: "button" }, "Queue for the period's end") as HTMLButtonElement;
+      queue.addEventListener("click", async () => {
+        queue.disabled = true;
+        try {
+          const r = await post<{ units: number; period: number }>(`/node/console/fund/withdrawals/${encodeURIComponent(m.relay_id)}`);
+          note.textContent = `Queued: ${r.units} units, paid when period ${r.period} closes.`;
+          document.dispatchEvent(new Event("fund-changed"));
+        } catch (e) {
+          note.textContent = e instanceof Error ? e.message : String(e);
+          queue.disabled = false;
+        }
+      });
+      actions.prepend(queue);
+    }
     return h(
       "li",
       { class: "mail-row" },
@@ -513,6 +530,133 @@ function mandate(demo = false): HTMLElement {
   );
 }
 
+interface FundNav {
+  assets_zat: number;
+  units: number;
+}
+
+interface FundState {
+  period: number;
+  nav: FundNav;
+  total_units: number;
+  leaves: number;
+  deposits: number;
+  queue: Array<{ leaf: string; units: number; address: string; at: number }>;
+  closes: Array<{ period: number; root: string; total_units: number; nav: FundNav; paid_zat: number; payout_txid: string | null; root_txid: string; held: boolean }>;
+}
+
+interface ClosePlan {
+  plan_id: string;
+  paid_zat: number;
+  plan: { period: number; nav: FundNav; cash_zat: number; held: boolean; short: boolean; payouts: Array<{ leaf: string; units: number; amount_zat: number; address: string }> };
+}
+
+const price = (n: FundNav) => (n.assets_zat / Math.max(1, n.units)).toFixed(4);
+
+/**
+ * The fund ledger (HNK-30.T23, D-49), for a financier that runs a pooled fund: deposits seen in
+ * the wallet become members' units, withdrawals wait for the period's end, and the close pays them
+ * from cash with one passkey approval of the exact plan, then signs the new root into JTLR.
+ */
+function fundLedger(demo = false): HTMLElement {
+  const book = h("dl", { class: "fd-book" });
+  const queue = h("ol", { class: "fd-queue" });
+  const planOut = h("div", { class: "fd-plan" });
+  const note = h("p", { class: "mail-note", role: "status", "aria-live": "polite" });
+  const say = (e: unknown) => (note.textContent = e instanceof Error ? e.message : String(e));
+  const load = async () => {
+    try {
+      const f = await get<FundState>("/node/console/fund");
+      book.replaceChildren();
+      fact(book, "Period", String(f.period));
+      fact(book, "Price per unit", `${price(f.nav)} zat`);
+      fact(book, "Units out", f.total_units.toLocaleString("en"));
+      fact(book, "Holdings", `${f.leaves} from ${f.deposits} deposits`);
+      const last = f.closes[0];
+      if (last) fact(book, "Last close", `period ${last.period} · ${last.held ? "held, below par" : `${zec(last.paid_zat)} ZEC paid`}`, true, last.root);
+      queue.replaceChildren(...(f.queue.length ? f.queue.map((r) => h("li", {}, h("b", {}, `${r.units.toLocaleString("en")} units`), h("span", { class: "is-mono" }, ` to ${short(r.address)}`))) : [h("li", { class: "is-empty" }, "No withdrawal waits for this period.")]));
+    } catch (e) {
+      say(e);
+    }
+  };
+  document.addEventListener("fund-changed", () => void load());
+
+  const member = h("input", { placeholder: "jitsuin-contact-v1:…", spellcheck: "false", autocomplete: "off" }) as HTMLInputElement;
+  const txid = h("input", { placeholder: "transaction id", spellcheck: "false", autocomplete: "off" }) as HTMLInputElement;
+  const record = h("button", { class: "auth-link", type: "submit" }, "Record the deposit") as HTMLButtonElement;
+  const deposit = h(
+    "form",
+    { class: "offer-form fd-deposit" },
+    h("label", { class: "auth-field" }, h("span", {}, "Member's contact card"), member),
+    h("label", { class: "auth-field" }, h("span", {}, "Deposit transaction (mined, in this wallet)"), txid),
+    record,
+  );
+  deposit.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    record.disabled = true;
+    try {
+      const r = await post<{ amount_zat: number; units: number; receipt_sent: boolean }>("/node/console/fund/deposits", { member: member.value.trim(), txid: txid.value.trim() });
+      say(`${zec(r.amount_zat)} ZEC bought ${r.units.toLocaleString("en")} units. ${r.receipt_sent ? "The receipt, with its withdraw token, is sealed to the member." : "The units are recorded, but the receipt did not reach the relay: the member cannot withdraw them until they have it."}`);
+      member.value = txid.value = "";
+      await load();
+    } catch (err) {
+      say(err);
+    } finally {
+      record.disabled = false;
+    }
+  });
+
+  const planBtn = h("button", { class: "auth-link", type: "button" }, "Plan the period's close") as HTMLButtonElement;
+  planBtn.addEventListener("click", async () => {
+    planBtn.disabled = true;
+    planOut.replaceChildren();
+    try {
+      say("Syncing the wallet and valuing the fund…");
+      const p = await post<ClosePlan>("/node/console/fund/plan");
+      const pl = p.plan;
+      const lines = pl.payouts.map((x) => h("li", {}, h("b", {}, `${zec(x.amount_zat)} ZEC`), ` for ${x.units.toLocaleString("en")} units · `, h("span", { class: "is-mono" }, short(x.address))));
+      const pay = h("button", { class: "auth-link fd-pay", type: "button" }, pl.payouts.length ? `Approve with passkey: pay ${zec(p.paid_zat)} ZEC and sign the root` : "Approve with passkey: sign the root") as HTMLButtonElement;
+      pay.addEventListener("click", async () => {
+        pay.disabled = true;
+        try {
+          const approval = await approvePlan(p.plan_id);
+          const r = await post<{ period: number; paid_zat: number; root: string; root_txid: string | null; root_error: string | null; undelivered: number }>("/node/console/fund/close", { plan_id: p.plan_id, approval });
+          say(`Period ${r.period} closed: ${zec(r.paid_zat)} ZEC paid, root ${short(r.root)} ${r.root_txid ? "signed on chain" : `not posted yet (${r.root_error})`}. ${r.undelivered ? `${r.undelivered} message(s) did not reach the relay.` : "Every member has their path."}`);
+          planOut.replaceChildren();
+          await load();
+        } catch (err) {
+          say(err);
+          pay.disabled = false;
+        }
+      });
+      planOut.replaceChildren(
+        h("p", { class: "mail-note" }, `Period ${pl.period} at ${price(pl.nav)} zat per unit, ${zec(pl.cash_zat)} ZEC in cash. ${pl.held ? "Below par: no withdrawal is paid this period." : pl.short ? "Cash does not cover the queue: every request gets the same share, the rest waits." : ""}`),
+        lines.length ? h("ol", { class: "fd-queue" }, ...lines) : h("p", { class: "mail-note" }, "Nothing to pay; the close signs the new root."),
+        demo ? h("span", {}) : pay,
+      );
+      note.textContent = "";
+    } catch (err) {
+      say(err);
+    } finally {
+      planBtn.disabled = false;
+    }
+  });
+
+  void load();
+  return h(
+    "section",
+    { class: "mail is-fund", "aria-labelledby": "fund-title" },
+    h("div", { class: "mail-head" }, h("h2", { class: "mail-title", id: "fund-title" }, "Fund ledger")),
+    h("p", { class: "mail-note" }, "For a pooled fund: members hold units, priced from this wallet's cash and receivables at each close."),
+    book,
+    queue,
+    demo ? null : deposit,
+    demo ? null : planBtn,
+    planOut,
+    note,
+  );
+}
+
 /** What a supplier needs to offer this node an invoice: the contact card and the financier key. */
 function share(info: Info): HTMLElement {
   const item = (label: string, value: string, hint: string): HTMLElement => {
@@ -578,7 +722,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
     h(
       "div",
       { class: "dk-desk" },
-      h("div", { class: "dk-left" }, mailbox(demo)),
+      h("div", { class: "dk-left" }, mailbox(demo), fundLedger(demo)),
       h("div", { class: "dk-right" }, share(info), mandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );

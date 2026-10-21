@@ -183,10 +183,10 @@ test("a stamp from another passkey is refused", async () => {
   await assert.rejects(acct.stamp(), /another passkey was used/);
 });
 
-test("a fund member never signs", async () => {
+test("a fund member never signs, but keeps an encrypted store for withdraw tokens (D-49)", async () => {
   const { acct } = setup();
   const s = await acct.register("member");
-  assert.equal(s.store, null);
+  assert.notEqual(s.store, null);
   await assert.rejects(acct.stamp(), /fund member does not sign/);
 });
 

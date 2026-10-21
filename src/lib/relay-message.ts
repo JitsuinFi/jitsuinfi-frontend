@@ -69,6 +69,11 @@ const text = (max: number): Check => (x) => typeof x === "string" && x.length > 
 const list = (item: Check, min: number, max: number): Check => (x) => Array.isArray(x) && x.length >= min && x.length <= max && x.every(item);
 const oneOf = (...vals: unknown[]): Check => (x) => vals.includes(x);
 const H32 = hex(32);
+const nav: Check = (x) => {
+  const n = x as Record<string, unknown>;
+  return typeof x === "object" && x !== null && Object.keys(n).length === 2 && pos(n.assets_zat) && pos(n.units);
+};
+const fundPath: Check = (x) => typeof x === "string" && x.length % 82 === 0 && x.length <= 82 * 40 && /^[0-9a-f]*$/.test(x);
 
 interface Spec {
   /** DFD level-2 flows (process numbers) this type carries; vault Format Data maps them. */
@@ -164,15 +169,27 @@ export const TYPES = {
     attachments: { min: 0, max: 0 }, signer: "none",
   },
   "fund.receipt": {
-    flows: "9.1 → 9.7",
+    flows: "9.1 → 9.7 (D-49: units at the period's NAV, the withdraw token of the new units)",
     from: ["fund"], to: ["member"], n: "none",
-    body: { receipt: req(b64url) },
+    body: { period: req(pos), deposit_txid: req(H32), amount_zat: req(pos), units: req(pos), nav: req(nav), withdraw_token: req(H32) },
     attachments: { min: 0, max: 0 }, signer: "fund",
   },
   "fund.merkle_path": {
-    flows: "9.6 → 9.7",
+    flows: "9.6 → 9.7 (HNK-15.T1: a leaf of the unit sum tree, root and total as in JTLR)",
     from: ["fund"], to: ["member"], n: "none",
-    body: { period: req(uint), root: req(H32), path: req(list(H32, 0, 64)) },
+    body: { period: req(pos), leaf_id: req(H32), units: req(pos), root: req(H32), total: req(pos), path: req(fundPath) },
+    attachments: { min: 0, max: 0 }, signer: "fund",
+  },
+  "fund.withdraw": {
+    flows: "D-49 (HNK-30.T23): member to fund, paid at the end of the period",
+    from: ["member"], to: ["fund"], n: "none",
+    body: { withdraw_token: req(H32), units: req((x) => x === "all" || pos(x)), address: req(text(512)), period: req(pos) },
+    attachments: { min: 0, max: 0 }, signer: "none",
+  },
+  "fund.payout": {
+    flows: "D-49 (HNK-30.T23): fund to member after the close; the new token holds what is left",
+    from: ["fund"], to: ["member"], n: "none",
+    body: { period: req(pos), leaf_id: req(H32), units: req(pos), amount_zat: req(pos), nav: req(nav), txid: req(H32), next_token: opt(H32) },
     attachments: { min: 0, max: 0 }, signer: "fund",
   },
   "financier.apply": {

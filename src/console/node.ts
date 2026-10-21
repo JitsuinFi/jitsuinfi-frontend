@@ -99,6 +99,12 @@ export async function approvePayment(intent: { n: string; amount_zat: number; ad
   return r.approval;
 }
 
+/** Fund close approval (HNK-30.T23): one-time approval id for the exact plan the node made. */
+export async function approvePlan(planId: string): Promise<string> {
+  const r = (await assert("/node/console/approve/start", "/node/console/approve/finish", { plan: planId })) as { approval: string };
+  return r.approval;
+}
+
 /** The fingerprint inside a node's contact card (jitsuin-contact-v1:base64url(JSON)). */
 export function contactFingerprint(contact: string): string {
   const json = new TextDecoder().decode(fromB64u(contact.slice("jitsuin-contact-v1:".length)));

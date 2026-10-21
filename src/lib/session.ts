@@ -22,7 +22,7 @@ export interface SessionDeps {
   keys: KeySource;
   profile: KeyValue | null;
   /** Opens the role's deal store from a copy of the master; must zero what it receives. */
-  openStore?: (role: "supplier" | "buyer", master: Uint8Array) => Promise<DealStore>;
+  openStore?: (role: "supplier" | "buyer" | "member", master: Uint8Array) => Promise<DealStore>;
   now?: () => number;
   setTimer?: (fn: () => void, ms: number) => unknown;
   clearTimer?: (t: unknown) => void;
@@ -165,7 +165,7 @@ export class Account {
     try {
       this.lock(demo);
       const fp = await fingerprint(role, out.first);
-      const store = role !== "member" && this.deps.openStore ? await this.deps.openStore(role, out.first.slice()) : null;
+      const store = this.deps.openStore ? await this.deps.openStore(role, out.first.slice()) : null;
       if (!demo) writeProfile(this.deps.profile, rememberRole(readProfile(this.deps.profile), out.credentialId, role, this.now()));
       this.session = { role, credentialId: demo ? null : out.credentialId, fingerprint: fp, inbox: out.second, store, demo };
       this.touch();

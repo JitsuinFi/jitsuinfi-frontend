@@ -1,6 +1,6 @@
 // The app world's shell (HNK-31.T2): top bar, screens nav and footer around one <main>, as the
-// hash router in app.html drew them. Pages that are still DOM builders are mounted into <main>
-// by `Legacy`; the shell repaints when the session changes, as before.
+// hash router in app.html drew them. Pages draw into <main> through `Page`; the shell repaints
+// when the session changes, as before.
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
@@ -8,7 +8,7 @@ import { roleLabel } from "../lib/account";
 import { account } from "../lib/app-session";
 import { legacyTarget } from "../lib/legacy-url";
 import { NET } from "../lib/network";
-import { pageFor } from "./legacy-main";
+import "./app-styles";
 
 // Public pages need no account (BL-PG-01).
 const PUBLIC: Array<[string, string]> = [
@@ -105,32 +105,5 @@ export function Mounted({ then }: { then: () => void }): null {
     done.current = true;
     then();
   });
-  return null;
-}
-
-/**
- * A page that is still a DOM builder (before HNK-31.T3 – T11), mounted straight into <main> so
- * the old selectors (`main:has(> .auth)`) still hold. Rebuilt on every session change and on
- * every hashchange, as app.html did.
- */
-export function Legacy({ path }: { path: string }): null {
-  const { main, setWide } = useContext(MainSlot);
-  const [v, bump] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => account.onChange(bump), []);
-  useEffect(() => {
-    addEventListener("hashchange", bump);
-    return () => removeEventListener("hashchange", bump);
-  }, []);
-  const built = useRef<HTMLElement | null>(null);
-  useLayoutEffect(() => {
-    if (!main) return;
-    const el = pageFor(path);
-    built.current = el;
-    main.replaceChildren(el);
-    setWide(Boolean(el.dataset.wide));
-    return () => {
-      if (built.current?.parentNode === main) main.replaceChildren();
-    };
-  }, [main, path, v, setWide]);
   return null;
 }

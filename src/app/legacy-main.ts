@@ -3,9 +3,10 @@
 // in this order, so the stylesheets cascade as they did in app.html.
 import "../style.css";
 import "../pages/lobby.css";
+// the account page is a component now; its stylesheets stay here, in their old place in the cascade
+import "../pages/seal-card.css";
+import "../auth.css";
 import { type Role } from "../lib/account";
-import { account } from "../lib/app-session";
-import { accountPage, onboardingPending } from "../pages/account";
 import { applyPage } from "../pages/apply";
 import { buyerPage } from "../pages/buyer";
 import { financierPage } from "../pages/financier";
@@ -17,7 +18,6 @@ import "../pages/try.css";
 import "../pages/verify.css";
 
 
-// Role pages open only in a session of that role; otherwise the account page asks to sign in.
 const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
   "/supplier": { role: "supplier", page: supplierPage },
   "/buyer": { role: "buyer", page: buyerPage },
@@ -30,9 +30,9 @@ const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage,
 
 /** The page at a clean path (HNK-31): the rate index is /rates; the lobby is a component (Lobby). */
 export function pageFor(path: string): HTMLElement {
-  if (path === "/account") return accountPage();
   const rp = ROLE_PAGES[path];
-  if (rp) return account.current?.role === rp.role && !onboardingPending() ? rp.page() : accountPage(rp.role);
+  // the session gate is RoleGate (src/app/RoleGate.tsx)
+  if (rp) return rp.page();
   const hidden = HIDDEN[path];
   if (hidden) return hidden();
   throw new Error(`no page at ${path}`);

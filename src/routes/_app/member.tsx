@@ -1,4 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Legacy } from "../../app/AppShell";
+import { RoleGate } from "../../app/RoleGate";
 
-export const Route = createFileRoute("/_app/member")({ component: () => <Legacy path="/member" /> });
+export const Route = createFileRoute("/_app/member")({
+  component: () => (
+    <RoleGate role="member">
+      <Legacy path="/member" />
+    </RoleGate>
+  ),
+});

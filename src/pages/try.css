@@ -297,6 +297,9 @@
   transform: translateX(-50%) rotate(14deg) scaleY(0); transform-origin: top; transition: transform var(--dur-seal) var(--ease-snap);
 }
 .sk[data-seal="broken"] .sk-seal { opacity: .55; filter: saturate(.35); }
+/* HNK-21.T2: a sheet still being written on the supplier's screen: the buyer has not sealed it */
+.sk[data-seal="pending"] .sk-seal { opacity: 0; }
+.sk-desk { padding: 6px 0 14px; }
 .sk[data-seal="broken"] .sk-seal-crack { transform: translateX(-50%) rotate(14deg) scaleY(1); }
 .sk-note { margin: 0; min-height: 1.45em; font: 500 13px/1.45 var(--f-body); color: var(--ink-2); }
 .sk[data-seal="broken"] .sk-note { color: var(--seal); }

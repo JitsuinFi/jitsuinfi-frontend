@@ -34,9 +34,12 @@ import { draft, send, signInWasm } from "../lib/relay";
 import { describeFiles, encodeMessage } from "../lib/relay-message";
 import { mailboxCard, useContact } from "./mailbox";
 import { deskPage, miniInvoice, route } from "./desk";
+import { seikyusho } from "./try/seikyusho";
 
 // The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;
+// HNK-25.T2 (BL-D22-01): the buyer key that arrived through the mailbox, for the next invoice.
+let arrivedBuyerKey: string | null = null;
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
@@ -76,6 +79,16 @@ async function render(root: HTMLElement, refresh: () => void): Promise<void> {
   const cards: HTMLElement[] = [mailboxCard({
       "invoice.signature": signatureFromInbox(refresh),
       "deal.decline": declineFromInbox(refresh),
+      "key.invoice_pk": {
+        label: "Use for my next invoice",
+        run: async (r: import("../lib/relay").Received): Promise<string> => {
+          const k = String(r.message.header.body.invoice_pk);
+          if (r.message.header.signer !== k) throw new Error("this key did not sign its own message");
+          arrivedBuyerKey = k;
+          refresh();
+          return `The buyer's key ${k.slice(0, 10)}… is on your next invoice (Write an invoice).`;
+        },
+      },
       "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", async (d, h) => {
         const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number; history_tag?: string };
         // HNK-26.T8: with the buyer's history checked, the entry must carry the certificate's tag
@@ -194,40 +207,60 @@ function statusOnBoard(d: SupplierDeal, boardJson: string): string | null {
 // ---------- new invoice (HNK-24.T2) ----------
 
 function newInvoiceCard(deals: SupplierDeal[], refresh: () => void): HTMLElement {
-  const id = field("Invoice number", { placeholder: "TES-INV-0007", help: "1–32 characters, never reused. Test data starts with TES-." });
-  const buyer = field("Buyer key for this invoice", { placeholder: "64 hex characters from the buyer's screen" });
-  const amount = field("Amount (ZEC)", { type: "number", placeholder: "0.0004" });
-  const issue = field("Issue date", { type: "date" });
-  const due = field("Due date", { type: "date" });
+  // HNK-21.T2: the invoice is written on the 請求書 itself (the same sheet as /try); only the buyer's
+  // key and the PDF sit below it. The buyer's seal box stays empty until the buyer signs.
+  const today = new Date().toISOString().slice(0, 10);
+  const sheet = seikyusho({ id: "", amount: "", issued: today, due: "", terms: "", buyer: "", supplier: "", issuer: "You" });
+  sheet.el.dataset.seal = "pending";
+  sheet.fields.id.placeholder = "TES-INV-0007";
+  sheet.fields.amount.placeholder = "0.0004";
+  sheet.fields.terms.readOnly = true;
+  sheet.fields.terms.placeholder = "the PDF's SHA-256 appears here";
+  sheet.setN("made when you create it: it needs your key for this invoice");
+  const to = sheet.el.querySelector<HTMLElement>(".sk-to code");
+  const by = sheet.el.querySelector<HTMLElement>(".sk-issuer + code");
+  const note = sheet.el.querySelector<HTMLElement>(".sk-note");
+  if (to) to.textContent = "the buyer's key, below";
+  if (by) by.textContent = "your key for this invoice, from your passkey";
+  if (note) note.textContent = "The buyer's seal 買 goes in the box once the buyer signs these exact bytes.";
+  const buyer = field("Buyer key for this invoice", { placeholder: "64 hex characters from the buyer's screen", value: arrivedBuyerKey ?? undefined });
+  if (arrivedBuyerKey && to) to.textContent = `${arrivedBuyerKey.slice(0, 10)}…${arrivedBuyerKey.slice(-6)}`;
+  buyer.input.addEventListener("input", () => {
+    if (to) to.textContent = HEX64.test(buyer.value()) ? `${buyer.value().slice(0, 10)}…${buyer.value().slice(-6)}` : "the buyer's key, below";
+  });
   const terms = fileField("Invoice document (PDF)", "Hashed in your browser with SHA-256. The file is never uploaded.");
+  terms.input.addEventListener("change", async () => {
+    const f = terms.input.files?.[0];
+    sheet.fields.terms.value = f ? await fileHash(f) : "";
+  });
   const out = new Out();
   return card(
     "New",
-    "Create an invoice",
+    "Write an invoice",
     "Its key is derived from your passkey, the invoice number and the buyer's key. The canonical invoice is what the buyer signs; its fingerprint N is what financiers look up on the board.",
-    id.el,
+    h("div", { class: "sk-desk" }, sheet.el),
     buyer.el,
-    h("div", { class: "row" }, amount.el, issue.el, due.el),
     terms.el,
     actions(
       button("Create invoice", async () => {
         try {
-          const invoiceId = id.value();
+          const invoiceId = sheet.fields.id.value.trim();
           if (invoiceId.length < 1 || invoiceId.length > 32) throw new Error("invoice number: 1–32 characters");
           if (invoiceIdTaken(deals, invoiceId)) throw new Error(`invoice number ${invoiceId} is already used on this device`);
           const buyerPk = hex64(buyer.value(), "buyer key");
           const file = terms.input.files?.[0];
           if (!file) throw new Error("choose the invoice document");
+          if (!sheet.fields.due.value) throw new Error("give the due date");
           const supplierPk = wasm.supplierInvoicePublicKeyBytes(await account.stamp(), invoiceId, buyerPk);
-          const amountZat = zecToZat(amount.value());
-          const dueDay = dateToDays(due.value());
+          const amountZat = zecToZat(sheet.fields.amount.value.trim());
+          const dueDay = dateToDays(sheet.fields.due.value);
           const code = wasm.invoiceEncode(
             JSON.stringify({
               invoice_id: invoiceId,
               supplier_pk: supplierPk,
               buyer_pk: buyerPk,
               amount_zat: amountZat,
-              issue_date: dateToDays(issue.value()),
+              issue_date: dateToDays(sheet.fields.issued.value),
               due_date: dueDay,
               terms_hash: await fileHash(file),
             }),
@@ -244,6 +277,7 @@ function newInvoiceCard(deals: SupplierDeal[], refresh: () => void): HTMLElement
             created_at: Date.now(),
           });
           current = n;
+          arrivedBuyerKey = null;
           refresh();
         } catch (e) {
           out.error(e);

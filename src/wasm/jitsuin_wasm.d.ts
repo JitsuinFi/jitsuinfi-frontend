@@ -24,6 +24,11 @@ export function buyerKeys(master_hex: string, index: number): string;
 
 export function buyerKeysBytes(master: Uint8Array, index: number): string;
 
+/**
+ * Signs a relay header with the buyer's invoice key `index` from the master (wiped).
+ */
+export function buyerMessageSignBytes(master: Uint8Array, index: number, signing_bytes: Uint8Array): string;
+
 export function buyerRepayment(master_hex: string, index: number, invoice_b64: string, assignment_b64: string, date: number): string;
 
 export function buyerRepaymentBytes(master: Uint8Array, index: number, invoice_b64: string, assignment_b64: string, date: number): string;
@@ -91,7 +96,17 @@ export function mailboxSeal(recipient_pk_hex: string, eph_secret: Uint8Array, me
  */
 export function messageSignBytes(secret: Uint8Array, signing_bytes: Uint8Array): string;
 
+/**
+ * A ZIP-321 payment request without memo and its QR, as JSON `{uri, qr_svg}`.
+ */
+export function paymentRequest(address: string, amount_zat: bigint): string;
+
 export function publicKey(secret_hex: string): string;
+
+/**
+ * A QR code (SVG) of a short text, such as a contact card.
+ */
+export function qrSvg(text: string): string;
 
 export function rateIndex(board_json: string, k: number): string;
 
@@ -157,6 +172,7 @@ export interface InitOutput {
     readonly buyerHistoryCertBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
     readonly buyerKeys: (a: number, b: number, c: number) => [number, number, number, number];
     readonly buyerKeysBytes: (a: number, b: number, c: any, d: number) => [number, number, number, number];
+    readonly buyerMessageSignBytes: (a: number, b: number, c: any, d: number, e: number, f: number) => [number, number, number, number];
     readonly buyerRepayment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly buyerRepaymentBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly buyerSealAssignment: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
@@ -179,7 +195,9 @@ export interface InitOutput {
     readonly mailboxProofBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly mailboxSeal: (a: number, b: number, c: number, d: number, e: any, f: number, g: number) => [number, number, number, number];
     readonly messageSignBytes: (a: number, b: number, c: any, d: number, e: number) => [number, number, number, number];
+    readonly paymentRequest: (a: number, b: number, c: bigint) => [number, number, number, number];
     readonly publicKey: (a: number, b: number) => [number, number, number, number];
+    readonly qrSvg: (a: number, b: number) => [number, number, number, number];
     readonly rateIndex: (a: number, b: number, c: number) => [number, number, number, number];
     readonly storageKeysBytes: (a: number, b: number, c: any) => [number, number, number, number];
     readonly supplierInvoicePublicKeyBytes: (a: number, b: number, c: any, d: number, e: number, f: number, g: number) => [number, number, number, number];

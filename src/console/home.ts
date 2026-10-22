@@ -7,6 +7,7 @@ import { h } from "../lib/ui";
 import { keepName, keptName } from "./name";
 import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
 import { fact, seal } from "./sheet";
+import { encodeFundCard } from "../lib/fund-card";
 import "./desk.css";
 
 interface Session {
@@ -577,6 +578,8 @@ interface DealRow {
   repayment?: string | null;
   paid_zat?: number | null;
   settled_txid?: string | null;
+  evidence?: string | null;
+  bundle?: string | null;
   bundle_sent?: boolean;
   history_requested?: boolean;
   history?: string | null;
@@ -638,6 +641,48 @@ function evidence(exhibit: string, proof: string): HTMLElement {
   );
 }
 
+/** BL-D28-03: the settled deal's verification bundle, for an auditor or a court (Verify page). */
+function bundleCopy(bundle: string): HTMLElement {
+  const b = h("button", { type: "button" }, "Copy the verification bundle (JTSB)") as HTMLButtonElement;
+  b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(bundle);
+      b.textContent = "Copied";
+    } catch {
+      b.textContent = "Copy failed";
+    }
+  });
+  return h("div", { class: "mail-actions" }, b, h("a", { href: "https://jitsuinfi.vercel.app/app.html#/verify", target: "_blank", rel: "noopener" }, "Check it on the Verify page"));
+}
+
+/**
+ * HNK-26.T13: a repayment claimed without a covering payment, disputed or overdue. The evidence
+ * file (JTSE) carries the buyer's signed claims and every repayment output with its receipt, so
+ * whoever receives it recomputes the status instead of trusting this console.
+ */
+function repaymentEvidence(status: string, file: string): HTMLElement {
+  const word: Record<string, string> = {
+    Claimed: "The buyer says it paid, but no mined payment covers the amount yet.",
+    Disputed: "The buyer's claim is past the grace period and still not covered: a dispute.",
+    Overdue: "Past the due date and the grace period, with no claim from the buyer.",
+  };
+  const copy = h("button", { type: "button" }, "Copy the evidence (JTSE)") as HTMLButtonElement;
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(file);
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Copy failed";
+    }
+  });
+  return h(
+    "div",
+    { class: "pl-proof" },
+    h("b", { class: "pl-proof-stamp", lang: "ja", "aria-hidden": "true" }, status === "Claimed" ? "待" : "滞"),
+    h("div", {}, h("p", { class: "pl-proof-k" }, `Repayment ${status.toLowerCase()}`), h("p", { class: "mail-note" }, word[status] ?? ""), h("p", { class: "mail-note" }, "Anyone you give it to rechecks it with `jitsuin verify --evidence <file>`: the buyer's signatures, and the status from the file itself."), h("div", { class: "mail-actions" }, copy)),
+  );
+}
+
 /** The deals after Accept, moved by the node; the advance waits for the operator's passkey. */
 function pipeline(demo = false): HTMLElement {
   const list = h("ol", { class: "pl-list" });
@@ -694,6 +739,8 @@ function pipeline(demo = false): HTMLElement {
         ? h("p", { class: "mail-note" }, d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`)
         : null,
       d.exhibit ? evidence(d.exhibit, d.proof ?? "") : null,
+      d.evidence ? repaymentEvidence(d.repayment ?? "", d.evidence) : null,
+      d.bundle ? bundleCopy(d.bundle) : null,
       d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
       d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
       actions,
@@ -741,7 +788,7 @@ const price = (n: FundNav) => (n.assets_zat / Math.max(1, n.units)).toFixed(4);
  * the wallet become members' units, withdrawals wait for the period's end, and the close pays them
  * from cash with one passkey approval of the exact plan, then signs the new root into JTLR.
  */
-function fundLedger(demo = false): HTMLElement {
+function fundLedger(info: Info, demo = false): HTMLElement {
   const book = h("dl", { class: "fd-book" });
   const queue = h("ol", { class: "fd-queue" });
   const planOut = h("div", { class: "fd-plan" });
@@ -789,6 +836,33 @@ function fundLedger(demo = false): HTMLElement {
     }
   });
 
+  // HNK-30.T22: a fund card for a new member: a deposit address made for them, the fund's key and
+  // mailbox, so the member can pay in and the receipt comes back sealed to them
+  const cardOut = h("div", { class: "fd-plan" });
+  const cardBtn = h("button", { class: "auth-link", type: "button" }, "Fund card for a new member") as HTMLButtonElement;
+  cardBtn.addEventListener("click", async () => {
+    cardBtn.disabled = true;
+    try {
+      const { address } = await post<{ address: string }>("/node/console/fund/deposit-address");
+      const contact = JSON.parse(atob(info.contact.slice("jitsuin-contact-v1:".length).replace(/-/g, "+").replace(/_/g, "/"))) as { mailbox_pk: string };
+      const code = encodeFundCard({ v: 1, fund_pk: info.financier_pk, mailbox_pk: contact.mailbox_pk, deposit_address: address });
+      const text = h("p", { class: "invite-link is-mono" }, code);
+      const copy = h("button", { type: "button" }, "Copy") as HTMLButtonElement;
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          copy.textContent = "Copied";
+        } catch {
+          getSelection()?.selectAllChildren(text);
+        }
+      });
+      cardOut.replaceChildren(h("p", { class: "mail-note" }, "Give this card to the member over a private channel. Its deposit address is new and used for this member only."), text, copy);
+    } catch (err) {
+      say(err);
+    } finally {
+      cardBtn.disabled = false;
+    }
+  });
   const planBtn = h("button", { class: "auth-link", type: "button" }, "Plan the period's close") as HTMLButtonElement;
   planBtn.addEventListener("click", async () => {
     planBtn.disabled = true;
@@ -833,6 +907,8 @@ function fundLedger(demo = false): HTMLElement {
     h("p", { class: "mail-note" }, "For a pooled fund: members hold units, priced from this wallet's cash and receivables at each close."),
     book,
     queue,
+    demo ? null : cardBtn,
+    cardOut,
     demo ? null : deposit,
     demo ? null : planBtn,
     planOut,
@@ -994,7 +1070,7 @@ export async function homeView(rerender: () => void): Promise<HTMLElement> {
     h(
       "div",
       { class: "dk-desk" },
-      h("div", { class: "dk-left" }, mailbox(demo), pipeline(demo), fundLedger(demo)),
+      h("div", { class: "dk-left" }, mailbox(demo), pipeline(demo), fundLedger(info, demo)),
       h("div", { class: "dk-right" }, share(info), mandate(demo), privateMandate(demo), buyers(demo), devices(demo), demo ? null : nameSection(session.name, (n) => (title.textContent = `Welcome, ${n}`))),
     ),
   );

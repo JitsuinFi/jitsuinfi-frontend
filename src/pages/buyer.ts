@@ -11,10 +11,10 @@
 import { NET } from "../lib/network";
 import { account } from "../lib/app-session";
 import { loadBoard } from "../lib/board";
-import { append, certFields, dropTail, emptyHistory, head, HISTORY_ID, localNextIndex, type HistoryDoc } from "../lib/buyer-history";
-import { myIdentity, relayDeps } from "../lib/app-relay";
+import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, head, HISTORY_ID, localNextIndex, reconcile, type HistoryDoc } from "../lib/buyer-history";
+import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
 import { checkInvoice } from "../lib/buyer-check";
-import { discard, draft, send, type Received } from "../lib/relay";
+import { discard, draft, loadState, saveState, send, type Received } from "../lib/relay";
 import { encodeMessage, signingBytes, verifyHeader, type Header } from "../lib/relay-message";
 import { deskPage, miniInvoice, route } from "./desk";
 import { mailboxCard, useContact } from "./mailbox";
@@ -37,6 +37,23 @@ async function saveHistory(h: HistoryDoc): Promise<void> {
   const store = account.current?.store;
   if (!store) throw new Error("sign in as buyer first");
   await store.put(HISTORY_ID, h);
+  await backupHistory(h).catch(() => undefined); // checked again on the next key check
+}
+
+/** HNK-25.T2 (BL-D26-03): the chain's sealed copy at the relay, for another device with this passkey. */
+async function backupHistory(h: HistoryDoc): Promise<void> {
+  const s = account.current;
+  if (!s) return;
+  await myMailbox();
+  await saveState(s.inbox, encodeBackup(h), relayDeps);
+}
+
+async function relayHistory(): Promise<HistoryDoc | null> {
+  const s = account.current;
+  if (!s) return null;
+  await myMailbox();
+  const b = await loadState(s.inbox, relayDeps);
+  return b ? decodeBackup(b) : null;
 }
 
 /** How far `findIndex` looks past the next index for an invoice addressed to an older key. */
@@ -120,6 +137,28 @@ export function buyerPage(): HTMLElement {
           const notes: Node[] = [];
           try {
             const id = json<{ identity_pk: string }>(wasm.buyerKeysBytes(m.slice(), 0)).identity_pk;
+            // the relay copy first: another device may have issued newer certificates
+            let restored = 0;
+            try {
+              const remote = await relayHistory();
+              if (remote) {
+                const r = reconcile(hist, remote, id);
+                if (r.kind === "restored") {
+                  hist = r.doc;
+                  k = localNextIndex(hist);
+                  restored = r.added;
+                } else if (r.kind === "relay-behind") {
+                  await backupHistory(hist);
+                  notes.push(banner("warn", "The relay's copy of your history was behind", `It held ${remote.certs.length} certificate${remote.certs.length === 1 ? "" : "s"}; this device has ${hist.certs.length}. The copy is updated now. If you did not remove anything yourself, the relay lost or held back your newest certificate.`));
+                } else if (r.kind === "diverged") {
+                  notes.push(banner("bad", "Your history on the relay differs from this device", "The two copies disagree about an earlier certificate. This device keeps its own; do not issue a new certificate until you know which device holds your real history."));
+                }
+              } else if (hist.certs.length) {
+                await backupHistory(hist);
+              }
+            } catch (e) {
+              notes.push(h("p", { class: "hint" }, `The relay copy of your history was not checked: ${e instanceof Error ? e.message : String(e)}`));
+            }
             const boardJson = (await board.input.files?.[0]?.text()) ?? (await loadBoard((u, i) => fetch(u, i)).catch(() => undefined))?.json;
             if (boardJson) {
               const r = json<{ next_index: number; dropped: number[]; successor_on_board: boolean }>(wasm.historyNext(JSON.stringify(hist.certs), id, boardJson));
@@ -128,14 +167,22 @@ export function buyerPage(): HTMLElement {
                 await saveHistory(hist);
                 notes.push(banner("warn", "Unused certificate removed", `Certificate${r.dropped.length > 1 ? "s" : ""} #${r.dropped.join(", #")} never reached the board (the financier did not register), so the number is free again.`));
               }
+              // restored certificates passed historyNext (signatures, links, anchors): keep them
+              if (restored && !r.dropped.length) await saveHistory(hist);
+              if (restored) notes.push(banner("ok", "History restored from the relay", `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.`));
               successorOnBoard = r.successor_on_board;
               k = r.next_index;
               notes.push(
                 successorOnBoard
-                  ? banner("bad", "Your history is ahead of this device", `The board already holds a certificate after #${k - 1 < 0 ? "start" : k - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Restore your certificates first.`)
+                  ? banner("bad", "Your history is ahead of this device", `The board already holds a certificate after #${k - 1 < 0 ? "start" : k - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Open this page on the device that issued it; its copy reaches the relay and comes back here.`)
                   : banner("ok", "History checked against the board", `${r.next_index} certificate${r.next_index === 1 ? "" : "s"} anchored.`),
               );
             } else {
+              if (restored) {
+                hist = await loadHistory(); // an unchecked relay copy is not used
+                k = localNextIndex(hist);
+                notes.push(h("p", { class: "hint" }, `The relay holds ${restored} newer certificate${restored === 1 ? "" : "s"}; add board data to check and restore them.`));
+              }
               notes.push(h("p", { class: "hint" }, "Not checked against the board. Add board data to check which certificates are anchored."));
             }
             const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;

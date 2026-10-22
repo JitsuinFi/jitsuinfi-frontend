@@ -6,7 +6,7 @@ import { createHash, createPrivateKey, createPublicKey, diffieHellman, generateK
 import { readFileSync } from "node:fs";
 import * as w from "../src/wasm/jitsuin_wasm.js";
 import { decodeContact, encodeContact } from "../src/lib/contact.ts";
-import { draft, ensureMailbox, identity, receive, remove, send, signInWasm, type RelayDeps } from "../src/lib/relay.ts";
+import { draft, ensureMailbox, identity, loadState, receive, remove, saveState, send, signInWasm, type RelayDeps } from "../src/lib/relay.ts";
 import { describeFiles, encodeMessage, verifyHeader } from "../src/lib/relay-message.ts";
 
 w.initSync({ module: readFileSync(new URL("../src/wasm/jitsuin_wasm_bg.wasm", import.meta.url)) });
@@ -16,6 +16,7 @@ function fakeRelay() {
   const boxes = new Map<string, Map<string, Uint8Array>>();
   const challenges = new Map<string, { pk: string; purpose: string; e: ReturnType<typeof generateKeyPairSync>; nonce: Buffer }>();
   const tokens = new Map<string, string>();
+  const states = new Map<string, Uint8Array>();
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   const raw = (pk: string) => createPublicKey({ key: { kty: "OKP", crv: "X25519", x: Buffer.from(pk, "hex").toString("base64url") }, format: "jwk" });
   const id = (pk: string) => createHash("blake2b512").update("JitsuinMailboxId_v1\n").update(Buffer.from(pk, "hex")).digest().subarray(0, 32).toString("hex");
@@ -53,6 +54,17 @@ function fakeRelay() {
       tokens.set(t, r[1]);
       return json(200, { token: t });
     }
+    r = /^\/api\/mailbox\/([0-9a-f]{64})\/state$/.exec(path);
+    if (r) {
+      const auth = new Headers(init?.headers).get("Authorization")?.replace("Bearer ", "");
+      if (!auth || tokens.get(auth) !== r[1]) return json(401, { error: "reading a mailbox needs a read token from its owner" });
+      if (m === "PUT") {
+        states.set(r[1], new Uint8Array(await (init!.body as Blob).arrayBuffer()));
+        return json(200, { updated_at: "2026-10-22T10:00:00Z" });
+      }
+      const st = states.get(r[1]);
+      return st ? new Response(new Uint8Array(st), { status: 200 }) : json(404, { error: "this mailbox has no saved state" });
+    }
     r = /^\/api\/mailbox\/([0-9a-f]{64})\/messages(?:\/([0-9a-f-]{36}))?$/.exec(path);
     if (!r) return json(404, { error: "no such endpoint" });
     const box = boxes.get(r[1]);
@@ -69,7 +81,7 @@ function fakeRelay() {
     const msg = box.get(r[2]);
     return msg ? new Response(new Uint8Array(msg), { status: 200 }) : json(404, { error: "gone" });
   };
-  return { fetch: fetch as typeof globalThis.fetch, boxes };
+  return { fetch: fetch as typeof globalThis.fetch, boxes, states };
 }
 
 test("a supplier's signed sign request with its PDF reaches only the buyer, intact", async () => {
@@ -122,4 +134,21 @@ test("contact cards round-trip and refuse damage", () => {
   assert.throws(() => decodeContact("hello"), /starts with/);
   assert.throws(() => decodeContact(code.slice(0, -4)), /damaged|not valid/);
   assert.throws(() => encodeContact({ ...c, mailbox_pk: "xyz" }), /64 hex/);
+});
+
+test("the mailbox state is sealed to its owner and read back only by the owner (HNK-25.T2)", async () => {
+  const relay = fakeRelay();
+  const d: RelayDeps = { wasm: w, fetch: relay.fetch };
+  const buyerInbox = new Uint8Array(32).fill(0x0b);
+  const other = new Uint8Array(32).fill(0x0c);
+  const me = await ensureMailbox(buyerInbox, d);
+  await ensureMailbox(other, d);
+  assert.equal(await loadState(buyerInbox, d), null);
+  const plain = new TextEncoder().encode('{"v":1,"certs":["c0"]}');
+  await saveState(buyerInbox, plain, d);
+  const kept = relay.states.get(me.mailbox_id)!;
+  assert.ok(kept.length > plain.length && !Buffer.from(kept).includes(Buffer.from("certs")), "the relay holds only sealed bytes");
+  assert.deepEqual(await loadState(buyerInbox, d), plain);
+  // another mailbox owner cannot read it
+  await assert.rejects(loadState(other, { ...d, fetch: async (u, i) => relay.fetch(String(u).replace(/[0-9a-f]{64}\/state/, `${me.mailbox_id}/state`), i) }), /token/);
 });

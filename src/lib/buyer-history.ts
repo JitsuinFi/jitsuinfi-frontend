@@ -44,6 +44,51 @@ export function dropTail(h: HistoryDoc, dropped: number[]): HistoryDoc {
   return { certs: h.certs.slice(0, from) };
 }
 
+/**
+ * The relay copy of the chain (HNK-25.T2, BL-D26-03), sealed to the buyer's own mailbox key, so
+ * another device signed in with the same passkey gets the certificates back. Its head is the last
+ * certificate, signed by the identity key and linked to the previous one: the relay cannot forge
+ * a chain, only hold back its newest certificates, which `reconcile` and the board check catch.
+ */
+export function encodeBackup(h: HistoryDoc): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify({ v: 1, certs: h.certs }));
+}
+
+export function decodeBackup(b: Uint8Array): HistoryDoc {
+  const o = JSON.parse(new TextDecoder().decode(b)) as { v?: unknown; certs?: unknown };
+  if (o.v !== 1 || !Array.isArray(o.certs) || !o.certs.every((c) => typeof c === "string" && /^[A-Za-z0-9_-]+$/.test(c))) {
+    throw new Error("the relay copy of your history is not readable");
+  }
+  return { certs: o.certs as string[] };
+}
+
+export type Reconciled =
+  /** Both hold the same chain. */
+  | { kind: "same"; doc: HistoryDoc }
+  /** The relay holds newer certificates of this chain (another device issued them). */
+  | { kind: "restored"; doc: HistoryDoc; added: number }
+  /** The relay holds fewer certificates than this device: it lost or held back the newest. */
+  | { kind: "relay-behind"; doc: HistoryDoc; missing: number }
+  /** The two chains differ at some index, or the relay copy is not this buyer's: keep this device's. */
+  | { kind: "diverged"; doc: HistoryDoc };
+
+/** Compares this device's chain with the relay copy; `identityPk` is the buyer's identity key. */
+export function reconcile(local: HistoryDoc, remote: HistoryDoc, identityPk: string): Reconciled {
+  const mine = remote.certs.every((c, i) => {
+    try {
+      const f = certFields(c);
+      return f.index === i && f.identity_pk === identityPk;
+    } catch {
+      return false;
+    }
+  });
+  const n = Math.min(local.certs.length, remote.certs.length);
+  if (!mine || local.certs.slice(0, n).some((c, i) => c !== remote.certs[i])) return { kind: "diverged", doc: local };
+  if (remote.certs.length > local.certs.length) return { kind: "restored", doc: remote, added: remote.certs.length - local.certs.length };
+  if (remote.certs.length < local.certs.length) return { kind: "relay-behind", doc: local, missing: local.certs.length - remote.certs.length };
+  return { kind: "same", doc: local };
+}
+
 /** The public fields of one history certificate (JTSH v1, jitsuin-core `HistoryCert`). */
 export interface CertFields {
   index: number;

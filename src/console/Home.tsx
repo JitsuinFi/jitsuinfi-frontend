@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AuthLink, Chevron, Head, LockIcon, PasskeyIcon, Row, Sheet, useMessage } from "../app/auth";
 import { download } from "../lib/download";
-import { stopReason } from "../lib/explain";
+import { explain, stopReason } from "../lib/explain";
 import { encodeFundCard } from "../lib/fund-card";
 import { keepName, keptName } from "./name";
 import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
@@ -202,7 +202,7 @@ interface PrivateRules {
 }
 
 
-const say = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const say = (e: unknown) => explain(e instanceof Error ? e.message : String(e));
 type Load = () => Promise<void>;
 
 /** The node's facts in a list: term, value (mono for keys), the full value on hover. */
@@ -1090,7 +1090,7 @@ function Pipeline({ demo }: { demo: boolean }): ReactNode {
                     {d.exhibit ? <Evidence name={d.invoice_id} exhibit={d.exhibit} proof={d.proof ?? ""} /> : null}
                     {d.evidence ? <RepaymentEvidence name={d.invoice_id} status={d.repayment ?? ""} file={d.evidence} /> : null}
                     {d.bundle ? <BundleCopy bundle={d.bundle} /> : null}
-                    {d.problem ? <p className="offer-problem">{d.problem}</p> : null}
+                    {d.problem ? <p className="offer-problem">{explain(d.problem)}</p> : null}
                     {d.advance_txid ? <p className="mail-note is-mono">{`Advance ${short(d.advance_txid)}`}</p> : d.entry_txid ? <p className="mail-note is-mono">{`Entry ${short(d.entry_txid)}`}</p> : null}
                     <div className="mail-actions">
                       {!demo && d.state === "Pay" && d.intent ? (

@@ -31,6 +31,9 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/same financier commitment: not double financing/i, () => "Both entries name the same financier: that is a repeated registration, not double financing."],
   [/malformed verification bundle/i, () => "This bundle is incomplete or changed: ask the financier for it again."],
   [/memo is not ZIP-302|memo padding is not zero/i, () => "This is not a JitsuinFi board memo."],
+  // HNK-32 (local E2E 2026-10-22): the node's own errors as the console shows them
+  [/lightwalletd: error sending request|transport error|gave up after \d+ s without an answer/i, () => "The Zcash server did not answer in time. Nothing was sent; try again in a minute."],
+  [/insufficient balance \(have (\d+), need (\d+)/i, (m) => `The wallet has ${m[1]} zat it can spend now and needs ${m[2]}, fee included. Funds that just arrived become spendable after a few blocks.`],
 ];
 
 /** A sentence for a refusal from the crates; the message itself when it is not a known one. */

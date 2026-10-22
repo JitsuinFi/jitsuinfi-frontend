@@ -1,3 +1,4 @@
+// Kept for the DOM pages until they move to components (supplier: HNK-31.T8, verify: T6).
 // The invoice as a Japanese 請求書 (MASTER.md §8, reference vault 09-Design PIN-04): the judge
 // types onto the document itself. Only the invoice's real fields appear (no invented line items):
 // number, issue date, buyer key (the addressee, 御中), amount due, due date, terms hash, supplier

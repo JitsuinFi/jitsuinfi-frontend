@@ -17,7 +17,7 @@ import { boardLine, loadBoard } from "../lib/board";
 import { download, h } from "../lib/ui";
 import { KIT } from "../lib/kit";
 import { dur, ease, run, still } from "./try/anim";
-import { entriesOf, registry } from "./try/registry";
+import { entriesOf, registry } from "./try/registry-dom";
 import "./try.css";
 import "./verify.css";
 

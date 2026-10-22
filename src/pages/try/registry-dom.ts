@@ -1,3 +1,4 @@
+// Kept for the DOM pages until they move to components (supplier: HNK-31.T8, verify: T6).
 // The board as the registry book 登記簿 behind B's window (MASTER.md §8, reference PIN-05): one
 // row per real entry of the testnet board, printed in the board's blue ink on ruled pages, five
 // rows a page, two pages a spread. B turns the leaves to the spread that holds an invoice's

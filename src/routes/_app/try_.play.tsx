@@ -1,4 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Legacy } from "../../app/AppShell";
+import { TryPage } from "../../pages/TryPage";
 
-export const Route = createFileRoute("/_app/try_/play")({ component: () => <Legacy path="/try/play" /> });
+export const Route = createFileRoute("/_app/try_/play")({ component: () => <TryPage autoplay /> });

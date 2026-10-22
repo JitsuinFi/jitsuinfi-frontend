@@ -13,12 +13,14 @@ import { memberPage } from "../pages/member";
 import { outsiderPage } from "../pages/outsider";
 import { ratesPage } from "../pages/rates";
 import { supplierPage } from "../pages/supplier";
-import { tryPage } from "../pages/try";
+// the try page is a component now; its stylesheet stays here, in its old place in the cascade
+// (the verify page uses it too)
+import "../pages/try.css";
 import { verifyPage } from "../pages/verify";
 
 // Public pages need no account (BL-PG-01).
 export const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
-  "/try": { label: "Try it", page: tryPage },
+  "/try": { label: "Try it", page: () => document.createElement("div") /* a component (TryPage) */ },
   "/verify": { label: "Verify", page: verifyPage },
   "/outsider": { label: "What outsiders see", page: outsiderPage },
   "/rates": { label: "Rate index", page: ratesPage },
@@ -33,7 +35,7 @@ const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
 
 // The financier console moves to the financier's own node (P-11, HNK-26). Until then this
 // simulation stays reachable by address only, not in the navigation.
-const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage, "/apply": applyPage, "/try/play": () => tryPage(true) };
+const HIDDEN: Record<string, () => HTMLElement> = { "/financier": financierPage, "/apply": applyPage };
 
 /** The page at a clean path (HNK-31): the rate index is /rates; the lobby is a component (Lobby). */
 export function pageFor(path: string): HTMLElement {

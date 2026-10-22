@@ -34,7 +34,7 @@ import { draft, send, signInWasm } from "../lib/relay";
 import { describeFiles, encodeMessage } from "../lib/relay-message";
 import { mailboxCard, useContact } from "./mailbox";
 import { deskPage, miniInvoice, route } from "./desk";
-import { seikyusho } from "./try/seikyusho";
+import { seikyusho } from "./try/seikyusho-dom";
 
 // The open deal, for this tab: survives moving between screens, gone when the tab closes.
 let current: string | null = null;

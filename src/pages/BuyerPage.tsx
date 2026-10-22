@@ -249,6 +249,8 @@ export function BuyerPage(): ReactNode {
   const [signing, setSigning] = useState(false);
   // 3. the invoice, letter and supplier seal that passed the letter checks (HNK-32.T1, BL-D24-06)
   const [letterOk, setLetterOk] = useState<string | null>(null);
+  // 5. the QR button stays off until the kept letter carries all three seals (BL-S02-02)
+  const [payReady, setPayReady] = useState(false);
   const [sealing, setSealing] = useState(false);
 
   // 2. signing locks again whenever the invoice or its PDF changes
@@ -507,19 +509,38 @@ export function BuyerPage(): ReactNode {
   };
 
   // ---------- 5. pay ----------
+  // HNK-32.T2 (BL-D25-01): only the letter this device kept, with all three seals, is paid
+  const payCheck = async (): Promise<string[]> => {
+    const n = json<{ nullifier: string }>(wasm.invoiceDecode(v(pInvoice))).nullifier;
+    const a = (await account.current?.store?.get<BuyerInvoice>(storeId(n)))?.assignment;
+    const seals = [a?.supplier_seal, a?.buyer_seal, a?.financier_seal].filter((x): x is string => !!x);
+    let status: string | null = null;
+    try {
+      status = a?.letter && seals.length === 3 ? wasm.assignmentStatus(v(pInvoice), a.letter, JSON.stringify(seals)) : null;
+    } catch {
+      status = null;
+    }
+    return payProblems({ kept: a?.letter, letter: v(pLetter), seals: seals.length, status });
+  };
+  const checkPayReady = async () => {
+    try {
+      setPayReady((await payCheck()).length === 0);
+    } catch {
+      setPayReady(false);
+    }
+  };
+  useEffect(() => {
+    const again = () => void checkPayReady();
+    const els = [pInvoice.current!, pLetter.current!];
+    for (const el of els) el.addEventListener("input", again);
+    return () => {
+      for (const el of els) el.removeEventListener("input", again);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const pay = async () => {
     try {
-      // HNK-32.T2 (BL-D25-01): only the letter this device kept, with all three seals, is paid
-      const n = json<{ nullifier: string }>(wasm.invoiceDecode(v(pInvoice))).nullifier;
-      const a = (await account.current?.store?.get<BuyerInvoice>(storeId(n)))?.assignment;
-      const seals = [a?.supplier_seal, a?.buyer_seal, a?.financier_seal].filter((x): x is string => !!x);
-      let status: string | null = null;
-      try {
-        status = a?.letter && seals.length === 3 ? wasm.assignmentStatus(v(pInvoice), a.letter, JSON.stringify(seals)) : null;
-      } catch {
-        status = null;
-      }
-      const problems = payProblems({ kept: a?.letter, letter: v(pLetter), seals: seals.length, status });
+      const problems = await payCheck();
       if (problems.length) throw new Error(problems[0]);
       const payTo = json<{ financier_address: string }>(wasm.assignmentDecode(v(pLetter), v(pInvoice))).financier_address;
       const r = json<{ uri: string; qr_svg: string }>(await withInvoiceIndex(v(pInvoice), (m, k) => wasm.buyerRepaymentBytes(m, k, v(pInvoice), v(pLetter), today())));
@@ -563,6 +584,7 @@ export function BuyerPage(): ReactNode {
     if (rec.assignment?.financier_seal && rec.assignment.letter) {
       setValue(pInvoice, rec.invoice);
       setValue(pLetter, rec.assignment.letter);
+      void checkPayReady();
       scrollTo(payCard);
       return;
     }
@@ -874,8 +896,11 @@ export function BuyerPage(): ReactNode {
         <Field label="Invoice code" area inputRef={pInvoice} />
         <Field label="Assignment letter code" area inputRef={pLetter} />
         <Actions>
-          <Button onClick={pay}>Show payment QR</Button>
+          <button type="button" disabled={!payReady} onClick={() => void pay()}>
+            Show payment QR
+          </button>
         </Actions>
+        {payReady ? null : <p className="hint">The QR opens once the financier's seal is in your inbox: it seals the letter when it pays the advance.</p>}
         {payOut.el}
       </Card>
     </DeskPage>

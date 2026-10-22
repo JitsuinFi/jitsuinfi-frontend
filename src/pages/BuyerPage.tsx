@@ -16,6 +16,7 @@ import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
 import { account } from "../lib/app-session";
 import { loadBoard } from "../lib/board";
 import { checkInvoice } from "../lib/buyer-check";
+import { letterProblems } from "../lib/buyer-letter";
 import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, head, HISTORY_ID, localNextIndex, reconcile, type HistoryDoc } from "../lib/buyer-history";
 import { boardStatus, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
@@ -226,6 +227,7 @@ export function BuyerPage(): ReactNode {
   const lInvoice = useRef<Area>(null);
   const lLetter = useRef<Area>(null);
   const lSeal = useRef<Area>(null);
+  const lPdf = useRef<HTMLInputElement>(null);
   const hInvoice = useRef<Area>(null);
   const hFin = useRef<Area>(null);
   const pInvoice = useRef<Area>(null);
@@ -245,6 +247,9 @@ export function BuyerPage(): ReactNode {
   // the invoice text that passed both checks (HNK-25.T1, BL-D22-06): signing stays off until then
   const [checked, setChecked] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
+  // 3. the invoice, letter and supplier seal that passed the letter checks (HNK-32.T1, BL-D24-06)
+  const [letterOk, setLetterOk] = useState<string | null>(null);
+  const [sealing, setSealing] = useState(false);
 
   // 2. signing locks again whenever the invoice or its PDF changes
   useEffect(() => {
@@ -256,6 +261,21 @@ export function BuyerPage(): ReactNode {
     return () => {
       i.removeEventListener("input", lock);
       t.removeEventListener("change", lock);
+    };
+  }, []);
+  // 3. sealing locks again whenever the letter, its PDF or the supplier's seal changes
+  useEffect(() => {
+    const lock = () => setLetterOk(null);
+    const els = [lInvoice.current!, lLetter.current!, lSeal.current!, lPdf.current!];
+    for (const el of els) {
+      el.addEventListener("input", lock);
+      el.addEventListener("change", lock);
+    }
+    return () => {
+      for (const el of els) {
+        el.removeEventListener("input", lock);
+        el.removeEventListener("change", lock);
+      }
     };
   }, []);
 
@@ -399,8 +419,52 @@ export function BuyerPage(): ReactNode {
   };
 
   // ---------- 3. seal the letter ----------
-  const sealIt = async () => {
+  const letterKey = () => [v(lInvoice), v(lLetter), v(lSeal)].join("|");
+  const checkLetter = async () => {
     try {
+      setLetterOk(null);
+      const invoice = v(lInvoice);
+      const letter = v(lLetter);
+      const s0 = v(lSeal);
+      const f = json<{ financier_pk: string; financier_address: string; amount_zat: number; due_date: number; terms_hash: string; matches_invoice: boolean | null }>(wasm.assignmentDecode(letter, invoice));
+      // a letter that came through the mailbox brings its PDF; a chosen file wins
+      const n = json<{ nullifier: string }>(wasm.invoiceDecode(invoice)).nullifier;
+      const a = (await account.current?.store?.get<BuyerInvoice>(storeId(n)))?.assignment;
+      const arrived = a?.letter === letter && a.pdf ? new File([Uint8Array.from(atob(a.pdf), (c) => c.charCodeAt(0))], "letter.pdf", { type: "application/pdf" }) : undefined;
+      const file = lPdf.current!.files?.[0] ?? arrived;
+      let supplierSeal: string | null = null;
+      try {
+        supplierSeal = s0 ? wasm.assignmentStatus(invoice, letter, JSON.stringify([s0])) : null;
+      } catch {
+        supplierSeal = null;
+      }
+      const problems = letterProblems({ matchesInvoice: f.matches_invoice, termsHash: f.terms_hash, fileHash: file ? await fileHash(file) : null, supplierSeal });
+      sealOut.show(
+        <>
+          <Kv
+            rows={[
+              ["Financier", f.financier_pk, true],
+              ["You pay at", f.financier_address, true],
+              ["Amount", `${zatToZec(f.amount_zat)} ZEC`],
+              ["Due", daysToDate(f.due_date)],
+            ]}
+          />
+          {problems.length ? (
+            <Banner kind="bad" title="Do not seal" text={problems.join("; ") + "."} />
+          ) : (
+            <Banner kind="ok" title="Letter checks out" text="Same invoice, the PDF is the letter's document, and the supplier sealed this letter for this financier." />
+          )}
+        </>,
+      );
+      if (!problems.length) setLetterOk(letterKey());
+    } catch (e) {
+      sealOut.error(e);
+    }
+  };
+  const sealIt = async () => {
+    setSealing(true);
+    try {
+      if (letterOk === null || letterOk !== letterKey()) throw new Error("check the letter first");
       const seal = await withInvoiceIndex(v(lInvoice), (m, k) => wasm.buyerSealAssignmentBytes(m, k, v(lInvoice), v(lLetter), v(lSeal)));
       // HNK-26.T16: when the letter came through the mailbox, the seal goes back the same way
       const n = json<{ nullifier: string }>(wasm.invoiceDecode(v(lInvoice))).nullifier;
@@ -417,6 +481,8 @@ export function BuyerPage(): ReactNode {
       } else sealOut.show(<CodeBlock label="Your seal: send it to the financier" value={seal} filename="buyer.seal.txt" />);
     } catch (e) {
       sealOut.error(e);
+    } finally {
+      setSealing(false);
     }
   };
 
@@ -490,6 +556,7 @@ export function BuyerPage(): ReactNode {
   };
   // HNK-26.T16: the letter from the financier's node and the supplier's seal fill step 3
   const fillSeal = (rec: BuyerInvoice) => {
+    setLetterOk(null);
     if (rec.assignment?.financier_seal && rec.assignment.letter) {
       setValue(pInvoice, rec.invoice);
       setValue(pLetter, rec.assignment.letter);
@@ -781,8 +848,14 @@ export function BuyerPage(): ReactNode {
         <Field label="Invoice code" area inputRef={lInvoice} />
         <Field label="Assignment letter code" area inputRef={lLetter} />
         <Field label="Supplier seal" area inputRef={lSeal} />
+        <FileField label="Assignment letter document (PDF)" help="Hashed in your browser and compared with the letter. A letter from your inbox brings its PDF, so you can leave this empty." inputRef={lPdf} />
         <Actions>
-          <Button onClick={sealIt}>Seal as buyer</Button>
+          <Button secondary onClick={checkLetter}>
+            Check letter
+          </Button>
+          <button type="button" disabled={letterOk === null || sealing} onClick={() => void sealIt()}>
+            Seal as buyer
+          </button>
         </Actions>
         {sealOut.el}
       </Card>

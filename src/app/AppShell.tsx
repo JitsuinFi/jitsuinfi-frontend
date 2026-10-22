@@ -8,7 +8,15 @@ import { roleLabel } from "../lib/account";
 import { account } from "../lib/app-session";
 import { legacyTarget } from "../lib/legacy-url";
 import { NET } from "../lib/network";
-import { PUBLIC, pageFor } from "./legacy-main";
+import { pageFor } from "./legacy-main";
+
+// Public pages need no account (BL-PG-01).
+const PUBLIC: Array<[string, string]> = [
+  ["/try", "Try it"],
+  ["/verify", "Verify"],
+  ["/outsider", "What outsiders see"],
+  ["/rates", "Rate index"],
+];
 
 const MainSlot = createContext<{ main: HTMLElement | null; setWide: (w: boolean) => void }>({ main: null, setWide: () => undefined });
 
@@ -61,7 +69,7 @@ export function AppShell(): ReactNode {
         <nav aria-label="Screens">
           {link("/app", "Home")}
           {s ? link(`/${s.role}`, roleLabel(s.role)) : null}
-          {Object.entries(PUBLIC).map(([to, r]) => link(to, r.label))}
+          {PUBLIC.map(([to, label]) => link(to, label))}
           {link("/account", s ? "Account" : "Sign in")}
         </nav>
         <span className="net">{NET.short}</span>
@@ -84,6 +92,20 @@ export function Page({ wide = false, children }: { wide?: boolean; children: Rea
   const { main, setWide } = useContext(MainSlot);
   useLayoutEffect(() => setWide(wide), [wide, setWide]);
   return main ? createPortal(children, main) : null;
+}
+
+/**
+ * Calls `then` once, after the elements before it are in the document: put it last inside a Page,
+ * whose children mount through a portal after the page component itself.
+ */
+export function Mounted({ then }: { then: () => void }): null {
+  const done = useRef(false);
+  useLayoutEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    then();
+  });
+  return null;
 }
 
 /**

@@ -36,6 +36,8 @@ export interface RegistryApi {
   set(entries: Entry[], note: string): void;
   /** Turns to the spread holding `txid` and marks its row; resolves with the row element. */
   find(txid: string): Promise<HTMLElement | null>;
+  /** Marks `txid`'s row (shown when its spread is open). */
+  mark(txid: string): void;
   clear(): void;
 }
 
@@ -43,7 +45,7 @@ export interface RegistryApi {
 type Face = number | "blank" | "none";
 type Leaf = { forward: boolean; front: Face; back: Face };
 
-export function Registry({ api }: { api: Ref<RegistryApi> }): ReactNode {
+export function Registry({ api, className }: { api: Ref<RegistryApi>; className?: string }): ReactNode {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [note, setNote] = useState("Reading the board…");
   const [left, setLeft] = useState<Face>("none");
@@ -103,6 +105,9 @@ export function Registry({ api }: { api: Ref<RegistryApi> }): ReactNode {
       if (row && !still()) await run(row, { x: [0, 3, 0], duration: dur.seal }, ease.snapSettle);
       return row;
     },
+    mark(txid) {
+      flushSync(() => setHits((h) => new Set(h).add(txid)));
+    },
     clear() {
       flushSync(() => {
         setHits(new Set());
@@ -136,7 +141,7 @@ export function Registry({ api }: { api: Ref<RegistryApi> }): ReactNode {
   };
 
   return (
-    <section className="rg" aria-label="The registry book: the public board" ref={el}>
+    <section className={className ? `rg ${className}` : "rg"} aria-label="The registry book: the public board" ref={el}>
       <div className="rg-book">
         <div className="rg-page is-left">{body(left)}</div>
         <span className="rg-spine" aria-hidden="true" />

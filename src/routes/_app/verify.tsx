@@ -1,4 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Legacy } from "../../app/AppShell";
+import { VerifyPage } from "../../pages/VerifyPage";
 
-export const Route = createFileRoute("/_app/verify")({ component: () => <Legacy path="/verify" /> });
+export const Route = createFileRoute("/_app/verify")({ component: VerifyPage });

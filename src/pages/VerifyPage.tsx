@@ -9,17 +9,20 @@
 // laid out as slips; the registry's side is the room behind the glass. The clerk's loupe (the
 // hairline figure) waits over a blank sheet; the result comes back as an inspection certificate
 // 検査証, one stamp per check, and the registry book opens at the entries the document claims.
-import { NET } from "../lib/network";
+// React since HNK-31.T6.
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { flushSync } from "react-dom";
 import { loupe as hairlineLoupe } from "@lucasmarkes/hairline";
+import { Mounted, Page } from "../app/AppShell";
+import { boardLine, loadBoard } from "../lib/board";
 import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
-import { boardLine, loadBoard } from "../lib/board";
-import { download, h } from "../lib/ui";
 import { KIT } from "../lib/kit";
+import { NET } from "../lib/network";
+import { download } from "../lib/ui";
 import { dur, ease, run, still } from "./try/anim";
-import { entriesOf, registry } from "./try/registry-dom";
-import "./try.css";
-import "./verify.css";
+import { entriesOf, Registry, type RegistryApi } from "./try/Registry";
+// try.css and verify.css load with the app shell (src/app/legacy-main.ts), in their old cascade
 
 interface At {
   txid: string;
@@ -168,133 +171,208 @@ function inspectExhibit(c: string, boardJson: string | undefined, invoice: strin
   };
 }
 
-function slip(cls: string, jp: string, en: string, field: HTMLElement, note?: string): HTMLElement {
-  return h("label", { class: `vf-slip ${cls}` }, h("span", { class: "vf-slip-k" }, h("b", { lang: "ja" }, jp), en), field, note ? h("small", {}, note) : null);
+const STAMP_CLASS: Record<Stamp, string> = { 認: "ok", 偽: "bad", 重: "bad", 待: "wait", "": "" };
+const STAMP_WORD: Record<Stamp, string> = { 認: "holds", 偽: "fails", 重: "already registered", 待: "not checked", "": "" };
+
+function Slip({ cls, jp, en, note, children }: { cls: string; jp: string; en: string; note?: string; children: ReactNode }): ReactNode {
+  return (
+    <label className={`vf-slip ${cls}`}>
+      <span className="vf-slip-k">
+        <b lang="ja">{jp}</b>
+        {en}
+      </span>
+      {children}
+      {note ? <small>{note}</small> : null}
+    </label>
+  );
 }
 
-export function verifyPage(): HTMLElement {
-  // ---------- the visitor's side: what they were given, laid on the counter ----------
-  const code = h("textarea", { spellcheck: "false", rows: "6", placeholder: "JTSB…, JTSP… or JTSX…: paste what you were given" }) as HTMLTextAreaElement;
-  const invoice = h("textarea", { spellcheck: "false", rows: "2", placeholder: "JTSI…, only for an exhibit, if you hold the invoice" }) as HTMLTextAreaElement;
-  const file = h("input", { type: "file", accept: ".json,application/json" }) as HTMLInputElement;
-  const fileName = h("span", { class: "vf-env-name" }, `No file: the live ${NET.noun} board is read`);
-  file.addEventListener("change", () => (fileName.textContent = file.files?.[0]?.name ?? `No file: the live ${NET.noun} board is read`));
-  const sample = h("button", { type: "button", class: "ink-link" }, `Use ${KIT.case}'s Exhibit A`) as HTMLButtonElement;
-  sample.addEventListener("click", async () => {
+/** The inspection certificate 検査証: one stamp per check, the big hanko for the verdict. */
+function Certificate({ ins, cert }: { ins: Inspection | null; cert: RefObject<HTMLElement | null> }): ReactNode {
+  return (
+    <article className="vf-cert" aria-live="polite" hidden={!ins} ref={cert}>
+      {ins ? (
+        <>
+          <header>
+            <p className="vf-cert-t" lang="ja">
+              検 査 証
+            </p>
+            <p className="vf-cert-kind">{`Inspection certificate · ${ins.kind}`}</p>
+          </header>
+          <p className="vf-cert-v">
+            <strong>{ins.verdict.title}</strong>
+            {ins.verdict.text}
+          </p>
+          <ol className="vf-checks">
+            {ins.checks.map((c, i) => (
+              <li key={i} className={c.stamp ? `is-${STAMP_CLASS[c.stamp]}` : undefined}>
+                <span className="vf-what">{c.what}</span>
+                <span className={c.mono ? "vf-found is-mono" : "vf-found"}>{c.found}</span>
+                <span className="vf-stamp" lang="ja" aria-label={c.stamp ? STAMP_WORD[c.stamp] : undefined}>
+                  {c.stamp}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {ins.keep ? (
+            <button type="button" className="ink-link" onClick={() => download(ins.keep!.name, ins.keep!.text)}>
+              {`Keep it (${ins.keep.name})`}
+            </button>
+          ) : null}
+          {ins.verdict.glyph ? (
+            <span className="vf-hanko" lang="ja" aria-hidden="true">
+              {ins.verdict.glyph}
+            </span>
+          ) : null}
+        </>
+      ) : null}
+    </article>
+  );
+}
+
+const NO_FILE = `No file: the live ${NET.noun} board is read`;
+
+export function VerifyPage(): ReactNode {
+  const [said, setSaid] = useState({ glyph: "閲", text: "Bring a bundle, a proof or an exhibit. Everything is checked in this browser; nothing you hand over leaves it." });
+  const [fileName, setFileName] = useState(NO_FILE);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [ins, setIns] = useState<Inspection | null>(null);
+  const code = useRef<HTMLTextAreaElement>(null);
+  const invoice = useRef<HTMLTextAreaElement>(null);
+  const file = useRef<HTMLInputElement>(null);
+  const fig = useRef<HTMLDivElement>(null);
+  const cert = useRef<HTMLElement>(null);
+  const book = useRef<RegistryApi>(null);
+  const figure = useRef<{ destroy(): void } | null>(null);
+
+  const speak = (glyph: string, text: string) => flushSync(() => setSaid({ glyph, text }));
+
+  // runs once the stage is in <main> (Page draws it through a portal, after this component mounts)
+  const ready = () => {
+    // The registry is on the clerk's desk from the start: the live board (or the bundled copy).
+    void loadBoard((u, i) => fetch(u, i)).then(
+      (b) => book.current!.set(entriesOf(b.json, (m) => wasm.boardMemoDescribe(m)), boardLine(b)),
+      () => undefined,
+    );
+    requestAnimationFrame(() => {
+      if (fig.current) figure.current = hairlineLoupe(fig.current, { intensity: 0.7, play: true, label: "The registry clerk's loupe over a blank ruled sheet" });
+    });
+  };
+  useEffect(() => () => figure.current?.destroy(), []);
+
+  const sample = async () => {
     try {
       const r = await fetch(KIT.proofUrl, { credentials: "same-origin" });
       if (!r.ok) throw new Error(`the proof answered ${r.status}`);
-      code.value = wasm.exhibitFromProof((await r.text()).trim());
-      code.dispatchEvent(new Event("input"));
+      code.current!.value = wasm.exhibitFromProof((await r.text()).trim());
     } catch (e) {
       speak("拒", e instanceof Error ? e.message : String(e));
     }
-  });
-  const go = h("button", { type: "button", class: "seal-btn" }, h("span", {}, "Hand it to the registry")) as HTMLButtonElement;
-  const desk = h(
-    "div",
-    { class: "ct-desk vf-desk" },
-    slip("is-main", "提出書類", "What you were given", code, "A bundle (JTSB), a double-signature proof (JTSP) or Exhibit A (JTSX)."),
-    slip("is-small", "請求書", "The invoice (optional)", invoice),
-    h("label", { class: "vf-env" }, h("span", { class: "vf-env-flap", "aria-hidden": "true" }), h("span", { class: "vf-slip-k" }, h("b", { lang: "ja" }, "登記簿"), "Board data (optional)"), file, fileName),
-    h("div", { class: "ct-act" }, go, sample),
-  );
-
-  // ---------- the registry's side: the clerk's loupe, then the certificate ----------
-  const say = h("p", { class: "ct-say", "aria-live": "polite" });
-  const speak = (glyph: string, text: string) => say.replaceChildren(h("span", { class: "hanko", lang: "ja" }, glyph), h("span", {}, text));
-  speak("閲", "Bring a bundle, a proof or an exhibit. Everything is checked in this browser; nothing you hand over leaves it.");
-  const fig = h("div", { class: "vf-fig" });
-  const book = registry();
-  book.el.classList.add("vf-book");
-  const cert = h("article", { class: "vf-cert", "aria-live": "polite", hidden: true });
-  const room = h("div", { class: "ct-room vf-room" }, h("div", { class: "ct-light", "aria-hidden": "true" }, h("span", { class: "ct-cone" })), h("span", { class: "ct-lamp", "aria-hidden": "true" }, h("i")), book.el, fig, cert, say);
-  const windowEl = h(
-    "div",
-    { class: "ct-window" },
-    h("p", { class: "ct-plaque" }, h("span", { lang: "ja" }, "閲覧所"), h("small", {}, "Public inspection")),
-    room,
-    h("span", { class: "ct-grille", "aria-hidden": "true" }),
-    h("span", { class: "ct-slot", "aria-hidden": "true" }),
-  );
-  const scene = h("section", { class: "ct vf", "aria-label": "The registry's public inspection window" }, desk, windowEl);
-
-  // The registry is on the clerk's desk from the start: the live board (or the bundled copy).
-  void loadBoard((u, i) => fetch(u, i)).then(
-    (b) => book.set(entriesOf(b.json, (m) => wasm.boardMemoDescribe(m)), boardLine(b)),
-    () => undefined,
-  );
-  let figure: { destroy(): void } | null = null;
-  requestAnimationFrame(() => {
-    figure = hairlineLoupe(fig, { intensity: 0.7, play: true, label: "The registry clerk's loupe over a blank ruled sheet" });
-  });
-
-  const certify = (ins: Inspection) => {
-    const rows = ins.checks.map((c) =>
-      h("li", { class: c.stamp ? `is-${{ 認: "ok", 偽: "bad", 重: "bad", 待: "wait", "": "" }[c.stamp]}` : undefined }, h("span", { class: "vf-what" }, c.what), h("span", { class: c.mono ? "vf-found is-mono" : "vf-found" }, c.found), h("span", { class: "vf-stamp", lang: "ja", "aria-label": c.stamp ? { 認: "holds", 偽: "fails", 重: "already registered", 待: "not checked", "": "" }[c.stamp] : undefined }, c.stamp)),
-    );
-    const keep = ins.keep ? h("button", { type: "button", class: "ink-link" }, `Keep it (${ins.keep.name})`) : null;
-    if (keep && ins.keep) {
-      const k = ins.keep;
-      keep.addEventListener("click", () => download(k.name, k.text));
-    }
-    cert.replaceChildren(
-      ...([
-      h("header", {}, h("p", { class: "vf-cert-t", lang: "ja" }, "検 査 証"), h("p", { class: "vf-cert-kind" }, `Inspection certificate · ${ins.kind}`)),
-      h("p", { class: "vf-cert-v" }, h("strong", {}, ins.verdict.title), ins.verdict.text),
-      h("ol", { class: "vf-checks" }, ...rows),
-      keep,
-      ins.verdict.glyph ? h("span", { class: "vf-hanko", lang: "ja", "aria-hidden": "true" }, ins.verdict.glyph) : null,
-      ].filter((n): n is HTMLElement => n !== null)),
-    );
   };
 
   const runCheck = async () => {
-    go.disabled = true;
+    setBusy(true);
     try {
-      const c = code.value.trim();
+      const c = code.current!.value.trim();
       const kind = codeKind(c);
       if (kind !== "bundle" && kind !== "proof" && kind !== "exhibit") throw new Error("this is not a bundle, a proof or an exhibit");
       speak("待", "Under the loupe: the signatures first, then the board.");
-      const own = await file.files?.[0]?.text();
+      const own = await file.current!.files?.[0]?.text();
       const live = own ? undefined : await loadBoard((u, i) => fetch(u, i)).catch(() => undefined);
       const boardJson = own ?? live?.json;
       const source = own ? "the file you added" : live ? boardLine(live) : "no board data";
-      const ins = kind === "exhibit" ? inspectExhibit(c, boardJson, invoice.value.trim() || undefined) : kind === "proof" ? inspectProof(c, boardJson) : inspectBundle(c, boardJson);
-      figure?.destroy();
-      figure = null;
-      room.classList.add("is-done");
+      const result = kind === "exhibit" ? inspectExhibit(c, boardJson, invoice.current!.value.trim() || undefined) : kind === "proof" ? inspectProof(c, boardJson) : inspectBundle(c, boardJson);
+      figure.current?.destroy();
+      figure.current = null;
+      flushSync(() => setDone(true));
       if (boardJson) {
-        book.set(entriesOf(boardJson, (m) => wasm.boardMemoDescribe(m)), source);
-        if (ins.claims[0]) {
-          await book.find(ins.claims[0]);
-          for (const t of ins.claims.slice(1)) book.mark(t);
+        book.current!.set(entriesOf(boardJson, (m) => wasm.boardMemoDescribe(m)), source);
+        if (result.claims[0]) {
+          await book.current!.find(result.claims[0]);
+          for (const t of result.claims.slice(1)) book.current!.mark(t);
         }
       }
-      certify(ins);
-      cert.hidden = false;
-      await run(cert, { y: [60, 0], rotate: [-4, -1], opacity: [0, 1], duration: dur.enter + 100 });
-      const hanko = cert.querySelector(".vf-hanko");
+      flushSync(() => setIns(result));
+      await run(cert.current!, { y: [60, 0], rotate: [-4, -1], opacity: [0, 1], duration: dur.enter + 100 });
+      const hanko = cert.current!.querySelector(".vf-hanko");
       if (hanko && !still()) await run(hanko, { scale: [2, 1], opacity: [0, 1], duration: dur.seal }, ease.snapSettle);
-      speak(ins.verdict.glyph || "認", `${ins.verdict.title}. Board data: ${source}.`);
+      speak(result.verdict.glyph || "認", `${result.verdict.title}. Board data: ${source}.`);
     } catch (e) {
       speak("拒", e instanceof Error ? e.message : String(e));
     } finally {
-      go.disabled = false;
+      setBusy(false);
     }
   };
-  go.addEventListener("click", runCheck);
 
-  return h(
-    "div",
-    { class: "try vf-page", "data-wide": "true" },
-    h(
-      "header",
-      { class: "try-head" },
-      h("p", { class: "try-case" }, h("span", { lang: "ja" }, "閲"), "Public inspection"),
-      h("h1", {}, "Verify"),
-      h("p", {}, "Hand the registry what you were given: a deal bundle, a double-signature proof or Exhibit A. It is checked here, with the same code as jitsuin verify."),
-    ),
-    scene,
+  return (
+    <Page wide>
+      <div className="try vf-page" data-wide="true">
+        <header className="try-head">
+          <p className="try-case">
+            <span lang="ja">閲</span>
+            Public inspection
+          </p>
+          <h1>Verify</h1>
+          <p>Hand the registry what you were given: a deal bundle, a double-signature proof or Exhibit A. It is checked here, with the same code as jitsuin verify.</p>
+        </header>
+        <section className="ct vf" aria-label="The registry's public inspection window">
+          {/* the visitor's side: what they were given, laid on the counter */}
+          <div className="ct-desk vf-desk">
+            <Slip cls="is-main" jp="提出書類" en="What you were given" note="A bundle (JTSB), a double-signature proof (JTSP) or Exhibit A (JTSX).">
+              <textarea spellCheck="false" rows={6} placeholder="JTSB…, JTSP… or JTSX…: paste what you were given" ref={code} />
+            </Slip>
+            <Slip cls="is-small" jp="請求書" en="The invoice (optional)">
+              <textarea spellCheck="false" rows={2} placeholder="JTSI…, only for an exhibit, if you hold the invoice" ref={invoice} />
+            </Slip>
+            <label className="vf-env">
+              <span className="vf-env-flap" aria-hidden="true" />
+              <span className="vf-slip-k">
+                <b lang="ja">登記簿</b>
+                Board data (optional)
+              </span>
+              <input type="file" accept=".json,application/json" ref={file} onChange={(e) => setFileName(e.currentTarget.files?.[0]?.name ?? NO_FILE)} />
+              <span className="vf-env-name">{fileName}</span>
+            </label>
+            <div className="ct-act">
+              <button type="button" className="seal-btn" disabled={busy} onClick={() => void runCheck()}>
+                <span>Hand it to the registry</span>
+              </button>
+              <button type="button" className="ink-link" onClick={() => void sample()}>
+                {`Use ${KIT.case}'s Exhibit A`}
+              </button>
+            </div>
+          </div>
+          {/* the registry's side: the clerk's loupe, then the certificate */}
+          <div className="ct-window">
+            <p className="ct-plaque">
+              <span lang="ja">閲覧所</span>
+              <small>Public inspection</small>
+            </p>
+            <div className={`ct-room vf-room${done ? " is-done" : ""}`}>
+              <div className="ct-light" aria-hidden="true">
+                <span className="ct-cone" />
+              </div>
+              <span className="ct-lamp" aria-hidden="true">
+                <i />
+              </span>
+              <Registry api={book} className="vf-book" />
+              <div className="vf-fig" ref={fig} />
+              <Certificate ins={ins} cert={cert} />
+              <p className="ct-say" aria-live="polite">
+                <span className="hanko" lang="ja">
+                  {said.glyph}
+                </span>
+                <span>{said.text}</span>
+              </p>
+            </div>
+            <span className="ct-grille" aria-hidden="true" />
+            <span className="ct-slot" aria-hidden="true" />
+          </div>
+        </section>
+        <Mounted then={ready} />
+      </div>
+    </Page>
   );
 }
+

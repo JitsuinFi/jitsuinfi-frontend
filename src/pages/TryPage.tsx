@@ -12,9 +12,9 @@
 // the slot; B's loupe reads the buyer's seal, B turns the registry to the invoice's fingerprint,
 // the stamp comes down, and the copy comes back to the judge's pile with 偽 or 重 on it.
 // React since HNK-31.T5: the stage is state; the choreography runs on refs, step after step.
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Page } from "../app/AppShell";
+import { Mounted, Page } from "../app/AppShell";
 import { boardLine, loadBoard, type BoardData } from "../lib/board";
 import { dateToDays, daysToDate, json, wasm, zatToZec, zecToZat } from "../lib/core";
 import { checkOffer, encodeEdited, KIT, type InvoiceFields } from "../lib/kit";
@@ -434,16 +434,6 @@ export function TryPage({ autoplay = false }: { autoplay?: boolean }): ReactNode
   );
 }
 
-/** Calls `then` once, after the elements before it are in the document. */
-function Mounted({ then }: { then: () => void }): null {
-  const done = useRef(false);
-  useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-    then();
-  });
-  return null;
-}
 
 // The 20-second clip of the video (HNK-30.T9, M-01 then M-03): /try/play runs the demo by itself
 // at a filmable pace, the same way every time: change the amount (偽), put it back (重), print

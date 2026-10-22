@@ -10,21 +10,12 @@ import { applyPage } from "../pages/apply";
 import { buyerPage } from "../pages/buyer";
 import { financierPage } from "../pages/financier";
 import { memberPage } from "../pages/member";
-import { outsiderPage } from "../pages/outsider";
-import { ratesPage } from "../pages/rates";
 import { supplierPage } from "../pages/supplier";
-// the try page is a component now; its stylesheet stays here, in its old place in the cascade
-// (the verify page uses it too)
+// try and verify are components now; their stylesheets stay here, in their old place in the
+// cascade (the verify page uses try.css too)
 import "../pages/try.css";
-import { verifyPage } from "../pages/verify";
+import "../pages/verify.css";
 
-// Public pages need no account (BL-PG-01).
-export const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
-  "/try": { label: "Try it", page: () => document.createElement("div") /* a component (TryPage) */ },
-  "/verify": { label: "Verify", page: verifyPage },
-  "/outsider": { label: "What outsiders see", page: outsiderPage },
-  "/rates": { label: "Rate index", page: ratesPage },
-};
 
 // Role pages open only in a session of that role; otherwise the account page asks to sign in.
 const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
@@ -42,8 +33,6 @@ export function pageFor(path: string): HTMLElement {
   if (path === "/account") return accountPage();
   const rp = ROLE_PAGES[path];
   if (rp) return account.current?.role === rp.role && !onboardingPending() ? rp.page() : accountPage(rp.role);
-  const pub = PUBLIC[path];
-  if (pub) return pub.page();
   const hidden = HIDDEN[path];
   if (hidden) return hidden();
   throw new Error(`no page at ${path}`);

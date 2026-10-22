@@ -22,7 +22,7 @@
           "value": "jitsuinfi-console-demo.vercel.app"
         }
       ],
-      "destination": "/console.html"
+      "destination": "/index.html"
     },
     {
       "source": "/node/:path*",
@@ -42,7 +42,7 @@
           "value": "jitsuinfi-console.vercel.app"
         }
       ],
-      "destination": "/console.html"
+      "destination": "/index.html"
     },
     {
       "source": "/api/board",
@@ -51,6 +51,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://relay-production-27dc.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/((?!api/|node/|assets/).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -138,6 +142,28 @@
           "value": "jitsuinfi-console.vercel.app"
         }
       ],
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi.vercel.app"
+        }
+      ],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/console/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi.vercel.app"
+        }
+      ],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/console",
       "has": [
         {
           "type": "host",

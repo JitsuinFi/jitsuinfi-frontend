@@ -1,27 +1,28 @@
-import { NET } from "./lib/network";
-import "./style.css";
-import "./pages/lobby.css";
-import { roleLabel, type Role } from "./lib/account";
-import { account } from "./lib/app-session";
-import { loadWasm } from "./lib/core";
-import { h } from "./lib/ui";
-import { accountPage, onboardingPending } from "./pages/account";
-import { applyPage } from "./pages/apply";
-import { buyerPage } from "./pages/buyer";
-import { financierPage } from "./pages/financier";
-import { memberPage } from "./pages/member";
-import { outsiderPage } from "./pages/outsider";
-import { ratesPage } from "./pages/rates";
-import { supplierPage } from "./pages/supplier";
-import { tryPage } from "./pages/try";
-import { verifyPage } from "./pages/verify";
+// The app world before HNK-31: page builders that still return DOM (helper `h()`), mounted in the
+// React shell by `Legacy` until each page moves to a component (HNK-31.T3 – T11). Imported once,
+// in this order, so the stylesheets cascade as they did in app.html.
+import "../style.css";
+import "../pages/lobby.css";
+import { type Role } from "../lib/account";
+import { account } from "../lib/app-session";
+import { h } from "../lib/ui";
+import { accountPage, onboardingPending } from "../pages/account";
+import { applyPage } from "../pages/apply";
+import { buyerPage } from "../pages/buyer";
+import { financierPage } from "../pages/financier";
+import { memberPage } from "../pages/member";
+import { outsiderPage } from "../pages/outsider";
+import { ratesPage } from "../pages/rates";
+import { supplierPage } from "../pages/supplier";
+import { tryPage } from "../pages/try";
+import { verifyPage } from "../pages/verify";
 
 // Public pages need no account (BL-PG-01).
-const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
+export const PUBLIC: Record<string, { label: string; page: () => HTMLElement }> = {
   "/try": { label: "Try it", page: tryPage },
   "/verify": { label: "Verify", page: verifyPage },
   "/outsider": { label: "What outsiders see", page: outsiderPage },
-  "/index": { label: "Rate index", page: ratesPage },
+  "/rates": { label: "Rate index", page: ratesPage },
 };
 
 // Role pages open only in a session of that role; otherwise the account page asks to sign in.
@@ -66,7 +67,7 @@ function home(): HTMLElement {
       ...doors.map(([href, kanji, title, text, kind], i) =>
         h(
           "a",
-          { class: `door is-${kind}${i === 0 ? " is-first" : ""}`, href: `#${href}` },
+          { class: `door is-${kind}${i === 0 ? " is-first" : ""}`, href: href === "/index" ? "/rates" : href },
           h("span", { class: "door-way", "aria-hidden": "true" }, h("span", { class: "noren" }, h("i", {}), h("i", {}, h("b", { lang: "ja" }, kanji)), h("i", {}))),
           h("strong", {}, title),
           h("span", {}, text),
@@ -76,7 +77,8 @@ function home(): HTMLElement {
   );
 }
 
-function pageFor(path: string): HTMLElement {
+/** The page at a clean path (HNK-31): the lobby is /app, the rate index /rates. */
+export function pageFor(path: string): HTMLElement {
   if (path === "/account") return accountPage();
   const rp = ROLE_PAGES[path];
   if (rp) return account.current?.role === rp.role && !onboardingPending() ? rp.page() : accountPage(rp.role);
@@ -86,42 +88,3 @@ function pageFor(path: string): HTMLElement {
   if (hidden) return hidden();
   return home();
 }
-
-function render(): void {
-  const path = location.hash.replace(/^#/, "") || "/";
-  const s = account.current;
-  const link = (href: string, label: string) => h("a", { href: `#${href}`, class: href === path ? "active" : undefined }, label);
-  const nav = h(
-    "nav",
-    { "aria-label": "Screens" },
-    link("/", "Home"),
-    s ? link(`/${s.role}`, roleLabel(s.role)) : null,
-    ...Object.entries(PUBLIC).map(([href, r]) => link(href, r.label)),
-    link("/account", s ? "Account" : "Sign in"),
-  );
-  const top = h(
-    "header",
-    { class: "top" },
-    h("a", { class: "brand", href: "#/" }, h("img", { src: "/seal.svg", alt: "" }), "JitsuinFi"),
-    nav,
-    h("span", { class: "net" }, NET.short),
-  );
-  const body = pageFor(path);
-  // A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3).
-  const main = h("main", { class: body.dataset.wide ? "wide" : undefined }, body);
-  const foot = h("footer", {}, "Runs entirely in your browser. No trackers, no third-party requests.");
-  document.getElementById("app")!.replaceChildren(top, main, foot);
-}
-
-loadWasm()
-  .then(() => {
-    window.addEventListener("hashchange", () => {
-      render();
-      window.scrollTo(0, 0);
-    });
-    account.onChange(render);
-    render();
-  })
-  .catch((e) => {
-    document.getElementById("app")!.replaceChildren(h("main", {}, h("h1", {}, "Could not load"), h("p", {}, String(e))));
-  });

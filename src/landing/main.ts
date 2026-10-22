@@ -10,8 +10,8 @@ import { mountHistory } from "./history";
 import { mountFinale } from "./finale";
 import { reducedMotion } from "./motion";
 
-const root = document.getElementById("landing");
-if (root) {
+/** Mounts the chapters into `root` (HNK-31: called by the Landing route). */
+export function mountLanding(root: HTMLElement): void {
   const reduced = reducedMotion();
   mountHero(root, reduced);
 

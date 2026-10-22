@@ -7,16 +7,16 @@ import { h } from "../lib/ui";
 import { homeView } from "./home";
 import { pairView } from "./pair";
 
-const app = document.getElementById("console")!;
-
 const isPair = () => location.pathname.endsWith("/pair") || new URLSearchParams(location.search).get("view") === "pair";
 
-async function render(): Promise<void> {
+/** Mounts the console into `app` (HNK-31: called by the Console route). */
+export function mountConsole(app: HTMLElement): void {
+  const render = async (): Promise<void> => {
   try {
     app.replaceChildren(isPair() ? pairView() : await homeView(render));
   } catch (e) {
     app.replaceChildren(h("main", { class: "auth" }, h("section", { class: "auth-sheet" }, h("h1", { class: "auth-title" }, "The node did not answer"), h("p", { class: "auth-sub" }, e instanceof Error ? e.message : String(e)))));
-  }
+    }
+  };
+  void render();
 }
-
-void render();

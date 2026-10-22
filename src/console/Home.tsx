@@ -126,6 +126,9 @@ interface DealRow {
   advance_txid?: string;
   stopped?: string;
   stopped_winner?: string;
+  // HNK-32.T4 (BL-D23-14): the entry's confirmations at the last board check, and the minimum
+  confirmations?: number | null;
+  min_confirmations?: number;
   letter_sent: boolean;
   repayment?: string | null;
   paid_zat?: number | null;
@@ -1063,7 +1066,7 @@ function Pipeline({ demo }: { demo: boolean }): ReactNode {
                         </li>
                       ))}
                     </ol>
-                    <p className="mail-note">{d.state === "Stopped" ? stopReason(d.stopped ?? "", d.stopped_winner) : (WAITING[d.state] ?? d.state)}</p>
+                    <p className="mail-note">{d.state === "Stopped" ? stopReason(d.stopped ?? "", d.stopped_winner) : d.state === "AwaitConfirmation" && d.confirmations != null && d.min_confirmations ? `Entry posted: ${d.confirmations} of ${d.min_confirmations} confirmations.` : (WAITING[d.state] ?? d.state)}</p>
                     {d.history_requested ? <p className="mail-note">{d.history ? `Buyer history passed: ${d.history}.` : "Waiting for the buyer's history (your mandate asks for it before the supplier signs)."}</p> : null}
                     {d.state === "Done" && d.repayment ? (
                       <p className="mail-note">

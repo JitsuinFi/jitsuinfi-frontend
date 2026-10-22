@@ -285,6 +285,12 @@ export function onLang(f: () => void): void {
   f();
 }
 
+/** Calls `f` on every switch, not now; returns the unsubscribe (for React components). */
+export function subscribeLang(f: () => void): () => void {
+  listeners.add(f);
+  return () => listeners.delete(f);
+}
+
 export function setLang(next: Lang): void {
   if (next === lang) return;
   lang = next;

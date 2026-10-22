@@ -41,3 +41,15 @@ export function explain(message: string): string {
   }
   return message;
 }
+
+/**
+ * Why the node stopped a deal (HNK-32.T3, BL-D23-08, BL-D27-01). The node sends a code and the
+ * txid of the entry that came first on the board; an older node sent a Debug dump that starts
+ * with the same code.
+ */
+export function stopReason(stopped: string, winner?: string): string {
+  const at = winner ? ` (first entry ${winner.slice(0, 8)}…${winner.slice(-4)})` : "";
+  if (stopped.startsWith("AlreadyFinanced")) return `Already financed by another financier${at}. The deal stopped here: no entry was posted and no money left this node.`;
+  if (stopped.startsWith("DoubleFinanced")) return `The supplier signed this invoice to more than one financier${at}. The deal stopped; the double-signature proof is below.`;
+  return `Stopped: ${stopped}.`;
+}

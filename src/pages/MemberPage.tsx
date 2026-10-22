@@ -18,7 +18,7 @@ import { addPath, addPayout, addReceipt, EMPTY, latestPortfolio, openPeriod, val
 import { decodeFundCard } from "../lib/fund-card";
 import { draft, send } from "../lib/relay";
 import { encodeMessage, type Header } from "../lib/relay-message";
-import { download } from "../lib/ui";
+import { download } from "../lib/download";
 import { MailboxCard, type InboxAction } from "./MailboxCard";
 
 const KEY = "fund:wallet";

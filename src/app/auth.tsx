@@ -1,7 +1,7 @@
 // The consumer sign-in sheet's pieces (src/auth.css) as React components (HNK-31.T7), shared by
 // the app's account screen and the financier console (HNK-26.T21): the 印 seal, line icons, list
 // rows, the primary button, links, a status message, the sheet, its head and the 3-step progress.
-// Same markup and class names as src/lib/auth-sheet.ts.
+// Same markup and class names as the DOM sheet they replace.
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
 
 /** The JitsuinFi seal mark: heavy ring, fine ring, 印. */

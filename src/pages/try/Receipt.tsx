@@ -5,7 +5,7 @@
 import { cloneElement, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type RefObject } from "react";
 import { inView } from "motion";
 import { json, wasm } from "../../lib/core";
-import { download } from "../../lib/ui";
+import { download } from "../../lib/download";
 import { run, wait } from "./anim";
 
 interface At {

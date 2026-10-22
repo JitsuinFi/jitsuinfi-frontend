@@ -19,7 +19,7 @@ import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
 import { KIT } from "../lib/kit";
 import { NET } from "../lib/network";
-import { download } from "../lib/ui";
+import { download } from "../lib/download";
 import { dur, ease, run, still } from "./try/anim";
 import { entriesOf, Registry, type RegistryApi } from "./try/Registry";
 // try.css and verify.css load with the app shell (src/app/legacy-main.ts), in their old cascade

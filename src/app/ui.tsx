@@ -3,7 +3,7 @@
 // No innerHTML for user data; the only parsed markup is SVG drawn by our own wasm (TrustedSvg).
 import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { explain } from "../lib/explain";
-import { download } from "../lib/ui";
+import { download } from "../lib/download";
 import { Page } from "./AppShell";
 
 // One part of a screen, set on the paper (D-36: no card box): its heading on the left, its fields

@@ -252,7 +252,7 @@ export function t(key: string, params: Params = {}): string {
   return s;
 }
 
-/** Bound texts and attributes: element → slot ("text" or an attribute name) → how to rewrite it. */
+/** Bound texts (the fingerprint print's callouts, drawn as DOM): element → slot → how to rewrite it. */
 const bound = new Map<Element, Map<string, () => void>>();
 const listeners = new Set<() => void>();
 const bind = (el: Element, slot: string, paint: () => void) => {
@@ -266,23 +266,6 @@ const bind = (el: Element, slot: string, paint: () => void) => {
 export function tx<E extends Element>(el: E, key: string, params: Params = {}): E {
   bind(el, "text", () => (el.textContent = t(key, params)));
   return el;
-}
-
-/** Forgets an element's text binding (its text is now set by hand). */
-export function untx(el: Element): void {
-  bound.get(el)?.delete("text");
-}
-
-/** Sets an attribute from a key now and on every switch. */
-export function ta<E extends Element>(el: E, attr: string, key: string, params: Params = {}): E {
-  bind(el, attr, () => el.setAttribute(attr, t(key, params)));
-  return el;
-}
-
-/** Runs `f` now and on every switch (for things built from several keys). */
-export function onLang(f: () => void): void {
-  listeners.add(f);
-  f();
 }
 
 /** Calls `f` on every switch, not now; returns the unsubscribe (for React components). */

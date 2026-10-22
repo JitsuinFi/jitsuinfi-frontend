@@ -230,22 +230,24 @@ export function MiniInvoice({ o }: { o: { id: string; amount: string; due: strin
   );
 }
 
-/** A page on the counter: the head, the stage, then the documents on the counter top. */
-export function DeskPage({ glyph, eyebrow, title, lede, stage, children }: { glyph: string; eyebrow: string; title: string; lede: string; stage: ReactNode; children: ReactNode }): ReactNode {
-  return (
-    <Page wide>
-      <div className="try desk-page" data-wide="true">
-        <header className="try-head">
-          <p className="try-case">
-            <span lang="ja">{glyph}</span>
-            {eyebrow}
-          </p>
-          <h1>{title}</h1>
-          <p>{lede}</p>
-        </header>
-        {stage}
-        <div className="desk-docs">{children}</div>
-      </div>
-    </Page>
+/**
+ * A page on the counter: the head, the stage, then the documents on the counter top. `wrapped`:
+ * inside one more full-width box, as the role pages that redraw themselves had it.
+ */
+export function DeskPage({ glyph, eyebrow, title, lede, stage, children, wrapped }: { glyph: string; eyebrow: string; title: string; lede: string; stage: ReactNode; children: ReactNode; wrapped?: boolean }): ReactNode {
+  const page = (
+    <div className="try desk-page" data-wide="true">
+      <header className="try-head">
+        <p className="try-case">
+          <span lang="ja">{glyph}</span>
+          {eyebrow}
+        </p>
+        <h1>{title}</h1>
+        <p>{lede}</p>
+      </header>
+      {stage}
+      <div className="desk-docs">{children}</div>
+    </div>
   );
+  return <Page wide>{wrapped ? <div data-wide="true">{page}</div> : page}</Page>;
 }

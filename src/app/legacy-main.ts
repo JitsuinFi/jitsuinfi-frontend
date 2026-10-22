@@ -11,7 +11,6 @@ import { applyPage } from "../pages/apply";
 import { buyerPage } from "../pages/buyer";
 import { financierPage } from "../pages/financier";
 import { memberPage } from "../pages/member";
-import { supplierPage } from "../pages/supplier";
 // try and verify are components now; their stylesheets stay here, in their old place in the
 // cascade (the verify page uses try.css too)
 import "../pages/try.css";
@@ -19,7 +18,6 @@ import "../pages/verify.css";
 
 
 const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
-  "/supplier": { role: "supplier", page: supplierPage },
   "/buyer": { role: "buyer", page: buyerPage },
   "/member": { role: "member", page: memberPage },
 };

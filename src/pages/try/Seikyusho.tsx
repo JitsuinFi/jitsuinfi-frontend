@@ -35,12 +35,25 @@ const KEYS: Array<[keyof SheetFields, string]> = [
 ];
 const WORD: Record<string, string> = { invoice_id: "number", amount_zat: "amount", issue_date: "issue date", due_date: "due date", terms_hash: "terms" };
 
+/** A blank sheet to write on (the supplier's new invoice): its own words where /try shows data. */
+export interface BlankSheet {
+  seal: string;
+  to: string;
+  by: string;
+  note: string;
+  n: string;
+  placeholders: Partial<Record<keyof SheetFields, string>>;
+  termsReadOnly: boolean;
+}
+
 /**
  * The sheet. Its inputs are uncontrolled (the page reads and resets them through `fields`);
- * `changed` marks edited fields and cracks the seal, `n` is the fingerprint of these bytes.
+ * `changed` marks edited fields and cracks the seal (null: not compared, as on a blank sheet),
+ * `n` is the fingerprint of these bytes.
  */
-export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetValues; fields: SheetFields; changed: string[]; n: string | null; onInput: () => void; sheet: RefObject<HTMLElement | null> }): ReactNode {
+export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet }): ReactNode {
   const isChanged = (k: keyof SheetFields) => {
+    if (changed === null) return undefined;
     const f = KEYS.find(([key]) => key === k)![1];
     return String(changed.includes(f) || changed.includes("unreadable"));
   };
@@ -53,6 +66,8 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetV
       className={opts.mono ? "is-mono" : undefined}
       defaultValue={value}
       size={opts.size}
+      placeholder={blank?.placeholders[k]}
+      readOnly={blank && k === "terms" ? blank.termsReadOnly : undefined}
       data-changed={isChanged(k)}
       ref={fields[k]}
       onInput={onInput}
@@ -67,14 +82,16 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetV
       <td>{value}</td>
     </tr>
   );
-  const note = !changed.length
+  const note = blank
+    ? blank.note
+    : !changed?.length
     ? "The buyer sealed exactly these bytes."
     : changed[0] === "unreadable"
       ? "This is no longer a valid invoice: no seal can hold."
       : `You changed the ${changed.map((c) => WORD[c]).join(", ")}. The buyer's seal no longer holds.`;
 
   return (
-    <article className="sk" aria-label="The invoice (請求書)" data-seal={changed.length ? "broken" : "whole"} ref={sheet}>
+    <article className="sk" aria-label="The invoice (請求書)" data-seal={blank ? blank.seal : changed?.length ? "broken" : "whole"} ref={sheet}>
       <header className="sk-head">
         <h2 className="sk-title">
           <span lang="ja">請 求 書</span>
@@ -94,7 +111,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetV
         </dl>
       </header>
       <p className="sk-to">
-        <code title={o.buyer}>{short(o.buyer)}</code>
+        <code title={o.buyer}>{blank ? blank.to : short(o.buyer)}</code>
         <span lang="ja">御中</span>
         <small>to the buyer's invoice key</small>
       </p>
@@ -117,7 +134,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetV
             "Issuer",
             <>
               <span className="sk-issuer">{o.issuer}</span>
-              <code title={o.supplier}>{short(o.supplier)}</code>
+              <code title={o.supplier}>{blank ? blank.by : short(o.supplier)}</code>
             </>,
           )}
         </tbody>
@@ -126,7 +143,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet }: { o: SheetV
         <div className="sk-n">
           <span className="sk-n-k">N</span>
           <div>
-            <code>{n ?? "none: the fields do not make an invoice"}</code>
+            <code>{blank ? blank.n : (n ?? "none: the fields do not make an invoice")}</code>
             <small>Fingerprint of these exact bytes, computed in your browser</small>
           </div>
         </div>

@@ -7,7 +7,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { animate, stagger } from "animejs";
 import { inView } from "motion";
-import { SPEC_URL } from "./hero";
+import { SPEC_URL } from "./Hero";
 import { dur, ease } from "./motion";
 import { useT } from "./use-lang";
 

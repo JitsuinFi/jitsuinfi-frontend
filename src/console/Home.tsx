@@ -5,7 +5,8 @@
 // React since HNK-31.T11.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AuthLink, Chevron, Head, LockIcon, PasskeyIcon, Row, Sheet, useMessage } from "../app/auth";
-import { stopReason } from "../lib/explain";
+import { download } from "../lib/download";
+import { explain, stopReason } from "../lib/explain";
 import { encodeFundCard } from "../lib/fund-card";
 import { keepName, keptName } from "./name";
 import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
@@ -201,7 +202,7 @@ interface PrivateRules {
 }
 
 
-const say = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const say = (e: unknown) => explain(e instanceof Error ? e.message : String(e));
 type Load = () => Promise<void>;
 
 /** The node's facts in a list: term, value (mono for keys), the full value on hover. */
@@ -956,7 +957,7 @@ function Mandate({ demo }: { demo: boolean }): ReactNode {
  * HNK-26.T14: another financier registered this invoice first, so the supplier signed it twice.
  * Exhibit A shows that without the deal; the full proof stays with you.
  */
-function Evidence({ exhibit, proof }: { exhibit: string; proof: string }): ReactNode {
+function Evidence({ name, exhibit, proof }: { name: string; exhibit: string; proof: string }): ReactNode {
   return (
     <div className="pl-proof">
       <b className="pl-proof-stamp" lang="ja" aria-hidden="true">
@@ -968,6 +969,15 @@ function Evidence({ exhibit, proof }: { exhibit: string; proof: string }): React
         <div className="mail-actions">
           <CopyButton label="Copy Exhibit A" value={exhibit} failed="Copy failed: select the code" />
           {proof ? <CopyButton label="Copy the full proof" value={proof} failed="Copy failed: select the code" /> : null}
+          {/* HNK-32.T5 (BL-D27-04): files for whoever needs them, read by Verify and `jitsuin verify` */}
+          <button type="button" onClick={() => download(`${name}.exhibit-a.txt`, exhibit)}>
+            Download Exhibit A
+          </button>
+          {proof ? (
+            <button type="button" onClick={() => download(`${name}.proof.txt`, proof)}>
+              Download the full proof
+            </button>
+          ) : null}
           <a href="https://jitsuinfi.vercel.app/verify" target="_blank" rel="noopener">
             Open the Verify page
           </a>
@@ -994,7 +1004,7 @@ function BundleCopy({ bundle }: { bundle: string }): ReactNode {
  * file (JTSE) carries the buyer's signed claims and every repayment output with its receipt, so
  * whoever receives it recomputes the status instead of trusting this console.
  */
-function RepaymentEvidence({ status, file }: { status: string; file: string }): ReactNode {
+function RepaymentEvidence({ name, status, file }: { name: string; status: string; file: string }): ReactNode {
   const word: Record<string, string> = {
     Claimed: "The buyer says it paid, but no mined payment covers the amount yet.",
     Disputed: "The buyer's claim is past the grace period and still not covered: a dispute.",
@@ -1011,6 +1021,10 @@ function RepaymentEvidence({ status, file }: { status: string; file: string }): 
         <p className="mail-note">Anyone you give it to rechecks it with `jitsuin verify --evidence &lt;file&gt;`: the buyer's signatures, and the status from the file itself.</p>
         <div className="mail-actions">
           <CopyButton label="Copy the evidence (JTSE)" value={file} />
+          {/* HNK-32.T5 (BL-D25-04) */}
+          <button type="button" onClick={() => download(`${name}.evidence.txt`, file)}>
+            Download the evidence
+          </button>
         </div>
       </div>
     </div>
@@ -1073,10 +1087,10 @@ function Pipeline({ demo }: { demo: boolean }): ReactNode {
                         {d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`}
                       </p>
                     ) : null}
-                    {d.exhibit ? <Evidence exhibit={d.exhibit} proof={d.proof ?? ""} /> : null}
-                    {d.evidence ? <RepaymentEvidence status={d.repayment ?? ""} file={d.evidence} /> : null}
+                    {d.exhibit ? <Evidence name={d.invoice_id} exhibit={d.exhibit} proof={d.proof ?? ""} /> : null}
+                    {d.evidence ? <RepaymentEvidence name={d.invoice_id} status={d.repayment ?? ""} file={d.evidence} /> : null}
                     {d.bundle ? <BundleCopy bundle={d.bundle} /> : null}
-                    {d.problem ? <p className="offer-problem">{d.problem}</p> : null}
+                    {d.problem ? <p className="offer-problem">{explain(d.problem)}</p> : null}
                     {d.advance_txid ? <p className="mail-note is-mono">{`Advance ${short(d.advance_txid)}`}</p> : d.entry_txid ? <p className="mail-note is-mono">{`Entry ${short(d.entry_txid)}`}</p> : null}
                     <div className="mail-actions">
                       {!demo && d.state === "Pay" && d.intent ? (

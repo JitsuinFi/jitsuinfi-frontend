@@ -4,7 +4,6 @@ import "./landing.css";
 import Lenis from "lenis";
 import { mountHero } from "./hero";
 import { mountFingerprint } from "./fingerprint";
-import { mountSealChain } from "./sealchain";
 import { reducedMotion } from "./motion";
 
 /** Mounts the chapters into `root` (HNK-31: called by the Landing route). */
@@ -14,8 +13,7 @@ export function mountLanding(root: HTMLElement): void {
 
   // Chapters land here one at a time, each after it is validated.
   mountFingerprint(root, reduced);
-  mountSealChain(root, reduced);
-  // chapters 4 – 6 (Twice, History, Finale) are React components since HNK-31.T4, drawn after these by Landing
+  // chapters 3 – 6 (SealChain, Twice, History, Finale) are React components since HNK-31.T4, drawn after these by Landing
 
   if (!reduced) {
     const lenis = new Lenis({ duration: 1.2 });

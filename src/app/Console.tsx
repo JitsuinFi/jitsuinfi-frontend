@@ -1,16 +1,15 @@
-// The financier console world (HNK-31.T2, D-45): still DOM builders (src/console/*) inside
-// <div id="console">, talking to the node through /node/* on this origin. Mounted once.
-import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { mountConsole } from "../console/main";
+// The financier console world (HNK-31.T2, T11, D-45): <div id="console">, talking to the node
+// through /node/* on this origin.
+import { useLayoutEffect, type ReactNode } from "react";
+import { ConsoleApp } from "../console/ConsoleApp";
 
 export function Console(): ReactNode {
-  const root = useRef<HTMLDivElement>(null);
-  const done = useRef(false);
   useLayoutEffect(() => {
-    if (done.current || !root.current) return;
-    done.current = true;
     document.title = "Financier console · JitsuinFi";
-    mountConsole(root.current);
   }, []);
-  return <div id="console" ref={root} />;
+  return (
+    <div id="console">
+      <ConsoleApp />
+    </div>
+  );
 }

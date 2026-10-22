@@ -2,6 +2,7 @@
 // hash router in app.html drew them. Pages that are still DOM builders are mounted into <main>
 // by `Legacy`; the shell repaints when the session changes, as before.
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { roleLabel } from "../lib/account";
 import { account } from "../lib/app-session";
@@ -73,6 +74,16 @@ export function AppShell(): ReactNode {
       </MainSlot.Provider>
     </div>
   );
+}
+
+/**
+ * A page written as components (HNK-31.T3 on): drawn straight into <main>, like the old pages,
+ * and `wide` for a stage page that takes the full width.
+ */
+export function Page({ wide = false, children }: { wide?: boolean; children: ReactNode }): ReactNode {
+  const { main, setWide } = useContext(MainSlot);
+  useLayoutEffect(() => setWide(wide), [wide, setWide]);
+  return main ? createPortal(children, main) : null;
 }
 
 /**

@@ -579,6 +579,7 @@ interface DealRow {
   paid_zat?: number | null;
   settled_txid?: string | null;
   evidence?: string | null;
+  bundle?: string | null;
   bundle_sent?: boolean;
   history_requested?: boolean;
   history?: string | null;
@@ -638,6 +639,20 @@ function evidence(exhibit: string, proof: string): HTMLElement {
       h("div", { class: "mail-actions" }, copy("Copy Exhibit A", exhibit), proof ? copy("Copy the full proof", proof) : null, h("a", { href: "https://jitsuinfi.vercel.app/app.html#/verify", target: "_blank", rel: "noopener" }, "Open the Verify page")),
     ),
   );
+}
+
+/** BL-D28-03: the settled deal's verification bundle, for an auditor or a court (Verify page). */
+function bundleCopy(bundle: string): HTMLElement {
+  const b = h("button", { type: "button" }, "Copy the verification bundle (JTSB)") as HTMLButtonElement;
+  b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(bundle);
+      b.textContent = "Copied";
+    } catch {
+      b.textContent = "Copy failed";
+    }
+  });
+  return h("div", { class: "mail-actions" }, b, h("a", { href: "https://jitsuinfi.vercel.app/app.html#/verify", target: "_blank", rel: "noopener" }, "Check it on the Verify page"));
 }
 
 /**
@@ -725,6 +740,7 @@ function pipeline(demo = false): HTMLElement {
         : null,
       d.exhibit ? evidence(d.exhibit, d.proof ?? "") : null,
       d.evidence ? repaymentEvidence(d.repayment ?? "", d.evidence) : null,
+      d.bundle ? bundleCopy(d.bundle) : null,
       d.problem ? h("p", { class: "offer-problem" }, d.problem) : null,
       d.advance_txid ? h("p", { class: "mail-note is-mono" }, `Advance ${short(d.advance_txid)}`) : d.entry_txid ? h("p", { class: "mail-note is-mono" }, `Entry ${short(d.entry_txid)}`) : null,
       actions,

@@ -1,6 +1,7 @@
 {
   "name": "jitsuinfi-frontend",
   "private": true,
+  "license": "MIT OR Apache-2.0",
   "version": "0.1.0",
   "description": "JitsuinFi web app: supplier, buyer and financier screens; client-side verification with jitsuin-wasm",
   "type": "module",

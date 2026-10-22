@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Finale } from "../landing/Finale";
 import { History } from "../landing/History";
+import { Twice } from "../landing/Twice";
 import { mountLanding } from "../landing/main";
 import { reducedMotion } from "../landing/motion";
 
@@ -24,6 +25,7 @@ export function Landing(): ReactNode {
       {mounted
         ? createPortal(
             <>
+              <Twice reduced={reduced} />
               <History reduced={reduced} />
               <Finale reduced={reduced} />
             </>,

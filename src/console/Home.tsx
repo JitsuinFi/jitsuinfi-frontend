@@ -5,6 +5,7 @@
 // React since HNK-31.T11.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AuthLink, Chevron, Head, LockIcon, PasskeyIcon, Row, Sheet, useMessage } from "../app/auth";
+import { stopReason } from "../lib/explain";
 import { encodeFundCard } from "../lib/fund-card";
 import { keepName, keptName } from "./name";
 import { approvePayment, approvePlan, assert, contactFingerprint, creationOptions, del, get, post, registrationJson } from "./node";
@@ -124,6 +125,7 @@ interface DealRow {
   entry_txid?: string;
   advance_txid?: string;
   stopped?: string;
+  stopped_winner?: string;
   letter_sent: boolean;
   repayment?: string | null;
   paid_zat?: number | null;
@@ -1061,7 +1063,7 @@ function Pipeline({ demo }: { demo: boolean }): ReactNode {
                         </li>
                       ))}
                     </ol>
-                    <p className="mail-note">{d.state === "Stopped" ? `Stopped: ${d.stopped}` : (WAITING[d.state] ?? d.state)}</p>
+                    <p className="mail-note">{d.state === "Stopped" ? stopReason(d.stopped ?? "", d.stopped_winner) : (WAITING[d.state] ?? d.state)}</p>
                     {d.history_requested ? <p className="mail-note">{d.history ? `Buyer history passed: ${d.history}.` : "Waiting for the buyer's history (your mandate asks for it before the supplier signs)."}</p> : null}
                     {d.state === "Done" && d.repayment ? (
                       <p className="mail-note">

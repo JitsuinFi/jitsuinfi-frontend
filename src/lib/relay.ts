@@ -37,7 +37,14 @@ export interface Received {
   signatureOk: boolean;
 }
 
-export class RelayError extends Error {}
+export class RelayError extends Error {
+  /** The relay's HTTP status, when it answered. */
+  readonly status: number | undefined;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const fetchOf = (d: RelayDeps) => d.fetch ?? globalThis.fetch.bind(globalThis);
 const rnd = (d: RelayDeps, n: number) => (d.random ? d.random(n) : globalThis.crypto.getRandomValues(new Uint8Array(n)));
@@ -61,7 +68,7 @@ async function call(d: RelayDeps, method: string, path: string, body?: unknown, 
     } catch {
       /* not JSON */
     }
-    throw new RelayError(msg);
+    throw new RelayError(msg, r.status);
   }
   return r;
 }
@@ -128,6 +135,29 @@ export async function remove(me: MailboxIdentity, relayId: string, readToken: st
 export async function discard(inbox: Uint8Array, relayId: string, d: RelayDeps): Promise<void> {
   const me = identity(inbox, d);
   await remove(me, relayId, await token(inbox, d, me), d);
+}
+
+/**
+ * HNK-25.T2 (BL-D26-03): seals `plaintext` to this role's own mailbox key and keeps it as the
+ * mailbox's state at the relay, replacing the previous one. Only the owner can write or read it.
+ */
+export async function saveState(inbox: Uint8Array, plaintext: Uint8Array, d: RelayDeps): Promise<void> {
+  const me = identity(inbox, d);
+  const sealed = d.wasm.mailboxSeal(me.mailbox_pk, rnd(d, 32), plaintext);
+  await call(d, "PUT", `/api/mailbox/${me.mailbox_id}/state`, sealed, { Authorization: `Bearer ${await token(inbox, d, me)}` });
+}
+
+/** This role's state from the relay, opened; null when none was saved. */
+export async function loadState(inbox: Uint8Array, d: RelayDeps): Promise<Uint8Array | null> {
+  const me = identity(inbox, d);
+  let r: Response;
+  try {
+    r = await call(d, "GET", `/api/mailbox/${me.mailbox_id}/state`, undefined, { Authorization: `Bearer ${await token(inbox, d, me)}` });
+  } catch (e) {
+    if (e instanceof RelayError && e.status === 404) return null;
+    throw e;
+  }
+  return d.wasm.mailboxOpenBytes(inbox.slice(), new Uint8Array(await r.arrayBuffer()));
 }
 
 /** A header ready to sign: the common fields of a message from this role to `toPk`. */

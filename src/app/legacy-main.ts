@@ -8,7 +8,6 @@ import "../pages/seal-card.css";
 import "../auth.css";
 import { type Role } from "../lib/account";
 import { applyPage } from "../pages/apply";
-import { buyerPage } from "../pages/buyer";
 import { financierPage } from "../pages/financier";
 import { memberPage } from "../pages/member";
 // try and verify are components now; their stylesheets stay here, in their old place in the
@@ -18,7 +17,6 @@ import "../pages/verify.css";
 
 
 const ROLE_PAGES: Record<string, { role: Role; page: () => HTMLElement }> = {
-  "/buyer": { role: "buyer", page: buyerPage },
   "/member": { role: "member", page: memberPage },
 };
 

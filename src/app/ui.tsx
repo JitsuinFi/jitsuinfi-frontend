@@ -8,9 +8,9 @@ import { Page } from "./AppShell";
 
 // One part of a screen, set on the paper (D-36: no card box): its heading on the left, its fields
 // and results on the right; stacked on narrow screens. The class name stays "card" for the pages.
-export function Card({ step, title, hint, children }: { step: string; title: string; hint: string; children?: ReactNode }): ReactNode {
+export function Card({ step, title, hint, children, cardRef }: { step: string; title: string; hint: string; children?: ReactNode; cardRef?: Ref<HTMLElement> }): ReactNode {
   return (
-    <section className="card">
+    <section className="card" ref={cardRef}>
       <div className="part-head">
         <div className="step">{step}</div>
         <h2>{title}</h2>

@@ -10,12 +10,14 @@
 // request (払戻請求) in place. React since HNK-31.T10.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { vault } from "@lucasmarkes/hairline";
-import { Actions, Banner, Button, Card, DeskPage, Field, Kv, TrustedSvg, useOut } from "../app/ui";
+import { Actions, Banner, Button, Card, DeskPage, Field, FileField, Kv, TrustedSvg, useOut } from "../app/ui";
 import { myIdentity, relayDeps } from "../lib/app-relay";
 import { account } from "../lib/app-session";
 import { wasm, zecToZat } from "../lib/core";
 import { addPath, addPayout, addReceipt, EMPTY, latestPortfolio, openPeriod, valueOf, withdrawBody, type Holding, type Wallet } from "../lib/fund";
 import { decodeFundCard } from "../lib/fund-card";
+import { readFundReport } from "../lib/fund-report";
+import { NET } from "../lib/network";
 import { draft, send } from "../lib/relay";
 import { encodeMessage, type Header } from "../lib/relay-message";
 import { download } from "../lib/download";
@@ -201,10 +203,11 @@ export function MemberPage(): ReactNode {
           "fund.payout": keep(addPayout, "Recorded: the paid units are gone; what is left has a new token."),
         }}
       />
+      <SolvencyCard />
       <Card
         step="Limits"
         title="What this does not prove"
-        hint="The path proves your units are counted in the root the fund sent you. That this root is the one the manager signed on chain (JTLR), and that the fund's assets cover it, you check with the fund's viewing key on your own device: save the path from a slip and run `jitsuin fund --path <file>`, never on a server. Units are paid from cash only: money lent out comes back when buyers repay. The receivables in that check are the manager's own notes: a bad one only shows once it is overdue."
+        hint="The path proves your units are counted in the root the fund sent you. That this root is the one the manager signed on chain (JTLR), and that the fund's assets cover it, you check with the fund's viewing key on your own device: save the path from a slip, run `jitsuin fund --path <file> --json`, never on a server, and read its report in Solvency above. Units are paid from cash only: money lent out comes back when buyers repay. The receivables in that check are the manager's own notes: a bad one only shows once it is overdue."
       />
       {/* HNK-29.T3 (BL-S05-01, BL-D0-06): what the fund's records leak, and how the key travels */}
       <Card
@@ -213,6 +216,64 @@ export function MemberPage(): ReactNode {
         hint="Anyone holding the fund's viewing key (other members, the auditor) sees the amount of every deposit and payout, never who made it, and the shielded address each advance went to, never the supplier's name. Your path shows the units of a neighbouring part of the tree, so at least one other member's total. Take the viewing key from the manager only over a private channel, and give it only to `jitsuin fund` on your own device, never to a website."
       />
     </DeskPage>
+  );
+}
+
+/**
+ * HNK-32.T7 (BL-D29-07, D17): the solvency report from `jitsuin fund --json`, run on the member's own
+ * machine with the fund's viewing key, read here next to the slips. The page checks that the report
+ * is about the root of a path this device holds; the viewing key itself never comes near the page.
+ */
+function SolvencyCard(): ReactNode {
+  const file = useRef<HTMLInputElement>(null);
+  const text = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const out = useOut();
+  return (
+    <Card step="Solvency" title="Does the fund cover your units?" hint="Run `jitsuin fund --ufvk <key> --manager-pk <key> --path <saved path> --json` on your own computer, then drop its report here. The viewing key stays in that command; this page only reads the result.">
+      <FileField label="Report from jitsuin fund (--json)" help="Read in your browser, never uploaded." inputRef={file} />
+      <Field label="Or paste the report" area placeholder='{"network": "testnet", "verdict": …}' inputRef={text} />
+      <Actions>
+        <Button
+          onClick={async () => {
+            try {
+              const raw = (await file.current!.files?.[0]?.text()) ?? text.current!.value;
+              if (!raw.trim()) throw new Error("choose the report file or paste it");
+              const r = readFundReport(raw, await load(), NET.noun);
+              const v = r.report.verdict;
+              const inc = r.report.inclusion;
+              out.show(
+                <>
+                  {r.problems.length ? (
+                    <Banner kind="bad" title="This report does not answer for your units" text={r.problems.join("; ") + "."} glyph="偽" />
+                  ) : r.solvent ? (
+                    <Banner kind="ok" title={`Solvent in period ${v!.period}`} text="The fund's assets cover every unit under the root your path ends in, at par, and your units are under it." glyph="済" />
+                  ) : (
+                    <Banner kind="bad" title={`Not solvent in period ${v!.period}`} text="The fund's assets are below what it owes its members at par. Withdraw requests are paid from cash only." glyph="滞" />
+                  )}
+                  {v ? (
+                    <Kv
+                      rows={[
+                        ["Assets (cash, open receivables, overdue after write-off)", zec(v.assets_zat)],
+                        ["Owed to members (root total, at par)", zec(v.liabilities_zat)],
+                        ["Cash", zec(r.report.cash_zat)],
+                        ["Open receivables", zec(v.open_zat)],
+                        ["Overdue, after write-off", zec(v.overdue_zat)],
+                        ["Your units", inc ? `${inc.units.toLocaleString("en")} · ${inc.included ? "under the root" : "not under the root"}` : "not checked"],
+                      ]}
+                    />
+                  ) : null}
+                </>,
+              );
+            } catch (e) {
+              out.error(e);
+            }
+          }}
+        >
+          Read the report
+        </Button>
+      </Actions>
+      {out.el}
+    </Card>
   );
 }
 

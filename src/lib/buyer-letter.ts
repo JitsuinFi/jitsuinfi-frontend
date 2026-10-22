@@ -22,3 +22,26 @@ export function letterProblems(c: LetterCheckInput): string[] {
     c.supplierSeal === "AwaitingSeal:Buyer" ? null : "the supplier's seal does not hold for this letter, so the supplier did not assign the invoice to this financier",
   ].filter((p): p is string => p !== null);
 }
+
+export interface PayCheckInput {
+  /** The letter kept on this device for the invoice, or undefined when there is none. */
+  kept: string | undefined;
+  /** The letter in the pay step. */
+  letter: string;
+  /** How many of the three seals this device holds for the kept letter. */
+  seals: number;
+  /** `assignmentStatus` of the kept letter with those seals, or null when it did not decode. */
+  status: string | null;
+}
+
+/**
+ * Why the payment QR stays hidden (HNK-32.T2, BL-D25-01, BL-S02-02): only a letter this device
+ * kept, sealed by the supplier, the buyer and the financier, names where the buyer pays. A pasted
+ * letter could name anyone's address.
+ */
+export function payProblems(c: PayCheckInput): string[] {
+  if (c.kept === undefined) return ["this device holds no sealed letter for this invoice: keep the financier's letter and seals from your inbox first"];
+  if (c.kept !== c.letter) return ["this is not the letter you sealed for this invoice"];
+  if (c.seals < 3 || c.status !== "Sealed") return ["the letter is not complete yet: the financier seals it when it pays the advance; wait for that seal in your inbox"];
+  return [];
+}

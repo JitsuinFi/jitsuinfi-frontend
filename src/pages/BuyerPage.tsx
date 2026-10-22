@@ -16,7 +16,7 @@ import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
 import { account } from "../lib/app-session";
 import { loadBoard } from "../lib/board";
 import { checkInvoice } from "../lib/buyer-check";
-import { letterProblems } from "../lib/buyer-letter";
+import { letterProblems, payProblems } from "../lib/buyer-letter";
 import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, head, HISTORY_ID, localNextIndex, reconcile, type HistoryDoc } from "../lib/buyer-history";
 import { boardStatus, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, sortInvoices, storeId, withSignature, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
@@ -509,15 +509,18 @@ export function BuyerPage(): ReactNode {
   // ---------- 5. pay ----------
   const pay = async () => {
     try {
-      // HNK-25.T4: a letter that came through the mailbox is paid only once all three seals hold
+      // HNK-32.T2 (BL-D25-01): only the letter this device kept, with all three seals, is paid
       const n = json<{ nullifier: string }>(wasm.invoiceDecode(v(pInvoice))).nullifier;
       const a = (await account.current?.store?.get<BuyerInvoice>(storeId(n)))?.assignment;
-      if (a?.letter === v(pLetter)) {
-        const seals = [a.supplier_seal, a.buyer_seal, a.financier_seal].filter((x): x is string => !!x);
-        if (seals.length < 3 || wasm.assignmentStatus(v(pInvoice), a.letter, JSON.stringify(seals)) !== "Sealed") {
-          throw new Error("the letter is not complete yet: the financier seals it when it pays the advance; wait for that seal in your inbox");
-        }
+      const seals = [a?.supplier_seal, a?.buyer_seal, a?.financier_seal].filter((x): x is string => !!x);
+      let status: string | null = null;
+      try {
+        status = a?.letter && seals.length === 3 ? wasm.assignmentStatus(v(pInvoice), a.letter, JSON.stringify(seals)) : null;
+      } catch {
+        status = null;
       }
+      const problems = payProblems({ kept: a?.letter, letter: v(pLetter), seals: seals.length, status });
+      if (problems.length) throw new Error(problems[0]);
       const payTo = json<{ financier_address: string }>(wasm.assignmentDecode(v(pLetter), v(pInvoice))).financier_address;
       const r = json<{ uri: string; qr_svg: string }>(await withInvoiceIndex(v(pInvoice), (m, k) => wasm.buyerRepaymentBytes(m, k, v(pInvoice), v(pLetter), today())));
       payOut.show(

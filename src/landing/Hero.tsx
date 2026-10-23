@@ -443,6 +443,8 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
             ))}
           </div>
           {/* plain links: the app is another world, its stylesheets load with a new document */}
+          {/* the account door: sign in, or create an account, as supplier, buyer or fund member */}
+          {navLink("nav.signin", "/account", "nav-link nav-signin")}
           {navLink("nav.demo", "/app", "nav-cta")}
         </div>
       </nav>

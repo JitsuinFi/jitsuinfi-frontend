@@ -616,6 +616,20 @@ button {
     display: none;
   }
 
+  /* the way into the app stays on phones; the other links live in the story below, and the
+     demo has its own button in the hero and in the finale */
+  .nav-pill .nav-signin {
+    display: inline-flex;
+  }
+
+  .nav-pill .nav-cta {
+    display: none;
+  }
+
+  .lang-opt {
+    white-space: nowrap;
+  }
+
   .brand-name {
     font-size: 20px;
   }
@@ -1105,7 +1119,7 @@ button {
 
 /* ---------- chapter 3: the seal chain (Sign-to-Pay) ---------- */
 .sc-chapter {
-  background: var(--sheet);
+  background: var(--paper); /* one paper for every chapter; sheets on it stay --sheet */
 }
 
 .sc-visual {
@@ -2353,8 +2367,7 @@ button {
   flex-direction: column;
   align-items: stretch;
   gap: clamp(28px, 3.4vw, 56px);
-  background:
-    linear-gradient(to bottom, var(--paper) 0%, var(--sheet) 100%);
+  background: var(--paper);
 }
 
 .fn-head {

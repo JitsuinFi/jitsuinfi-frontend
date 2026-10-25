@@ -96,6 +96,33 @@ export function timeline(d: SupplierDeal): Array<{ key: StepKey; label: string; 
   });
 }
 
+// ---------- the deal route on the supplier's desk (HNK-34.T5) ----------
+// Six stations: the five steps, then 済, the settlement. A step to do now either is the
+// supplier's move ("next") or waits on someone else ("wait": the buyer's signature after the
+// sign request went out, the financier's entry request, the advance). 済 is done once the
+// financier's settlement bundle is here or the board shows the deal settled; until then it waits
+// after the advance, and is later before that.
+
+export type StationKey = StepKey | "settled";
+export type StationState = "done" | "next" | "wait" | "later";
+
+/** What the supplier does next, and whether it waits on someone else; `null` when complete. */
+export function nextMove(d: SupplierDeal): { text: string; wait: boolean } | null {
+  const step = nextStep(d);
+  if (step === "signature" && d.sign_request) return { text: "wait for the buyer's signature (or paste it)", wait: true };
+  if (step === "entry" && !d.entry_request) return { text: "wait for the financier's entry request", wait: true };
+  if (step === "advance" && !d.advance_notice && !d.advance) return { text: "wait for the advance, then check it", wait: true };
+  return step ? { text: actionOf(step), wait: false } : null;
+}
+
+/** The six stations of `d`; `settled`: the bundle is here or the board shows the deal settled. */
+export function route(d: SupplierDeal, settled: boolean): Array<{ key: StationKey; label: string; state: StationState }> {
+  const wait = nextMove(d)?.wait ?? false;
+  const steps: Array<{ key: StationKey; label: string; state: StationState }> = timeline(d).map((s) => ({ ...s, state: s.state === "next" && wait ? "wait" : s.state }));
+  steps.push({ key: "settled", label: "Settled", state: settled ? "done" : nextStep(d) === null ? "wait" : "later" });
+  return steps;
+}
+
 /** Deals newest first. */
 export function sortDeals(deals: SupplierDeal[]): SupplierDeal[] {
   return [...deals].sort((a, b) => b.created_at - a.created_at || a.invoice_id.localeCompare(b.invoice_id));

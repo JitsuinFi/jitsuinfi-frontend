@@ -117,3 +117,52 @@ export function boardStatus(b: { register: { status: string }; settled: { on_tim
       return "not on the board yet";
   }
 }
+
+/** What this invoice waits for next, from the buyer's side (HNK-34.T5): the ledger tag and the open sheet. */
+export type BuyerAction = "sign" | "send" | "wait-letter" | "seal" | "wait-financier" | "pay" | "settled";
+
+export function nextAction(rec: BuyerInvoice): BuyerAction {
+  const a = rec.assignment;
+  if (rec.bundle) return "settled";
+  if (a?.financier_seal) return "pay";
+  if (a?.buyer_seal) return "wait-financier";
+  if (a?.letter && a.supplier_seal) return "seal";
+  if (!rec.signature) return "sign";
+  if (!rec.signature_sent_at && rec.reply_to) return "send";
+  return "wait-letter";
+}
+
+/** How many of the letter's three seals (supplier, buyer, financier) this device holds. */
+export function sealCount(rec: BuyerInvoice): number {
+  const a = rec.assignment;
+  return [a?.supplier_seal, a?.buyer_seal, a?.financier_seal].filter(Boolean).length;
+}
+
+/** The route stations 受 署 送 印 払 this device can vouch for: checked, signed, sent, sealed, settled. */
+export function routeDone(rec: BuyerInvoice): [boolean, boolean, boolean, boolean, boolean] {
+  return [rec.terms_checked, !!rec.signature, !!rec.signature_sent_at, !!rec.assignment?.buyer_seal, !!rec.bundle];
+}
+
+export interface BuyerTotals {
+  /** Invoices waiting for the buyer's signature, its sending, or the buyer's seal. */
+  toAct: number;
+  /** Financed invoices (all three seals) not settled yet, and what they add up to. */
+  toPay: { count: number; zat: number };
+  /** Financed invoices that fell due or settled. */
+  due: number;
+  /** Of those, settled on time on the board; null without board data. */
+  onTime: number | null;
+}
+
+/** The buyer's big numbers, from this device's invoices and, when read, their board status. */
+export function buyerTotals(list: BuyerInvoice[], board: Record<string, string | null> | null, today: number): BuyerTotals {
+  const acts = list.map(nextAction);
+  const pay = list.filter((_, i) => acts[i] === "pay");
+  const financed = list.filter((r) => r.assignment?.financier_seal);
+  return {
+    toAct: acts.filter((a) => a === "sign" || a === "send" || a === "seal").length,
+    toPay: { count: pay.length, zat: pay.reduce((n, r) => n + r.amount_zat, 0) },
+    due: financed.filter((r) => r.bundle || r.due_date <= today).length,
+    onTime: board ? financed.filter((r) => board[r.n] === "settled on time").length : null,
+  };
+}

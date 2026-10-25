@@ -53,3 +53,26 @@ test("financed invoices due within a week are reminded, soonest first; settled o
   assert.equal(boardStatus({ register: { status: "Registered" }, settled: { on_time: false } }), "settled late");
   assert.equal(boardStatus({ register: { status: "NotFound" }, settled: null }), "not on the board yet");
 });
+
+// HNK-34.T5: the ledger tag, the seal dots, the route and the big numbers come from the records
+test("each invoice says what it waits for, and the totals add up", async () => {
+  const { nextAction, sealCount, routeDone, buyerTotals } = await import("../src/lib/buyer-invoices.ts");
+  const base = invoiceRecord(dec("01", "TES-INV-A"), "SlRTSQ", 0, true, 1);
+  const signed = { ...withSignature(base, "sig"), reply_to: "mb", signature_sent_at: 2 };
+  const letter = { ...signed, n: "02", assignment: { letter: "L", supplier_seal: "s0" } };
+  const sealed = { ...letter, n: "03", assignment: { ...letter.assignment, buyer_seal: "s1" } };
+  const pay = { ...sealed, n: "04", due_date: 100, assignment: { ...sealed.assignment, financier_seal: "s2" } };
+  const done = { ...pay, n: "05", bundle: "B" };
+  assert.equal(nextAction(base), "sign");
+  assert.equal(nextAction({ ...withSignature(base, "sig"), reply_to: "mb" }), "send");
+  assert.equal(nextAction(signed), "wait-letter");
+  assert.equal(nextAction(letter), "seal");
+  assert.equal(nextAction(sealed), "wait-financier");
+  assert.equal(nextAction(pay), "pay");
+  assert.equal(nextAction(done), "settled");
+  assert.deepEqual([base, letter, sealed, pay].map(sealCount), [0, 1, 2, 3]);
+  assert.deepEqual(routeDone(sealed), [true, true, true, true, false]);
+  const t = buyerTotals([base, letter, sealed, pay, done], { "05": "settled on time" }, 150);
+  assert.deepEqual(t, { toAct: 2, toPay: { count: 1, zat: 5_000_000 }, due: 2, onTime: 1 });
+  assert.equal(buyerTotals([], null, 0).onTime, null);
+});

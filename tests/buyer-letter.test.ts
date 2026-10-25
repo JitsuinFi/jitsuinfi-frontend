@@ -28,3 +28,11 @@ test("the payment QR needs the kept letter with all three seals (HNK-32.T2)", ()
   assert.match(payProblems({ kept: "L", letter: "L", seals: 2, status: "AwaitingSeal:Financier" })[0], /not complete/);
   assert.match(payProblems({ kept: "L", letter: "L", seals: 3, status: null })[0], /not complete/);
 });
+
+test("the letter checks list each finding, and their problems are letterProblems (HNK-34.T5)", async () => {
+  const { letterChecks } = await import("../src/lib/buyer-letter.ts");
+  assert.deepEqual(letterChecks(good).map((c) => c.ok), [true, true, true]);
+  const c = letterChecks({ ...good, fileHash: null, supplierSeal: null });
+  assert.deepEqual(c.map((x) => x.ok), [true, null, false]);
+  assert.deepEqual(c.map((x) => x.problem).filter(Boolean), letterProblems({ ...good, fileHash: null, supplierSeal: null }));
+});

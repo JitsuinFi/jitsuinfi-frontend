@@ -1,0 +1,164 @@
+/* Role pages on the paper (HNK-34.T5, approved samples design-samples/internal/buyer.html and
+   member.html): the shared parts of /buyer and /member. A caption column (≤ 35%) beside the page's
+   working visual (≥ 65%) from 1360 px, stacked below; verdicts as a hanko and its words (no
+   panel); pill buttons; fields grouped in light rounded panels; the mailbox as a contact column
+   beside the inbox. Palette DS-PAL, tokens from landing/tokens.css. The app's shared parts
+   (Banner, CodeBlock, Kv, MailboxCard) keep their markup: this sheet restyles them under `.rp`. */
+
+.rp {
+  --rule: rgba(2, 13, 47, .12);
+  --rule-2: rgba(2, 13, 47, .22);
+  --wash: rgba(196, 199, 242, .34);
+  --seal-wash: rgba(236, 208, 236, .72);
+  --hatch: repeating-linear-gradient(135deg, rgba(80, 42, 80, .30) 0 1.5px, transparent 1.5px 7px);
+  color: var(--ink);
+}
+.rp p { margin: 0; }
+.rp code, .rp .mono { font-family: var(--f-mono); }
+.rp .mono { font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* ---------- page grid: caption ≤ 35%, visual ≥ 65% ---------- */
+.rp-sec { display: grid; gap: 32px; padding: clamp(32px, 3.4vw, 48px) 0; min-width: 0; }
+.rp-sec:first-child { padding-top: 0; }
+.rp-sec + .rp-sec { border-top: 1px solid var(--rule); }
+@media (min-width: 1360px) {
+  .rp-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+}
+.rp-cap { display: grid; gap: 16px; align-content: start; max-width: 52ch; min-width: 0; }
+.rp-vis { display: grid; gap: 22px; align-content: start; min-width: 0; }
+.rp-stamp { display: inline-grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+.rp-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
+.rp h1, .rp h2, .rp h3 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
+.rp h1 { font-size: clamp(38px, 4vw, 60px); line-height: 1.02; letter-spacing: -.02em; }
+.rp h2 { font-size: clamp(26px, 2.4vw, 38px); line-height: 1.08; letter-spacing: -.015em; }
+.rp h3 { font-size: clamp(20px, 1.6vw, 26px); line-height: 1.15; font-weight: 700; }
+.rp-lede { font: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.rp .hint, .rp-hint { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); margin: 0; }
+.rp-h { display: flex; align-items: center; gap: 12px; }
+.rp-h .rp-stamp { width: 38px; height: 38px; font-size: 21px; border-radius: 8px; }
+.rp-list-h { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
+.rp-list-h h2 { font-size: 22px; }
+.rp-list-h span { font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.rp-cmd { font: 400 12.5px/1.6 var(--f-mono); color: var(--head); background: var(--wash); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+.rp-empty { padding: 14px 0; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); max-width: 62ch; }
+
+/* ---------- buttons: pills, the seal for the action, paper for the rest ---------- */
+.rp button { min-height: 0; padding: 12px 20px; border-radius: 999px; font: 500 14.5px/1 var(--f-body); transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear, opacity var(--dur-fade) linear; }
+.rp button.secondary { background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); }
+.rp button.secondary:hover:not(:disabled) { background: var(--wash); }
+.rp button:disabled { opacity: .45; cursor: not-allowed; }
+.rp .actions, .rp-btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0; }
+.rp-small button, .rp button.rp-small { padding: 9px 14px; font-size: 13px; }
+.rp-link { padding: 0 !important; background: none !important; color: var(--seal) !important; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; font: 500 14px/1.3 var(--f-body) !important; }
+.rp-link:hover { text-decoration-thickness: 3px; }
+
+/* ---------- fields: grouped in a light panel ---------- */
+.rp-panel { display: grid; gap: 14px; padding: 20px; background: var(--sheet); border-radius: 20px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.rp label.field { display: grid; gap: 6px; align-content: start; min-width: 0; margin: 0; }
+.rp label.field > span { font: 500 13.5px/1.3 var(--f-body); color: var(--head); }
+.rp label.field > small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+.rp textarea, .rp input[type=text], .rp input[type=number] {
+  width: 100%; min-width: 0; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 12.5px/1.5 var(--f-mono); resize: vertical;
+}
+.rp textarea { min-height: 58px; }
+.rp textarea:focus-visible, .rp input[type=text]:focus-visible, .rp input[type=number]:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--seal); background: var(--sheet); }
+/* a file field as a pill: the file's name, and the choose control */
+.rp-file { position: relative; display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 14px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); min-width: 0; cursor: pointer; }
+.rp-file input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.rp-file > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 13px/1.3 var(--f-body); color: var(--ink-2); }
+.rp-file > b { flex: none; padding: 8px 13px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 12.5px/1 var(--f-body); }
+.rp-file:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
+.rp-fieldset { display: grid; gap: 6px; min-width: 0; }
+.rp-fieldset > span { font: 500 13.5px/1.3 var(--f-body); color: var(--head); }
+.rp-fieldset > small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+
+/* ---------- verdicts: a hanko and its words, never a panel ---------- */
+.rp .out { margin: 0; gap: 14px; }
+.rp .banner { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font-size: 13.5px; line-height: 1.5; }
+.rp .banner .hanko { grid-row: span 3; width: 30px; height: 30px; margin-top: 2px; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor; font: 800 15px/1 var(--f-seal); transform: rotate(-8deg); animation: rp-hk var(--dur-seal) var(--ease-snap) both; }
+.rp .banner strong { font: 600 15px/1.3 var(--f-body); color: var(--head); letter-spacing: 0; align-self: start; }
+.rp .banner > span:not(.hanko) { color: var(--ink); }
+.rp .banner.ok .hanko { color: var(--pool-2); }
+.rp .banner.warn .hanko { color: var(--ink-2); }
+.rp .banner.bad .hanko, .rp .banner.bad strong { color: var(--seal); }
+.rp .banner .banner-detail { color: var(--ink-2); }
+.rp-verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+.rp-verdict > .rp-hanko { grid-row: span 2; margin-top: 2px; }
+.rp-verdict > b { font: 600 15px/1.3 var(--f-body); color: var(--head); }
+.rp-verdict > span:not(.rp-hanko) { font: 400 13.5px/1.5 var(--f-body); color: var(--ink); min-width: 0; }
+.rp-hanko { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor; font: 800 15px/1 var(--f-seal); transform: rotate(-8deg); color: var(--ink-2); }
+.rp-verdict.is-ok > .rp-hanko, .rp-hanko.is-ok { color: var(--pool-2); }
+.rp-verdict.is-bad > .rp-hanko, .rp-verdict.is-bad > b, .rp-hanko.is-bad { color: var(--seal); }
+.rp-verdict.is-land > .rp-hanko { animation: rp-hk var(--dur-seal) var(--ease-snap) both; }
+@keyframes rp-hk { 0% { transform: translateY(-14px) scale(1.5) rotate(-8deg); opacity: 0; } 60% { opacity: 1; } 82% { transform: scale(.92, .88) rotate(-8deg); } 100% { transform: rotate(-8deg); } }
+
+/* ---------- facts and codes ---------- */
+.rp table.kv { background: none; border-radius: 0; font-size: 13.5px; }
+.rp table.kv td { padding: 9px 0; border-top: 1px solid var(--rule); }
+.rp table.kv td:first-child { padding-right: 14px; }
+.rp .out .label, .rp .label { font: 500 13.5px/1.3 var(--f-body); color: var(--head); margin-bottom: 8px; }
+.rp .copyrow { display: grid; gap: 10px; }
+.rp .code { padding: 10px 12px; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); font: 400 12px/1.5 var(--f-mono); color: var(--ink-2); max-height: 96px; overflow: auto; }
+.rp .copyrow .actions button { padding: 9px 14px; font-size: 13px; }
+.rp .qr { padding: 10px; border-radius: 8px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); }
+.rp .qr svg { width: 168px; height: 168px; }
+
+/* ---------- the mailbox: contact column beside the inbox ---------- */
+.rp-mail { display: grid; gap: 16px; padding-top: clamp(32px, 3.4vw, 48px); border-top: 1px solid var(--rule); }
+.rp-mail > section.card, .rp-mail > section.card > .part-body { display: contents; }
+.rp-mail > section.card > .part-head { order: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 12px; align-items: center; max-width: 52ch; }
+.rp-mail > section.card > .part-head::before { content: "便"; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 21px/1 var(--f-seal); }
+.rp-mail > section.card > .part-head > .step { display: none; }
+.rp-mail > section.card > .part-head > h2 { margin: 0; }
+.rp-mail > section.card > .part-head > .hint { grid-column: 1 / -1; font-size: 14px; }
+.rp-mail .part-body > .out:first-child { order: 2; }
+.rp-mail .part-body > div:nth-child(2):not([class]) { order: 3; min-width: 0; max-width: 52ch; }
+.rp-mail .part-body > div:nth-child(3):not([class]) { order: 4; }
+.rp-mail .part-body > .contacts { order: 5; max-width: 52ch; }
+.rp-mail-h { order: 6; }
+.rp-mail .part-body > .out:last-child { order: 7; }
+.rp-mail .part-body > .actions { order: 8; }
+@media (min-width: 1360px) {
+  .rp-mail { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); grid-template-rows: auto auto auto auto auto 1fr; column-gap: 56px; align-items: start; }
+  .rp-mail > section.card > .part-head { grid-column: 1; grid-row: 1; }
+  .rp-mail .part-body > .out:first-child { grid-column: 1; grid-row: 2; }
+  .rp-mail .part-body > div:nth-child(2):not([class]) { grid-column: 1; grid-row: 3; }
+  .rp-mail .part-body > div:nth-child(3):not([class]) { grid-column: 1; grid-row: 4; }
+  .rp-mail .part-body > .contacts { grid-column: 1; grid-row: 5; }
+  .rp-mail-h { grid-column: 2; grid-row: 1; align-self: end; }
+  .rp-mail .part-body > .actions { grid-column: 2; grid-row: 2; }
+  .rp-mail .part-body > .out:last-child { grid-column: 2; grid-row: 3 / 7; }
+}
+.rp-mail .contact-qr { background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); max-width: 220px; margin-top: 10px; }
+.rp-mail .contacts { display: grid; gap: 10px; margin: 0; }
+.rp-mail .contacts textarea { font-family: var(--f-mono); }
+/* the inbox and the contacts as ruled rows; each message an envelope */
+.rp-mail .deals { display: grid; gap: 0; border-top: 1px solid var(--rule-2); }
+.rp-mail .deal { position: relative; display: grid; gap: 6px; padding: 14px 4px 14px 60px; border-radius: 0; background: none; box-shadow: none; border-bottom: 1px solid var(--rule); }
+.rp-mail .part-body > .out .deal::before {
+  content: ""; position: absolute; left: 4px; top: 16px; width: 40px; height: 28px; border-radius: 4px; background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--rule-2);
+  background-image: linear-gradient(155deg, transparent 49%, var(--rule-2) 50%, transparent 51%), linear-gradient(-155deg, transparent 49%, var(--rule-2) 50%, transparent 51%);
+  background-size: 50% 100%; background-position: left, right; background-repeat: no-repeat;
+}
+.rp-mail .contacts .deal { padding-left: 0; }
+.rp-mail .deal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.rp-mail .deal-head strong { font: 600 15px/1.3 var(--f-body); color: var(--head); }
+.rp-mail .deal-head span { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+.rp-mail .deal-head span.is-mono { font: 400 12px/1.4 var(--f-mono); }
+.rp-mail .deal-head small { margin-left: auto; font: 400 12px/1.3 var(--f-body); color: var(--pool-2); }
+.rp-mail .deal-head button { margin-left: auto; padding: 9px 14px; font-size: 13px; }
+.rp-mail .deal small { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.rp-mail .deal .deal-about { max-width: 70ch; font: 400 13.5px/1.5 var(--f-body); color: var(--ink); }
+.rp-mail .deal .deal-about:empty { display: none; }
+
+@media (max-width: 720px) {
+  .rp-sec { gap: 26px; }
+  .rp-panel { padding: 16px; }
+  .rp-mail .deal { padding-left: 52px; }
+  .rp-mail .part-body > .out .deal::before { width: 36px; height: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp *, .rp *::before, .rp *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}

@@ -1,0 +1,178 @@
+/* Fund member (HNK-34.T5, approved sample design-samples/internal/member.html): the fund as a
+   section through its shielded pool, levels drawn to scale (lib/fund-pool.ts); the figures beside
+   it as big numbers without boxes; deposit slips 受領書 on a tray, the solvency report as a printed
+   statement 支払能力報告, the deposit slip 入金票; limits and privacy as text on the paper. The
+   pool is the only dark object on the page. Shared parts in role-paper.css. */
+
+/* ---------- caption: the member's plate 会員証 and the member's units ---------- */
+.fm-plate { display: grid; margin: 4px 0 0; }
+.fm-plate > div { display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.fm-plate dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
+.fm-plate dd { margin: 0; min-width: 0; font: 500 14px/1.35 var(--f-body); color: var(--head); }
+.fm-fp { font: 500 15px/1.2 var(--f-mono) !important; letter-spacing: .02em; }
+.fm-quiet { color: var(--ink-2); font-weight: 400; }
+.fm-share { display: grid; gap: 4px; }
+.fm-share > small { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
+.fm-share > strong { font: 500 clamp(44px, 3.8vw, 62px)/1 var(--f-body); letter-spacing: -.03em; color: var(--head); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fm-share > strong small { font: 500 .36em/1 var(--f-body); letter-spacing: 0; color: var(--ink-2); margin-left: 4px; }
+.fm-share > span { font: 400 13.5px/1.45 var(--f-body); color: var(--ink); }
+.fm-share > span b { font-family: var(--f-mono); font-weight: 500; color: var(--head); }
+.fm-note { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font: 400 13px/1.5 var(--f-body); color: var(--ink); }
+.fm-note .rp-hanko { width: 26px; height: 26px; font-size: 13px; }
+.fm-note.is-bad .rp-hanko, .fm-note.is-bad b { color: var(--seal); }
+
+/* ---------- the shielded pool in section ---------- */
+.fm-pool-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.fm-pool-h h2 { font-size: clamp(22px, 1.9vw, 30px) !important; }
+.fm-pool-h p { font: 400 13px/1.4 var(--f-body); color: var(--ink-2); max-width: 56ch; }
+.fm-pool-row { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.fm-basin { display: block; width: 100%; height: auto; overflow: visible; }
+.fm-basin text { font-family: var(--f-body); }
+.fm-basin .t-ink { fill: var(--ink-2); font-size: 14px; }
+.fm-basin .t-mist { fill: var(--mist); font-size: 15px; font-weight: 500; }
+.fm-basin .t-num { fill: var(--glint); font-family: var(--f-mono); font-size: 14px; }
+.fm-basin .t-head { fill: var(--head); font-size: 14.5px; font-weight: 500; }
+.fm-basin .t-head-mono { fill: var(--head); font-family: var(--f-mono); font-size: 13px; }
+.fm-basin .t-seal { fill: var(--seal); font-size: 14.5px; font-weight: 600; }
+.fm-earth { stroke: var(--fold); stroke-width: 1; opacity: .55; }
+.fm-silt-bg { fill: var(--pool); }
+.fm-silt-fg { stroke: var(--fold); stroke-width: 1.6; }
+.fm-ground { stroke: var(--ink); stroke-width: 1.5; }
+.fm-pool { fill: var(--pool); }
+.fm-open { fill: var(--wave); }
+.fm-split { stroke: var(--pool-2); stroke-width: 3; }
+.fm-cash { fill: var(--pool-2); }
+.fm-surface { stroke: var(--glint); stroke-width: 1.5; }
+.fm-leader { stroke: var(--ink); stroke-width: 1; }
+.fm-owe { stroke: var(--mist); stroke-width: 2; stroke-dasharray: 8 6; }
+.fm-owe.is-over { stroke: var(--fiber); }
+.fm-mine { stroke: var(--fiber); stroke-width: 5; stroke-linecap: round; }
+.fm-ring { fill: none; stroke: var(--glint); stroke-width: 1.2; opacity: .7; }
+/* the levels rise in order, the owed line settles, the repayments ripple */
+.fm-lv { transform-box: fill-box; transform-origin: 50% 100%; }
+.fm-basin.is-fill .fm-lv { animation: fm-rise 1200ms var(--ease-land) both; }
+.fm-basin.is-fill .fm-lv.d1 { animation-delay: 180ms; }
+.fm-basin.is-fill .fm-lv.d2 { animation-delay: 360ms; }
+@keyframes fm-rise { from { transform: scaleY(0); } to { transform: none; } }
+.fm-basin.is-fill .fm-owe-g { animation: fm-owe 700ms var(--ease-land) 1300ms both; }
+@keyframes fm-owe { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.fm-basin.is-fill .fm-ring { transform-box: fill-box; transform-origin: center; animation: fm-ring 1600ms var(--ease-land) 1200ms both; }
+.fm-basin.is-fill .fm-ring.r1 { animation-delay: 1300ms; }
+.fm-basin.is-fill .fm-ring.r2 { animation-delay: 1400ms; }
+.fm-basin.is-fill .fm-ring.r3 { animation-delay: 1500ms; }
+.fm-basin.is-fill .fm-ring.r4 { animation-delay: 1600ms; }
+.fm-basin.is-fill .fm-ring.r5 { animation-delay: 1700ms; }
+.fm-basin.is-fill .fm-ring.r6 { animation-delay: 1800ms; }
+.fm-basin.is-fill .fm-ring.r7 { animation-delay: 1900ms; }
+.fm-basin.is-fill .fm-ring.r8 { animation-delay: 2000ms; }
+.fm-basin.is-fill .fm-ring.r9 { animation-delay: 2100ms; }
+@keyframes fm-ring { from { transform: scale(.2); opacity: 0; } 40% { opacity: .9; } to { transform: none; opacity: .7; } }
+.fm-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font: 400 12.5px/1.3 var(--f-body); color: var(--ink); }
+.fm-key li { display: flex; align-items: center; gap: 7px; }
+.fm-key i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.fm-key .k-cash { background: var(--pool-2); box-shadow: inset 0 2px 0 var(--glint); }
+.fm-key .k-open { background: var(--wave); }
+.fm-key .k-over { background: repeating-linear-gradient(135deg, var(--fold) 0 1.5px, var(--pool) 1.5px 4px); }
+.fm-key .k-owe { width: 20px; height: 0; border-radius: 0; border-top: 2px dashed var(--pool-2); }
+.fm-key .k-mine { background: var(--fiber); box-shadow: inset 0 0 0 1px var(--fold); }
+
+/* the figures beside the pool: big numbers, no boxes */
+.fm-solv { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; }
+.fm-solv .rp-hanko { width: 48px; height: 48px; font-size: 24px; box-shadow: inset 0 0 0 3px currentColor; color: var(--pool-2); }
+.fm-solv b { display: block; font: 600 16px/1.25 var(--f-body); color: var(--head); }
+.fm-solv span span { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+.fm-solv.is-bad .rp-hanko, .fm-solv.is-bad b { color: var(--seal); }
+.fm-solv.is-wait .rp-hanko { color: var(--ink-2); }
+.fm-figs { margin: 0; display: grid; }
+.fm-figs > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 11px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.fm-figs dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
+.fm-figs dt small { display: block; font-size: 12px; color: var(--ink-2); opacity: .9; }
+.fm-figs dd { margin: 0; text-align: right; font: 500 20px/1.1 var(--f-mono); letter-spacing: -.01em; color: var(--head); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fm-figs dd small { font: 400 12px/1 var(--f-body); color: var(--ink-2); margin-left: 3px; }
+.fm-figs .is-big dd { font-size: 26px; }
+.fm-figs .is-bad dd, .fm-figs .is-bad dt { color: var(--seal); }
+
+/* ---------- the tray: deposit slips 受領書 ---------- */
+.fm-tray { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 26px 22px; align-items: start; }
+.fm-tray > .banner, .fm-tray > .rp-empty { grid-column: 1 / -1; }
+.fm-doc { position: relative; display: grid; gap: 8px; padding: 18px; background: var(--sheet); box-shadow: var(--lift); transform: rotate(var(--r, 0deg)); animation: fm-drop var(--dur-enter) var(--ease-land) var(--d, 0ms) both; }
+@keyframes fm-drop { from { transform: translateY(24px) rotate(-2deg); opacity: 0; } to { transform: rotate(var(--r, 0deg)); opacity: 1; } }
+.fm-doc::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 7px; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 100% 50%, 93% 100%, 86% 30%, 79% 90%, 72% 30%, 65% 80%, 58% 20%, 51% 90%, 44% 30%, 37% 80%, 30% 20%, 23% 90%, 16% 40%, 9% 90%, 0 30%); }
+.fm-doc header { display: grid; gap: 3px; padding: 0 64px 10px 0; border-bottom: 2px solid var(--head); }
+.fm-doc header b { font: 800 20px/1 var(--f-seal); letter-spacing: .3em; color: var(--head); }
+.fm-doc header small { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); }
+.fm-doc header small .mono { font-size: 11.5px; }
+.fm-doc-units { margin-top: 6px !important; font: 500 32px/1 var(--f-mono); letter-spacing: -.02em; color: var(--head); overflow-wrap: anywhere; }
+.fm-doc-units small { font: 400 13px/1 var(--f-body); color: var(--ink-2); margin-left: 4px; }
+.fm-doc-value { font: 400 13.5px/1.4 var(--f-body); color: var(--ink); }
+.fm-doc-stamp { position: absolute; right: 14px; top: 12px; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; font: 800 26px/1 var(--f-seal); transform: rotate(-9deg); box-shadow: inset 0 0 0 3px currentColor; animation: rp-hk var(--dur-seal) var(--ease-snap) calc(var(--d, 0ms) + 380ms) both; }
+.fm-doc[data-stamp="ok"] .fm-doc-stamp { color: var(--pool-2); }
+.fm-doc[data-stamp="wait"] .fm-doc-stamp { color: var(--ink-2); box-shadow: inset 0 0 0 2px currentColor; }
+.fm-doc[data-stamp="bad"] .fm-doc-stamp { color: var(--seal); }
+.fm-doc-stamp-t { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+.fm-doc[data-stamp="bad"] .fm-doc-stamp-t { color: var(--seal); }
+.fm-doc-note { padding: 8px 10px; border-radius: 10px; background: var(--wash); font: 400 12.5px/1.45 var(--f-body); color: var(--head); }
+.fm-doc .actions { margin-top: 4px; }
+.fm-doc .out:empty { display: none; }
+/* the slip turns into a withdrawal request 払戻請求 in place */
+.fm-req { display: grid; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 2px dashed var(--rule-2); }
+.fm-req > b { font: 800 17px/1 var(--f-seal); letter-spacing: .3em; color: var(--seal); }
+.fm-req small { font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
+.fm-paid { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-2); }
+.fm-paid li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); font: 400 13.5px/1.4 var(--f-body); color: var(--ink); }
+.fm-paid li .rp-hanko { width: 26px; height: 26px; font-size: 13px; }
+.fm-paid li .mono { color: var(--head); }
+
+/* ---------- the solvency report as a printed statement ---------- */
+.fm-stmt { position: relative; padding: 24px 26px 22px; background: var(--sheet); box-shadow: var(--lift); max-width: 640px; display: grid; gap: 14px; animation: fm-drop var(--dur-enter) var(--ease-land) both; }
+.fm-stmt header { padding: 0 74px 12px 0; border-bottom: 2px solid var(--head); }
+.fm-stmt header b { font: 800 24px/1 var(--f-seal); letter-spacing: .3em; color: var(--head); }
+.fm-stmt header small { display: block; margin-top: 7px; font: 400 12.5px/1.35 var(--f-body); color: var(--ink-2); }
+.fm-stmt dl { margin: 0; }
+.fm-stmt dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--fiber); align-items: baseline; }
+.fm-stmt dt { font: 400 13.5px/1.35 var(--f-body); color: var(--ink); }
+.fm-stmt dd { margin: 0; text-align: right; font: 500 15px/1.3 var(--f-mono); color: var(--head); }
+.fm-stmt dl > div.is-sum { border-bottom: 2px solid var(--head); }
+.fm-stmt dl > div.is-sum dt { font-weight: 600; color: var(--head); }
+.fm-stmt .fm-doc-stamp { width: 66px; height: 66px; font-size: 32px; right: 22px; top: 18px; animation-delay: 380ms; }
+.fm-stmt[data-kind="ok"] .fm-doc-stamp { color: var(--pool-2); }
+.fm-stmt[data-kind="bad"] .fm-doc-stamp { color: var(--seal); }
+.fm-stmt[data-kind="wait"] .fm-doc-stamp { color: var(--ink-2); }
+
+/* ---------- deposit slip 入金票 ---------- */
+.fm-dep { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; align-items: start; }
+.fm-dslip { position: relative; padding: 22px 24px; background: var(--sheet); box-shadow: var(--lift); display: grid; gap: 12px; min-width: 0; }
+.fm-dslip header b { font: 800 22px/1 var(--f-seal); letter-spacing: .3em; color: var(--head); }
+.fm-dslip header small { display: block; margin-top: 6px; font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.fm-dslip dl { margin: 0; display: grid; gap: 8px; }
+.fm-dslip dt { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); }
+.fm-dslip dd { margin: 2px 0 0; min-width: 0; font-size: 13.5px; }
+.fm-dslip .qr { justify-self: start; padding: 6px; }
+.fm-dslip .qr svg { width: 156px; height: 156px; }
+.fm-qr-veil { width: 156px; height: 156px; display: grid; place-items: center; text-align: center; padding: 14px; border-radius: 6px; background: var(--hatch); font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+.fm-uri { font-size: 12px; }
+
+/* ---------- limits and privacy: text set on the paper, no boxes ---------- */
+.fm-prose { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 24px 48px; }
+.fm-prose article { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.fm-prose h3 { font-size: 22px; }
+.fm-prose p { font: 400 15px/1.65 var(--f-body); color: var(--ink); max-width: 62ch; }
+
+@media (max-width: 1100px) {
+  .fm-pool-row, .fm-dep { grid-template-columns: minmax(0, 1fr); }
+  .fm-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+}
+@media (max-width: 720px) {
+  .fm-plate > div { grid-template-columns: 7.5em minmax(0, 1fr); }
+  .fm-figs { grid-template-columns: minmax(0, 1fr); }
+  .fm-figs > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .fm-figs dd { font-size: 19px; }
+  .fm-figs .is-big dd { font-size: 24px; }
+  .fm-prose { grid-template-columns: minmax(0, 1fr) !important; }
+  .fm-stmt { padding: 20px 18px; }
+  .fm-stmt header { padding-right: 60px; }
+  .fm-stmt .fm-doc-stamp { width: 52px; height: 52px; font-size: 25px; right: 14px; }
+  .fm-basin .t-mist, .fm-basin .t-head, .fm-basin .t-seal { font-size: 19px; }
+  .fm-basin .t-num, .fm-basin .t-ink, .fm-basin .t-head-mono { font-size: 17px; }
+  .fm-basin .opt { display: none; }
+}

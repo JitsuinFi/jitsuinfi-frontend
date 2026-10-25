@@ -27,7 +27,7 @@ import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup,
 import { boardStatus, buyerTotals, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, nextAction, routeDone, sealCount, sortInvoices, storeId, withSignature, type BuyerAction, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { NET } from "../lib/network";
-import { discard, draft, loadState, saveState, send, type Received } from "../lib/relay";
+import { discard, draft, loadState, RelayError, saveState, send, type Received } from "../lib/relay";
 import { encodeMessage, signingBytes, verifyHeader, type Header } from "../lib/relay-message";
 import { Page } from "../app/AppShell";
 import { MailboxCard, takeContact, type InboxAction } from "./MailboxCard";
@@ -66,6 +66,16 @@ async function relayHistory(): Promise<HistoryDoc | null> {
   await myMailbox();
   const b = await loadState(s.inbox, relayDeps);
   return b ? decodeBackup(b) : null;
+}
+
+/** Why the relay copy of the history could not be read, in a calm sentence (HNK-34 E2E). */
+function backupProblem(e: unknown): string {
+  if (e instanceof RelayError) {
+    if (e.status === undefined) return "The relay could not be reached.";
+    if (e.status >= 500) return `The relay had a problem on its side (${e.status}).`;
+    return `The relay refused to hand it over (${e.status}).`;
+  }
+  return "The copy on the relay could not be opened.";
 }
 
 /** How far `findIndex` looks past the next index for an invoice addressed to an older key. */
@@ -248,11 +258,34 @@ function SendSignature({ n, sig, replyTo, sent }: { n: string; sig: string; repl
 function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode {
   const card = useRef<HTMLTextAreaElement>(null);
   const out = useOut();
+  const [copied, setCopied] = useState(false);
   return (
-    <details className="by-share">
+    <details className="by-share" open>
       <summary>Give this key to the supplier</summary>
       <div>
         <p className="hint">Give this key to the supplier for your next invoice. Each invoice uses a different key, so the public board cannot link your invoices.</p>
+        {/* HNK-34 E2E (finding 4): the whole key, so it can also be handed over by hand: the
+            supplier's "Buyer key" field takes these 64 hex characters */}
+        <div className="by-keyhex">
+          <span className="by-keyhex-k">{`Your invoice key #${k}`}</span>
+          <code className="by-keyhex-v">
+            {invoicePk}
+          </code>
+          <Button
+            secondary
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(invoicePk);
+                setCopied(true);
+              } catch {
+                setCopied(false);
+              }
+            }}
+          >
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <p className="by-keyhex-or">Copy it to the supplier yourself, or send it sealed to the supplier's mailbox:</p>
         <label className="field">
           <span>The supplier's contact card</span>
           <textarea rows={2} spellCheck="false" placeholder="the supplier's jitsuin-contact-v1:…" ref={card} />
@@ -467,6 +500,7 @@ export function BuyerPage(): ReactNode {
         const id = json<{ identity_pk: string }>(wasm.buyerKeysBytes(m.slice(), 0)).identity_pk;
         // the relay copy first: another device may have issued newer certificates
         let restored = 0;
+        let relayUnread: unknown = null;
         try {
           const remote = await relayHistory();
           if (remote) {
@@ -485,8 +519,12 @@ export function BuyerPage(): ReactNode {
             await backupHistory(hist);
           }
         } catch (e) {
-          said.push({ kind: "warn", text: `The relay copy of your history was not checked: ${e instanceof Error ? e.message : String(e)}` });
+          relayUnread = e; // said below, unless the board shows there is nothing it could hold
         }
+        // HNK-34 E2E (finding 3): "no copy yet" (404) is normal and says nothing; a copy that could
+        // not be read is said calmly, and not at all for a first-time buyer whose board check shows
+        // no certificate anywhere (the copy could only hold what the board would show).
+        const unreadNote = (): Note => ({ kind: "warn", title: "Your history backup was not read this time.", text: `${backupProblem(relayUnread)} This device's own copy is used; nothing is lost, and the backup is read again the next time you show your key.` });
         const boardJson = (await board.current!.files?.[0]?.text()) ?? (await loadBoard((u, i) => fetch(u, i)).catch(() => undefined))?.json;
         if (boardJson) {
           const r = json<{ next_index: number; dropped: number[]; successor_on_board: boolean }>(wasm.historyNext(JSON.stringify(hist.certs), id, boardJson));
@@ -499,6 +537,7 @@ export function BuyerPage(): ReactNode {
           if (restored && !r.dropped.length) await saveHistory(hist);
           if (restored) said.push({ kind: "ok", title: "History restored from the relay.", text: `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.` });
           successorOnBoard = r.successor_on_board;
+          if (relayUnread !== null && (hist.certs.length > 0 || r.next_index > 0 || successorOnBoard)) said.unshift(unreadNote());
           setBlocked(successorOnBoard);
           k = r.next_index;
           setAnchored(r.next_index);
@@ -508,6 +547,7 @@ export function BuyerPage(): ReactNode {
               : { kind: "ok", title: "History checked against the board.", text: `${plural(r.next_index, "certificate")} anchored.` },
           );
         } else {
+          if (relayUnread !== null) said.push(unreadNote());
           if (restored) {
             hist = await loadHistory(); // an unchecked relay copy is not used
             k = localNextIndex(hist);

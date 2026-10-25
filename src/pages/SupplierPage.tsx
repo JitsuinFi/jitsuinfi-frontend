@@ -30,7 +30,7 @@ import { NET } from "../lib/network";
 import { PROVIDER } from "../lib/provider";
 import { draft, send, signInWasm, type Received } from "../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../lib/relay-message";
-import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceIdTaken, looksShielded, nextMove, nextStep, route, sortDeals, STEPS, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
+import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceIdTaken, looksShielded, nextMove, nextStep, route, sortDeals, standing, STEPS, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
 import { reducedMotion } from "../landing/motion";
 import { MailboxCard, takeContact, type InboxAction } from "./MailboxCard";
 import { Seikyusho, type SheetFields } from "./try/Seikyusho";
@@ -50,6 +50,21 @@ const seen = new Map<string, string>();
 let boardSays: Record<string, string> = {};
 // The 名刺 fold of the mailbox stays as the supplier left it across redraws.
 let cardOpen = false;
+
+// HNK-34 E2E (finding 1): what the supplier just did, kept as a hanko and a sentence at the top of
+// the desk's work until the supplier moves on (picks a station, opens another deal, writes an
+// invoice or leaves the screen). Every action redraws the desk on the next station, so the outcome
+// of the action itself was never seen.
+interface Did {
+  n: string;
+  glyph: string;
+  title: string;
+  text: string;
+  /** "warn": the action came back refused by someone else (a declined offer). */
+  warn?: boolean;
+}
+let did: Did | null = null;
+const didIt = (d: { n: string }, glyph: string, title: string, text: string, warn?: boolean): void => void (did = { n: d.n, glyph, title, text, ...(warn ? { warn } : {}) });
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
@@ -120,6 +135,7 @@ export function SupplierPage(): ReactNode {
   const [ask, setAsk] = useState(0);
   const [view, setView] = useState<{ gen: number; deals: SupplierDeal[] } | null>(null);
   const refresh = () => setAsk((g) => g + 1);
+  useEffect(() => () => void (did = null), []);
   useEffect(() => {
     const store = account.current?.store;
     if (!store) return;
@@ -181,7 +197,7 @@ function SupplierDesk({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refr
         return `The buyer's key ${k.slice(0, 10)}… is on your next invoice (Write an invoice).`;
       },
     },
-    "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", async (d, h) => {
+    "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", ["登", "Entry request received"], async (d, h) => {
       const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number; history_tag?: string };
       // HNK-26.T8: with the buyer's history checked, the entry must carry the certificate's tag
       const r = { n: d.n, financier_pk: b.financier_pk, salt: b.salt, ...(b.discount !== undefined ? { discount: b.discount, tenor: b.tenor } : {}), ...(b.history_tag ? { history_tag: b.history_tag } : {}) };
@@ -190,18 +206,18 @@ function SupplierDesk({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refr
       await save({ ...d, entry_request: r });
       return `The financier checked the board: sign the entry for ${d.invoice_id} (Step 3).`;
     }),
-    "deal.letter": fromFinancier(refresh, "Keep the letter", async (d, h, files) => {
+    "deal.letter": fromFinancier(refresh, "Keep the letter", ["印", "Assignment letter received"], async (d, h, files) => {
       if (!files[0]) throw new Error("the letter came without its PDF");
       await save({ ...d, letter_in: { letter: String(h.body.letter), pdf: bytesToB64(files[0]), at: Date.now() } });
       return `The assignment letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
     }),
-    "deal.bundle": fromFinancier(refresh, "Keep the settlement bundle", async (d, h) => {
+    "deal.bundle": fromFinancier(refresh, "Keep the settlement bundle", ["済", "Repaid and settled"], async (d, h) => {
       const bundle = String(h.body.bundle);
       if (json<{ nullifier: string }>(wasm.verifyBundle(bundle)).nullifier !== d.n) throw new Error("this bundle is for another invoice");
       await save({ ...d, bundle });
       return `${d.invoice_id}: the buyer repaid and the financier posted the settled entry. The bundle proves the whole deal on the Verify page.`;
     }),
-    "deal.advance": fromFinancier(refresh, "Note the advance", async (d, h) => {
+    "deal.advance": fromFinancier(refresh, "Note the advance", ["金", "The financier paid the advance"], async (d, h) => {
       const b = h.body as { txid: string; advance_zat: number };
       await save({ ...d, advance_notice: { txid: b.txid, advance_zat: b.advance_zat, at: Date.now() } });
       return `The financier paid ${zatToZec(b.advance_zat)} ZEC in ${b.txid.slice(0, 10)}…: check it in your wallet (Step 5).`;
@@ -292,6 +308,7 @@ function Ledger({ deals, open, refresh }: { deals: SupplierDeal[]; open: Supplie
           aria-pressed={!open}
           onClick={() => {
             writing = true;
+            did = null;
             refresh();
           }}
         >
@@ -307,6 +324,7 @@ function Ledger({ deals, open, refresh }: { deals: SupplierDeal[]; open: Supplie
             const stations = route(d, isSettled(d));
             const now = nowStation(stations);
             const move = nextMove(d);
+            const stands = standing(d, isSettled(d));
             const board = d.buyer_signature && d.offer ? (boardSays[d.n] ?? "") : "";
             return (
               <li key={d.n}>
@@ -315,11 +333,12 @@ function Ledger({ deals, open, refresh }: { deals: SupplierDeal[]; open: Supplie
                   className="sp-ln"
                   aria-current={open?.n === d.n ? "true" : undefined}
                   onClick={() => {
+                    if (d.n !== open?.n) did = null;
                     openDeal(d.n);
                     refresh();
                   }}
                 >
-                  <span className="sp-ln-g" lang="ja" data-s={move ? now.state : "done"} aria-hidden="true">
+                  <span className="sp-ln-g" lang="ja" data-s={stands === "settled" ? "done" : now.state} aria-hidden="true">
                     {STATION[now.key].glyph}
                   </span>
                   <span className="sp-ln-id">{d.invoice_id}</span>
@@ -337,9 +356,13 @@ function Ledger({ deals, open, refresh }: { deals: SupplierDeal[]; open: Supplie
                     <span className={move.wait ? "sp-ln-next is-wait" : "sp-ln-next"}>
                       <b>Next:</b> {move.text}
                     </span>
-                  ) : (
+                  ) : stands === "settled" ? (
                     <span className="sp-ln-next">
-                      <b>Complete.</b> {d.bundle ? "Repaid and settled." : "The buyer pays the financier at maturity."}
+                      <b>Settled.</b> The buyer repaid the financier.
+                    </span>
+                  ) : (
+                    <span className="sp-ln-next is-wait">
+                      <b>Advance received.</b> {`Waiting for the buyer to pay the financier, due ${daysToDate(d.due_date)}.`}
                     </span>
                   )}
                   {board ? <span className="sp-ln-board">{board}</span> : null}
@@ -587,7 +610,7 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
       </div>
       <section className="sp-work" aria-label="Write an invoice">
         <Work glyph="新" step="New" title="Write an invoice" hint="Its key is derived from your passkey, the invoice number and the buyer's key. The canonical invoice is what the buyer signs; its fingerprint N is what financiers look up on the board. Write the number, dates and amount on the sheet above.">
-          <Field label="Buyer key for this invoice" placeholder="64 hex characters from the buyer's screen" value={arrivedBuyerKey ?? undefined} help={arrivedBuyerKey ? "Arrived in your mailbox from the buyer; it is on this sheet." : undefined} inputRef={buyer} />
+          <Field label="Buyer key for this invoice" placeholder="64 hex characters from the buyer's screen" value={arrivedBuyerKey ?? undefined} help={arrivedBuyerKey ? "Arrived in your mailbox from the buyer; it is on this sheet." : "The buyer copies it from their screen (Give this key to the supplier), or sends it to your mailbox."} inputRef={buyer} />
           <FileField label="Invoice document (PDF)" help="Hashed in your browser with SHA-256. The file is never uploaded." inputRef={terms} />
           <Actions>
             <Button
@@ -619,6 +642,7 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
                   openDeal(n);
                   fresh = n;
                   arrivedBuyerKey = null;
+                  didIt({ n }, "新", "Invoice created", `${invoiceId}: its fingerprint N is on the sheet. Next: send it to the buyer for a signature.`);
                   refresh();
                 } catch (e) {
                   out.error(e);
@@ -693,6 +717,14 @@ function DealView({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): ReactN
   );
   const [view, setView] = useState<StationKey | null>(null);
   const sel = view ?? nowStation(stations).key;
+  // the outcome of the action just taken on this deal, until the supplier picks a station
+  const [shown, setShown] = useState<Did | null>(() => (did?.n === d.n ? did : null));
+  const pick = (k: StationKey) => {
+    did = null;
+    setShown(null);
+    setView(k);
+  };
+  const stands = standing(d, settled);
 
   useLayoutEffect(() => {
     if (reducedMotion()) {
@@ -753,24 +785,45 @@ function DealView({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): ReactN
         </div>
       </div>
       <div className="sp-rail-area">
-        <Rail stations={stations} selected={sel} onPick={setView} stamp={stamp} />
+        <Rail stations={stations} selected={sel} onPick={pick} stamp={stamp} />
         <p className="sp-rail-cap" aria-live="polite">
           {move ? (
             <span>
               <b>Next:</b> {`${move.text}.`}
             </span>
+          ) : stands === "settled" ? (
+            <span>
+              <b>Settled:</b> the buyer repaid and the financier posted the settled entry.
+            </span>
           ) : (
             <span>
-              <b>Complete:</b> {`the advance arrived as agreed.${d.bundle ? " The buyer repaid and the financier posted the settled entry." : ""}`}
+              <b>Advance received:</b> {`waiting for the buyer to pay the financier at maturity, due ${daysToDate(d.due_date)}.`}
             </span>
           )}
           {board ? <span className="sp-board-line">{board}</span> : null}
         </p>
       </div>
       <section className="sp-work" aria-label="This station's work">
+        {shown ? <DidLine did={shown} /> : null}
         <StationWork key={sel} d={d} station={sel} stations={stations} board={board} refresh={refresh} />
       </section>
     </>
+  );
+}
+
+/** The outcome of the action just taken: the station's mark pressed as a hanko, and a sentence. */
+function DidLine({ did: x }: { did: Did }): ReactNode {
+  return (
+    <div className={x.warn ? "sp-did is-warn" : "sp-did"} role="status">
+      <span className="sp-did-seal" lang="ja" aria-hidden="true">
+        {x.glyph}
+      </span>
+      <p>
+        <small>{x.warn ? "Came back" : "Done"}</small>
+        <strong>{x.title}</strong>
+        <span>{x.text}</span>
+      </p>
+    </div>
   );
 }
 
@@ -809,7 +862,7 @@ function StationWork({ d, station, stations, board, refresh }: { d: SupplierDeal
           </Actions>
         </Work>
       ) : (
-        <Work glyph="済" step="Done" title="Deal complete" hint="The advance arrived as agreed. The buyer pays the financier at maturity; the settlement bundle arrives in your mailbox then." />
+        <Work glyph="済" step="Waiting" title="Waiting for the buyer to pay" hint={`Your advance arrived as agreed. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the financier then posts the settled entry and the settlement bundle arrives in your mailbox. Nothing to do until then.`} />
       );
   }
 }
@@ -826,6 +879,7 @@ function signatureFromInbox(refresh: Refresh): InboxAction {
       wasm.bundleBuild(JSON.stringify({ invoice: d.invoice, buyer_signature: s }));
       await save({ ...d, buyer_signature: s });
       openDeal(d.n);
+      didIt(d, "照", "Signed by the buyer", "The buyer's signature arrived and holds for exactly this invoice. Next: offer it to one financier.");
       refresh();
       return `The buyer signed ${d.invoice_id}. Next: offer it to one financier.`;
     },
@@ -836,7 +890,7 @@ function signatureFromInbox(refresh: Refresh): InboxAction {
  * HNK-26.T16: a message from the financier's node about one of this device's deals, accepted only
  * from the financier the invoice was offered to (its key signed the header).
  */
-function fromFinancier(refresh: Refresh, label: string, use: (d: SupplierDeal, h: Header, files: Uint8Array[]) => Promise<string>): InboxAction {
+function fromFinancier(refresh: Refresh, label: string, [glyph, title]: [string, string], use: (d: SupplierDeal, h: Header, files: Uint8Array[]) => Promise<string>): InboxAction {
   return {
     label,
     run: async (r) => {
@@ -846,6 +900,7 @@ function fromFinancier(refresh: Refresh, label: string, use: (d: SupplierDeal, h
       if (!d.offer || d.offer.financier_pk !== h.signer) throw new Error("this message is not from the financier you offered this invoice to");
       const done = await use(d, h, r.message.attachments);
       openDeal(d.n);
+      didIt(d, glyph, title, done);
       refresh();
       return done;
     },
@@ -865,6 +920,7 @@ function declineFromInbox(refresh: Refresh): InboxAction {
       const reason = String(h.body.reason ?? "");
       await save({ ...d, offer: undefined, declined: [...(d.declined ?? []), { financier_pk: d.offer.financier_pk, reason, at: Date.now() }] });
       openDeal(d.n);
+      didIt(d, "署", "Offer declined", `${reason} You can offer ${d.invoice_id} to another financier.`, true);
       refresh();
       return `Declined: ${reason} You can offer ${d.invoice_id} to another financier.`;
     },
@@ -932,6 +988,7 @@ function SignatureWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): R
               if (!/^[0-9a-f]{128}$/.test(s)) throw new Error("expected 128 hex characters");
               wasm.bundleBuild(JSON.stringify({ invoice: d.invoice, buyer_signature: s }));
               await save({ ...d, buyer_signature: s });
+              didIt(d, "照", "Buyer's signature checked", "The buyer's key for this invoice signed exactly these bytes. Next: offer it to one financier.");
               refresh();
             } catch (e) {
               out.error(e);
@@ -1082,7 +1139,9 @@ function OfferWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): React
                 relayDeps,
               );
               await send(c.mailbox_pk, await encodeMessage(header, []), relayDeps);
-              await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at: Date.now() } } });
+              const at = Date.now();
+              await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
+              didIt(d, "署", "Offer sent: in the financier's mailbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you for the board entry.`);
               refresh();
             } catch (e) {
               out.error(e);
@@ -1133,6 +1192,7 @@ function EntryWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): React
                   return;
                 }
                 await save({ ...d, entry_request: r });
+                didIt(d, "登", "Entry request read", "It is for this invoice, from the financier you offered it to. Sign the board entry below.");
                 refresh();
               } catch (e) {
                 out.error(e);
@@ -1178,11 +1238,14 @@ function EntryWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): React
               );
               const entry = { memo: r.memo, commitment: r.commitment, tagged: req.history_tag !== undefined, discount: disc ?? 0, tenor: ten ?? 0 };
               await save({ ...d, entry });
+              didIt(d, "登", "Board entry signed", "Send the entry code under 登 to the financier: its node posts it to the board.");
               // HNK-26.T16: straight to the financier's node, which posts it to the board
               if (d.offer?.sent) {
                 const hd = draft("deal.entry", { role: "supplier", mailbox_pk: myIdentity().mailbox_pk }, d.offer.sent.to, relayDeps, { n: d.n, body: { memo: r.memo } });
                 await send(d.offer.sent.to, await encodeMessage(hd as Header), relayDeps);
-                await save({ ...d, entry: { ...entry, sent: Date.now() } });
+                const at = Date.now();
+                await save({ ...d, entry: { ...entry, sent: at } });
+                didIt(d, "登", "Entry signed and sent to the financier's node", `On ${when(at)}. The node posts it to the board; the first valid entry for N wins. The assignment letter comes next.`);
               }
               refresh();
             } catch (e) {
@@ -1231,7 +1294,14 @@ function SealWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): ReactN
         const hd = draft("deal.seal", { role: "supplier", mailbox_pk: myIdentity().mailbox_pk }, t, relayDeps, { n: d.n, body: { seal: s0, index: 0 } });
         await send(t, await encodeMessage(hd as Header), relayDeps);
       }
-      if (to.length) await save({ ...d, seal: { letter: code, s0, sent: Date.now() } });
+      const at = Date.now();
+      if (to.length) await save({ ...d, seal: { letter: code, s0, sent: at } });
+      didIt(
+        d,
+        "印",
+        to.length ? "Letter sealed and sent" : "Letter sealed",
+        to.length ? `Your seal went to the buyer and the financier on ${when(at)}. The buyer seals next; the financier's seal arrives with the advance.` : "Send your seal under 印 to the buyer and the financier.",
+      );
       refresh();
     } catch (e) {
       out.error(e);
@@ -1327,7 +1397,9 @@ function AdvanceWork({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): Rea
           onClick={async () => {
             try {
               const receivedZat = zecToZat(value(got));
-              await save({ ...d, advance: { txid: hex64(value(txid), "transaction id"), received_zat: receivedZat, matches: receivedZat === agreed } });
+              const tx = hex64(value(txid), "transaction id");
+              await save({ ...d, advance: { txid: tx, received_zat: receivedZat, matches: receivedZat === agreed } });
+              if (receivedZat === agreed) didIt(d, "金", "Advance received as agreed", `${zatToZec(receivedZat)} ZEC in ${short(tx)}. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the settlement bundle arrives in your mailbox then.`);
               refresh();
             } catch (e) {
               out.error(e);

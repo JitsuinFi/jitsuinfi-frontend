@@ -399,7 +399,7 @@ export function FundSection({ info, demo }: { info: Info; demo: boolean }): Reac
             )}
             {plan ? (
               <>
-                <p className="cs-note">{`Period ${plan.plan.period} at ${price(plan.plan.nav)} zat per unit, ${zec(plan.plan.cash_zat)} ZEC in cash. ${plan.plan.held ? "Below par: no withdrawal is paid this period." : plan.plan.short ? "Cash does not cover the queue: every request gets the same share, the rest waits." : ""}`}</p>
+                <p className="cs-note">{`Period ${plan.plan.period} at ${price(plan.plan.nav)} zat per unit, valued on the fund's books: ${zec(plan.plan.cash_zat)} ZEC of the fund's cash${plan.plan.wallet_zat !== undefined ? ` (the node's wallet holds ${zec(plan.plan.wallet_zat)} ZEC)` : ""}. ${plan.plan.held ? "Below par: no withdrawal is paid this period." : plan.plan.short ? "Cash does not cover the queue: every request gets the same share, the rest waits." : ""}`}</p>
                 {plan.plan.payouts.length ? (
                   <ul className="cs-q">
                     {plan.plan.payouts.map((x, i) => (

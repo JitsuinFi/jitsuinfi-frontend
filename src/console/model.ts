@@ -50,6 +50,43 @@ export const isDouble = (d: DealLike) => d.state === "Stopped" && (d.stopped ?? 
 /** Where on the route a deal is; -1 for a state the route does not know. */
 export const stationOf = (d: DealLike) => ROUTE.findIndex((r) => r.states.includes(d.state));
 
+/**
+ * The 重 card's words (E2E audit 2026-10-25): whose entry came first on the board, from the node's
+ * `stopped_order` (the stop's board positions matched on this node's commitment). A node from
+ * before that field says only what holds in every order.
+ */
+export function doubleNote(order?: string | null): string {
+  const proof = "No money left this node. Exhibit A proves it to anyone without showing the deal.";
+  switch (order) {
+    case "ours_first":
+      return `Your entry was first on the board; the supplier also signed this invoice for another financier, whose entry came later. An invoice signed twice is not financed, so the deal stopped. ${proof}`;
+    case "theirs_first":
+      return `Another financier registered this invoice first; the supplier signed it for both of you. ${proof}`;
+    case "others_only":
+      return `The supplier signed this invoice for two other financiers; no entry of yours is on the board. ${proof}`;
+    default:
+      return `The supplier signed this invoice for more than one financier. ${proof}`;
+  }
+}
+
+/**
+ * The line under an accepted offer (E2E audit 2026-10-25): with a buyer-history mandate the node
+ * sends the commitment opening only once the buyer's history passes (`opening` from /node/mail).
+ */
+export function acceptedLine(a: { advance_zat: number; min_confirmations: number }, opening?: string | null): string {
+  const terms = `Accepted: ${zec(a.advance_zat)} ZEC after ${a.min_confirmations} confirmation${a.min_confirmations === 1 ? "" : "s"}.`;
+  switch (opening) {
+    case "awaiting_history":
+      return `${terms} Waiting for the buyer's history; the supplier gets your commitment opening once it passes.`;
+    case "sent_after_history":
+      return `${terms} The buyer's history passed; the supplier has your commitment opening.`;
+    case "sent":
+      return `${terms} The supplier has your commitment opening.`;
+    default:
+      return `${terms} The supplier gets your commitment opening, after the buyer's history when your mandate asks for it.`;
+  }
+}
+
 /** The station whose check found the stop: AlreadyFinanced at 照 (the board check), DoubleFinanced at 登 (the entry on the board). */
 export function stopStation(stopped: string): number {
   return stopped.startsWith("DoubleFinanced") ? 2 : 0;

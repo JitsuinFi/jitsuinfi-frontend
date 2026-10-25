@@ -42,6 +42,8 @@ export interface Offer {
   advance_zat?: number;
   supplier_address?: string;
   accepted?: { advance_zat: number; min_confirmations: number; accepted_at: number } | null;
+  /** E2E audit 2026-10-25: where the commitment opening is, once accepted. */
+  opening?: "sent" | "awaiting_history" | "sent_after_history";
   /** HNK-26.T6: when the node declines it unanswered (seconds since the epoch). */
   expires_at?: number;
   /** HNK-30.T11: the offer against the private mandate, checked on the node. */
@@ -80,6 +82,8 @@ export interface DealRow {
   advance_txid?: string;
   stopped?: string;
   stopped_winner?: string;
+  /** E2E audit 2026-10-25: whose entry came first on the board. */
+  stopped_order?: "ours_first" | "theirs_first" | "others_only";
   // HNK-32.T4 (BL-D23-14): the entry's confirmations at the last board check, and the minimum
   confirmations?: number | null;
   min_confirmations?: number;
@@ -110,13 +114,16 @@ export interface FundState {
   leaves: number;
   deposits: number;
   queue: Array<{ leaf: string; units: number; address: string; at: number }>;
-  closes: Array<{ period: number; root: string; total_units: number; nav: FundNav; paid_zat: number; payout_txid: string | null; root_txid: string; held: boolean }>;
+  closes: Array<{ period: number; root: string; total_units: number; nav: FundNav; paid_zat: number; payout_txid: string | null; root_txid: string; held: boolean; books?: boolean }>;
+  /** The first period valued on the fund's books (2026-10-25); null for a ledger from before. */
+  books_since?: number | null;
 }
 
 export interface ClosePlan {
   plan_id: string;
   paid_zat: number;
-  plan: { period: number; nav: FundNav; cash_zat: number; held: boolean; short: boolean; payouts: Array<{ leaf: string; units: number; amount_zat: number; address: string }> };
+  /** `cash_zat`: the fund's cash on its books; `wallet_zat`: the node's whole wallet (2026-10-25). */
+  plan: { period: number; nav: FundNav; cash_zat: number; wallet_zat?: number; held: boolean; short: boolean; payouts: Array<{ leaf: string; units: number; amount_zat: number; address: string }> };
 }
 
 export interface PrivateRules {

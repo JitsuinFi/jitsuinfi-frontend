@@ -728,9 +728,15 @@ function Solvency({ reading, setReading, mine }: { reading: ReportReading | null
                   <dd>{zec(v.liabilities_zat)}</dd>
                 </div>
                 <div>
-                  <dt>Cash</dt>
+                  <dt>Cash on the fund's books</dt>
                   <dd>{zec(r.report.cash_zat)}</dd>
                 </div>
+                {r.report.wallet_zat !== undefined ? (
+                  <div>
+                    <dt>{`The manager's wallet holds${v.wallet_covers === false ? ", less than that cash" : ""}`}</dt>
+                    <dd>{zec(r.report.wallet_zat)}</dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Open receivables</dt>
                   <dd>{zec(v.open_zat)}</dd>
@@ -759,7 +765,7 @@ function Solvency({ reading, setReading, mine }: { reading: ReportReading | null
                   済
                 </span>
                 <b>{`Solvent in period ${v!.period}`}</b>
-                <span>The fund's assets cover every unit under the root your path ends in, at par, and your units are under it.</span>
+                <span>The fund's assets on its books cover every unit under the root your path ends in, at par, the manager's wallet holds at least the fund's cash, and your units are under it.</span>
               </p>
             ) : (
               <p className="rp-verdict is-bad is-land" role="alert">
@@ -767,7 +773,7 @@ function Solvency({ reading, setReading, mine }: { reading: ReportReading | null
                   滞
                 </span>
                 <b>{`Not solvent in period ${v!.period}`}</b>
-                <span>The fund's assets are below what it owes its members at par. Withdraw requests are paid from cash only.</span>
+                <span>{v!.wallet_covers === false ? "The manager's wallet holds less than the fund's cash on its books." : "The fund's assets are below what it owes its members at par."} Withdraw requests are paid from cash only.</span>
               </p>
             )}
           </article>

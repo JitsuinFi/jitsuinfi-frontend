@@ -1,6 +1,6 @@
 /* JitsuinFi app (app.html): iOS-style operate screens (vault 09-Design DS-00 – DS-08) in the
-   JitsuinFi palette (DS-PAL, tokens from the landing), the same language as the sign-in sheet
-   (auth.css). Two worlds: paper sheets hold the human documents and fields; the deep pool
+   JitsuinFi palette (DS-PAL, tokens from the landing), the same language as the console's sign-in
+   sheet. Two worlds: paper sheets hold the human documents and fields; the deep pool
    (Cetacean) holds what Zcash proves (a verdict on the board, the selected deal). Dark Raspberry
    is the only red and the only "active" ink on paper; Button Blue only inside the pool and as the
    focus ring. Paragraphs are never boxed (D-36): panels group fields, data and actions. */
@@ -67,7 +67,6 @@ h1 {
   letter-spacing: -.02em; margin: 0 0 var(--s-1); text-wrap: balance;
 }
 h2 { font: 600 20px/1.25 var(--f-body); color: var(--head); margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance; }
-p.lead { font-size: 17px; line-height: 1.5; color: var(--ink-2); margin: 0 0 var(--s-4); max-width: 56ch; }
 
 /* ---------- a part of a screen: a paper sheet that groups fields, data and actions ---------- */
 section.card {
@@ -83,27 +82,6 @@ section.card > .part-body { min-width: 0; }
 }
 
 /* ---------- home: an inset grouped list, each screen a row with its seal badge ---------- */
-.grid {
-  display: flex; flex-direction: column; background: var(--sheet); border-radius: var(--r-sheet);
-  box-shadow: var(--sheet-shadow); padding: 6px; gap: 2px;
-}
-.tile {
-  display: grid; grid-template-columns: 44px minmax(0, 1fr) 18px; grid-template-rows: auto auto; column-gap: 14px;
-  align-items: center; text-decoration: none; color: var(--ink);
-  padding: 12px 14px; border-radius: var(--r-row);
-  transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
-}
-.tile:hover { background: var(--wash); }
-.tile:active { transform: scale(.99); }
-.tile .badge { grid-row: 1 / span 2; }
-.tile strong { font: 600 16px/1.25 var(--f-body); color: var(--head); }
-.tile span:not(.badge) { grid-column: 2; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
-.tile::after {
-  content: ""; grid-column: 3; grid-row: 1 / span 2; width: 8px; height: 8px; justify-self: center;
-  border-top: 2px solid var(--ink-2); border-right: 2px solid var(--ink-2); transform: rotate(45deg); opacity: .6;
-}
-.tile + .tile { position: relative; }
-.tile + .tile::before { content: ""; position: absolute; top: -1px; left: 72px; right: 14px; border-top: 1px solid var(--rule); }
 .badge {
   width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
   border: 2px solid var(--seal); color: var(--seal); font: 800 19px/1 var(--f-seal);
@@ -126,17 +104,15 @@ input[type=file]::file-selector-button {
   font: 600 13px var(--f-body); color: var(--seal); background: var(--seal-wash); border: 0;
   border-radius: 999px; padding: 9px 14px; margin-right: 10px; cursor: pointer;
 }
-.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 var(--s-2); }
 
 /* ---------- buttons: seal (primary), soft seal (secondary), as the sign-in sheet ---------- */
-button, a.button {
+button {
   font: 600 15px/1 var(--f-body); border: 0; border-radius: var(--r-control); cursor: pointer;
   min-height: 46px; padding: 0 20px; background: var(--seal); color: var(--sheet);
   transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
 }
-button:hover, a.button:hover { background: var(--seal-hi); }
+button:hover { background: var(--seal-hi); }
 button:active { transform: scale(.97); }
-a.button { display: inline-flex; align-items: center; text-decoration: none; }
 button.secondary { background: var(--seal-wash); color: var(--seal); }
 button.secondary:hover { background: rgba(126, 42, 83, .14); }
 button:disabled { opacity: .45; cursor: default; transform: none; }
@@ -185,10 +161,6 @@ table.kv td:first-child { color: var(--ink-2); width: 36%; }
 table.kv td.mono { font: 400 12.5px/1.5 var(--f-mono); word-break: break-all; }
 
 /* rate index (HNK-08.T3): a table of classes in an inset well that scrolls on its own on phones */
-.table-scroll { overflow-x: auto; border-radius: var(--r-row); }
-table.grid-table th { text-align: left; font: 600 12px/1.2 var(--f-body); color: var(--ink-2); padding: 11px 14px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
-table.grid-table td:first-child { color: var(--head); width: auto; white-space: nowrap; }
-p.note { color: var(--ink-2); margin: 0 0 var(--s-2); font-size: 14px; line-height: 1.5; max-width: 60ch; }
 
 .qr { background: var(--sheet); padding: 14px; display: inline-block; border-radius: var(--r-sheet); box-shadow: var(--sheet-shadow); }
 .qr svg { width: 260px; height: 260px; display: block; }
@@ -207,37 +179,6 @@ footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(
 .deal-head button { margin-left: auto; min-height: 36px; padding: 0 14px; font-size: 13px; }
 .deal.open .deal-head button.secondary { background: rgba(196, 199, 242, .14); color: var(--mist); } /* --mist 14% */
 .deal small { display: block; color: var(--ink-2); margin-top: 6px; font-size: 12px; }
-
-/* the seal chain as a stepper: nodes on one line, a check for each seal pressed (DS-06) */
-ol.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 0; margin: 12px 0 2px; padding: 0; }
-.chip {
-  position: relative; display: inline-flex; align-items: center; gap: 6px; font: 500 12px/1 var(--f-body);
-  color: var(--ink-2); padding: 0 14px 0 0;
-}
-.chip::before {
-  content: ""; width: 16px; height: 16px; border-radius: 50%; flex: none;
-  box-shadow: inset 0 0 0 1.5px var(--rule-strong); background: var(--sheet);
-}
-.chip + .chip::after { content: ""; position: absolute; left: -12px; top: 50%; width: 10px; border-top: 1.5px solid var(--rule-strong); }
-.chip { margin-left: 12px; }
-.chip:first-child { margin-left: 0; }
-.chip.done { color: var(--ok); }
-.chip.done::before {
-  background: var(--ok) center / 10px 10px no-repeat
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2l2 2 4-4.4' fill='none' stroke='%23FCFCFE' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  box-shadow: none;
-}
-.chip.next { color: var(--seal); font-weight: 600; }
-.chip.next::before { box-shadow: inset 0 0 0 4px var(--seal); }
-.deal.open .chip { color: var(--mist); }
-.deal.open .chip::before { background: var(--pool-2); box-shadow: inset 0 0 0 1.5px rgba(196, 199, 242, .4); }
-.deal.open .chip.done::before { background-color: var(--glint); box-shadow: none; }
-.deal.open .chip.next { color: var(--sheet); }
-.deal.open .chip.next::before { box-shadow: inset 0 0 0 4px var(--glint); }
-.deal.open .chip + .chip::after { border-top-color: rgba(196, 199, 242, .4); }
-
-/* the sign-in sheet keeps clear of the tab bar on phones */
-html main:has(> .auth) { padding-bottom: var(--tabbar-h); }
 
 /* ---------- phones: the navigation becomes a floating tab bar (DS-02, DS-08) ---------- */
 @media (max-width: 720px) {
@@ -263,26 +204,6 @@ html main:has(> .auth) { padding-bottom: var(--tabbar-h); }
   .banner .hanko { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
-
-/* try page (HNK-30.T4): the limits of the board, as plain lines on the paper (N-13) */
-ul.limits { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; max-width: 60ch; }
-ul.limits li { position: relative; padding-left: 22px; font-size: 15px; line-height: 1.5; color: var(--ink); }
-ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(--seal); }
-
-/* try page, the lens (HNK-30.T6, M-04): paper is what the parties hold; the pool is what the
-   published board key shows. Holding the button lets the paper fade and the pool rise. */
-.lens { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-2); margin-top: var(--s-2); }
-.lens-side { min-width: 0; display: flex; flex-direction: column; gap: 8px; border-radius: var(--r-sheet); padding: 16px; transition: opacity var(--dur-fade) ease, filter var(--dur-fade) ease, transform var(--dur-fade) ease; }
-.lens-paper { background: var(--sheet); box-shadow: var(--sheet-shadow); }
-.lens-pool { background: var(--pool); color: var(--mist); box-shadow: var(--pool-shadow); opacity: .55; }
-.lens-pool .label { color: var(--mist); }
-.lens-pool table.kv { background: rgba(252, 252, 254, .06); }
-.lens-pool table.kv td { color: var(--mist); border-top-color: rgba(196, 199, 242, .16); }
-.lens-pool table.kv td:first-child { color: rgba(196, 199, 242, .75); }
-.lens-also { margin: 0; font-size: 13px; line-height: 1.5; color: var(--mist); }
-.lens[data-world="true"] .lens-paper { opacity: .12; filter: blur(3px); transform: scale(.98); }
-.lens[data-world="true"] .lens-pool { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .lens-side { transition: none; } }
 
 /* HNK-21.T9: the crate's own words under a readable refusal */
 .banner .banner-detail { display: block; margin-top: 4px; font: 400 11px/1.4 var(--f-mono, ui-monospace, monospace); opacity: .7; overflow-wrap: anywhere; }

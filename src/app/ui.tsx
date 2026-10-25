@@ -4,7 +4,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { explain } from "../lib/explain";
 import { download } from "../lib/download";
-import { Page } from "./AppShell";
 
 // One part of a screen, set on the paper (D-36: no card box): its heading on the left, its fields
 // and results on the right; stacked on narrow screens. The class name stays "card" for the pages.
@@ -153,101 +152,4 @@ export function TrustedSvg({ svg }: { svg: string }): ReactNode {
     wrap.current!.replaceChildren(...(root.nodeName.toLowerCase() === "svg" ? [document.importNode(root, true)] : []));
   }, [svg]);
   return <div className="qr" ref={wrap} />;
-}
-
-// ---------- the counter (HNK-30.T17, MASTER.md §8) ----------
-// The role and public pages on the 登記所 counter: one stage per page (the scene that says what
-// the page is for), then the page's steps as documents laid on the counter top. A deal's route
-// runs along the counter rail as stations, each a physical thing (the buyer's seal, the envelope
-// to the financier, the registry, the letter, the advance); done stations are stamped 済, the next
-// one sits under the lamp. Styles: pages/try.css and pages/desk.css, in the app shell's cascade.
-
-export interface Station {
-  glyph: string;
-  label: string;
-  state: "done" | "next" | "later";
-}
-
-/** The deal's route as stations on the counter rail. */
-export function Route({ stations, caption }: { stations: Station[]; caption?: string }): ReactNode {
-  return (
-    <div className="dr">
-      <ol className="dr-rail" aria-label="Steps of this deal">
-        {stations.map((s, i) => (
-          <li key={i} className={`dr-st is-${s.state}`}>
-            <span className="dr-obj" lang="ja" aria-hidden="true">
-              {s.glyph}
-            </span>
-            <span className="dr-label">{s.label}</span>
-            <span className="dr-state">{s.state === "done" ? "done" : s.state === "next" ? "next" : "later"}</span>
-          </li>
-        ))}
-      </ol>
-      {caption ? <p className="dr-cap">{caption}</p> : null}
-    </div>
-  );
-}
-
-/** A small static 請求書 for a stage: the open deal or invoice, read only. */
-export function MiniInvoice({ o }: { o: { id: string; amount: string; due: string; n?: string; sealed: boolean; stamp?: string } | null }): ReactNode {
-  if (!o) {
-    return (
-      <article className="mi is-blank" aria-label="No invoice open">
-        <p className="mi-t" lang="ja">
-          請 求 書
-        </p>
-        <p className="mi-blank">No invoice open yet</p>
-        <span className="mi-seal" aria-hidden="true" />
-      </article>
-    );
-  }
-  return (
-    <article className="mi" aria-label={`Invoice ${o.id}`}>
-      <p className="mi-t" lang="ja">
-        請 求 書
-      </p>
-      <p className="mi-id">{o.id}</p>
-      <p className="mi-amt">
-        <span lang="ja">ご請求金額</span>
-        {o.amount}
-      </p>
-      <p className="mi-due">{`Due ${o.due}`}</p>
-      {o.n ? (
-        <p className="mi-n">
-          <b>N</b>
-          {`${o.n.slice(0, 12)}…${o.n.slice(-6)}`}
-        </p>
-      ) : null}
-      <span className={`mi-seal${o.sealed ? " is-sealed" : ""}`} lang="ja" aria-label={o.sealed ? "Sealed by the buyer" : "Not sealed by the buyer yet"}>
-        {o.sealed ? "買" : ""}
-      </span>
-      {o.stamp ? (
-        <span className="mi-stamp" lang="ja" aria-hidden="true">
-          {o.stamp}
-        </span>
-      ) : null}
-    </article>
-  );
-}
-
-/**
- * A page on the counter: the head, the stage, then the documents on the counter top. `wrapped`:
- * inside one more full-width box, as the role pages that redraw themselves had it.
- */
-export function DeskPage({ glyph, eyebrow, title, lede, stage, children, wrapped }: { glyph: string; eyebrow: string; title: string; lede: string; stage: ReactNode; children: ReactNode; wrapped?: boolean }): ReactNode {
-  const page = (
-    <div className="try desk-page" data-wide="true">
-      <header className="try-head">
-        <p className="try-case">
-          <span lang="ja">{glyph}</span>
-          {eyebrow}
-        </p>
-        <h1>{title}</h1>
-        <p>{lede}</p>
-      </header>
-      {stage}
-      <div className="desk-docs">{children}</div>
-    </div>
-  );
-  return <Page wide>{wrapped ? <div data-wide="true">{page}</div> : page}</Page>;
 }

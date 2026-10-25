@@ -1,168 +1,8 @@
 /* Two things live here.
-   1. The 登記所 counter stage (HNK-30.T13, MASTER.md §8) that /verify, /apply and the desk pages
-      (src/app/ui.tsx DeskPage) still draw: .try, .try-head, .ct, .ct-desk, .ct-window, .ct-room,
-      the registry book .rg (Registry.tsx) and the 請求書 .sk (Seikyusho.tsx, also on the
-      supplier's screen). /try itself no longer uses the stage; the rest goes when those pages
-      are ported (HNK-34).
+   1. The 請求書 .sk (Seikyusho.tsx), drawn on /try and on the supplier's screen.
    2. /try's case desk (HNK-34.T2, design-samples/internal/try.html), every rule under .tcase. */
-.try {
-  --desk: var(--ink);
-  --desk-grain: rgba(80, 42, 80, .55);
-  --frame: var(--head);
-  --page: var(--sheet);
-  --rule-blue: rgba(3, 44, 125, .28);
-  --ink-blue: var(--wave);
-  --lamp: rgba(29, 151, 241, .16);
-  display: flex; flex-direction: column; gap: clamp(64px, 9vw, 140px);
-}
-.try button.ink-link, .try a.ink-link {
-  display: inline-flex; padding: 4px 0; background: none; border: 0; border-radius: 0; box-shadow: none;
-  color: var(--seal); font: 500 14px/1.2 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: pointer;
-  transition: text-decoration-thickness var(--dur-fade) var(--ease-land);
-}
-.try .ink-link:hover { background: none; text-decoration-thickness: 3px; }
-.try .seal-btn {
-  display: inline-flex; align-items: center; gap: 12px; padding: 16px 26px 16px 14px; border: 0; border-radius: 999px;
-  background: var(--seal); color: var(--sheet); font: 600 16px/1 var(--f-body); text-decoration: none; cursor: pointer;
-  transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
-}
-.try .seal-btn { white-space: nowrap; }
-.try .seal-btn::before {
-  content: "印"; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
-  box-shadow: inset 0 0 0 2px var(--fiber); font: 800 15px/1 var(--f-seal); color: var(--sheet);
-}
-.try .seal-btn span { transition: transform var(--dur-fade) var(--ease-glide); }
-.try .seal-btn:hover { background: var(--seal-hi); }
-.try .seal-btn:hover span { transform: translateX(2px); }
-.try .seal-btn:active { transform: scale(.97); }
-.try .seal-btn:disabled { opacity: .55; cursor: progress; transform: none; }
 
-/* ---------- head ---------- */
-.try-head { display: grid; gap: 12px; max-width: 70ch; }
-.try-case { display: inline-flex; align-items: center; gap: 10px; margin: 0; font: 500 14px/1 var(--f-body); color: var(--seal); }
-.try-case span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; box-shadow: inset 0 0 0 2px var(--seal); font: 800 17px/1 var(--f-seal); transform: rotate(-6deg); }
-.try-head h1 { margin: 0; font: 800 clamp(36px, 4.4vw, 68px)/1 var(--f-display); letter-spacing: -.02em; color: var(--head); text-wrap: balance; }
-.try-head > p:last-child { margin: 0; font: 400 var(--t-lede)/1.5 var(--f-body); color: var(--ink); }
-
-/* ---------- the counter ---------- */
-.ct {
-  position: relative; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.18fr);
-  min-height: min(860px, calc(100svh - 84px));
-  border-radius: 28px; overflow: visible;
-}
-
-/* the judge's side: the counter top */
-.ct-desk {
-  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; align-items: end; gap: 20px 18px; padding: clamp(20px, 2.2vw, 34px);
-  border-radius: 28px 0 0 28px;
-  background:
-    repeating-linear-gradient(178.5deg, transparent 0 17px, var(--desk-grain) 17px 18px, transparent 18px 41px),
-    repeating-linear-gradient(181deg, transparent 0 63px, rgba(80, 42, 80, .35) 63px 64px, transparent 64px 97px),
-    var(--desk);
-  box-shadow: inset 0 2px 0 rgba(236, 208, 236, .18), inset 0 -18px 30px rgba(2, 13, 47, .35);
-}
-.ct-act { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-.try .ct-desk .ink-link { color: var(--sheet); }
-
-/* B's side: the window, the frame, the room */
-.ct-window {
-  position: relative; display: flex; flex-direction: column; padding: 52px 18px 34px; border-radius: 0 28px 28px 0;
-  background: var(--frame);
-  box-shadow: inset 0 0 0 2px rgba(196, 199, 242, .12);
-}
-.ct-plaque {
-  position: absolute; top: 10px; left: 50%; translate: -50% 0; z-index: 3; margin: 0;
-  display: flex; align-items: baseline; gap: 10px; padding: 6px 16px; border-radius: 4px; white-space: nowrap;
-  background: var(--page); box-shadow: 0 3px 0 rgba(2, 13, 47, .5);
-}
-.ct-plaque span { font: 800 18px/1 var(--f-seal); color: var(--head); letter-spacing: .3em; }
-.ct-plaque small { font: 600 12px/1 var(--f-body); color: var(--seal); }
-.ct-room {
-  position: relative; flex: 1; min-height: 520px; border-radius: 10px;
-  background: linear-gradient(180deg, var(--pool) 0%, var(--pool-2) 100%);
-  box-shadow: inset 0 0 0 1px rgba(196, 199, 242, .16), inset 0 30px 60px rgba(2, 13, 47, .6);
-}
-.ct-room::after {
-  /* the glass: one pale reflection band */
-  content: ""; position: absolute; inset: 0; border-radius: 10px; pointer-events: none; z-index: 7;
-  background: linear-gradient(115deg, transparent 0 58%, rgba(196, 199, 242, .07) 58% 64%, transparent 64%);
-}
-.ct-light { position: absolute; inset: 0; overflow: hidden; border-radius: 10px; pointer-events: none; }
-.ct-cone {
-  position: absolute; top: 34px; left: 60%; width: 70%; height: 92%; translate: -50% 0;
-  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
-  background: linear-gradient(180deg, var(--lamp), transparent 85%);
-  animation: ct-flicker 7s steps(1, end) infinite;
-}
-@keyframes ct-flicker { 0%, 91%, 94%, 100% { opacity: 1; } 92% { opacity: .72; } 93% { opacity: .9; } }
-.ct-lamp { position: absolute; top: 0; left: 60%; translate: -50% 0; width: 92px; height: 40px; z-index: 2; }
-.ct-lamp::before { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 18px; background: rgba(196, 199, 242, .5); }
-.ct-lamp i { position: absolute; left: 0; right: 0; top: 16px; height: 22px; border-radius: 46px 46px 6px 6px; background: var(--pool-2); box-shadow: inset 0 -3px 0 var(--glint), 0 2px 0 rgba(2, 13, 47, .6); }
-.ct-grille {
-  position: absolute; left: 50%; bottom: 8px; translate: -50% 0; width: 46px; height: 18px;
-  background: radial-gradient(circle, rgba(196, 199, 242, .45) 1.6px, transparent 2px) 0 0 / 9px 9px;
-}
-.ct-slot {
-  position: absolute; left: 18px; bottom: 10px; width: 34%; height: 12px; border-radius: 0 0 8px 8px;
-  background: var(--pool); box-shadow: inset 0 4px 6px rgba(2, 13, 47, .9);
-}
-
-/* B's subtitles, in the room */
-.ct-say {
-  position: absolute; left: 20px; right: 20px; bottom: 18px; z-index: 6; margin: 0;
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start;
-  font: 500 15px/1.5 var(--f-body); color: var(--mist); text-wrap: pretty;
-}
-.ct-say .hanko { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--seal); font: 800 16px/1 var(--f-seal); color: var(--sheet); }
-
-/* the registry book on B's desk */
-.rg { position: absolute; top: 8%; left: 5%; right: 5%; z-index: 3; perspective: 1800px; }
-.rg-book {
-  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
-  transform: rotate(-1deg);
-  filter: drop-shadow(0 22px 20px rgba(2, 13, 47, .55));
-}
-.rg-book::before {
-  /* the page block under the open spread */
-  content: ""; position: absolute; inset: 6px -6px -8px; z-index: -1; border-radius: 3px;
-  background: repeating-linear-gradient(180deg, var(--page) 0 2px, rgba(196, 199, 242, .8) 2px 3px);
-}
-.rg-page {
-  position: relative; min-height: 236px; padding: 14px 14px 16px; background: var(--page);
-  background-image: repeating-linear-gradient(180deg, transparent 0 32px, var(--rule-blue) 32px 33px);
-  background-position: 0 44px;
-}
-.rg-page.is-left { border-radius: 4px 0 0 4px; }
-.rg-page.is-right { border-radius: 0 4px 4px 0; }
-.rg-page.is-left::after, .rg-page.is-right::after { content: ""; position: absolute; top: 0; bottom: 0; width: 18%; pointer-events: none; }
-.rg-page.is-left::after { right: 0; background: linear-gradient(270deg, rgba(2, 13, 47, .14), transparent); }
-.rg-page.is-right::after { left: 0; background: linear-gradient(90deg, rgba(2, 13, 47, .14), transparent); }
-.rg-spine { background: linear-gradient(90deg, rgba(2, 13, 47, .3), rgba(196, 199, 242, .6), rgba(2, 13, 47, .3)); }
-.rg-page header { display: flex; justify-content: space-between; align-items: baseline; height: 30px; }
-.rg-page header span { font: 800 14px/1 var(--f-seal); color: var(--ink-blue); letter-spacing: .12em; }
-.rg-page header small { font: 400 10.5px/1 var(--f-body); color: var(--pool-2); }
-.rg-rows { list-style: none; margin: 0; padding: 0; }
-.rg-rows li {
-  position: relative; display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 6px; align-items: center; height: 33px;
-  font: 400 12px/1 var(--f-mono); color: var(--ink-blue);
-}
-.rg-rows code { font: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rg-h { color: var(--pool-2); }
-.rg-k { font: 500 10px/1 var(--f-body); color: var(--pool-2); }
-.rg-rows li.is-a .rg-k { color: var(--ink-blue); font-weight: 700; }
-.rg-rows li::after { content: ""; position: absolute; left: -4px; right: -4px; bottom: 3px; height: 2px; background: var(--seal); transform: scaleX(0); transform-origin: left; transition: transform 500ms var(--ease-inout); }
-.rg-rows li.is-hit { color: var(--seal); }
-.rg-rows li.is-hit .rg-h, .rg-rows li.is-hit .rg-k { color: var(--seal); }
-.rg-rows li.is-hit::after { transform: scaleX(1); }
-.rg-blank { margin: 40px 0 0; font: italic 400 12px/1.4 var(--f-body); color: var(--pool-2); }
-.rg-leaf { position: absolute; top: 0; bottom: 0; width: calc(50% - 6px); transform-style: preserve-3d; z-index: 4; }
-.rg-leaf.is-fwd { right: 0; transform-origin: left center; }
-.rg-leaf.is-back { left: 0; transform-origin: right center; }
-.rg-face { position: absolute; inset: 0; backface-visibility: hidden; }
-.rg-face.is-back { transform: rotateY(180deg); }
-.rg-note { margin: 18px 0 0; font: 400 12px/1.45 var(--f-body); color: rgba(196, 199, 242, .8); }
-
-/* ---------- the 請求書 on the counter ---------- */
+/* ---------- the 請求書 ---------- */
 .sk {
   position: relative; display: grid; gap: 11px; padding: clamp(22px, 2.4vw, 34px) clamp(20px, 2.4vw, 34px) 20px;
   background: var(--page); color: var(--ink); transform: rotate(-1.2deg);
@@ -234,35 +74,18 @@
 .sk-note { margin: 0; min-height: 1.45em; font: 500 13px/1.45 var(--f-body); color: var(--ink-2); }
 .sk[data-seal="broken"] .sk-note { color: var(--seal); }
 
-
-/* ---------- narrow screens (the shared counter stage) ---------- */
-@media (max-width: 980px) {
-  .ct { grid-template-columns: minmax(0, 1fr); }
-  .ct-window { order: -1; border-radius: 28px 28px 0 0; }
-  .ct-desk { border-radius: 0 0 28px 28px; }
-  .ct-room { min-height: 600px; }
-  .rg { left: 5%; right: 5%; width: auto; top: 60px; }
-}
+/* ---------- narrow screens ---------- */
 @media (max-width: 560px) {
-  .ct-window { padding: 48px 10px 30px; }
-  .ct-room { min-height: 640px; }
-  .rg { top: 54px; }
-  .rg-page { padding: 10px 8px 12px; min-height: 210px; }
-  .rg-rows li { grid-template-columns: 50px minmax(0, 1fr); font-size: 10px; }
-  .rg-k { display: none; }
-  .ct-say { font-size: 14px; }
   .sk-head { flex-direction: column; }
   .sk-meta { text-align: left; }
   .sk-meta div { justify-items: start; }
   .sk-meta input { text-align: left; width: 100%; }
-  .ct-plaque span { letter-spacing: .15em; font-size: 16px; }
   .sk-foot { grid-template-columns: minmax(0, 1fr); }
   .sk-box { justify-self: end; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ct-cone { animation: none; }
-  .sk, .sk-seal, .sk-seal-crack, .rg-rows li::after { transition: none; }
+  .sk, .sk-seal, .sk-seal-crack { transition: none; }
 }
 
 /* ======================================================================================

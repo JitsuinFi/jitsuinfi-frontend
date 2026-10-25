@@ -1,6 +1,7 @@
 // The app world's shell (HNK-31.T2): top bar, screens nav and footer around one <main>, as the
 // hash router in app.html drew them. Pages draw into <main> through `Page`; the shell repaints
 // when the session changes, as before.
+import { DueReminder } from "./DueReminder";
 import { Mark, Wordmark } from "./Mark";
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -75,6 +76,7 @@ export function AppShell(): ReactNode {
         </nav>
         <span className="net">{NET.short}</span>
       </header>
+      <DueReminder session={s} path={path} />
       {/* A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3). */}
       <main ref={setMain} className={wide ? "wide" : undefined} />
       <footer>Runs entirely in your browser. No trackers, no third-party requests.</footer>

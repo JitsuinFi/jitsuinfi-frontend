@@ -166,6 +166,12 @@ export const TYPES = {
     body: { bundle: req(b64url) },
     attachments: { min: 0, max: 0 }, signer: "financier",
   },
+  "deal.reminder": {
+    flows: "buyer-late: financier to buyer at D-7, D-1 and D+1 while a financed invoice is unpaid",
+    from: ["financier"], to: ["buyer"], n: "required",
+    body: { milestone: req(oneOf("d-7", "d-1", "d+1")), due_date: req(uint), amount_zat: req(pos) },
+    attachments: { min: 0, max: 0 }, signer: "financier",
+  },
   "history.request": {
     flows: "6.1 → 6.2",
     from: ["financier"], to: ["buyer"], n: "optional",

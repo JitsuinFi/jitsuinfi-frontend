@@ -15,6 +15,7 @@ import {
   nextStep,
   route,
   sortDeals,
+  standing,
   timeline,
   type SupplierDeal,
 } from "../src/lib/supplier-deal.ts";
@@ -141,4 +142,14 @@ test("the route marks the steps that wait on someone else, then 済 (HNK-34.T5)"
   assert.deepEqual(states(paid), ["done", "done", "done", "done", "done", "wait"]);
   assert.deepEqual(states(paid, true), ["done", "done", "done", "done", "done", "done"]);
   assert.equal(route(paid, true)[5].key, "settled");
+});
+
+test("after the advance the deal waits for repayment; only a settled deal is complete (HNK-34 E2E)", () => {
+  const sealed = deal({ buyer_signature: "00", offer, entry: { memo: "m", commitment: "c", tagged: false, discount: 0, tenor: 0 }, seal: { letter: "l", s0: "s" } });
+  assert.equal(standing(sealed, false), null);
+  const paid = deal({ ...sealed, advance: { txid: "t", received_zat: 38_000, matches: true } });
+  assert.equal(standing(paid, false), "repayment");
+  assert.equal(route(paid, false)[5].state, "wait");
+  assert.equal(standing(paid, true), "settled");
+  assert.equal(standing(deal({ ...sealed, advance: { txid: "t", received_zat: 1, matches: false } }), false), null);
 });

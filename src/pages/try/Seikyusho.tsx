@@ -130,7 +130,8 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
         <dl className="sk-meta">
           <div>
             <dt>No.</dt>
-            <dd>{input("id", "Invoice number", o.id, { mono: true })}</dd>
+            {/* a sheet to read shows the number as text, so a long one wraps instead of being cut (HNK-34 E2E) */}
+            <dd>{readOnly ? <span className="sk-id">{o.id}</span> : input("id", "Invoice number", o.id, { mono: true })}</dd>
           </div>
           <div>
             <dt>

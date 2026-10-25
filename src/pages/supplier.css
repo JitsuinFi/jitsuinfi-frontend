@@ -143,8 +143,10 @@
 .sp .sk-title { display: grid; gap: 4px; white-space: nowrap; }
 .sp .sk-title span { font: 800 28px/1 var(--f-seal); letter-spacing: .32em; color: var(--head); }
 .sp .sk-title small { font: 500 12px/1.2 var(--f-body); letter-spacing: .02em; color: var(--ink-2); }
-.sp .sk-meta { margin: 0; display: grid; gap: 4px; font-size: 12px; text-align: left; }
+.sp .sk-meta { margin: 12px 0 0; /* below the paper clip */ display: grid; gap: 4px; font-size: 12px; text-align: left; }
 .sp .sk-meta div { display: grid; grid-template-columns: auto auto; justify-content: end; justify-items: stretch; align-items: baseline; gap: 8px; }
+/* the number of an issued invoice, as text: up to 32 characters wrap on the sheet, never clipped */
+.sp .sk-id { display: block; max-width: 26ch; font: 400 12.5px/1.4 var(--f-mono); color: var(--head); text-align: right; overflow-wrap: anywhere; }
 .sp .sk-meta dt { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
 .sp .sk-meta dt span { font-family: var(--f-seal); font-weight: 700; }
 .sp .sk-meta dd { margin: 0; }
@@ -297,6 +299,22 @@
 .sp-rail-cap { margin: 14px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: 400 14px/1.45 var(--f-body); color: var(--ink); }
 .sp-rail-cap b { font-weight: 500; color: var(--seal); }
 .sp-board-line { font-size: 13px; color: var(--pool-2); }
+
+/* ---------- the outcome of the action just taken (HNK-34 E2E): the station's mark pressed as a
+   hanko, then what happened in a sentence; on the paper, no box. Stays until the supplier moves on. */
+.sp-did { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 0 14px; align-items: start; margin: 0 0 22px; padding: 0 0 20px; border-bottom: 1px dashed var(--mist); }
+.sp-did-seal {
+  display: grid; place-items: center; width: 44px; height: 44px; margin-top: 2px; border-radius: 9px; border: 2px solid var(--seal); background: var(--sheet);
+  color: var(--seal); font: 800 21px/1 var(--f-seal); transform: rotate(-6deg); box-shadow: inset 0 0 0 3px var(--sheet), inset 0 0 0 4.4px var(--seal);
+  animation: sp-did-press var(--dur-seal) var(--ease-snap) both;
+}
+.sp-did.is-warn .sp-did-seal { border: 1.5px dashed var(--ink-2); color: var(--ink-2); box-shadow: none; background: none; }
+@keyframes sp-did-press { from { transform: rotate(-6deg) scale(1.6); opacity: 0; } to { transform: rotate(-6deg); opacity: 1; } }
+.sp-did p { display: grid; gap: 3px; margin: 0; min-width: 0; }
+.sp-did small { font: 500 12.5px/1.2 var(--f-body); color: var(--seal); }
+.sp-did.is-warn small { color: var(--ink-2); }
+.sp-did strong { font: 700 clamp(18px, 1.4vw, 21px)/1.25 var(--f-display); color: var(--head); text-wrap: balance; }
+.sp-did span { max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
 
 /* ---------- the station's work: hint on the paper, inputs grouped on a rounded paper panel ---------- */
 .sp-work-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -520,7 +538,7 @@
   .sp-ledger { margin-top: 28px; }
   .sp-ledger-h small, .sp-iss { display: none; }
   .sp-sheet { padding: 14px 0 0 8px; }
-  .sp-under { right: 6px; }
+  .sp-under { right: 14px; } /* its rotated back sheet stays inside the 16 px gutter: no sideways scroll */
   .sp .sk { padding: 24px 18px 18px; }
   .sp .sk-title span { font-size: 23px; letter-spacing: .26em; }
   .sp .sk-meta { font-size: 11px; }

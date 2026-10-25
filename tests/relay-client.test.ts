@@ -152,3 +152,37 @@ test("the mailbox state is sealed to its owner and read back only by the owner (
   // another mailbox owner cannot read it
   await assert.rejects(loadState(other, { ...d, fetch: async (u, i) => relay.fetch(String(u).replace(/[0-9a-f]{64}\/state/, `${me.mailbox_id}/state`), i) }), /token/);
 });
+
+test("an inbox read right after an action skips the used message and one removed meanwhile (HNK-34 E2E)", async () => {
+  const relay = fakeRelay();
+  const d: RelayDeps = { wasm: w, fetch: relay.fetch };
+  const sup = await ensureMailbox(new Uint8Array(32).fill(0x0a), d);
+  const buyerInbox = new Uint8Array(32).fill(0x0b);
+  const buy = await ensureMailbox(buyerInbox, d);
+  const supplierPk = JSON.parse(w.messageSignBytes(new Uint8Array(32).fill(0x42), new TextEncoder().encode("JitsuinMsgSig_v1\n{}"))).signer as string;
+  const msg = async (i: number) => {
+    const pdf = [{ name: "terms.pdf", mime: "application/pdf" as const, bytes: new TextEncoder().encode(`%PDF-1.7 TES-INV-R${i}`) }];
+    const h = draft("invoice.sign_request", { role: "supplier", mailbox_pk: sup.mailbox_pk }, buy.mailbox_pk, d, { n: String(i).repeat(64), body: { invoice: "SlRTSQ" }, attachments: await describeFiles(pdf) });
+    await send(buy.mailbox_pk, await encodeMessage(signInWasm(h, supplierPk, new Uint8Array(32).fill(0x42), d), pdf), d);
+  };
+  await msg(1);
+  await msg(2);
+  await msg(3);
+  const box = relay.boxes.get(buy.mailbox_id)!;
+  const [used, gone, kept] = [...box.keys()];
+  // the third message's fetch finds it removed by another read (a 404), as on the relay
+  const fetched: string[] = [];
+  const racing: RelayDeps = {
+    ...d,
+    fetch: async (u, i) => {
+      const path = String(u);
+      if (path.endsWith(`/messages/${gone}`)) box.delete(gone);
+      if (/\/messages\/[0-9a-f-]{36}$/.test(path)) fetched.push(path.slice(-36));
+      return relay.fetch(u, i);
+    },
+  };
+  const got = await receive(buyerInbox, racing, new Set([used]));
+  assert.deepEqual(fetched, [gone, kept], "the used message is not asked for");
+  assert.deepEqual(got.messages.map((m) => m.relayId), [kept]);
+  assert.equal(got.refused, 0);
+});

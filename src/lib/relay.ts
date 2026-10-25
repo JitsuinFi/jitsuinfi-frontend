@@ -106,8 +106,11 @@ async function token(inbox: Uint8Array, d: RelayDeps, me: MailboxIdentity): Prom
 /**
  * Every message in this role's mailbox, opened and checked. A message that does not open, is
  * malformed or is addressed to another mailbox is skipped and counted in `refused`.
+ * `used`: relay ids this tab already acted on, whose removal may still be on its way (the screen
+ * redraws and reads the inbox again right after an action): they are not fetched. A message
+ * removed between the list and its fetch (404) is skipped too, not an error (HNK-34 E2E).
  */
-export async function receive(inbox: Uint8Array, d: RelayDeps): Promise<{ messages: Received[]; refused: number; token: string; me: MailboxIdentity }> {
+export async function receive(inbox: Uint8Array, d: RelayDeps, used: ReadonlySet<string> = new Set()): Promise<{ messages: Received[]; refused: number; token: string; me: MailboxIdentity }> {
   const me = identity(inbox, d);
   const t = await token(inbox, d, me);
   const auth = { Authorization: `Bearer ${t}` };
@@ -115,7 +118,15 @@ export async function receive(inbox: Uint8Array, d: RelayDeps): Promise<{ messag
   const messages: Received[] = [];
   let refused = 0;
   for (const m of list) {
-    const sealed = new Uint8Array(await (await call(d, "GET", `/api/mailbox/${me.mailbox_id}/messages/${m.id}`, undefined, auth)).arrayBuffer());
+    if (used.has(m.id)) continue;
+    let r: Response;
+    try {
+      r = await call(d, "GET", `/api/mailbox/${me.mailbox_id}/messages/${m.id}`, undefined, auth);
+    } catch (e) {
+      if (e instanceof RelayError && e.status === 404) continue; // removed meanwhile
+      throw e;
+    }
+    const sealed = new Uint8Array(await r.arrayBuffer());
     try {
       const message = await decodeMessage(d.wasm.mailboxOpenBytes(inbox.slice(), sealed), me.mailbox_id);
       messages.push({ relayId: m.id, receivedAt: m.received_at, message, signatureOk: await verifyHeader(message.header) });

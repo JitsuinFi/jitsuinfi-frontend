@@ -51,6 +51,11 @@ export async function takeContact(code: string, role: Contact["role"]): Promise<
 
 type Got = Awaited<ReturnType<typeof receive>>;
 
+// HNK-34 E2E (finding 7): the relay ids this tab acted on. An action redraws the screen, and the
+// new mailbox part reads the inbox at once, while the used message is still being removed: it
+// listed the message and then asked for it after the removal, a 404 in the console. Skipped here.
+const used = new Set<string>();
+
 /** One message of the inbox: what it is, who sent it, and the screen's action for it. */
 function Message({ r, action, got }: { r: Received; action: InboxAction | undefined; got: Got }): ReactNode {
   const out = useOut();
@@ -68,11 +73,13 @@ function Message({ r, action, got }: { r: Received; action: InboxAction | undefi
         {action && r.signatureOk ? (
           <Button
             onClick={async () => {
+              if (!action.keep) used.add(r.relayId);
               try {
                 const done = await action.run(r);
                 if (!action.keep) await remove(got.me, r.relayId, got.token, relayDeps);
                 out.show(<Banner kind="ok" title="Done" text={done} />);
               } catch (e) {
+                used.delete(r.relayId); // still in the mailbox: it shows again
                 out.error(e);
               }
             }}
@@ -100,7 +107,7 @@ export function MailboxCard({ handlers }: { handlers: Partial<Record<MessageType
       await myMailbox();
       const s = account.current;
       if (!s) throw new Error("sign in first");
-      const got = await receive(s.inbox, relayDeps);
+      const got = await receive(s.inbox, relayDeps, used);
       const ids = got.messages.map((m) => m.relayId).join(",") + `|${got.refused}`;
       if (auto && ids === shown.current) return;
       shown.current = ids;

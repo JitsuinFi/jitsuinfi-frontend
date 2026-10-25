@@ -123,6 +123,16 @@ export function route(d: SupplierDeal, settled: boolean): Array<{ key: StationKe
   return steps;
 }
 
+/**
+ * Where a deal stands once the supplier has nothing left to do (HNK-34 E2E, finding 2): the
+ * advance is in and the buyer pays the financier at maturity ("repayment"), or the deal is
+ * settled. `null` while one of the five steps is still open. "Complete" is said only when settled.
+ */
+export function standing(d: SupplierDeal, settled: boolean): "repayment" | "settled" | null {
+  if (settled) return "settled";
+  return nextStep(d) === null ? "repayment" : null;
+}
+
 /** Deals newest first. */
 export function sortDeals(deals: SupplierDeal[]): SupplierDeal[] {
   return [...deals].sort((a, b) => b.created_at - a.created_at || a.invoice_id.localeCompare(b.invoice_id));

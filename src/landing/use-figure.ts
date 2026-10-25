@@ -11,6 +11,8 @@ type Figure = { destroy(): void };
  * `near`: the element whose approach starts the load. `load`: the figure's markup and controller
  * module, as two dynamic imports. `mount`: the controller's mount on the inserted <svg>.
  * `mounted`: runs right after each mount (labels, state the figure must show from the start).
+ * `now`: load at once, for a figure that is in view when its page opens (the app lobby, HNK-34.T1);
+ * its chunks still stay out of the page's first load.
  */
 export function useFigure<M, F extends Figure>(
   near: RefObject<Element | null>,
@@ -19,6 +21,7 @@ export function useFigure<M, F extends Figure>(
   load: () => Promise<readonly [{ default: string }, M]>,
   mount: (svg: SVGSVGElement, m: M) => F,
   mounted?: (f: F) => void,
+  now = false,
 ): { fig: RefObject<F | null>; ready: () => Promise<F> } {
   const fig = useRef<F | null>(null);
   const [wanted, setWanted] = useState(false);
@@ -32,6 +35,9 @@ export function useFigure<M, F extends Figure>(
   // the first scroll
   useEffect(() => {
     const want = () => setWanted(true);
+    if (now) return want();
+    const target = near.current;
+    if (!target) return; // not in the document yet (a page drawn through a portal): wait for `now`
     const io = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -41,12 +47,12 @@ export function useFigure<M, F extends Figure>(
       },
       { rootMargin: "600px 0px" },
     );
-    io.observe(near.current!);
+    io.observe(target);
     return () => {
       io.disconnect();
       removeEventListener("scroll", want);
     };
-  }, [near]);
+  }, [near, now]);
 
   // the figure: inserted once loaded, moved by its controller; never into a host that has moved on
   useEffect(() => {

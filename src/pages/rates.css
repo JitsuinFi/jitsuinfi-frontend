@@ -1,0 +1,193 @@
+/* Rate index (HNK-34.T3, approved sample design-samples/internal/rates.html): one row per tenor
+   class across the discount classes; a tenor under k is hatched over (withheld, never empty), a
+   published one presses its median dot down. The 24-invoice meter, big totals without boxes, and
+   the public board as a thin full-bleed Cetacean band (the only dark element). Palette DS-PAL,
+   tokens from landing/tokens.css; sizes that depend on data are CSS variables set through the
+   CSSOM (no style attributes). */
+
+.ri {
+  --rule: rgba(2, 13, 47, .12);
+  --rule-2: rgba(2, 13, 47, .22);
+  --band: rgba(196, 199, 242, .26);
+  --hatch: repeating-linear-gradient(135deg, rgba(80, 42, 80, .30) 0 1.5px, transparent 1.5px 7px);
+  --hatch-blue: repeating-linear-gradient(135deg, var(--wave) 0 2px, rgba(8, 65, 201, .16) 2px 6px);
+  color: var(--ink);
+}
+.ri code { font-family: var(--f-mono); }
+.ri p { margin: 0; }
+
+/* ---------- page grid: caption ≤ 35%, visual ≥ 65% ---------- */
+.ri-sec { display: grid; gap: 32px; padding: 0 0 clamp(40px, 4vw, 56px); }
+.ri-src + .ri-sec { padding-top: clamp(40px, 4vw, 56px); }
+@media (min-width: 1360px) {
+  .ri-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+}
+.ri-cap { display: grid; gap: 16px; align-content: start; max-width: 52ch; min-width: 0; }
+.ri-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+.ri-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
+.ri h1, .ri h2 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
+.ri h1 { font-size: clamp(38px, 4vw, 60px); line-height: 1.02; letter-spacing: -.02em; }
+.ri-cap h2 { font-size: clamp(26px, 2.4vw, 38px); line-height: 1.08; letter-spacing: -.015em; }
+.ri-ch-head h2 { font-size: clamp(20px, 1.6vw, 26px); line-height: 1.15; font-weight: 700; }
+.ri-lede { font: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.ri-hint { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); }
+
+/* the totals: big numbers, no boxes */
+.ri-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; margin: 6px 0 0; }
+.ri-totals div { display: grid; gap: 4px; align-content: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+.ri-totals dt { order: 2; font: 400 13.5px/1.35 var(--f-body); color: var(--ink-2); }
+.ri-totals dd { order: 1; margin: 0; font: 500 clamp(40px, 3.4vw, 56px)/1 var(--f-body); color: var(--head); letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+.ri-totals .is-quiet dd { color: var(--ink-2); }
+.ri-knote { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+.ri-knote b { display: inline-grid; place-items: center; min-width: 54px; height: 30px; padding: 0 10px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 14px/1 var(--f-mono); }
+.ri-knote span { font: 400 14px/1.5 var(--f-body); color: var(--ink); }
+
+/* ---------- the chart ---------- */
+.ri-vis { display: grid; gap: 30px; min-width: 0; }
+.ri-ch-head { display: grid; gap: 6px; }
+.ri-ch-head p { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); max-width: 70ch; }
+.ri-chart, .ri-row, .ri-axis-t { --nd: 7; --cols: 128px repeat(var(--nd), minmax(0, 1fr)) 84px; }
+.ri-chart { display: grid; min-width: 0; }
+.ri-row { display: grid; grid-template-columns: var(--cols); align-items: stretch; position: relative; }
+.ri-row.is-axis { align-items: end; }
+.ri-row.is-axis span { padding: 0 0 10px; font: 400 12px/1.2 var(--f-mono); color: var(--ink-2); text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ri-row.is-axis span:first-child { text-align: left; font-family: var(--f-body); }
+.ri-row.is-axis span:last-child { text-align: right; font-family: var(--f-body); }
+.ri-rl { display: grid; align-content: center; gap: 2px; padding-right: 12px; }
+.ri-rl strong { font: 500 14.5px/1.2 var(--f-body); color: var(--head); white-space: nowrap; }
+.ri-rl small { font: 400 11.5px/1.2 var(--f-mono); color: var(--ink-2); }
+.ri-rn { display: grid; align-content: center; justify-items: end; font: 500 22px/1 var(--f-body); color: var(--head); }
+.ri-rn small { font: 400 11px/1.3 var(--f-body); color: var(--ink-2); text-align: right; }
+.ri-row:not(.is-axis) { min-height: 64px; cursor: default; outline-offset: -2px; }
+.ri-track { grid-column: 2 / -2; position: relative; display: grid; grid-template-columns: repeat(var(--nd), minmax(0, 1fr)); border-right: 1px solid var(--rule); }
+.ri-c { position: relative; border-left: 1px solid var(--rule); }
+.ri-c:nth-child(odd) { background: var(--band); }
+.ri-row + .ri-row:not(.is-axis) .ri-track { border-top: 1px solid var(--rule); }
+.ri-row.is-axis + .ri-row .ri-track { border-top: 1px solid var(--rule-2); }
+.ri-row:last-child .ri-track { border-bottom: 1px solid var(--rule-2); }
+.ri-row:not(.is-axis):hover .ri-rl strong, .ri-row:focus-visible .ri-rl strong { color: var(--pool-2); }
+.ri-chart.is-waiting .ri-track { opacity: .55; }
+
+/* each row resolves in turn: the k gate wipes over a thin tenor, a published median presses down */
+.ri-row { --at: calc(260ms + var(--i, 0) * 140ms); }
+.ri-gate { position: absolute; inset: 12px 0; display: grid; place-items: center; border-radius: 4px; background: var(--hatch); box-shadow: inset 0 0 0 1px rgba(80, 42, 80, .28); animation: ri-wipe 520ms var(--ease-land) var(--at) both; }
+.ri-gate span { padding: 4px 10px; border-radius: 999px; background: var(--paper); font: 500 12px/1.2 var(--f-body); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); white-space: nowrap; }
+.ri-spread { position: absolute; left: 0; right: 0; top: 50%; height: 10px; margin-top: -5px; border-radius: 4px; background: var(--hatch-blue); opacity: .5; transform-origin: left center; animation: ri-grow 520ms var(--ease-land) var(--at) both; }
+.ri-cls { position: absolute; bottom: 12px; left: 50%; width: 14px; height: var(--h, 6px); margin-left: -7px; border-radius: 4px 4px 0 0; background: var(--pool-2); transform-origin: bottom; animation: ri-rise 520ms var(--ease-land) var(--at) both; }
+.ri-med { z-index: 2; position: absolute; top: 50%; left: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--pool-2); box-shadow: 0 0 0 3px var(--paper); animation: ri-press var(--dur-seal) var(--ease-snap) var(--at) both; }
+.ri-med-l { position: absolute; top: 50%; left: calc(50% + 16px); transform: translateY(-50%); padding: 3px 9px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 12.5px/1.2 var(--f-body); color: var(--head); white-space: nowrap; z-index: 3; animation: ri-fade var(--dur-enter) var(--ease-land) calc(var(--at) + 200ms) both; }
+@keyframes ri-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes ri-grow { from { transform: scaleX(0); } }
+@keyframes ri-rise { from { transform: scaleY(0); } }
+@keyframes ri-press { from { transform: translateY(-26px) scale(1.25); opacity: 0; } }
+@keyframes ri-fade { from { opacity: 0; } }
+
+.ri-axis-t { margin: 10px 0 0; display: grid; grid-template-columns: var(--cols); font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.ri-axis-t span { grid-column: 2 / -2; text-align: center; }
+.ri-key { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 14px 0 0; padding: 0; list-style: none; font: 400 13px/1.3 var(--f-body); color: var(--ink); }
+.ri-key li { display: flex; align-items: center; gap: 8px; }
+.ri-key i { display: inline-block; flex: none; }
+.ri-key .k-med { width: 12px; height: 12px; border-radius: 50%; background: var(--pool-2); }
+.ri-key .k-spread { width: 26px; height: 8px; border-radius: 4px; background: var(--hatch-blue); opacity: .5; }
+.ri-key .k-gate { width: 26px; height: 14px; border-radius: 3px; background: var(--hatch); box-shadow: inset 0 0 0 1px rgba(80, 42, 80, .28); }
+
+/* the tooltip (values lead, labels follow) */
+.ri-tip { position: fixed; z-index: 40; left: 0; top: 0; pointer-events: none; display: grid; gap: 3px; min-width: 190px; max-width: 260px; padding: 10px 12px; border-radius: 12px; background: var(--sheet); box-shadow: 0 10px 26px rgba(70, 29, 58, .18), inset 0 0 0 1px var(--rule); opacity: 0; transition: opacity var(--dur-micro) linear; }
+.ri-tip.is-on { opacity: 1; }
+.ri-tip strong { font: 600 16px/1.2 var(--f-body); color: var(--head); }
+.ri-tip span { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+
+/* the invoices as one meter: published · under k · not disclosed */
+.ri-meter { display: grid; gap: 10px; --at: calc(260ms + var(--rows, 5) * 140ms); }
+.ri-meter-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.ri-meter-h strong { font: 500 15px/1.3 var(--f-body); color: var(--head); }
+.ri-meter-h span { font: 400 13px/1.3 var(--f-body); color: var(--ink-2); }
+.ri-bar { display: flex; gap: 2px; height: 22px; border-radius: 4px; overflow: hidden; background: var(--band); }
+.ri-bar span { flex: 0 0 auto; height: 100%; transform-origin: left; animation: ri-grow 520ms var(--ease-land) var(--at) both; transition: flex-basis 520ms var(--ease-land); }
+.ri-bar .s-pub { background: var(--pool-2); }
+.ri-bar .s-k { background: var(--hatch-blue); }
+.ri-bar .s-no { background: var(--mist); }
+.ri-mlabels { display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ri-mlabels li { flex: 0 0 auto; min-width: 0; display: grid; gap: 2px; padding-top: 2px; transition: flex-basis 520ms var(--ease-land); }
+.ri-mlabels li.l-no { flex: 1 1 auto; }
+.ri-mlabels li[hidden] { display: none; }
+.ri-mlabels b { display: flex; align-items: center; gap: 6px; font: 500 20px/1.1 var(--f-body); color: var(--head); }
+.ri-mlabels b i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.ri-mlabels .l-pub b i { background: var(--pool-2); }
+.ri-mlabels .l-k b i { background: var(--hatch-blue); }
+.ri-mlabels .l-no b i { background: var(--mist); }
+.ri-mlabels small { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); padding-right: 8px; }
+
+.ri-chart.is-still *, .ri-meter.is-still * { animation: none; }
+
+/* ---------- the public board: a thin full-bleed band (bleeds by paint, not by layout) ---------- */
+.ri-src {
+  position: relative; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 13px 0;
+  background: var(--pool); color: var(--mist); box-shadow: 0 0 0 100vmax var(--pool); clip-path: inset(0 -100vmax);
+}
+.ri-src::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(29, 151, 241, .18), transparent); transform: translateX(-100%); opacity: 0; }
+.ri-src.is-scan::after { animation: ri-scan 1600ms var(--ease-inout) both; }
+@keyframes ri-scan { from { transform: translateX(-100%); opacity: 1; } to { transform: translateX(560%); opacity: 1; } }
+.ri-src b { font: 800 15px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet); }
+.ri-src p { font: 400 13.5px/1.4 var(--f-body); flex: 1 1 380px; min-width: 0; }
+.ri-src code { color: var(--glint); font-size: 13px; }
+.ri-src ul { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 3px; list-style: none; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(196, 199, 242, .22); }
+.ri-src li { padding: 6px 11px; border-radius: 999px; font: 500 12px/1 var(--f-body); color: rgba(196, 199, 242, .75); white-space: nowrap; }
+.ri-src li[aria-current="true"] { background: var(--mist); color: var(--head); }
+
+/* ---------- panels group the inputs and the data (DS-02, DS-08) ---------- */
+.ri-panel { display: grid; gap: 16px; padding: 24px; background: var(--sheet); border-radius: 22px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.ri-fields { display: grid; gap: 16px; }
+@media (min-width: 900px) { .ri-fields { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); } }
+.ri-field { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.ri-field > label, .ri-lab { font: 500 14px/1.3 var(--f-body); color: var(--head); }
+.ri-field small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+.ri-file { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); min-width: 0; }
+.ri-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ri-file label { order: -1; flex: none; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 13px/1 var(--f-body); }
+.ri-file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 13px/1.3 var(--f-body); color: var(--ink-2); }
+.ri-file:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
+.ri-stepper { display: flex; align-items: center; gap: 4px; width: max-content; padding: 4px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); }
+.ri .ri-stepper button { width: 36px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 999px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--head); font: 500 18px/1 var(--f-body); cursor: pointer; }
+.ri .ri-stepper button:hover { background: var(--paper); }
+.ri .ri-stepper button:disabled { opacity: .45; cursor: default; }
+.ri .ri-stepper input { width: 4ch; padding: 0; border: 0; border-radius: 0; background: none; text-align: center; color: var(--head); font: 500 18px/1 var(--f-mono); -moz-appearance: textfield; appearance: textfield; }
+.ri-stepper input::-webkit-inner-spin-button, .ri-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.ri .ri-stepper input:focus-visible { outline: none; }
+.ri-stepper:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
+.ri-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.ri .ri-actions > button { min-height: 0; padding: 13px 22px; border-radius: 999px; font: 500 15px/1 var(--f-body); }
+.ri-status { font: 400 13px/1.4 var(--f-body); color: var(--ink-2); }
+.ri .out { margin-top: 0; }
+.ri-tbl-wrap { overflow-x: auto; border-radius: 14px; background: var(--paper); padding: 4px 16px; }
+.ri-tbl { width: 100%; border-collapse: collapse; font: 400 13.5px/1.4 var(--f-body); color: var(--head); }
+.ri-tbl th { padding: 10px 12px 8px 0; text-align: left; font: 500 12.5px/1.3 var(--f-body); color: var(--ink-2); border-bottom: 1px solid var(--rule-2); white-space: nowrap; }
+.ri-tbl td { padding: 10px 12px 10px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+.ri-tbl tr:first-child td { border-top: 0; }
+.ri-tbl td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.ri-tbl tr.is-gated td { color: var(--ink-2); }
+.ri-note { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
+
+/* ---------- phones: stacked ---------- */
+@media (max-width: 760px) {
+  .ri-sec { gap: 24px; }
+  .ri-chart, .ri-row, .ri-axis-t { --cols: repeat(var(--nd), minmax(0, 1fr)) 44px; }
+  .ri-row.is-axis span:first-child { display: none; }
+  .ri-row.is-axis span { font-size: 10.5px; padding-bottom: 8px; }
+  .ri-rl { grid-column: 1 / -1; grid-template-columns: auto auto; justify-content: start; gap: 8px; align-items: baseline; padding: 12px 0 4px; }
+  .ri-track { grid-column: 1 / -2; min-height: 52px; }
+  .ri-rn { font-size: 18px; }
+  .ri-rn small { display: none; }
+  .ri-row:not(.is-axis) { min-height: 0; }
+  .ri-row + .ri-row:not(.is-axis) .ri-track { border-top: 0; }
+  .ri-axis-t span { grid-column: 1 / -2; }
+  .ri-med-l { left: auto; right: calc(50% + 16px); }
+  .ri-gate span { font-size: 11px; padding: 3px 8px; }
+  .ri-totals dd { font-size: 40px; }
+  .ri-panel { padding: 18px 16px; border-radius: 20px; }
+  .ri-tbl-wrap { padding: 4px 12px; }
+  .ri-mlabels small { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ri *, .ri-src::after { animation: none !important; }
+}

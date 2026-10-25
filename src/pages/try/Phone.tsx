@@ -32,12 +32,13 @@ export function Phone(): ReactNode {
     );
   }, []);
   const step = (glyph: string, word: string, done: boolean) => (
-    <span className={done ? "is-done" : undefined}>
+    <span className={done ? "done" : undefined}>
       <i lang="ja">{glyph}</i>
       {word}
     </span>
   );
   return (
+    <div className="ph-wrap">
     <div className="ph" role="img" aria-label="The financier console on a phone: an offer, its three seals, the advance waiting for the passkey" ref={el}>
       <div className="ph-screen">
         <div className="ph-status" aria-hidden="true">
@@ -52,7 +53,7 @@ export function Phone(): ReactNode {
           Financier console
         </p>
         <p className="ph-h">Mailbox</p>
-        <div className="ph-offer" ref={offer}>
+        <div className="ph-g ph-offer" ref={offer}>
           <span className="ph-badge" lang="ja">
             売
           </span>
@@ -65,12 +66,12 @@ export function Phone(): ReactNode {
           </span>
         </div>
         <p className="ph-h">Seals on the letter</p>
-        <div className="ph-seals" ref={seals}>
+        <div className="ph-g ph-steps" ref={seals}>
           {step("売", "supplier", true)}
           {step("買", "buyer", true)}
           {step("証", "you", false)}
         </div>
-        <div className="ph-adv" ref={advance}>
+        <div className="ph-g ph-adv" ref={advance}>
           <small>Advance, waiting for your passkey</small>
           <strong>0.00036</strong>
           <span>ZEC</span>
@@ -81,6 +82,7 @@ export function Phone(): ReactNode {
         </span>
         <span className="ph-home" aria-hidden="true" />
       </div>
+    </div>
     </div>
   );
 }

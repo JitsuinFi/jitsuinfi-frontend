@@ -74,3 +74,8 @@ test("a wallet holding less than the books' cash is not solvent", () => {
   assert.equal(r.solvent, false);
   assert.equal(r.report.verdict?.wallet_covers, false);
 });
+
+test("a report that counts part of an overdue receivable does not answer", () => {
+  assert.deepEqual(readFundReport(report({ haircut_pct: 100 }), w, "testnet").problems, []);
+  assert.match(readFundReport(report({ haircut_pct: 50 }), w, "testnet").problems.join(), /50 % write-off; the fund writes them off in full/);
+});

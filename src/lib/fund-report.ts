@@ -26,6 +26,8 @@ export interface FundReport {
   wallet_zat?: number;
   books?: { deposits: BookLine[]; payouts: BookLine[]; missing: string[] };
   verdict: { period: number; liabilities_zat: number; assets_zat: number; open_zat: number; overdue_zat: number; solvent: boolean; wallet_zat?: number; wallet_covers?: boolean } | null;
+  /** Share of an overdue receivable written off; the fund writes them off in full (100). */
+  haircut_pct?: number;
   /** Why there is no verdict (no root yet, or a path without the books). */
   no_verdict?: string | null;
   inclusion: { period: number; units: number; included: boolean; why: string } | null;
@@ -66,6 +68,7 @@ export function readFundReport(text: string, w: Wallet, network: string): Report
     books: b,
     verdict: v ?? null,
     no_verdict: typeof j.no_verdict === "string" ? j.no_verdict : null,
+    haircut_pct: num(j.haircut_pct) ? j.haircut_pct : undefined,
     inclusion: inc ?? null,
   };
   const problems: string[] = [];
@@ -86,6 +89,8 @@ export function readFundReport(text: string, w: Wallet, network: string): Report
       if (unlisted.length) problems.push(`the fund's books leave out your deposit ${unlisted.map((h) => `${h.deposit_txid!.slice(0, 8)}…`).join(", ")}`);
     }
   }
+  // user decision 2026-10-25: an overdue, unpaid receivable counts 0, as the node values the fund
+  if (report.haircut_pct !== undefined && report.haircut_pct !== 100) problems.push(`the report counts overdue receivables after a ${report.haircut_pct} % write-off; the fund writes them off in full: run it without --haircut`);
   if (b?.missing.length) problems.push(`${b.missing.length} transaction${b.missing.length === 1 ? "" : "s"} on the fund's books ${b.missing.length === 1 ? "is" : "are"} not in its wallet`);
   return { report, problems, solvent: !!v?.solvent && problems.length === 0 };
 }

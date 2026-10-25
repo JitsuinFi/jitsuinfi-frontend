@@ -196,7 +196,7 @@ function Basin({ p, period, owed, assets, mine, under, empty }: { p: Portfolio |
   const right: Array<{ y: number; cls: string; lines: Array<[string, string]> }> = [];
   const parts: ReactNode[] = [];
   if (p && L && !L.empty) {
-    desc += `Cash ${zec(p.cash_zat)} on top; ${p.open} advance${p.open === 1 ? "" : "s"} out, ${zec(p.open_zat)}, ${p.due_within[0]} due within 30 days, ${p.due_within[1]} within 31 to 90, ${p.due_within[2]} later; ${p.overdue} overdue, ${zec(p.overdue_zat)} after write-off; ${p.repaid} repaid.`;
+    desc += `Cash ${zec(p.cash_zat)} on top; ${p.open} advance${p.open === 1 ? "" : "s"} out, ${zec(p.open_zat)}, ${p.due_within[0]} due within 30 days, ${p.due_within[1]} within 31 to 90, ${p.due_within[2]} later; ${p.overdue} overdue${p.overdue_face_zat ? `, ${zec(p.overdue_face_zat)} unpaid` : ""}, counted 0 until repaid; ${p.repaid} repaid.`;
     // the advances out, one block per due bucket, sized by count (the path carries counts only)
     const total = p.due_within[0] + p.due_within[1] + p.due_within[2];
     const L0 = xl(yO);
@@ -259,6 +259,7 @@ function Basin({ p, period, owed, assets, mine, under, empty }: { p: Portfolio |
       );
     } else if (L.open > 0) right.push({ y: yA + (yO - yA) / 2, cls: "t-ink", lines: [["t-ink", `${p.open} out`], ["t-head-mono", zec(p.open_zat)]] });
     if (L.overdue > 0) right.push({ y: yO + 4, cls: "t-ink", lines: [["t-ink", "overdue"], ["t-head-mono opt", `${p.overdue} · ${zec(p.overdue_zat)}`]] });
+    else if (p.overdue > 0) right.push({ y: yO + 4, cls: "t-ink", lines: [["t-ink", `${p.overdue} overdue`], ["t-head-mono opt", "counted 0 until repaid"]] });
     if (p.repaid > 0) right.push({ y: yC, cls: "t-ink", lines: [["t-ink", `${p.repaid} repaid`], ["t-head-mono opt", "back as cash"]] });
     // the repayments came back as cash: settled ripples on the surface
     const rings = Math.min(p.repaid, 10);
@@ -388,11 +389,11 @@ export function MemberPage(): ReactNode {
 
   const figs: Array<[string, string, string, ReactNode]> = lp
     ? [
-        ["is-big", "Assets", "cash, open, overdue after write-off", v ? zec(v.assets_zat) : "—"],
+        ["is-big", "Assets", "cash and open advances; overdue counts 0", v ? zec(v.assets_zat) : "—"],
         [reading && !reading.solvent && !reading.problems.length ? "is-bad" : "", "Owed to members", "root total, at par", v ? zec(v.liabilities_zat) : "read the report"],
         ["", "Cash", "pays withdrawals", zec(lp.p.cash_zat)],
         ["", "Advances out", `${lp.p.open} open · ${lp.p.due_within[0]} due ≤ 30 d, ${lp.p.due_within[1]} in 31–90 d, ${lp.p.due_within[2]} later`, zec(lp.p.open_zat)],
-        ["", "Overdue", `${lp.p.overdue} invoice${lp.p.overdue === 1 ? "" : "s"}, after write-off`, zec(lp.p.overdue_zat)],
+        ["", "Overdue", `${lp.p.overdue} invoice${lp.p.overdue === 1 ? "" : "s"} unpaid, counted 0 until repaid`, zec(lp.p.overdue_face_zat ?? lp.p.overdue_zat)],
         ["", "Repaid", "advances that came back", String(lp.p.repaid)],
         ...(nav
           ? [
@@ -530,7 +531,7 @@ export function MemberPage(): ReactNode {
               </li>
               <li>
                 <i className="k-over" />
-                overdue, after write-off
+                overdue: counted 0 until repaid
               </li>
               <li>
                 <i className="k-owe" />
@@ -720,7 +721,7 @@ function Solvency({ reading, setReading, mine }: { reading: ReportReading | null
             {v ? (
               <dl>
                 <div className="is-sum">
-                  <dt>Assets (cash, open receivables, overdue after write-off)</dt>
+                  <dt>Assets (cash and open receivables; overdue counts 0 until repaid)</dt>
                   <dd>{zec(v.assets_zat)}</dd>
                 </div>
                 <div>
@@ -742,7 +743,7 @@ function Solvency({ reading, setReading, mine }: { reading: ReportReading | null
                   <dd>{zec(v.open_zat)}</dd>
                 </div>
                 <div>
-                  <dt>Overdue, after write-off</dt>
+                  <dt>Overdue, as counted (written off in full)</dt>
                   <dd>{zec(v.overdue_zat)}</dd>
                 </div>
                 <div>

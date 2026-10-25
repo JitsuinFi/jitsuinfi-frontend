@@ -15,7 +15,7 @@ const relay = {
   // The financier console (/console, HNK-26.T21) talks to the node through /node/*. The
   // browser's Origin header is kept, so the node must run with NODE_ORIGIN = this server.
   // changeOrigin rewrites only the Host header, which an https host such as Railway needs.
-  "/node": { target: process.env.NODE_URL ?? "http://localhost:8788", changeOrigin: true },
+  "^/node/": { target: process.env.NODE_URL ?? "http://localhost:8788", changeOrigin: true },
   "/api": { target: process.env.RELAY_URL ?? "http://localhost:8787", changeOrigin: true },
 };
 

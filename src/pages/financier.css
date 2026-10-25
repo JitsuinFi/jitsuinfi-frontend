@@ -1,0 +1,250 @@
+/* Financier (HNK-34.T5, approved sample design-samples/internal/financier.html). Three sections,
+   each a caption (≤ 35%) beside its working visual (≥ 65%) from 1360 px, stacked below:
+   一 the 債権譲渡通知書 on its own paper, its fields as the letter's blanks, the code sliding out
+   from under it like a carbon copy; 二 the buyer's history as a chain of certificates anchored by
+   dashed lines to the public board (a thin Cetacean strip, the only dark element), with the 認/滞
+   stamp and four counts without boxes; 三 the documents joining one clip as their fields fill,
+   then a seal-red JTSB band wrapping them. Palette DS-PAL, tokens from landing/tokens.css; motion
+   from MASTER.md (softLand, snapSettle); reduced motion shows the end states. Scoped under .fi so
+   the shared shell rules (style.css) stay untouched. */
+
+.fi {
+  --rule: rgba(2, 13, 47, .12);
+  --rule-2: rgba(2, 13, 47, .22);
+  --wash-b: rgba(196, 199, 242, .34);
+  --seal-wash-2: rgba(236, 208, 236, .72);
+  --lift-low: 0 6px 16px rgba(70, 29, 58, .12);
+  color: var(--ink);
+}
+.fi p { margin: 0; }
+.fi-mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- 35 / 65 ---------- */
+.fi-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 0 0 56px; scroll-margin-top: 84px; }
+.fi-sec + .fi-sec { padding-top: 40px; border-top: 1px solid var(--rule); }
+@media (min-width: 1360px) {
+  .fi-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+  .fi-sec > .fi-cap { position: sticky; top: 92px; }
+}
+.fi-cap { display: grid; gap: 18px; align-content: start; max-width: 54ch; min-width: 0; }
+.fi-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+.fi-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.35 var(--f-body); color: var(--ink-2); }
+.fi h1, .fi h2, .fi h3 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
+.fi h1 { font-size: clamp(40px, 4.4vw, 68px); line-height: 1; letter-spacing: -.02em; }
+.fi h2 { font-size: clamp(27px, 2.5vw, 38px); line-height: 1.06; letter-spacing: -.015em; }
+.fi-lede { font: 400 clamp(16.5px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.fi-hint { font: 400 14px/1.55 var(--f-body); color: var(--ink-2); }
+.fi-note { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
+.fi-link { color: var(--seal); font: 500 15px/1.3 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
+.fi-link:hover { text-decoration-thickness: 3px; }
+
+/* the backend notice: a marked line, not a box */
+.fi-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: start; }
+.fi-warn i { grid-row: span 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font: 800 17px/1 var(--f-seal); font-style: normal; color: var(--sheet); background: var(--pool-2); }
+.fi-warn b { font: 600 15px/1.35 var(--f-body); color: var(--head); }
+.fi-warn p { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
+.fi-toc { display: grid; margin: 0; padding: 0; list-style: none; }
+.fi-toc a { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 11px 0; border-top: 1px solid var(--rule); text-decoration: none; color: var(--head); font: 500 15px/1.35 var(--f-body); }
+.fi-toc a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.fi-toc a i { font: 800 17px/1 var(--f-seal); font-style: normal; color: var(--seal); }
+.fi-toc a strong { font-weight: 500; }
+.fi-toc a small { font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+
+/* ---------- controls (over the shared button and field rules) ---------- */
+.fi .fi-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: 14px 24px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 15px/1 var(--f-body); }
+.fi .fi-btn:hover { background: var(--seal-hi); }
+.fi .fi-btn-q { display: inline-flex; align-items: center; gap: 8px; min-height: 0; padding: 10px 15px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 13.5px/1 var(--f-body); }
+.fi .fi-btn-q:hover { background: var(--wash-b); }
+.fi-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.fi-field { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fi-field > span, .fi-field > label { font: 500 13.5px/1.3 var(--f-body); color: var(--head); }
+.fi-field small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+.fi .fi-field input[type=text], .fi .fi-field textarea { width: 100%; min-width: 0; border: 0; border-radius: 12px; padding: 11px 14px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 13.5px/1.45 var(--f-mono); }
+.fi .fi-field textarea { resize: vertical; min-height: 76px; }
+.fi .fi-field input[type=text]:focus, .fi .fi-field textarea:focus { outline: none; box-shadow: inset 0 0 0 2px var(--seal); background: var(--sheet); }
+.fi-file { position: relative; display: flex; align-items: center; gap: 12px; padding: 7px 7px 7px 14px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); min-width: 0; }
+.fi .fi-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fi-file label { flex: none; order: 2; margin-left: auto; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 13px/1 var(--f-body); }
+.fi-file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 13px/1.3 var(--f-body); color: var(--ink-2); }
+.fi-file:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
+.fi-file:focus-within label { outline: 2px solid var(--glint); outline-offset: 2px; }
+.fi-check { display: flex; align-items: center; gap: 10px; font: 500 14px/1.35 var(--f-body); color: var(--head); cursor: pointer; }
+.fi-check input { appearance: none; width: 20px; height: 20px; margin: 0; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--ink-2); background: var(--sheet); display: grid; place-items: center; cursor: pointer; }
+.fi-check input:checked { background: var(--seal); box-shadow: none; }
+.fi-check input:checked::after { content: ""; width: 10px; height: 5px; border: 2px solid var(--sheet); border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.fi-stepper { display: flex; align-items: center; gap: 4px; width: max-content; padding: 4px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); }
+.fi .fi-stepper button { width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 999px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--head); font: 500 18px/1 var(--f-body); }
+.fi .fi-stepper button:hover { background: var(--wash-b); }
+.fi .fi-stepper input { width: 5ch; padding: 0; border: 0; background: none; text-align: center; color: var(--head); font: 500 17px/1 var(--f-mono); -moz-appearance: textfield; appearance: textfield; }
+.fi .fi-stepper input::-webkit-inner-spin-button, .fi .fi-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.fi-stepper:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
+.fi .fi-stepper input:focus-visible { outline: none; }
+.fi-panel { display: grid; gap: 16px; padding: 22px; background: var(--sheet); border-radius: 22px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.fi-code { padding: 12px 14px; border-radius: 12px; background: var(--paper); font: 400 12.5px/1.55 var(--f-mono); color: var(--head); overflow-wrap: anywhere; max-height: 120px; overflow: auto; user-select: all; }
+
+/* a refusal is written on the paper with a 拒 mark */
+.fi-err { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; color: var(--seal); font: 400 14px/1.5 var(--f-body); }
+.fi-err b { font-weight: 600; }
+.fi-err small { display: block; margin-top: 2px; font: 400 11.5px/1.4 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.fi-err-k { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 5px; background: var(--seal); color: var(--sheet); font: 800 12px/1 var(--f-seal); }
+
+/* ======================================================================
+   一  the assignment letter, written on its own paper
+   ====================================================================== */
+.fi-desk { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; padding: 8px 0 24px; }
+.fi-under { grid-area: 1 / 1; justify-self: end; width: 56%; height: 120px; padding: 16px 20px; background: var(--sheet); border-radius: 2px; box-shadow: var(--lift-low), inset 0 0 0 1px var(--rule); transform: rotate(2.4deg) translate(10px, -4px); display: flex; justify-content: space-between; align-items: start; }
+.fi-under b { font: 800 22px/1 var(--f-seal); letter-spacing: .6em; color: var(--head); }
+.fi-under span { display: block; margin-top: 4px; font: 400 12px/1.2 var(--f-body); color: var(--ink-2); }
+.fi-under i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; box-shadow: inset 0 0 0 2.4px var(--seal); color: var(--seal); font: 800 20px/1 var(--f-seal); font-style: normal; transform: rotate(-8deg); }
+.fi-letter { grid-area: 1 / 1; min-width: 0; position: relative; z-index: 1; margin-top: 46px; display: grid; gap: 16px; padding: 28px 32px; background: var(--sheet); border-radius: 2px; box-shadow: var(--lift), inset 0 0 0 1px var(--rule); }
+.fi-l-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 2px solid var(--head); }
+.fi-l-head b { display: block; font: 800 clamp(21px, 2vw, 28px)/1 var(--f-seal); letter-spacing: .32em; color: var(--head); }
+.fi-l-head span { display: block; margin-top: 6px; font: 400 12.5px/1.2 var(--f-body); color: var(--ink-2); }
+.fi-l-head p { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); text-align: right; max-width: 34ch; }
+.fi-blank { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 20px; align-items: start; padding: 4px 0 10px; border-bottom: 1px solid var(--fiber); }
+.fi-blank > label, .fi-blank > .fi-lab { display: grid; gap: 1px; padding-top: 8px; }
+.fi-blank > label span:first-child, .fi-blank > .fi-lab span:first-child { font: 700 14px/1.2 var(--f-seal); color: var(--head); }
+.fi-blank > label span + span, .fi-blank > .fi-lab span + span { font: 500 12px/1.25 var(--f-body); color: var(--ink-2); }
+.fi .fi-blank input[type=text], .fi .fi-blank textarea { width: 100%; min-width: 0; border: 0; border-bottom: 1.5px solid var(--ink-2); border-radius: 0; padding: 7px 2px 5px; background: transparent; color: var(--seal); font: 400 13.5px/1.5 var(--f-mono); }
+.fi .fi-blank textarea { min-height: 58px; resize: vertical; background: repeating-linear-gradient(0deg, transparent 0 25px, var(--fiber) 25px 26px); line-height: 26px; padding-top: 0; }
+.fi .fi-blank input::placeholder, .fi .fi-blank textarea::placeholder { color: rgba(80, 42, 80, .5); font-family: var(--f-body); }
+.fi .fi-blank input[type=text]:focus, .fi .fi-blank textarea:focus { outline: none; border-bottom-color: var(--seal); background-color: var(--seal-wash-2); }
+.fi-blank small { grid-column: 2; font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
+.fi-blank .fi-file { margin-top: 4px; }
+.fi-l-foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 24px; align-items: end; }
+.fi-seals { display: flex; gap: 10px; }
+.fi-sbox { display: grid; justify-items: center; gap: 5px; width: 82px; padding: 8px 4px; border: 1px solid var(--rule-2); border-radius: 2px; font: 400 10.5px/1.25 var(--f-body); color: var(--ink-2); text-align: center; }
+.fi-sk { font: 700 11px/1 var(--f-seal); letter-spacing: .2em; }
+.fi-sbox i { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font: 800 22px/1 var(--f-seal); font-style: normal; color: var(--rule-2); box-shadow: inset 0 0 0 1px var(--rule-2); }
+.fi-sbox.is-yours i { color: var(--seal); box-shadow: inset 0 0 0 1.5px var(--seal); }
+
+/* the code comes out from under the paper, like a carbon copy */
+.fi-slip { position: relative; z-index: 0; display: grid; gap: 10px; margin: -6px 22px 0; padding: 22px 22px 18px; background: var(--sheet); border-radius: 0 0 4px 4px; box-shadow: var(--lift-low), inset 0 0 0 1px var(--rule); }
+.fi-slip.is-in { animation: fi-slip 520ms var(--ease-land) both; }
+@keyframes fi-slip { from { transform: translateY(-70%); clip-path: inset(70% 0 0 0); } to { transform: none; clip-path: inset(0 0 0 0); } }
+.fi-slip > b { font: 600 14px/1.3 var(--f-body); color: var(--head); }
+
+/* ======================================================================
+   二  the buyer's history as a chain over the board
+   ====================================================================== */
+.fi-hist { display: grid; gap: 22px; min-width: 0; }
+@media (min-width: 1000px) { .fi-hist { grid-template-columns: minmax(0, 40fr) minmax(0, 60fr); align-items: start; } }
+.fi-chain-w { display: grid; gap: 18px; min-width: 0; }
+.fi-verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 18px; align-items: center; }
+.fi-hanko { grid-row: span 2; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; color: var(--seal); font: 800 46px/1 var(--f-seal); box-shadow: inset 0 0 0 4.5px var(--seal), inset 0 0 0 8px var(--paper), inset 0 0 0 9.4px var(--seal); transform: rotate(-8deg); }
+.fi-hanko.is-bad { background: var(--seal); color: var(--sheet); box-shadow: inset 0 0 0 4px var(--seal), inset 0 0 0 5.6px rgba(252, 252, 254, .55); }
+.fi-hanko.is-wait { color: var(--ink-2); box-shadow: inset 0 0 0 2px var(--ink-2); opacity: .55; }
+/* the stamp lands after the last link of the chain */
+.fi-hanko.is-slam { animation: fi-slam var(--dur-seal) var(--ease-snap) calc(120ms + var(--n, 0) * 140ms) both; }
+@keyframes fi-slam { 0% { transform: translateY(-30px) scale(1.4) rotate(-8deg); opacity: 0; } 72% { transform: scale(.95) rotate(-8deg); opacity: 1; } 100% { transform: rotate(-8deg); } }
+.fi-verdict h3 { font-size: clamp(22px, 2vw, 30px); line-height: 1.1; }
+.fi-verdict p { font: 400 14.5px/1.5 var(--f-body); color: var(--ink); }
+.fi-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.fi-counts div { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--rule); }
+.fi-counts dt { order: 2; font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.fi-counts dd { order: 1; margin: 0; display: flex; align-items: baseline; gap: 8px; font: 500 clamp(32px, 2.8vw, 44px)/1 var(--f-body); color: var(--head); font-variant-numeric: tabular-nums; }
+.fi-counts dd i { font: 800 15px/1 var(--f-seal); font-style: normal; }
+.fi-counts .c-ok i { color: var(--pool-2); }
+.fi-counts .c-late i, .fi-counts .c-open i { color: var(--ink-2); }
+.fi-counts .c-def i, .fi-counts .c-def.is-bad dd { color: var(--seal); }
+.fi-chain { position: relative; display: grid; gap: 0; padding-top: 6px; }
+.fi-chain-empty { padding: 4px 0 18px; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); }
+.fi-links { position: relative; z-index: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, 1fr); margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: thin; }
+.fi-cert { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; padding-bottom: 46px; }
+.fi-cert::before { content: ""; position: absolute; top: 21px; left: -50%; right: 50%; height: 2px; background: var(--ink-2); transform-origin: left; }
+.fi-cert:first-child::before { display: none; }
+/* anchored on the board: a dashed line down into the strip */
+.fi-cert::after { content: ""; position: absolute; left: 50%; height: 40px; bottom: 0; width: 1.5px; margin-left: -.75px; background: repeating-linear-gradient(180deg, var(--pool-2) 0 3px, transparent 3px 6px); }
+.fi-cert i { position: relative; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font: 800 19px/1 var(--f-seal); font-style: normal; background: var(--sheet); }
+.fi-cert[data-o="ok"] i { color: var(--pool-2); box-shadow: inset 0 0 0 2px var(--pool-2); }
+.fi-cert[data-o="late"] i { color: var(--ink-2); box-shadow: inset 0 0 0 2px var(--ink-2); }
+.fi-cert[data-o="def"] i { color: var(--sheet); background: var(--seal); }
+.fi-cert[data-o="open"] i { color: var(--ink-2); border: 1.5px dashed var(--ink-2); }
+.fi-cert b { font: 500 12px/1.2 var(--f-mono); color: var(--head); }
+.fi-cert span { padding: 0 4px; font: 400 11.5px/1.25 var(--f-body); color: var(--ink-2); }
+.fi-cert.is-in i { animation: fi-cert-in var(--dur-enter) var(--ease-land) calc(120ms + var(--i, 0) * 140ms) both; }
+.fi-cert.is-in::before { animation: fi-link-in 300ms var(--ease-land) calc(var(--i, 0) * 140ms) both; }
+.fi-cert.is-in::after { animation: fi-anchor 300ms var(--ease-land) calc(200ms + var(--i, 0) * 140ms) both; }
+@keyframes fi-cert-in { from { transform: scale(.4); opacity: 0; } }
+@keyframes fi-link-in { from { transform: scaleX(0); } }
+@keyframes fi-anchor { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+/* the public board under the chain: dark, because it is Zcash */
+.fi-board { position: relative; display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 10px; background: var(--pool); color: var(--mist); font: 400 12.5px/1.35 var(--f-body); overflow: hidden; }
+.fi-board b { font: 800 14px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet); white-space: nowrap; }
+.fi-board .fi-mono { color: var(--glint); }
+.fi-board::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(29, 151, 241, .16), transparent) no-repeat; background-size: 30% 100%; background-position: -40% 0; pointer-events: none; }
+.fi-board.is-scan::before { animation: fi-scan 1400ms var(--ease-inout) 1 both; }
+@keyframes fi-scan { to { background-position: 140% 0; } }
+
+/* ======================================================================
+   三  the bundle: documents gather under one clip, then one band seals it
+   ====================================================================== */
+.fi-bun { display: grid; gap: 22px; min-width: 0; }
+@media (min-width: 1000px) { .fi-bun { grid-template-columns: minmax(0, 46fr) minmax(0, 54fr); align-items: start; } }
+.fi-bun-vis { display: grid; min-width: 0; }
+.fi-stack { position: relative; display: grid; min-height: 380px; padding: 24px 10px 10px; }
+.fi-clip { position: absolute; z-index: 9; top: 6px; left: 50%; width: 70px; height: 40px; margin-left: -35px; border-radius: 10px 10px 4px 4px; background: var(--head); box-shadow: 0 6px 12px rgba(2, 13, 47, .25); }
+.fi-clip::after { content: ""; position: absolute; left: 14px; right: 14px; top: 9px; height: 10px; border-radius: 6px; background: var(--paper); }
+.fi-doc { grid-area: 1 / 1; align-self: start; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 14px 16px; background: var(--sheet); border-radius: 2px; box-shadow: var(--lift-low), inset 0 0 0 1px var(--rule); transition: transform var(--dur-enter) var(--ease-land), opacity var(--dur-enter) var(--ease-land), background-color var(--dur-enter) var(--ease-land); }
+.fi-doc i { grid-row: span 2; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; font: 800 17px/1 var(--f-seal); font-style: normal; color: var(--seal); box-shadow: inset 0 0 0 2px var(--seal); }
+.fi-doc b { font: 600 14px/1.25 var(--f-body); color: var(--head); }
+.fi-doc span { grid-column: 2; font: 400 12px/1.3 var(--f-mono); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-doc em { grid-column: 3; grid-row: 1 / span 2; font: 500 11.5px/1 var(--f-body); font-style: normal; color: var(--ink-2); padding: 5px 9px; border-radius: 999px; background: var(--paper); }
+.fi-doc[data-n="0"] { transform: translateY(0); }
+.fi-doc[data-n="1"] { transform: translateY(70px) rotate(-.6deg); }
+.fi-doc[data-n="2"] { transform: translateY(140px) rotate(.5deg); }
+.fi-doc[data-n="3"] { transform: translateY(210px) rotate(-.4deg); }
+.fi-doc[data-n="4"] { transform: translateY(280px) rotate(.6deg); }
+/* an empty document waits apart from the clip, as an outline */
+.fi-doc.is-empty { opacity: .38; box-shadow: inset 0 0 0 1px var(--rule-2); background: transparent; }
+.fi-doc.is-empty[data-n="0"] { transform: translate(14px, 6px); }
+.fi-doc.is-empty[data-n="1"] { transform: translate(14px, 76px) rotate(-.6deg); }
+.fi-doc.is-empty[data-n="2"] { transform: translate(14px, 146px) rotate(.5deg); }
+.fi-doc.is-empty[data-n="3"] { transform: translate(14px, 216px) rotate(-.4deg); }
+.fi-doc.is-empty[data-n="4"] { transform: translate(14px, 286px) rotate(.6deg); }
+.fi-doc.is-empty i { color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--rule-2); }
+/* the paper band that seals the bundle */
+.fi-obi { grid-area: 1 / 1; align-self: start; z-index: 8; position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; height: 44px; margin: 150px -10px 0; background: var(--seal); color: var(--sheet); font: 500 13px/1 var(--f-body); box-shadow: 0 8px 18px rgba(126, 42, 83, .25); transform: rotate(-3deg); clip-path: inset(0 100% 0 0); }
+.fi-obi b { font: 800 18px/1 var(--f-seal); letter-spacing: .2em; }
+.fi-obi.is-on { clip-path: inset(0 0 0 0); }
+.fi-obi.is-wrap { animation: fi-wrap 520ms var(--ease-land) both; }
+@keyframes fi-wrap { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.fi-bun-vis .fi-slip { margin-top: 0; }
+
+/* ---------- phones ---------- */
+@media (max-width: 760px) {
+  .fi-sec { padding-bottom: 40px; gap: 24px; }
+  .fi-sec + .fi-sec { padding-top: 24px; }
+  .fi-under { width: 78%; height: 100px; padding: 12px 14px; }
+  .fi-under b { font-size: 18px; letter-spacing: .4em; }
+  .fi-letter { margin-top: 38px; padding: 20px 16px; gap: 12px; }
+  .fi-l-head p { text-align: left; }
+  .fi-blank { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .fi-blank small { grid-column: 1; }
+  .fi-l-foot { grid-template-columns: minmax(0, 1fr); }
+  .fi-seals { gap: 6px; }
+  .fi-sbox { flex: 1; width: auto; }
+  .fi-slip { margin: -6px 10px 0; padding: 18px 14px 14px; }
+  .fi-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fi-hanko { width: 72px; height: 72px; font-size: 36px; }
+  .fi-links { grid-auto-columns: minmax(52px, 1fr); }
+  .fi-cert b { font-size: 11px; }
+  .fi-cert span { display: none; }
+  .fi-cert i { width: 36px; height: 36px; font-size: 16px; }
+  .fi-cert::before { top: 17px; }
+  .fi-cert::after { height: 26px; }
+  .fi-cert { padding-bottom: 30px; }
+  .fi-board { flex-wrap: wrap; gap: 6px 12px; }
+  .fi-panel { padding: 18px 16px; border-radius: 20px; }
+  .fi-stack { min-height: 360px; padding-inline: 0; }
+  .fi-obi { margin-inline: -4px; }
+  .fi-doc.is-empty[data-n="0"] { transform: translate(6px, 6px); }
+  .fi-doc.is-empty[data-n="1"] { transform: translate(6px, 76px) rotate(-.6deg); }
+  .fi-doc.is-empty[data-n="2"] { transform: translate(6px, 146px) rotate(.5deg); }
+  .fi-doc.is-empty[data-n="3"] { transform: translate(6px, 216px) rotate(-.4deg); }
+  .fi-doc.is-empty[data-n="4"] { transform: translate(6px, 286px) rotate(.6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fi-slip.is-in, .fi-hanko.is-slam, .fi-cert.is-in i, .fi-cert.is-in::before, .fi-cert.is-in::after, .fi-board.is-scan::before, .fi-obi.is-wrap { animation: none; }
+  .fi-doc, .fi-link { transition: none; }
+}

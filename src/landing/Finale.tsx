@@ -4,12 +4,21 @@
 // Outsiders see what an explorer sees, a shielded transaction; the switch to the viewing key opens
 // each envelope and shows what the parties read in its memo. Then the tagline and the way in.
 // React since HNK-31.T4; the motion stays anime.js on refs.
+// HNK-33.T6: beside the way in stands the registry office, an isometric figure
+// (figures/registry-office.svg, built by scripts/figures/registry-office.build.mjs) moved by
+// figures/registry-office.ts: TES-INV-0003 is sealed by 売 買 融 at the counter, only its N (read
+// with jitsuin-wasm from the real register memo) reaches the public board at block 4 509 299, the
+// advance sinks into the shielded pool, and the door to the console opens.
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { animate, stagger } from "animejs";
 import { inView } from "motion";
 import { SPEC_URL } from "./Hero";
 import { dur, ease } from "./motion";
+import { getLang } from "./i18n";
 import { useT } from "./use-lang";
+import { loadWasm } from "./wasm";
+import { mountRegistryOffice, type RegistryOffice } from "./figures/registry-office";
+import officeSvg from "./figures/registry-office.svg?raw";
 
 const fn = (f: (t: number) => number) => () => f;
 
@@ -24,6 +33,30 @@ const TXS = [
 ] as const;
 
 const short = (txid: string) => `${txid.slice(0, 10)}…${txid.slice(-8)}`;
+
+/// The register entry of TES-INV-0003 (TXS[0], txid 33b8f3b0…, block 4 509 299): its memo as the
+/// board's viewing key reads it (base64url, trailing zero padding dropped), from the published
+/// snapshot jitsuinfi-zcash examples/testnet/board-snapshot.json. The office reads N from it.
+const REGISTER_MEMO =
+  "_0pUUzEBVu3E9e1LT81NtxrFWiCbxNd03OJtQyhxMxlBIiJQhFCzWSZfPUJho_qRc5n4sE8K81ma-Qdpd23rto_yIEsdMQIDDJUFfw1ozfS5UEPAwg9TsFtWjovtW9b-9jADi_Ob4PGwY71JaFV1trdIA9J50RKc2cmdt8myMzCPNCowWLAMDw";
+const INVOICE_ID = "TES-INV-0003";
+/** The block as the office's board prints it. */
+const BLOCK = TXS[0].block.toLocaleString("en-US").replace(/,/g, " ");
+/** The figure's short form, as chapters 2 to 4 draw N. */
+const tiny = (h: string) => `N ${h.slice(0, 4)}…${h.slice(-4)}`;
+/** N straight from the memo's bytes (after the 6-byte header), if jitsuin-wasm cannot load. */
+function memoN(memo: string): string {
+  const bin = atob(memo.replace(/-/g, "+").replace(/_/g, "/"));
+  return [...bin.slice(6, 38)].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+}
+const SEALS = [
+  { k: "売", who: "sc.fig.supplier" },
+  { k: "買", who: "sc.fig.buyer" },
+  { k: "融", who: "sc.fig.financier" },
+] as const;
+/** Keys of the texts and aria labels drawn inside the office. */
+const FIG_KEYS = ["fn.fig.aria", "fn.fig.board", "fn.fig.testnet", "fn.fig.block", "fn.fig.only", "fn.fig.office", "fn.fig.console", "fn.fig.open", "fn.fig.pool"];
+type Said = { key: string; params?: Record<string, string | number>; who?: string };
 
 type EnvRefs = { flap: SVGGElement | null; letter: SVGGElement | null; seal: SVGGElement | null };
 
@@ -80,6 +113,151 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
   const close = useRef<HTMLDivElement>(null);
   const line = useRef<HTMLParagraphElement>(null);
   const calls = useRef<HTMLDivElement>(null);
+  const lang = getLang();
+
+  // ---------- the registry office ----------
+  // It plays by itself and loops while the close is in view (as chapters 2 to 4): one round is the
+  // whole walk of TES-INV-0003. The visitor's first press on the office, key or control stops the
+  // loop for good; a press then plays one round (Start over always restarts it). Reduced motion
+  // shows the end state.
+  const figHost = useRef<HTMLDivElement>(null);
+  const figRead = useRef<HTMLDivElement>(null);
+  const fig = useRef<RegistryOffice | null>(null);
+  const READY: Said = { key: "fn.fig.st.ready", params: { id: INVOICE_ID } };
+  const [figSaid, setFigSaid] = useState<Said>(READY);
+  const user = useRef(false);
+  const visible = useRef(false);
+  const looping = useRef(false);
+  const roundDone = useRef(false);
+  const userRound = useRef(false);
+  const round = useRef(0);
+  const nHex = useRef<string | null>(null);
+  const later = useRef(0);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** Waits ms, then on while the close is off screen (unless the visitor has it). */
+  const hold = async (ms: number) => {
+    await wait(ms);
+    while (!visible.current && !user.current) await wait(400);
+  };
+  const takeOver = () => {
+    user.current = true;
+  };
+  /** TES-INV-0003's N, read from its register memo with jitsuin-wasm. */
+  const readN = async () => {
+    if (nHex.current) return nHex.current;
+    let n: string;
+    try {
+      const w = await loadWasm();
+      n = (JSON.parse(w.boardMemoDescribe(REGISTER_MEMO)) as { nullifier: string }).nullifier;
+    } catch {
+      n = memoN(REGISTER_MEMO);
+    }
+    return (nHex.current = n);
+  };
+  const resetFig = () => {
+    round.current++;
+    fig.current?.reset();
+    setFigSaid(READY);
+    roundDone.current = false;
+  };
+  const playRound = async (stop: () => boolean) => {
+    const id = ++round.current;
+    const gone = () => id !== round.current || stop() || !fig.current;
+    const say = (x: Said) => void (!gone() && setFigSaid(x));
+    const pause = async (ms: number) => {
+      if (!reduced) await hold(ms);
+    };
+    const n = tiny(await readN());
+    await pause(500);
+    for (let i = 0; i < 3 && !gone(); i++) {
+      say({ key: "fn.fig.st.seal", params: { k: SEALS[i].k }, who: SEALS[i].who });
+      await fig.current?.seal(i);
+    }
+    await pause(200);
+    say({ key: "fn.fig.st.sealed" });
+    await pause(100);
+    if (gone()) return;
+    say({ key: "fn.fig.st.n", params: { n } });
+    await fig.current?.fingerprint(n);
+    await pause(50);
+    if (gone()) return;
+    const posting = fig.current?.post(n, BLOCK);
+    if (!reduced) await wait(800);
+    say({ key: "fn.fig.st.board", params: { h: BLOCK } });
+    await posting;
+    await pause(400);
+    if (gone()) return;
+    say({ key: "fn.fig.st.pool" });
+    await fig.current?.advance();
+    if (gone()) return;
+    say({ key: "fn.fig.st.open" });
+    await fig.current?.open();
+    await pause(250);
+    if (!gone()) roundDone.current = true;
+  };
+  const loop = async () => {
+    if (looping.current) return;
+    looping.current = true;
+    try {
+      if (reduced) {
+        await playRound(() => user.current);
+        return;
+      }
+      while (!user.current) {
+        if (!visible.current) {
+          await wait(400);
+          continue;
+        }
+        if (roundDone.current) {
+          await hold(3000); // hold the open door, then the next round
+          if (user.current) break;
+          resetFig();
+          await wait(600);
+          if (user.current) break;
+        }
+        await playRound(() => user.current);
+      }
+    } finally {
+      looping.current = false;
+    }
+  };
+  /** The visitor's round: back to rest, then one round, no loop. */
+  const startOver = () => {
+    takeOver();
+    resetFig();
+    clearTimeout(later.current);
+    userRound.current = true;
+    later.current = window.setTimeout(() => {
+      void playRound(() => false).finally(() => void (userRound.current = false));
+    }, reduced ? 0 : 400);
+  };
+  // a press on the office: takes over; plays one round unless the visitor's own round is playing
+  const press = () => {
+    if (user.current && userRound.current) return;
+    startOver();
+  };
+  const onPress = useRef(press);
+  onPress.current = press;
+
+  // the figure: inserted once, moved by its controller
+  useEffect(() => {
+    const host = figHost.current!;
+    host.innerHTML = officeSvg;
+    const f = mountRegistryOffice(host.querySelector("svg")!, { reduced, onPress: () => onPress.current() });
+    fig.current = f;
+    return () => {
+      clearTimeout(later.current);
+      round.current++;
+      f.destroy();
+      fig.current = null;
+      host.replaceChildren();
+    };
+  }, [reduced]);
+
+  // its small labels follow EN/中文
+  useEffect(() => {
+    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
+  }, [lang, reduced, t]);
 
   // ---------- the switch ----------
   const toggle = (o: boolean) => {
@@ -119,13 +297,33 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
       () => {
         if (reduced) return;
         animate([...line.current!.children, calls.current!], { translateY: { from: 22, to: 0 }, opacity: { from: 0, to: 1 }, filter: { from: "blur(8px)", to: "blur(0px)" }, duration: dur.enter + 200, delay: stagger(120), ease: fn(ease.softLand) });
+        animate(figHost.current!, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
+        animate(figRead.current!, { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
+        setTimeout(() => void loop(), dur.enter + 700);
       },
-      { amount: 0.4 },
+      { amount: 0.25 },
     );
+    // the wasm warms up as the close comes near; with reduced motion the office shows its end state
+    const near = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        void readN();
+        near.disconnect();
+        if (reduced) void loop();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    near.observe(close.current!);
+    // the loop pauses while the close is off screen
+    const seen = new IntersectionObserver(([e]) => void (visible.current = e.isIntersecting), { threshold: 0.15 });
+    seen.observe(close.current!);
     return () => {
       stopRow();
       stopClose();
+      near.disconnect();
+      seen.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced]);
 
   const copy = async (i: number, txid: string, button: HTMLButtonElement) => {
@@ -196,18 +394,36 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
       <p className="fn-caption">{t("fn.caption")}</p>
       {/* the close: the line, the way in */}
       <div className="fn-close" ref={close}>
-        <p className="fn-line" ref={line}>
-          <span className="fn-line-a">{t("fn.line1")}</span>
-          <span className="fn-line-b">{t("fn.line2")}</span>
-        </p>
-        <div className="fn-calls" ref={calls}>
-          {/* a plain link: the app is another world, its stylesheets load with a new document */}
-          <a className="seal-btn" href="/app">
-            <span className="seal-btn-label">{t("hero.demo")}</span>
-          </a>
-          <a className="ink-link fn-spec" href={SPEC_URL} rel="noreferrer">
-            {t("nav.spec")}
-          </a>
+        {/* the line and the way in (the 35%) */}
+        <div className="fn-close-cap">
+          <p className="fn-line" ref={line}>
+            <span className="fn-line-a">{t("fn.line1")}</span>
+            <span className="fn-line-b">{t("fn.line2")}</span>
+          </p>
+          <div className="fn-calls" ref={calls}>
+            {/* a plain link: the app is another world, its stylesheets load with a new document */}
+            <a className="seal-btn" href="/app">
+              <span className="seal-btn-label">{t("hero.demo")}</span>
+            </a>
+            <a className="ink-link fn-spec" href={SPEC_URL} rel="noreferrer">
+              {t("nav.spec")}
+            </a>
+          </div>
+        </div>
+        {/* the registry office: the counter, the public board, the shielded pool, the door to the console */}
+        <div className="fn-visual">
+          <div className="fn-figure" ref={figHost} />
+          <div className="fn-fig-read" ref={figRead}>
+            <p className="fn-fig-status" role="status" aria-live="polite">
+              {t(figSaid.key, { ...figSaid.params, ...(figSaid.who ? { who: t(figSaid.who) } : {}) })}
+            </p>
+            <div className="fn-fig-controls">
+              <button className="ink-link fn-fig-reset" type="button" onClick={startOver}>
+                {t("sc.reset")}
+              </button>
+              <p className="fn-fig-hint">{t("fn.fig.hint")}</p>
+            </div>
+          </div>
         </div>
         <footer className="fn-foot">
           <span className="fn-brand">JitsuinFi</span>

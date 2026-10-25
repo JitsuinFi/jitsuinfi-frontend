@@ -157,10 +157,10 @@
 .sp .sk input::placeholder { color: rgba(80, 42, 80, .55); }
 .sp .sk input:not([readonly]) { border-bottom-color: var(--fold); }
 .sp .sk input:not([readonly]):hover { border-bottom-color: var(--seal); }
-.sp .sk input:focus { outline: 2px solid var(--glint); outline-offset: 2px; border-bottom-color: transparent; background: transparent; }
+.sp .sk input:focus { outline: 2px solid var(--seal); outline-offset: 2px; border-bottom-color: transparent; background: transparent; }
 .sp .sk input[readonly] { cursor: default; }
 .sp .sk input[readonly]:focus { outline: none; }
-.sp .sk input[readonly]:focus-visible { outline: 2px solid var(--glint); }
+.sp .sk input[readonly]:focus-visible { outline: 2px solid var(--seal); }
 .sp .sk input.is-mono { font: 400 12.5px/1.4 var(--f-mono); color: var(--head); }
 .sp .sk-meta input.is-mono { width: 15ch; text-align: right; }
 .sp .sk input[type="date"] { width: 132px; text-align: right; }
@@ -270,7 +270,7 @@
 .sp-st[aria-current="step"] .sp-st-btn::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 22px; height: 3px; margin-left: -11px; border-radius: 2px; background: var(--head); }
 .sp .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 1.5px var(--fold); }
 .sp .sp-st[data-s="next"] .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 2px var(--seal), 0 10px 22px rgba(126, 42, 83, .24); }
-.sp .sp-st-btn:focus-visible { outline: 2px solid var(--glint); outline-offset: 2px; }
+.sp .sp-st-btn:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
 /* object parts */
 .sp .o-ink { fill: none; stroke: var(--head); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .sp .o-ink-2 { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -493,7 +493,7 @@
 .sp-tray details.mb-card summary b { font: 700 15px/1 var(--f-seal); }
 .sp-tray details.mb-card summary::after { content: "open ▾"; margin-left: auto; font: 400 12px/1 var(--f-body); color: var(--seal); }
 .sp-tray details.mb-card[open] summary::after { content: "fold ▴"; }
-.sp-tray details.mb-card summary:focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+.sp-tray details.mb-card summary:focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; }
 .sp-tray details.mb-card > * + * { margin-top: 12px; }
 .sp-tray .copyrow { flex-wrap: wrap; }
 .sp-tray .copyrow .code { flex-basis: 100%; }

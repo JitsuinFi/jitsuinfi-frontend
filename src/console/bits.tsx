@@ -1,9 +1,12 @@
 // The console's own shell and small pieces (HNK-34.T5): the top bar (no app shell: the console is
 // its own world on the node's origin), the footer, copy and one-at-a-time buttons, and the six
-// station marks of the deal's route.
+// station marks of the deal's route. Nav audit 2026-10-25: a skip link before the bar (every
+// console page's <main> is #cs-main), and the footer leads to the app (its host from a console).
 import { useState, type ReactNode } from "react";
 import { Mark, Wordmark } from "../app/Mark";
+import { SkipLink } from "../app/SkipLink";
 import { explain } from "../lib/explain";
+import { appHref } from "../lib/hosts";
 
 export const say = (e: unknown) => explain(e instanceof Error ? e.message : String(e));
 export type Load = () => Promise<void>;
@@ -14,6 +17,7 @@ export const netLabel = (network: string | undefined) => (network === undefined 
 export function TopBar({ net, where, nav, end }: { net: string | null; where?: ReactNode; nav?: ReactNode; end?: ReactNode }): ReactNode {
   return (
     <header className="cs-top">
+      <SkipLink target="cs-main" />
       <a className="cs-brand" href="/console" aria-label="JitsuinFi financier console">
         <Mark className="cs-brand-img" small />
         <Wordmark />
@@ -32,6 +36,11 @@ export function Foot(): ReactNode {
   return (
     <footer className="cs-foot">
       <p>Talks only to your node, on this origin. No trackers, no third-party requests.</p>
+      <p className="cs-foot-links">
+        <a href={appHref("/app", location.hostname)}>JitsuinFi app</a>
+        <span aria-hidden="true">·</span>
+        <a href={appHref("/verify", location.hostname)}>Verify a bundle</a>
+      </p>
     </footer>
   );
 }

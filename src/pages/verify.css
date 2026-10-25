@@ -8,7 +8,7 @@
   --vf-lift-sm: 0 6px 16px rgba(70, 29, 58, .12);
   display: grid; grid-template-columns: minmax(0, 30fr) minmax(0, 70fr); gap: 56px; align-items: start;
 }
-.vf-page :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+.vf-page :focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; }
 
 /* ---------- the caption ---------- */
 .vf-cap { padding-top: 12px; max-width: 470px; }
@@ -74,7 +74,7 @@
 .vf-env-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .vf-env-btn { flex: none; padding: 7px 12px; border-radius: 999px; background: var(--sheet); box-shadow: 0 1px 2px rgba(70, 29, 58, .12); font: 500 12px/1 var(--f-body); color: var(--seal); }
 .vf-env-name { min-width: 0; font: 400 12px/1.35 var(--f-body); color: var(--ink-2); overflow-wrap: anywhere; }
-.vf-env-row:focus-within { outline: 2px solid var(--glint); outline-offset: 2px; }
+.vf-env-row:focus-within { outline: 2px solid var(--seal); outline-offset: 2px; }
 .vf-act { display: grid; gap: 10px; justify-items: start; margin-top: 4px; }
 .vf-go {
   width: 100%; display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 0; padding: 14px 20px; border: 0; border-radius: 999px;

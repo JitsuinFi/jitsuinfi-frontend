@@ -12,11 +12,14 @@
 // No account server exists yet (relay HNK-23): username and email stay in this browser's profile
 // (D-34). The passkey is named after the username, so a synced passkey finds the account on a new
 // device. React since HNK-31.T7.
+// Nav audit 2026-10-25: the nav's Sign in opens log-in on a device that knows an account and
+// sign-up on one that does not; test data shows the same Ready step as a passkey sign-up; a role
+// screen's gate names its counter; Use test data instead is always under the passkey step.
 import { useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
-import { account } from "../lib/app-session";
+import { account, accountDoor } from "../lib/app-session";
 import { NoPrfError, passkeysAvailable } from "../lib/passkey";
 import { dur, ease, run, still } from "./try/anim";
 // stylesheet: src/pages/account.css, loaded with the app shell (src/app/app-styles.ts)
@@ -204,6 +207,10 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   const navigate = useNavigate();
   const s = account.current;
 
+  if (accountDoor.fresh) {
+    accountDoor.fresh = false;
+    if (!s) view = null;
+  }
   let v: CardView;
   if (s) v = onboarding ? "onboard" : "roles";
   else {
@@ -347,9 +354,23 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
 
   const testData = (r: Role) =>
     act("demo", async () => {
+      // A new test-data account gets the Ready step a passkey sign-up gets: from sign-up, and from
+      // the account page itself. A log-in from a role screen's gate opens that screen.
+      const onboard = v === "signup-passkey" || !want;
+      let key: Uint8Array;
       try {
-        await account.signInDemo(r, bytesFromHex(secret.current!.value.trim()));
+        key = bytesFromHex(secret.current!.value.trim());
       } catch (e) {
+        say({ mk: "拒", text: sentence(e), bad: true });
+        return;
+      }
+      // set before the call: the new session re-renders the app at once (as Create passkey does)
+      if (onboard) setOnboarding(true);
+      try {
+        await account.signInDemo(r, key);
+        view = null;
+      } catch (e) {
+        if (onboard) setOnboarding(false);
         say({ mk: "拒", text: sentence(e), bad: true });
       }
     });
@@ -377,7 +398,9 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   const seatRole: Role | null = s ? s.role : v === "signup" ? role : v === "signup-passkey" ? draft.role : null;
   const seat: "blank" | "carved" | "pressed" = s ? "pressed" : seatRole ? "carved" : "blank";
   const wantOther = s && want && want !== s.role ? want : null;
-  const showDemo = (v === "signup-passkey" || v === "login-passkey") && (!pk || failed);
+  // always offered under the passkey step; open by itself when passkeys cannot give keys here
+  const showDemo = v === "signup-passkey" || v === "login-passkey";
+  const demoOpen = !pk || failed;
   const demoRole: Role = v === "signup-passkey" ? draft.role : (want ?? "supplier");
 
   // caption
@@ -386,8 +409,8 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   let step = 0;
   switch (v) {
     case "signup":
-      title = "Create your account";
-      lede = `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
+      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Create your account";
+      lede = want ? `New here? Write your name on the card; the ${roleLabel(want)} seal is chosen. Have an account? Log in.` : `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
       step = 1;
       break;
     case "signup-passkey":
@@ -401,7 +424,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       step = 3;
       break;
     case "login":
-      title = "Log in";
+      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Log in";
       lede = "Enter your username. Your passkey comes next.";
       break;
     case "login-passkey":
@@ -461,9 +484,15 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
             ) : null}
             {v === "onboard" && s ? (
               <ul className="ac-points">
-                <Point icon={<PasskeyIcon />} title="Your passkey is your password">
-                  Each time you log in or sign something, your device asks for your fingerprint, face, or device password. No password to remember, nothing to back up.
-                </Point>
+                {s.demo ? (
+                  <Point icon={<KeyIcon />} title="Test data stands in for a passkey">
+                    Your keys come from the test secret, for TES- invoices only. Anyone with it acts as you; a passkey replaces it on a real account.
+                  </Point>
+                ) : (
+                  <Point icon={<PasskeyIcon />} title="Your passkey is your password">
+                    Each time you log in or sign something, your device asks for your fingerprint, face, or device password. No password to remember, nothing to back up.
+                  </Point>
+                )}
                 <Point icon={<FingerIcon />} title="Your key fingerprint">
                   <span className="ac-fp">{s.fingerprint}</span>
                   It is the same on every device with this passkey. If it ever looks different, you picked another passkey.
@@ -822,7 +851,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
             </form>
 
             {showDemo ? (
-              <details className="ac-demo" open>
+              <details className="ac-demo" open={demoOpen}>
                 <summary>Use test data instead</summary>
                 <div className="ac-demo-body">
                   <input type="text" placeholder="64 hex characters" spellCheck="false" autoComplete="off" aria-label="Test secret" ref={secret} disabled={lock} />

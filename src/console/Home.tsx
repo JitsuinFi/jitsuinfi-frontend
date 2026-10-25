@@ -558,7 +558,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
           </span>
         }
       />
-      <main>
+      <main id="cs-main" tabIndex={-1}>
         <section className="cs-sec is-desk" id="desk" aria-labelledby="cs-desk-t">
           <div className="cs-cap">
             <p className="cs-eyebrow">

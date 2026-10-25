@@ -1,0 +1,14 @@
+/* "Skip to the page" (src/app/SkipLink.tsx), in every world: a seal pill above the top bar that
+   comes down only while it has the focus. Seal on paper; its ring is the head ink, one step out. */
+.skip {
+  position: fixed; z-index: 100; top: 10px; left: max(16px, env(safe-area-inset-left, 0px));
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px;
+  background: var(--seal); color: var(--sheet); font: 500 14px/1 var(--f-body); text-decoration: none;
+  box-shadow: 0 10px 24px rgba(70, 29, 58, .22); /* --ink 22% */
+  transform: translateY(calc(-100% - 60px)); /* its shadow too stays above the screen */
+  transition: transform var(--dur-enter, 400ms) var(--ease-land, cubic-bezier(.22, .78, .51, .94));
+}
+.skip:focus, .skip:focus-visible, #console .skip:focus-visible { transform: none; outline: 2px solid var(--head); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .skip { transition: none; } }
+/* the element a skip lands on takes the focus without a ring: the page itself is not a control */
+[tabindex="-1"]:focus, #console [tabindex="-1"]:focus-visible { outline: none; }

@@ -4,6 +4,7 @@
 // React since HNK-31.T6; the tenor × discount chart since HNK-34.T3 (approved sample
 // design-samples/internal/rates.html). Every number on the page comes from wasm `rateIndex` over
 // the board this page read (live, the last kept, the bundled copy, or the visitor's file).
+import { NextRoom } from "../app/NextRoom";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Page } from "../app/AppShell";
 import { Button, useOut } from "../app/ui";
@@ -442,6 +443,7 @@ export function RatesPage(): ReactNode {
           <span>{tip?.text}</span>
         </div>
       </div>
+      <NextRoom from="rates" />
     </Page>
   );
 }

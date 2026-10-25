@@ -1,5 +1,6 @@
 // The landing world (HNK-31.T4): six chapters as components inside <div id="landing"> on
-// <body class="landing">, as index.html had it. Lenis carries the scroll (off on reduced motion).
+// <body class="landing">, as index.html had it, in one <main> after the skip link. Lenis carries
+// the scroll (off on reduced motion).
 import "../landing/tokens.css";
 import "../landing/landing.css";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
@@ -11,6 +12,7 @@ import { History } from "../landing/History";
 import { reducedMotion } from "../landing/motion";
 import { SealChain } from "../landing/SealChain";
 import { Twice } from "../landing/Twice";
+import { SkipLink } from "./SkipLink";
 
 export function Landing(): ReactNode {
   const reduced = useRef(reducedMotion()).current;
@@ -32,12 +34,16 @@ export function Landing(): ReactNode {
   }, [reduced]);
   return (
     <div id="landing">
-      <Hero reduced={reduced} />
-      <Fingerprint reduced={reduced} />
-      <SealChain reduced={reduced} />
-      <Twice reduced={reduced} />
-      <History reduced={reduced} />
-      <Finale reduced={reduced} />
+      {/* past the nav, to the hero's copy (nav audit 2026-10-25) */}
+      <SkipLink target="page-start" />
+      <main>
+        <Hero reduced={reduced} />
+        <Fingerprint reduced={reduced} />
+        <SealChain reduced={reduced} />
+        <Twice reduced={reduced} />
+        <History reduced={reduced} />
+        <Finale reduced={reduced} />
+      </main>
     </div>
   );
 }

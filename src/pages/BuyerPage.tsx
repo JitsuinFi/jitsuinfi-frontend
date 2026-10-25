@@ -16,6 +16,7 @@
 // checks as lines that tick, and the 払込票 payment slip whose QR exists only when payProblems()
 // is empty. One set of codes stands behind the sheet: every step reads the same invoice and
 // letter. History is a chain of certificates anchored to the public board, a request a branch.
+import { handToVerify } from "../lib/verify-handoff";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Banner, Button, CodeBlock, TrustedSvg, useOut } from "../app/ui";
 import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
@@ -1255,8 +1256,9 @@ export function BuyerPage(): ReactNode {
               <Button secondary onClick={async () => void (await navigator.clipboard.writeText(rec!.bundle!))}>
                 Copy the bundle
               </Button>{" "}
-              <a className="by-a" href="/verify">
-                Check it in Verify
+              {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
+              <a className="by-a" href="/verify" onClick={() => handToVerify(rec!.bundle!)}>
+                Check it on Verify
               </a>
             </span>
           </div>

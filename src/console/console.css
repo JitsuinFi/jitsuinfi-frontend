@@ -30,7 +30,11 @@
 #console *, #console *::before, #console *::after { box-sizing: border-box; }
 #console [hidden] { display: none !important; }
 #console button { font: inherit; }
-#console :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+#console :focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; }
+/* Button Blue only inside the dark: the node, the room behind the door, the phone's pool tab bar */
+#console .cs-node :focus-visible, #console .cs-opening :focus-visible { outline-color: var(--glint); }
+/* fields draw their own inset seal ring: no second ring round them */
+#console .cs-field input:focus-visible, #console .cs-field textarea:focus-visible, #console .cs-code-in:focus-visible, #console .cs-rline > input:focus-visible, #console .cs-rline.is-wide textarea:focus-visible { outline: none; }
 .cs { min-height: 100dvh; display: flex; flex-direction: column; }
 .cs main { flex: 1 0 auto; overflow-x: clip; }
 .cs .is-mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
@@ -69,6 +73,9 @@
 .cs-who > span { overflow: hidden; text-overflow: ellipsis; }
 .cs-foot { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; padding: 28px var(--gutter) calc(32px + var(--tabbar-h)); color: var(--ink-2); font: 400 13px/1.5 var(--f-body); border-top: 1px solid var(--rule); }
 .cs-foot p { margin: 0; }
+.cs-foot .cs-foot-links { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.cs-foot .cs-foot-links a { color: var(--seal); font-weight: 500; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.cs-foot .cs-foot-links a:hover { text-decoration-thickness: 3px; }
 
 /* ---------- controls ---------- */
 .cs-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--seal); font: 500 14px/1.3 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
@@ -566,6 +573,7 @@
   .cs-nav a { color: var(--mist); padding: 12px 13px; font-size: 13px; }
   .cs-nav a:hover { background: rgba(196, 199, 242, .1); color: var(--sheet); }
   .cs-nav a[aria-current="true"] { background: var(--sheet); color: var(--head); }
+  #console .cs-nav :focus-visible { outline-color: var(--glint); }
   .cs-sec { padding: 24px var(--gutter) 40px; gap: 24px; }
   .is-door .cs-btn.is-wide { justify-self: stretch; }
   .cs-door { width: min(420px, 100%); }

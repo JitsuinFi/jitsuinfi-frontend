@@ -4,6 +4,7 @@
 // tries a second financier, and paid on the due date. Then it begins again.
 // React since HNK-31.T4: the hero's markup is JSX; the three.js town (city.ts) and the director
 // that plays the episodes stay imperative, on refs, in one effect.
+import { SPEC_URL } from "../lib/hosts";
 import { Mark, Wordmark } from "../app/Mark";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { animate, createTimer, stagger, type JSAnimation, type Timer } from "animejs";
@@ -23,7 +24,8 @@ export const HERO_INVOICE = {
 /// A real register entry on testnet (TEST-HNK-19, cycle-it, 2026-10-17).
 const TESTNET_ENTRY = { txid: "33b8f3b0aa754e790e9c7fac0ae7dc08ce8612a8c26620d551d790e1ea390a56", height: 4509299 };
 
-export const SPEC_URL = "https://github.com/JitsuinFi/jitsuinfi-zcash/blob/main/docs/zip-shielded-receivable-registry.md";
+/// The spec (src/lib/hosts.ts), for Finale and the app's footer.
+export { SPEC_URL };
 
 /// The headline in three beats, per language: the asset (RWA), the money (private), the guarantee
 /// (the seal, once). "◉" is where the seal sits; Chinese sets its words with no spaces.
@@ -450,7 +452,7 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
         </div>
       </nav>
       {/* one column for the copy and the episode subtitle: they stack, so they can never overlap */}
-      <div className="hero-left">
+      <div className="hero-left" id="page-start" tabIndex={-1}>
         <div className="hero-copy">
           <p className="badge glass" ref={badge}>
             <span className="badge-chip">{t("hero.chip")}</span>

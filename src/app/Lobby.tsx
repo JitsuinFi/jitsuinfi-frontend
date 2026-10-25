@@ -10,6 +10,8 @@
 // Drawing: figures/lobby-office.svg (scripts/figures/lobby-office.build.mjs), loaded lazily and
 // moved by figures/lobby-office.ts. Styles: pages/lobby.css; the drawing's materials are the .ro-*
 // rules of chapter 6 in landing.css.
+// The financier's room is the demo console, on its own host: it opens in a new tab (nav audit
+// 2026-10-25: /console on the app host has no node and went back to the landing).
 import "../landing/landing.css";
 import "./figures/lobby-office-pins.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -20,29 +22,10 @@ import { useFigure } from "../landing/use-figure";
 import { BOARD_COPY } from "../lib/board";
 import { wasm } from "../lib/core";
 import { KIT } from "../lib/kit";
-import { blockText, nShort, ORDER, twiceOf, type Room } from "./lobby-data";
+import { CONSOLE_HOST, CONSOLE_URL } from "../lib/hosts";
+import { storageGet, waitingApplication } from "../lib/apply-state";
+import { blockText, nShort, ORDER, ROOMS, twiceOf, type Room } from "./lobby-data";
 import type { LobbyOffice, OfficeData } from "./figures/lobby-office";
-
-type RoomCopy = { to: string; kanji: string; title: string; short: string; text: string; aside?: { before: string; label: string; to: string } };
-
-const ROOMS: Record<Room, RoomCopy> = {
-  try: { to: "/try", kanji: "試", title: "Try to double-finance", short: "Try", text: "Sell one invoice twice and watch it fail. No wallet needed." },
-  verify: { to: "/verify", kanji: "証", title: "Verify", short: "Verify", text: "Check a deal or catch a double financing." },
-  outsider: { to: "/outsider", kanji: "外", title: "What outsiders see", short: "Outsiders", text: "Codes and hashes. Nothing about the parties." },
-  rates: { to: "/rates", kanji: "価", title: "Rate index", short: "Rates", text: "Market prices from the board, no parties." },
-  supplier: { to: "/supplier", kanji: "売", title: "Supplier", short: "Supplier", text: "Issue an invoice and get it financed once." },
-  buyer: { to: "/buyer", kanji: "買", title: "Buyer", short: "Buyer", text: "Sign, acknowledge and pay with keys from your passkey." },
-  member: { to: "/member", kanji: "資", title: "Fund member", short: "Fund", text: "See what the fund holds for you." },
-  // the financier's counter is its node's console (src/pages/FinancierPage.tsx)
-  financier: {
-    to: "/console",
-    kanji: "融",
-    title: "Financier",
-    short: "Financier",
-    text: "Finance invoices provably not financed elsewhere.",
-    aside: { before: "Opens your node's console. No node yet? ", label: "Apply as a financier", to: "/apply" },
-  },
-};
 
 const GROUPS: Array<{ title: string; note: string; rooms: Room[] }> = [
   { title: "Open to anyone", note: "no account", rooms: ["try", "verify", "outsider", "rates"] },
@@ -96,7 +79,13 @@ export function Lobby(): ReactNode {
   // the tour's state, read by the timers and the figure's callbacks
   const s = useRef({ gen: 0, idx: 0, timer: 0, resume: 0, paused: false, inView: false, held: false, ready: false, lit: null as Room | null, board: null as OfficeData | null });
 
-  const go = (room: Room) => void navigate({ to: ROOMS[room].to });
+  const go = (room: Room) => {
+    const r = ROOMS[room];
+    if (r.ext) window.open(r.to, "_blank", "noopener");
+    else void navigate({ to: r.to });
+  };
+  // an application sent from this browser, still waiting for its invite
+  const [applied] = useState(() => waitingApplication(storageGet()));
   const { fig } = useFigure<typeof import("./figures/lobby-office"), LobbyOffice>(
     office,
     figHost,
@@ -245,20 +234,34 @@ export function Lobby(): ReactNode {
             <span className="l">Zcash stops double-spending.</span> <span className="l">JitsuinFi stops double-financing.</span>
           </h1>
           <p className="lede">Every invoice leaves one fingerprint on a public board, so it is financed once; amounts, parties and documents stay shielded.</p>
+          {/* the landing tells the whole story: a plain link, it is another world */}
+          <p className="what">
+            <a href="/">What is this?</a>
+          </p>
         </header>
 
         <figure className="office" ref={office} aria-labelledby="office-cap">
           <div className="office-stage">
             <div className="office-art">
               <div className="office-svg" ref={figHost} />
-              {PINS.map((room) => (
-                <Link key={room} to={ROOMS[room].to} className={`pin${on(room)}`} data-room={room} tabIndex={-1} aria-hidden="true" {...point(room)}>
+              {PINS.map((room) => {
+                const head = (
                   <span className="pin-head">
                     <b lang="ja">{ROOMS[room].kanji}</b>
                     <span className="pin-name">{ROOMS[room].short}</span>
                   </span>
-                </Link>
-              ))}
+                );
+                const r = ROOMS[room];
+                return r.ext ? (
+                  <a key={room} href={r.to} target="_blank" rel="noopener" className={`pin${on(room)}`} data-room={room} tabIndex={-1} aria-hidden="true" {...point(room)}>
+                    {head}
+                  </a>
+                ) : (
+                  <Link key={room} to={r.to} className={`pin${on(room)}`} data-room={room} tabIndex={-1} aria-hidden="true" {...point(room)}>
+                    {head}
+                  </Link>
+                );
+              })}
             </div>
           </div>
           <figcaption className="office-cap" id="office-cap">
@@ -300,25 +303,57 @@ export function Lobby(): ReactNode {
               <ul className="rooms">
                 {g.rooms.map((room) => {
                   const r = ROOMS[room];
+                  const body = (
+                    <>
+                      <span className="room-k" lang="ja" aria-hidden="true">
+                        {r.kanji}
+                      </span>
+                      <span className="room-t">
+                        <strong>{r.title}</strong>
+                        <span>{r.text}</span>
+                      </span>
+                      <svg className="room-go" viewBox="0 0 18 18" aria-hidden="true">
+                        <path d="M4 9h9.5M9.5 5l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </>
+                  );
                   return (
                     <li key={room}>
-                      <Link className={`room${on(room)}`} to={r.to} data-room={room} {...point(room)}>
-                        <span className="room-k" lang="ja" aria-hidden="true">
-                          {r.kanji}
-                        </span>
-                        <span className="room-t">
-                          <strong>{r.title}</strong>
-                          <span>{r.text}</span>
-                        </span>
-                        <svg className="room-go" viewBox="0 0 18 18" aria-hidden="true">
-                          <path d="M4 9h9.5M9.5 5l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </Link>
-                      {r.aside ? (
-                        <p className="aside">
-                          {r.aside.before}
-                          <Link to={r.aside.to}>{r.aside.label}</Link>
-                        </p>
+                      {r.ext ? (
+                        <a className={`room${on(room)}`} href={r.to} target="_blank" rel="noopener" data-room={room} {...point(room)}>
+                          {body}
+                          <span className="sr-only"> (opens the demo console in a new tab)</span>
+                        </a>
+                      ) : (
+                        <Link className={`room${on(room)}`} to={r.to} data-room={room} {...point(room)}>
+                          {body}
+                        </Link>
+                      )}
+                      {room === "financier" ? (
+                        <>
+                          <p className="aside">
+                            {"Opens the demo console. Have a node? Your console is at "}
+                            <a href={CONSOLE_URL} target="_blank" rel="noopener">
+                              {CONSOLE_HOST}
+                            </a>
+                            {". "}
+                            {applied ? (
+                              <>
+                                {`Application sent ${applied.day} · `}
+                                <Link to="/apply">Check for your invite</Link>
+                              </>
+                            ) : (
+                              <>
+                                {"No node yet? "}
+                                <Link to="/apply">Apply as a financier</Link>
+                                {"."}
+                              </>
+                            )}
+                          </p>
+                          <p className="aside">
+                            <Link to="/financier">Write an assignment letter</Link>
+                          </p>
+                        </>
                       ) : null}
                     </li>
                   );

@@ -46,7 +46,7 @@
 }
 .sk input.is-mono { font: 400 11.5px/1.35 var(--f-mono); color: var(--ink); }
 .sk input:focus { outline: none; border-bottom: 2px solid var(--seal); }
-.sk input:focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+.sk input:focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; }
 .sk input[data-changed="true"] { color: var(--seal); border-bottom: 2px solid var(--seal); }
 .sk-foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; padding: 0; text-align: left; font-size: inherit; color: inherit; }
 .sk-n { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
@@ -211,7 +211,7 @@
   color: var(--head); font: 500 13px/1.4 var(--f-body); transition: border-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land);
 }
 .tcase .sk input:hover { border-bottom-color: var(--fold); }
-.tcase .sk input:focus { outline: 2px solid var(--glint); outline-offset: 2px; border-bottom-color: transparent; background: transparent; }
+.tcase .sk input:focus { outline: 2px solid var(--seal); outline-offset: 2px; border-bottom-color: transparent; background: transparent; }
 .tcase .sk input.is-mono { font: 400 12.5px/1.4 var(--f-mono); color: var(--head); }
 .tcase .sk input[data-changed="true"] { color: var(--seal); border-bottom: 2px solid var(--seal); }
 .tcase .sk-meta input.is-mono { width: 24ch; text-align: right; }

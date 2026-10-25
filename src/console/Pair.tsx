@@ -7,6 +7,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Check, FingerIcon, KeyIcon, LockIcon, PasskeyIcon, SyncIcon } from "../app/auth";
 import { Door, useDoor, type DoorFacts } from "./Door";
 import { netLabel } from "./bits";
+import { appHref } from "../lib/hosts";
 import { keepName } from "./name";
 import { creationOptions, NodeError, post, registrationJson } from "./node";
 import { DoorPage, DoorRow, errText, KanjiLead, LockLine, Message, type Msg } from "./SignIn";
@@ -178,6 +179,14 @@ export function Pair({ info }: { info: DoorFacts | null }): ReactNode {
           <button className="cs-btn is-wide" type="submit">
             Next
           </button>
+          {/* no dead end (nav audit 2026-10-25): no invite yet, or back to the door */}
+          <p className="cs-switch cs-pair-out">
+            No invite yet? <a className="cs-link" href={appHref("/apply", location.hostname)}>Apply as a financier</a>
+            <span aria-hidden="true"> · </span>
+            <a className="cs-link" href="/console">
+              Back to log in
+            </a>
+          </p>
         </form>
       ) : step === "passkey" ? (
         <div className="cs-form">

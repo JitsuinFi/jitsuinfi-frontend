@@ -12,14 +12,16 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { Page } from "../app/AppShell";
 import { relayDeps } from "../lib/app-relay";
+import { APPLY_OPENED, APPLY_SEED, APPLY_SENT } from "../lib/apply-state";
 import { inviteLinkOk, PROVIDER } from "../lib/provider";
 import { draft, ensureMailbox, receive, send } from "../lib/relay";
 import { encodeMessage, verifyHeader, type Header } from "../lib/relay-message";
 import { dur, ease, rectIn, run, still } from "./try/anim";
 // stylesheet: src/pages/apply.css, loaded with the app shell (src/app/app-styles.ts)
 
-const SEED = "jitsuin.apply.seed";
-const SENT = "jitsuin.apply.sent";
+// the keys, and the shell's reminder between sending and opening the invite: src/lib/apply-state.ts
+const SEED = APPLY_SEED;
+const SENT = APPLY_SENT;
 
 function store(): Storage | null {
   try {
@@ -119,6 +121,7 @@ export function ApplyPage(): ReactNode {
       await send(PROVIDER.mailbox_pk, await encodeMessage(hd), relayDeps);
       const at = new Date().toISOString();
       store()?.setItem(SENT, at);
+      store()?.removeItem(APPLY_OPENED);
       flushSync(() => setSealed(true));
       await fold();
       flushSync(() => setSentAt(at));
@@ -333,7 +336,7 @@ export function ApplyPage(): ReactNode {
                       </p>
                       <p>Your node is ready. Open the invite to create the passkey for your financier console. It works once: open it on the device you will use.</p>
                       {invite.ok ? (
-                        <a className="ap-btn" href={invite.link}>
+                        <a className="ap-btn" href={invite.link} onClick={() => store()?.setItem(APPLY_OPENED, new Date().toISOString())}>
                           Open your invite
                         </a>
                       ) : null}

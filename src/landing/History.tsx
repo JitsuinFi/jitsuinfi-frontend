@@ -18,8 +18,7 @@ import { dur, ease, sibling } from "./motion";
 import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { labelKey, loadWasm, type Wasm } from "./wasm";
-import { mountHistoryCabinet, type HistoryCabinet } from "./figures/history-cabinet";
-import cabinetSvg from "./figures/history-cabinet.svg?raw";
+import { useFigure } from "./use-figure";
 
 const fn = (f: (t: number) => number) => () => f;
 const day = (iso: string) => Math.floor(Date.parse(iso + "T00:00:00Z") / 86400000);
@@ -79,11 +78,20 @@ export function History({ reduced }: { reduced: boolean }): ReactNode {
   const figHost = useRef<HTMLDivElement>(null);
   const readout = useRef<HTMLDivElement>(null);
   const tally = useRef<HTMLDivElement>(null);
-  const fig = useRef<HistoryCabinet | null>(null);
   const running = useRef(false);
   const pending = useRef(false);
   const hide = useRef(false);
   const keys = useRef<Keys | null>(null);
+
+  // the figure: its chunks load as the chapter comes near, then it is inserted and moved by its controller
+  const { fig, ready } = useFigure(
+    sec,
+    figHost,
+    reduced,
+    () => Promise.all([import("./figures/history-cabinet.svg?raw"), import("./figures/history-cabinet")]),
+    (svg, m) => m.mountHistoryCabinet(svg, { reduced, onPress: () => onPress.current() }),
+    () => labels(),
+  );
 
   // The history plays by itself and loops while the chapter is in view (as chapters 2 to 4): each
   // round is the real flow, every value from jitsuin-wasm. The visitor's first click on the cabinet,
@@ -141,6 +149,7 @@ export function History({ reduced }: { reduced: boolean }): ReactNode {
       return;
     }
     running.current = true;
+    await ready();
     reset();
     const hiding = hide.current;
     setStatus({ key: "hs.working" });
@@ -275,22 +284,12 @@ export function History({ reduced }: { reduced: boolean }): ReactNode {
     runOnce();
   };
 
-  // the figure: inserted once, moved by its controller
+  // its small labels (and the dates on the certificates) follow EN/中文 (set again on each mount: the
+  // figure may arrive after a switch)
+  const labels = () => fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])), dateFmt);
   useEffect(() => {
-    const host = figHost.current!;
-    host.innerHTML = cabinetSvg;
-    const f = mountHistoryCabinet(host.querySelector("svg")!, { reduced, onPress: () => onPress.current() });
-    fig.current = f;
-    return () => {
-      f.destroy();
-      fig.current = null;
-      host.replaceChildren();
-    };
-  }, [reduced]);
-
-  // its small labels (and the dates on the certificates) follow EN/中文
-  useEffect(() => {
-    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])), dateFmt);
+    labels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, reduced, t]);
 
   // ---------- entry ----------

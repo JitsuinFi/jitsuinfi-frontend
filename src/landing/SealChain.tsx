@@ -15,8 +15,7 @@ import { dur, ease, sibling } from "./motion";
 import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { labelKey, loadWasm } from "./wasm";
-import { mountSealDesk, type SealDesk } from "./figures/seal-desk";
-import deskSvg from "./figures/seal-desk.svg?raw";
+import { useFigure } from "./use-figure";
 
 const INVOICE = {
   invoice_id: "TES-INV-0007",
@@ -67,8 +66,17 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
   const heads = useRef<(HTMLElement | null)[]>([]);
   const deskHost = useRef<HTMLDivElement>(null);
   const readout = useRef<HTMLDivElement>(null);
-  const desk = useRef<SealDesk | null>(null);
   const busyRef = useRef(false);
+
+  // the figure: its chunks load as the chapter comes near, then it is inserted and moved by its controller
+  const { fig: desk, ready } = useFigure(
+    sec,
+    deskHost,
+    reduced,
+    () => Promise.all([import("./figures/seal-desk.svg?raw"), import("./figures/seal-desk")]),
+    (svg, m) => m.mountSealDesk(svg, { reduced, onPress: (i) => onPress.current(i) }),
+    () => labels(),
+  );
 
   // ---------- the chain, for real ----------
   const chain = useRef({ invCode: "", letterCode: "", seals: [] as string[], keys: null as { supplier: string; master: string; financier: string } | null, broken: false });
@@ -193,6 +201,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     setCanTamper(false);
   };
   const playRound = async (stop: () => boolean) => {
+    await ready();
     for (let i = chain.current.seals.length; i < 3 && !chain.current.broken && !stop(); i++) {
       await pressNext();
       if (!reduced) await wait(450);
@@ -230,22 +239,11 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     setTimeout(() => void playRound(() => false), reduced ? 0 : 600); // one round, no loop
   };
 
-  // the figure: inserted once, moved by its controller
+  // its small labels follow EN/中文 (set again on each mount: the figure may arrive after a switch)
+  const labels = () => desk.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
   useEffect(() => {
-    const host = deskHost.current!;
-    host.innerHTML = deskSvg;
-    const d = mountSealDesk(host.querySelector("svg")!, { reduced, onPress: (i) => onPress.current(i) });
-    desk.current = d;
-    return () => {
-      d.destroy();
-      desk.current = null;
-      host.replaceChildren();
-    };
-  }, [reduced]);
-
-  // its small labels follow EN/中文
-  useEffect(() => {
-    desk.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
+    labels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, reduced, t]);
 
   // wasm and keys warm up as the chapter comes near; the scene enters when it is in view

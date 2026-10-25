@@ -14,8 +14,7 @@ import { dur, ease, sibling } from "./motion";
 import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { labelKey, loadWasm } from "./wasm";
-import { mountSecondCounter, type SecondCounter } from "./figures/second-counter";
-import counterSvg from "./figures/second-counter.svg?raw";
+import { useFigure } from "./use-figure";
 
 const INVOICE = {
   invoice_id: "TES-INV-0007",
@@ -60,9 +59,18 @@ export function Twice({ reduced }: { reduced: boolean }): ReactNode {
   const heads = useRef<(HTMLElement | null)[]>([]);
   const figHost = useRef<HTMLDivElement>(null);
   const readout = useRef<HTMLDivElement>(null);
-  const fig = useRef<SecondCounter | null>(null);
   const proofEl = useRef<HTMLElement>(null);
   const running = useRef(false);
+
+  // the figure: its chunks load as the chapter comes near, then it is inserted and moved by its controller
+  const { fig, ready } = useFigure(
+    sec,
+    figHost,
+    reduced,
+    () => Promise.all([import("./figures/second-counter.svg?raw"), import("./figures/second-counter")]),
+    (svg, m) => m.mountSecondCounter(svg, { reduced, onPress: () => onPress.current() }),
+    () => labels(),
+  );
 
   // The flow plays by itself and loops while the chapter is in view (as chapters 2 and 3): each
   // round is the real flow, every value from jitsuin-wasm. The visitor's first click on the counter,
@@ -113,6 +121,7 @@ export function Twice({ reduced }: { reduced: boolean }): ReactNode {
   const execute = async () => {
     if (running.current) return;
     running.current = true;
+    await ready();
     reset();
     setStatus({ key: "tw.running" });
     try {
@@ -198,22 +207,11 @@ export function Twice({ reduced }: { reduced: boolean }): ReactNode {
   const onPress = useRef(runOnce);
   onPress.current = runOnce;
 
-  // the figure: inserted once, moved by its controller
+  // its small labels follow EN/中文 (set again on each mount: the figure may arrive after a switch)
+  const labels = () => fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
   useEffect(() => {
-    const host = figHost.current!;
-    host.innerHTML = counterSvg;
-    const f = mountSecondCounter(host.querySelector("svg")!, { reduced, onPress: () => onPress.current() });
-    fig.current = f;
-    return () => {
-      f.destroy();
-      fig.current = null;
-      host.replaceChildren();
-    };
-  }, [reduced]);
-
-  // its small labels follow EN/中文
-  useEffect(() => {
-    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
+    labels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, reduced, t]);
 
   // ---------- entry ----------

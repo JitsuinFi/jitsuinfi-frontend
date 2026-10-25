@@ -296,7 +296,7 @@ button {
   gap: var(--s-6);
   width: min(42vw, 620px);
   margin-left: var(--gutter);
-  padding-block: clamp(108px, 17vh, 168px) clamp(32px, 6vh, 64px);
+  padding-block: clamp(96px, 13vh, 144px) clamp(32px, 6vh, 64px);
 }
 
 .hero-copy {
@@ -445,6 +445,7 @@ button {
 /* the episode subtitle, at the foot of the left column */
 .episode {
   margin-top: auto;
+  padding-top: var(--s-4); /* never closer than this to the proof line, however short the window */
   max-width: 520px;
   display: flex;
   flex-direction: column;

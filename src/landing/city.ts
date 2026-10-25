@@ -1063,7 +1063,7 @@ export function createCity(host: HTMLElement, opts: { reduced: boolean; n: strin
     (inkPass.uniforms.texel.value as THREE.Vector2).set(1 / (w * dpr), 1 / (h * dpr));
     camera.aspect = w / h;
     camera.fov = phone ? 34 : 24;
-    if (w >= 1024) camera.setViewOffset(w, h, -w * 0.26, -h * 0.02, w, h);
+    if (w >= 1024) camera.setViewOffset(w, h, -w * 0.29, -h * 0.02, w, h);
     else camera.setViewOffset(w, h, 0, -h * 0.15, w, h);
     camera.updateProjectionMatrix();
   };

@@ -2438,6 +2438,453 @@ button {
   visibility: hidden;
 }
 
+/* HNK-33.T6: the close is the line and the way in (the 35%) beside the registry office (the 65%) */
+.fn-close-cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
+.fn-visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fn-fig-read {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fn-fig-status {
+  margin: 0;
+  min-height: 3em;
+  font-size: var(--t-ui);
+  color: var(--ink);
+}
+
+.fn-fig-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-4);
+}
+
+.fn-fig-reset {
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.fn-fig-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--t-data);
+  color: var(--ink-2);
+}
+
+@media (min-width: 1360px) {
+  .fn-close {
+    display: grid;
+    grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+    grid-template-areas: "cap visual" "foot foot";
+    column-gap: clamp(32px, 5vw, 96px);
+    row-gap: var(--s-6);
+    align-items: center;
+  }
+
+  .fn-close-cap { grid-area: cap; }
+  .fn-visual { grid-area: visual; }
+  .fn-foot { grid-area: foot; }
+
+  .fn-line {
+    font-size: clamp(32px, 3vw, 60px);
+  }
+}
+
+/* The registry office's drawing (figures/registry-office.svg, built by
+   scripts/figures/registry-office.build.mjs, moved by figures/registry-office.ts): the kit's
+   --anatomy-* tones mapped onto DS-PAL. The whole figure is the button. The base rules repeat the
+   shared ones of chapters 2 to 4 (.sd-svg, .rp-svg, .tc-svg) so this chapter stands on its own. */
+.fn-figure {
+  min-width: 0;
+  touch-action: manipulation;
+  --anatomy-weight: 0.6px;
+  --anatomy-paper: var(--sheet);
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--mist) 72%, var(--paper));
+  --anatomy-shade-1: color-mix(in srgb, var(--mist) 52%, var(--paper));
+  --anatomy-shade-2: color-mix(in srgb, var(--mist) 34%, var(--paper));
+  --anatomy-shade-3: color-mix(in srgb, var(--mist) 18%, var(--paper));
+  --anatomy-hi: var(--ink);
+  --anatomy-mid: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  --anatomy-lo: color-mix(in srgb, var(--fold) 52%, var(--paper));
+  --anatomy-faint: color-mix(in srgb, var(--fiber) 90%, var(--paper));
+  --anatomy-halo: var(--ink-2);
+  --anatomy-halo-opacity: 0.22;
+  --anatomy-dot: var(--ink);
+}
+
+.ro-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  outline: none;
+  cursor: pointer;
+}
+
+.ro-svg:focus-visible { outline: 1px dashed var(--seal); outline-offset: 4px; }
+.ro-svg path,
+.ro-svg circle,
+.ro-svg rect { vector-effect: non-scaling-stroke; }
+.ro-svg .iso-fill { fill: var(--anatomy-paper); stroke: none; }
+.ro-svg .iso-shade,
+.ro-svg .iso-top { stroke: none; }
+.ro-svg .iso-shade[data-shade="0"] { fill: var(--anatomy-shade-0); }
+.ro-svg .iso-shade[data-shade="1"] { fill: var(--anatomy-shade-1); }
+.ro-svg .iso-shade[data-shade="2"] { fill: var(--anatomy-shade-2); }
+.ro-svg .iso-shade[data-shade="3"] { fill: var(--anatomy-shade-3); }
+.ro-svg .iso-top { fill: var(--anatomy-top); }
+
+.ro-svg .iso-halo {
+  fill: var(--anatomy-halo);
+  stroke: none;
+  filter: blur(9px);
+  opacity: var(--anatomy-halo-opacity);
+  transform: translateY(3px);
+}
+
+.ro-svg .iso-line {
+  fill: none;
+  stroke: var(--anatomy-lo);
+  stroke-width: var(--anatomy-weight);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ro-svg .iso-line[data-tone="hi"] { stroke: var(--anatomy-hi); }
+.ro-svg .iso-line[data-tone="mid"] { stroke: var(--anatomy-mid); }
+.ro-svg .iso-line[data-tone="faint"] { stroke: var(--anatomy-faint); }
+.ro-svg .iso-dots circle { fill: var(--anatomy-dot); stroke: none; opacity: 0.32; }
+.ro-svg .iso-dots[data-tone="hi"] circle { opacity: 0.85; }
+.ro-svg .iso-dots[data-tone="mid"] circle { opacity: 0.45; }
+.ro-svg .iso-wire-end { fill: var(--anatomy-paper); stroke: var(--anatomy-mid); stroke-width: var(--anatomy-weight); }
+.ro-svg .kj { font-family: var(--f-seal); font-weight: 700; }
+.ro-svg .ui { font-family: var(--f-body); fill: color-mix(in srgb, var(--ink-2) 70%, var(--paper)); letter-spacing: 0.04em; }
+
+/* materials, plates and parts (the approved sample's palette); the public board is dark blue */
+.ro-svg .m-wall {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--mist) 46%, var(--paper));
+  --anatomy-shade-1: color-mix(in srgb, var(--mist) 30%, var(--paper));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 34%, var(--sheet));
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 18%, var(--sheet));
+  --anatomy-mid: color-mix(in srgb, var(--ink-2) 50%, var(--paper));
+}
+.ro-svg .m-cab {
+  --anatomy-top: color-mix(in srgb, var(--fiber) 22%, var(--sheet));
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 30%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fiber) 80%, var(--fold));
+  --anatomy-shade-2: var(--fiber);
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 55%, var(--sheet));
+  --anatomy-mid: color-mix(in srgb, var(--ink-2) 62%, var(--paper));
+}
+.ro-svg .m-top {
+  --anatomy-paper: var(--ink-2);
+  --anatomy-top: color-mix(in srgb, var(--ink-2) 70%, var(--fold));
+  --anatomy-shade-0: var(--ink);
+  --anatomy-shade-1: color-mix(in srgb, var(--ink) 50%, var(--ink-2));
+  --anatomy-shade-2: var(--ink-2);
+  --anatomy-shade-3: color-mix(in srgb, var(--ink-2) 78%, var(--fold));
+  --anatomy-hi: var(--ink);
+  --anatomy-mid: var(--ink);
+  --anatomy-lo: color-mix(in srgb, var(--fold) 50%, var(--ink-2));
+  --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--ink-2));
+  --anatomy-dot: var(--fiber);
+}
+.ro-svg .m-top+.iso-line[data-tone="faint"] { stroke: color-mix(in srgb, var(--fold) 55%, var(--ink-2)); }
+.ro-svg .m-frame,
+.ro-svg .m-till {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 24%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fiber) 70%, var(--sheet));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 45%, var(--sheet));
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 25%, var(--sheet));
+  --anatomy-mid: color-mix(in srgb, var(--ink-2) 58%, var(--paper));
+}
+.ro-svg .m-plaque {
+  --anatomy-paper: var(--fiber);
+  --anatomy-top: color-mix(in srgb, var(--fiber) 50%, var(--sheet));
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 50%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fold) 30%, var(--fiber));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 80%, var(--sheet));
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 60%, var(--sheet));
+}
+.ro-svg .m-sign {
+  --anatomy-paper: var(--ink);
+  --anatomy-top: var(--ink-2);
+  --anatomy-shade-0: var(--ink);
+  --anatomy-shade-1: var(--ink);
+  --anatomy-shade-2: var(--ink);
+  --anatomy-shade-3: var(--ink);
+  --anatomy-mid: var(--ink);
+  --anatomy-hi: var(--ink);
+}
+.ro-svg .m-mat {
+  --anatomy-top: color-mix(in srgb, var(--fiber) 45%, var(--paper));
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 40%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fold) 25%, var(--fiber));
+  --anatomy-shade-2: var(--fiber);
+  --anatomy-shade-3: var(--fiber);
+  --anatomy-mid: color-mix(in srgb, var(--fold) 70%, var(--paper));
+}
+.ro-svg .m-sheet {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--mist) 40%, var(--sheet));
+  --anatomy-shade-1: color-mix(in srgb, var(--mist) 30%, var(--sheet));
+  --anatomy-shade-2: color-mix(in srgb, var(--mist) 20%, var(--sheet));
+  --anatomy-shade-3: var(--paper);
+}
+.ro-svg .m-rack {
+  --anatomy-paper: var(--fiber);
+  --anatomy-top: color-mix(in srgb, var(--fiber) 40%, var(--sheet));
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 70%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fold) 42%, var(--fiber));
+  --anatomy-shade-2: color-mix(in srgb, var(--fold) 18%, var(--fiber));
+  --anatomy-shade-3: var(--fiber);
+  --anatomy-hi: var(--ink-2);
+  --anatomy-mid: var(--ink-2);
+  --anatomy-lo: var(--fold);
+  --anatomy-faint: color-mix(in srgb, var(--fold) 55%, var(--fiber));
+  --anatomy-dot: var(--ink);
+}
+.ro-svg .m-seal {
+  --anatomy-paper: var(--ink-2);
+  --anatomy-top: color-mix(in srgb, var(--ink-2) 62%, var(--fold));
+  --anatomy-shade-0: var(--ink);
+  --anatomy-shade-1: color-mix(in srgb, var(--ink) 50%, var(--ink-2));
+  --anatomy-shade-2: var(--ink-2);
+  --anatomy-shade-3: color-mix(in srgb, var(--ink-2) 78%, var(--fold));
+  --anatomy-hi: var(--ink);
+  --anatomy-mid: color-mix(in srgb, var(--fold) 70%, var(--ink-2));
+  --anatomy-lo: color-mix(in srgb, var(--fold) 50%, var(--ink-2));
+  --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--ink-2));
+}
+.ro-svg .m-ink {
+  --anatomy-paper: var(--seal);
+  --anatomy-top: color-mix(in srgb, var(--seal) 80%, var(--fold));
+  --anatomy-shade-0: color-mix(in srgb, var(--seal) 60%, var(--ink));
+  --anatomy-shade-1: color-mix(in srgb, var(--seal) 78%, var(--ink));
+  --anatomy-shade-2: var(--seal);
+  --anatomy-shade-3: color-mix(in srgb, var(--seal) 85%, var(--fold));
+  --anatomy-hi: var(--ink);
+  --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--seal));
+}
+.ro-svg .m-pool {
+  --anatomy-paper: var(--pool-2);
+  --anatomy-top: var(--wave);
+  --anatomy-shade-0: var(--pool);
+  --anatomy-shade-1: color-mix(in srgb, var(--pool) 45%, var(--pool-2));
+  --anatomy-shade-2: var(--pool-2);
+  --anatomy-shade-3: color-mix(in srgb, var(--pool-2) 60%, var(--wave));
+  --anatomy-hi: var(--pool);
+  --anatomy-mid: var(--mist);
+  --anatomy-lo: color-mix(in srgb, var(--glint) 55%, var(--pool-2));
+  --anatomy-faint: color-mix(in srgb, var(--glint) 40%, var(--pool-2));
+  --anatomy-dot: var(--mist);
+}
+.ro-svg .m-coin {
+  --anatomy-paper: var(--mist);
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--wave) 40%, var(--mist));
+  --anatomy-shade-1: color-mix(in srgb, var(--wave) 22%, var(--mist));
+  --anatomy-shade-2: var(--mist);
+  --anatomy-shade-3: color-mix(in srgb, var(--mist) 60%, var(--sheet));
+  --anatomy-hi: var(--pool-2);
+  --anatomy-mid: var(--wave);
+  --anatomy-faint: color-mix(in srgb, var(--wave) 40%, var(--mist));
+}
+.ro-svg .coin-z { stroke-width: 0.9px; }
+.ro-svg .pool-wall { fill: var(--pool-2); }
+.ro-svg .pool-water { fill: var(--pool); }
+.ro-svg .pool-glass {
+  fill: var(--pool);
+  stroke: var(--mist);
+  stroke-width: 0.6px;
+}
+.ro-svg .pool-water-side { fill: var(--wave); }
+.ro-svg .pool-plate {
+  fill: var(--pool);
+  stroke: color-mix(in srgb, var(--mist) 60%, var(--pool-2));
+  stroke-width: 0.5px;
+}
+.ro-svg .pool-label { fill: var(--mist); letter-spacing: 0.18em; }
+.ro-svg .notes circle { fill: var(--glint); opacity: 0.45; }
+.ro-svg .caustic {
+  fill: none;
+  stroke: var(--glint);
+  stroke-width: 0.5px;
+  opacity: 0.28;
+}
+.ro-svg .ripple {
+  fill: none;
+  stroke: var(--glint);
+  stroke-width: 0.8px;
+}
+.ro-svg .recess { fill: var(--ink); }
+.ro-svg .panel-in {
+  fill: color-mix(in srgb, var(--fiber) 40%, var(--sheet));
+  stroke: color-mix(in srgb, var(--fold) 55%, var(--paper));
+  stroke-width: 0.5px;
+}
+.ro-svg .plate-face {
+  fill: color-mix(in srgb, var(--fiber) 60%, var(--sheet));
+  stroke: color-mix(in srgb, var(--ink-2) 50%, var(--paper));
+  stroke-width: 0.5px;
+}
+.ro-svg .plate-text { fill: var(--ink-2); letter-spacing: 0.16em; }
+.ro-svg .plate-k,
+.ro-svg .sign-k { fill: var(--ink); }
+.ro-svg .rack-k { fill: var(--seal); }
+.ro-svg .seal-k { fill: var(--fiber); }
+.ro-svg .ghost-k { fill: var(--fiber); }
+.ro-svg .sheet-t { fill: var(--ink); font-weight: 600; }
+.ro-svg .sheet-n { fill: color-mix(in srgb, var(--fold) 70%, var(--paper)); font-weight: 500; }
+.ro-svg .sheet-n.on { fill: var(--ink); }
+.ro-svg .imp-ring {
+  fill: none;
+  stroke: var(--seal);
+  stroke-width: 1.3px;
+}
+.ro-svg .imp-ring.thin { stroke-width: 0.55px; }
+.ro-svg .imp-k { fill: var(--seal); }
+.ro-svg .bezel {
+  fill: var(--pool-2);
+  stroke: color-mix(in srgb, var(--mist) 45%, var(--pool-2));
+  stroke-width: 0.5px;
+}
+.ro-svg .screen { fill: var(--pool); }
+.ro-svg .scr-head {
+  fill: var(--mist);
+  letter-spacing: 0.2em;
+  font-weight: 500;
+}
+.ro-svg .scr-net { fill: var(--glint); letter-spacing: 0.16em; }
+.ro-svg .scr-col { fill: color-mix(in srgb, var(--glint) 75%, var(--pool)); letter-spacing: 0.16em; }
+.ro-svg .scr-rule {
+  fill: none;
+  stroke: color-mix(in srgb, var(--glint) 40%, var(--pool));
+  stroke-width: 0.5px;
+}
+.ro-svg .scr-n { fill: var(--mist); font-weight: 500; }
+.ro-svg .scr-n.old,
+.ro-svg .scr-h { fill: color-mix(in srgb, var(--mist) 60%, var(--pool)); }
+.ro-svg .scr-n.new { fill: var(--mist); font-weight: 700; }
+.ro-svg .scr-h.new { fill: var(--glint); }
+.ro-svg .scr-foot { fill: color-mix(in srgb, var(--glint) 70%, var(--pool)); letter-spacing: 0.1em; }
+.ro-svg .row-hl {
+  fill: var(--wave);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-glide);
+}
+.ro-svg .row-hl.on { opacity: 0.45; }
+.ro-svg .glimpse {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 0.5px;
+}
+.ro-svg .gl-desk { fill: var(--ink-2); }
+.ro-svg .gl-screen {
+  fill: var(--pool-2);
+  stroke: var(--wave);
+  stroke-width: 0.6px;
+}
+.ro-svg .gl-line {
+  fill: none;
+  stroke: var(--glint);
+  stroke-width: 0.7px;
+  stroke-linecap: round;
+}
+.ro-svg .gl-k { fill: var(--glint); }
+.ro-svg .door-face {
+  fill: color-mix(in srgb, var(--fiber) 46%, var(--sheet));
+  stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+}
+.ro-svg .door.back .door-face { fill: color-mix(in srgb, var(--fiber) 80%, var(--fold)); }
+.ro-svg .door-top {
+  fill: var(--sheet);
+  stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+}
+.ro-svg .door-edge {
+  fill: color-mix(in srgb, var(--fold) 34%, var(--fiber));
+  stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+}
+.ro-svg .door-inset {
+  fill: none;
+  stroke: color-mix(in srgb, var(--fold) 60%, var(--paper));
+  stroke-width: 0.5px;
+}
+.ro-svg .door-plate {
+  fill: color-mix(in srgb, var(--fiber) 60%, var(--sheet));
+  stroke: color-mix(in srgb, var(--ink-2) 55%, var(--paper));
+  stroke-width: 0.5px;
+}
+.ro-svg .door-lever {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.2px;
+  stroke-linecap: round;
+}
+.ro-svg .door-knob { fill: var(--ink-2); }
+.ro-svg .open-t {
+  fill: color-mix(in srgb, var(--ink-2) 75%, var(--ink));
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  transition: fill 0.3s var(--ease-glide);
+}
+.ro-svg .open-t.on { fill: var(--fiber); }
+.ro-svg .lamp-glow { fill: var(--fold); }
+.ro-svg .pled {
+  fill: color-mix(in srgb, var(--mist) 55%, var(--paper));
+  stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  stroke-width: 0.5px;
+  transition: fill 0.25s var(--ease-glide);
+}
+.ro-svg .pled.on { fill: var(--fold); }
+.ro-svg .pulse { fill: var(--ink-2); }
+.ro-svg .pulse-halo { fill: var(--fold); }
+
+/* the loupe: on phones the board's new line, enlarged beside the board */
+.ro-svg .loupe { display: none; opacity: 0; transition: opacity 0.35s var(--ease-glide); }
+.ro-svg .loupe.on { opacity: 1; }
+.ro-svg .lp-panel { fill: var(--pool); stroke: var(--glint); stroke-width: 1px; }
+.ro-svg .lp-lead { fill: none; stroke: var(--glint); stroke-width: 1px; }
+.ro-svg .lp-dot { fill: var(--glint); }
+.ro-svg .lp-n { fill: var(--mist); font-weight: 600; letter-spacing: 0.02em; }
+.ro-svg .lp-h { fill: var(--glint); letter-spacing: 0.12em; }
+
+@media (max-width: 719px) {
+  .ro-svg .loupe { display: inline; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ro-svg .row-hl,
+  .ro-svg .open-t,
+  .ro-svg .pled,
+  .ro-svg .loupe { transition: none; }
+}
+
 /* HNK-18.T1: the wordmark's i dots are small seals, laid over the font's own dot */
 .wm-i { position: relative; }
 .wm-i::after {

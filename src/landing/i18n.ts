@@ -215,6 +215,27 @@ const D: Record<string, Entry> = {
   "fn.line1": { en: "Zcash stops double-spending.", zh: "Zcash 杜绝双重支付。" },
   "fn.line2": { en: "JitsuinFi stops double-financing.", zh: "JitsuinFi 杜绝重复融资。" },
   "fn.foot": { en: "ZECATHON 2026 · Private Markets. Every key on this page is a test key derived from a TES- label.", zh: "ZECATHON 2026 · Private Markets。本页所有密钥都是由 TES- 标签派生的测试密钥。" },
+  // HNK-33.T6: the registry office beside the way in (figures/registry-office.svg)
+  "fn.fig.aria": {
+    en: "A small registry office. At the counter the invoice TES-INV-0003 is sealed by the supplier 売, the buyer 買 and the financier 融, and stays on the counter. Only its fingerprint N travels by wire to the public board on the back wall, a Zcash testnet board that shows N and a block height and nothing else. The advance rolls from the till down a chute into a deep blue shielded pool, where amounts and parties stay private. Then the lamp over the door in the left wall lights OPEN and the door to the console swings open. Click it or press Enter to run it.",
+    zh: "一间小小的登记所。在柜台上，发票 TES-INV-0003 由供应商 売、买方 買 和资金方 融 盖章，发票本身留在柜台。只有它的指纹 N 沿着线路送到后墙上的公开登记板：这是 Zcash 测试网上的登记板，只显示 N 和区块高度，别无其他。预付款从收款机滑下滑槽，落入深蓝色的屏蔽池，金额和交易方都保持私密。然后左墙门上的灯亮起“营业中”，通往控制台的门打开。点击它或按 Enter 即可自己运行。",
+  },
+  "fn.fig.board": { en: "PUBLIC BOARD", zh: "公开登记板" },
+  "fn.fig.testnet": { en: "ZCASH TESTNET", zh: "ZCASH 测试网" },
+  "fn.fig.block": { en: "BLOCK", zh: "区块" },
+  "fn.fig.only": { en: "N and block only · nothing else", zh: "只有 N 和区块 · 别无其他" },
+  "fn.fig.office": { en: "REGISTRY OFFICE", zh: "登记处" },
+  "fn.fig.console": { en: "CONSOLE", zh: "控制台" },
+  "fn.fig.open": { en: "OPEN", zh: "营业中" },
+  "fn.fig.pool": { en: "SHIELDED POOL", zh: "屏蔽池" },
+  "fn.fig.hint": { en: "It plays by itself. Press the office to take over.", zh: "它会自动播放。点击登记所即可自己操作。" },
+  "fn.fig.st.ready": { en: "{id} waits at the counter", zh: "{id} 在柜台等候" },
+  "fn.fig.st.seal": { en: "Sealing · {k} {who}", zh: "盖章 · {k} {who}" },
+  "fn.fig.st.sealed": { en: "Sealed by 売 買 融 · the paper stays at the counter", zh: "売 買 融 已盖章 · 文件留在柜台" },
+  "fn.fig.st.n": { en: "Fingerprint {n}, taken from the sealed paper", zh: "指纹 {n}，取自盖好章的文件" },
+  "fn.fig.st.board": { en: "Only N reaches the public board · block {h}", zh: "只有 N 上了公开登记板 · 区块 {h}" },
+  "fn.fig.st.pool": { en: "The advance sinks into the shielded pool · amount and parties stay private", zh: "预付款沉入屏蔽池 · 金额和交易方保持私密" },
+  "fn.fig.st.open": { en: "Registered once, financed once · the console is open", zh: "登记一次，融资一次 · 控制台已开放" },
 
   // chapter 4
   "tw.kanji": { en: "二重 · Chapter 4", zh: "二重 · 第 4 章" },

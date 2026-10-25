@@ -4,6 +4,7 @@
 // tries a second financier, and paid on the due date. Then it begins again.
 // React since HNK-31.T4: the hero's markup is JSX; the three.js town (city.ts) and the director
 // that plays the episodes stay imperative, on refs, in one effect.
+import { Mark, Wordmark } from "../app/Mark";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { animate, createTimer, stagger, type JSAnimation, type Timer } from "animejs";
 import { animate as motionAnimate, hover, press } from "motion";
@@ -427,9 +428,9 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
       <nav className="nav" aria-label={t("nav.main")} ref={nav}>
         <a className="brand" href="#top" aria-label={t("nav.top")}>
           <span className="brand-seal">
-            <SealIcon cls="brand-mark" />
+            <Mark className="brand-mark" />
           </span>
-          <span className="brand-name">JitsuinFi</span>
+          <Wordmark className="brand-name" />
         </a>
         <div className="nav-pill glass">
           {navLink("nav.how", "#story")}

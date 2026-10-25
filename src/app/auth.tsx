@@ -2,19 +2,12 @@
 // the app's account screen and the financier console (HNK-26.T21): the 印 seal, line icons, list
 // rows, the primary button, links, a status message, the sheet, its head and the 3-step progress.
 // Same markup and class names as the DOM sheet they replace.
+import { Mark } from "./Mark";
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
 
-/** The JitsuinFi seal mark: heavy ring, fine ring, 印. */
+/** The JitsuinFi mark (HNK-18.T1): the seal pressed half on paper, half on the shielded pool. */
 export function Logo(): ReactNode {
-  return (
-    <svg viewBox="0 0 100 100" className="auth-logo" aria-hidden="true">
-      <circle cx={50} cy={50} r={44} className="ring" />
-      <circle cx={50} cy={50} r={36} className="ring-fine" />
-      <text x={50} y={67} textAnchor="middle" className="kanji">
-        印
-      </text>
-    </svg>
-  );
+  return <Mark className="auth-logo" />;
 }
 
 const Icon = ({ children }: { children: ReactNode }) => (

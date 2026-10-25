@@ -39,7 +39,7 @@ header.top .brand {
   display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--head);
   font: 800 20px/1 var(--f-display); letter-spacing: -.01em;
 }
-header.top .brand img { width: 30px; height: 30px; }
+header.top .brand .brand-img { width: 36px; height: 32px; }
 header.top nav {
   display: flex; gap: 2px; padding: 4px; margin-left: var(--s-2);
   background: var(--sheet); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule);
@@ -291,3 +291,17 @@ ul.limits li::before { content: "—"; position: absolute; left: 0; color: var(-
 .contact-qr svg { width: 100%; height: auto; }
 .contacts { display: grid; gap: 10px; margin-top: 12px; }
 .contacts textarea { width: 100%; font-family: var(--f-mono, ui-monospace, monospace); }
+
+/* HNK-18.T1: the wordmark's i dots are small seals, laid over the font's own dot */
+.wm-i { position: relative; }
+.wm-i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.375em; /* the font's i dot sits 0.6–0.755 em above a baseline 1.18 em down the box */
+  width: 0.26em;
+  height: 0.26em;
+  transform: translateX(-50%);
+  background: url(/tittle.svg) center / contain no-repeat;
+}
+.wm-fi { color: var(--seal); font-weight: inherit; }

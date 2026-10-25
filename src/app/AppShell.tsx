@@ -1,6 +1,7 @@
 // The app world's shell (HNK-31.T2): top bar, screens nav and footer around one <main>, as the
 // hash router in app.html drew them. Pages draw into <main> through `Page`; the shell repaints
 // when the session changes, as before.
+import { Mark, Wordmark } from "./Mark";
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
@@ -63,8 +64,8 @@ export function AppShell(): ReactNode {
     <div id="app" onClick={onClick}>
       <header className="top">
         <Link className="brand" to="/app">
-          <img src="/seal.svg" alt="" />
-          JitsuinFi
+          <Mark className="brand-img" small />
+          <Wordmark />
         </Link>
         <nav aria-label="Screens">
           {link("/app", "Home")}

@@ -146,13 +146,13 @@ button {
 .brand-seal {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: 44px;
   height: 40px;
 }
 
 .brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 40px;
 }
 
 .brand-name {
@@ -2690,3 +2690,17 @@ button {
 .is-open .fn-seal {
   visibility: hidden;
 }
+
+/* HNK-18.T1: the wordmark's i dots are small seals, laid over the font's own dot */
+.wm-i { position: relative; }
+.wm-i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.375em; /* the font's i dot sits 0.6–0.755 em above a baseline 1.18 em down the box */
+  width: 0.26em;
+  height: 0.26em;
+  transform: translateX(-50%);
+  background: url(/tittle.svg) center / contain no-repeat;
+}
+.wm-fi { color: var(--seal); font-weight: inherit; }

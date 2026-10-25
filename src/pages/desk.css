@@ -177,67 +177,6 @@
   .mb-room { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* ---------- what outsiders see: the registry window from the street ---------- */
-.os { position: relative; padding: 56px clamp(16px, 3vw, 40px) 40px; border-radius: 28px; background: var(--head); }
-.os-plaque { top: 14px; }
-.os-window { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; padding: 14px; border-radius: 6px; background: var(--ink-2); box-shadow: inset 0 0 0 4px rgba(2, 13, 47, .5); }
-.os-pane { display: grid; align-content: start; gap: 12px; padding: 20px; border-radius: 4px; min-width: 0; }
-.os-pane.is-clear { background: linear-gradient(180deg, var(--pool), var(--pool-2)); color: var(--mist); }
-.os-pane.is-frosted {
-  background:
-    radial-gradient(circle at 20% 30%, rgba(252, 252, 254, .08) 1px, transparent 2px) 0 0 / 7px 7px,
-    radial-gradient(circle at 70% 60%, rgba(252, 252, 254, .06) 1px, transparent 2px) 0 0 / 11px 11px,
-    rgba(196, 199, 242, .82);
-  color: var(--ink);
-}
-.os-pane-k { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font: 500 12px/1.2 var(--f-body); }
-.os-pane-k b { font: 800 18px/1 var(--f-seal); letter-spacing: .2em; }
-.is-clear .os-pane-k b { color: var(--sheet); }
-.is-frosted .os-pane-k b { color: var(--head); }
-.os-pane ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.os-fact { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 12px; align-items: start; }
-.os-mark { grid-row: span 3; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font: 800 15px/1 var(--f-seal); }
-.is-shown .os-mark { background: var(--glint); color: var(--pool); }
-.is-hidden .os-mark { box-shadow: inset 0 0 0 2px var(--seal); color: var(--seal); }
-.os-fact strong { font: 600 14px/1.35 var(--f-body); }
-.is-shown strong { color: var(--sheet); }
-.is-hidden strong { color: var(--head); }
-.is-hidden strong::after { content: ""; display: inline-block; width: 3.6em; height: .72em; margin-left: 8px; vertical-align: -.05em; background: var(--head); }
-.os-status { font: 700 11px/1.2 var(--f-body); }
-.is-shown .os-status { color: var(--glint); }
-.is-hidden .os-status { color: var(--seal); }
-.os-why { font: 400 12.5px/1.45 var(--f-body); }
-.is-shown .os-why { color: var(--mist); }
-.is-hidden .os-why { color: var(--ink); }
-@media (max-width: 900px) {
-  .os-window { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ---------- the rate index as a tide gauge (M-08) ---------- */
-.tg { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 18px; padding: clamp(22px, 3vw, 40px); border-radius: 28px; background: linear-gradient(180deg, var(--pool), var(--pool-2)); color: var(--mist); }
-.tg-scale { display: grid; align-content: space-between; height: 240px; padding: 8px 0; font: 500 11px/1 var(--f-mono); color: var(--mist); text-align: right; }
-.tg-tubes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(70px, 1fr); gap: 18px; align-items: end; }
-.tg-tube { display: grid; justify-items: center; gap: 8px; text-align: center; }
-.tg-glass {
-  position: relative; display: block; width: 46px; height: 240px; border-radius: 23px 23px 10px 10px; overflow: hidden;
-  background: repeating-linear-gradient(180deg, transparent 0 23px, rgba(196, 199, 242, .22) 23px 24px), rgba(252, 252, 254, .06);
-  box-shadow: inset 0 0 0 2px rgba(196, 199, 242, .45);
-}
-.tg-water {
-  --level: 0; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--level) * 100%);
-  background: linear-gradient(180deg, var(--glint), var(--wave)); transition: height 1600ms var(--ease-inout);
-}
-.tg-tube strong { font: 700 13px/1.2 var(--f-body); color: var(--sheet); }
-.tg-tube > span:last-child { font: 400 11.5px/1.35 var(--f-body); color: var(--mist); }
-.tg-tube:not(.is-published) .tg-glass { box-shadow: inset 0 0 0 2px rgba(196, 199, 242, .25); }
-.tg-cap { grid-column: 1 / -1; margin: 0; max-width: 80ch; font: 400 14px/1.55 var(--f-body); color: var(--mist); }
-.tg-wait { margin: 0; color: var(--mist); }
-@media (max-width: 700px) {
-  .tg-tubes { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 24px; }
-  .tg-glass, .tg-scale { height: 170px; }
-}
-@media (prefers-reduced-motion: reduce) { .tg-water { transition: none; } }
-
 /* the financier directory inside the offer step (HNK-30.T20, D-47) */
 .fd { display: grid; gap: 10px; margin-bottom: 14px; }
 .fd-k { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font: 500 12.5px/1.3 var(--f-body); color: var(--ink-2); }

@@ -1,17 +1,18 @@
-// The lens (M-04, HNK-30.T6): hold the hanko for 1.5s and the invoice burns from its edges into
-// what anyone holding the published board key reads of financier A's registration. Honest by
-// addition: what the key also shows is printed under the memo. Release and the paper returns.
+// The lens (M-04, HNK-30.T6; HNK-34.T2 case desk): hold the 視 hanko and the pool closes over
+// every human field of the 請求書, bar after bar, while financier A's board memo comes up on the
+// slab beside it: what anyone holding the published board key reads. N stays open on both sides.
+// Honest by addition: what the key also shows is printed under the hanko. Release and it opens.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { still, tween } from "./anim";
+import { ease, still, tween } from "./anim";
 
-const short = (x: string) => `${x.slice(0, 12)}…${x.slice(-6)}`;
+const short = (x: string) => `${x.slice(0, 12)}…${x.slice(-8)}`;
 
 export interface LensData {
   invoice: { id: string; amount: string; buyer: string; due: string };
   memo: { kind: string; n: string; commitment: string; classes: string; signature: string; where: string };
 }
 
-const pairs = (rows: ReadonlyArray<readonly [string, string]>) => rows.flatMap(([k, v]) => [<dt key={`k${k}`}>{k}</dt>, <dd key={`v${k}`}>{v}</dd>]);
+const clamp = (v: number) => Math.max(0, Math.min(1, v));
 
 export function Lens({ load }: { load: () => Promise<LensData> }): ReactNode {
   const [data, setData] = useState<LensData | null>(null);
@@ -21,11 +22,15 @@ export function Lens({ load }: { load: () => Promise<LensData> }): ReactNode {
   const ring = useRef<HTMLSpanElement>(null);
   const m = useRef({ burn: 0, target: 0, running: null as Promise<void> | null });
 
-  // the burn is a CSS variable on the stage and the ring, written every frame (CSSOM, CSP-safe)
+  // each bar and memo row reads a CSS variable written every frame (CSSOM, CSP-safe)
   const set = (v: number) => {
     m.current.burn = v;
-    stage.current!.style.setProperty("--burn", v.toFixed(3));
-    ring.current!.style.setProperty("--p", v.toFixed(3));
+    ring.current?.style.setProperty("--p", v.toFixed(3));
+    const s = stage.current;
+    if (s) {
+      s.querySelectorAll<HTMLElement>(".rd").forEach((r, i) => r.style.setProperty("--k", ease.softLand(clamp((v - i * 0.08) / 0.45)).toFixed(3)));
+      s.querySelectorAll<HTMLElement>(".ln-row").forEach((r, i) => r.style.setProperty("--o", (0.12 + 0.88 * clamp((v - 0.3 - i * 0.08) / 0.3)).toFixed(3)));
+    }
     setPressed(v > 0.5);
   };
   const go = async (to: number) => {
@@ -41,51 +46,73 @@ export function Lens({ load }: { load: () => Promise<LensData> }): ReactNode {
   };
 
   useEffect(() => {
-    set(0);
     void load().then(setData, (e) => setFailed(e instanceof Error ? e.message : String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // the rows arrive with the data: paint them at the current burn
+  useEffect(() => set(m.current.burn), [data]);
+
+  const field = (k: string, v: ReactNode, jp = false, mono = true) => (
+    <p className="ln-f">
+      <span lang={jp ? "ja" : undefined}>{k}</span>
+      <em>
+        {mono ? <code>{v}</code> : v}
+        <i className="rd" />
+      </em>
+    </p>
+  );
+  const row = (k: string, v: string) => (
+    <p className="ln-row">
+      <span>{k}</span>
+      <code>{v}</code>
+    </p>
+  );
 
   return (
     <div className="ln">
       <div className="ln-stage" ref={stage}>
-        <div className="ln-chain" aria-label="What anyone with the board key sees">
-          {data ? (
-            <>
-              <p className="ln-k">{`Board memo · ${data.memo.where}`}</p>
-              <dl>
-                {pairs([
-                  ["Entry", data.memo.kind],
-                  ["N", short(data.memo.n)],
-                  ["Financier", `commitment ${short(data.memo.commitment)}`],
-                  ["Classes", data.memo.classes],
-                  ["Supplier signature", short(data.memo.signature)],
-                ])}
-              </dl>
-              <p className="ln-also">The key also shows the small amount each post sends to the board address, the memo's length and layout, and the block's time. No name, no amount, no buyer.</p>
-            </>
-          ) : null}
-        </div>
         <div className="ln-paper" aria-label="What the parties hold">
           {failed ? (
-            <p>{failed}</p>
+            <p className="ln-fail">{failed}</p>
           ) : data ? (
             <>
-              <p className="ln-title" lang="ja">
-                請 求 書
+              <h3 lang="ja">請 求 書</h3>
+              {field("No.", data.invoice.id)}
+              {field("ご請求金額", data.invoice.amount, true)}
+              {field("御中", short(data.invoice.buyer), true)}
+              {field("支払期日", data.invoice.due, true)}
+              {field("Financier", "A, by name in the letter", false, false)}
+              <p className="ln-f is-n">
+                <span>N</span>
+                <em>
+                  <code>{short(data.memo.n)}</code>
+                </em>
               </p>
-              <dl>
-                {pairs([
-                  ["No.", data.invoice.id],
-                  ["ご請求金額", data.invoice.amount],
-                  ["御中", short(data.invoice.buyer)],
-                  ["支払期日", data.invoice.due],
-                  ["Financier", "A, by name in the letter"],
-                ])}
-              </dl>
-              <span className="ln-seal" aria-hidden="true" lang="ja">
-                買
+              <span className="ln-seal" aria-hidden="true">
+                <svg viewBox="0 0 68 68">
+                  <g filter="url(#tc-ink)">
+                    <circle className="seal-ink" cx="34" cy="34" r="29" />
+                    <text className="seal-glyph" x="34" y="46" textAnchor="middle">
+                      買
+                    </text>
+                  </g>
+                </svg>
+                <i className="rd" />
               </span>
+            </>
+          ) : (
+            <p className="ln-fail">Reading financier A's entry on the board…</p>
+          )}
+        </div>
+        <div className="ln-slab" aria-label="What anyone with the board key sees">
+          {data ? (
+            <>
+              <p className="lk">{`Board memo · ${data.memo.where}`}</p>
+              {row("entry", data.memo.kind)}
+              {row("N", short(data.memo.n))}
+              {row("financier", `commitment ${short(data.memo.commitment)}`)}
+              {row("classes", data.memo.classes)}
+              {row("supplier signature", short(data.memo.signature))}
             </>
           ) : null}
         </div>
@@ -108,12 +135,12 @@ export function Lens({ load }: { load: () => Promise<LensData> }): ReactNode {
         }}
         onClick={still() ? () => void go(m.current.target > 0.5 ? 0 : 1) : undefined}
       >
-        <span className="ln-hanko" aria-hidden="true">
-          <span className="ln-ring" ref={ring} />
+        <span className="ln-hanko" aria-hidden="true" ref={ring}>
           <b lang="ja">視</b>
         </span>
         <span>Hold to see it as the world does</span>
       </button>
+      <p className="ln-also">The key also shows the small amount each post sends to the board address, the memo's length and layout, and the block's time. No name, no amount, no buyer.</p>
     </div>
   );
 }

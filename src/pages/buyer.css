@@ -141,7 +141,7 @@
 /* the payment slip 払込票, torn off the letter by its perforation */
 .by-slip { position: relative; display: grid; gap: 14px; margin-top: 30px; padding: 22px 30px 26px; background: var(--sheet); box-shadow: var(--lift); }
 .by-slip::before { content: ""; position: absolute; left: 14px; right: 14px; top: -16px; border-top: 2px dashed var(--rule-2); }
-.by-slip-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-right: 70px; }
+.by-slip-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-right: 96px; } /* clear of the 済 stamp (74px at right 26px) */
 .by-slip-h b { font: 800 22px/1 var(--f-seal); letter-spacing: .3em; color: var(--head); }
 .by-slip-h span { font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
 .by-slip:not(.is-paid) .by-slip-h { padding-right: 0; }
@@ -274,6 +274,7 @@ p.by-late b { color: var(--head); font-weight: 600; }
   .by-slip-body { grid-template-columns: minmax(0, 1fr); }
   .by-qr { width: 168px; height: 168px; }
   .by-paid { width: 58px; height: 58px; font-size: 27px; right: 16px; }
+  .by-slip.is-paid .by-slip-h { padding-right: 82px; }
   .by-codes-grid { grid-template-columns: minmax(0, 1fr); padding: 0 16px 16px; }
   .by-codes > summary { padding: 14px 16px; }
   .by-branch { padding: 12px 14px; }

@@ -1210,7 +1210,7 @@ export function BuyerPage(): ReactNode {
         ) : null}
         <div className="by-slip-h">
           <b lang="ja">払込票</b>
-          <span>Pay at maturity</span>
+          <span>{paid ? "Paid" : "Pay at maturity"}</span>
         </div>
         <div className="by-slip-body">
           <div className={`by-qr${payQr ? " is-open" : ""}`}>

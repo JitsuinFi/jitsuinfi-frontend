@@ -736,87 +736,32 @@ button {
   color: var(--ink-2);
 }
 
-.is-waiting .chapter-cap > *,
-.is-waiting .fp-sheet,
-.is-waiting .fp-hash,
-.is-waiting .fp-out {
+.is-waiting .chapter-cap > * {
   opacity: 0;
 }
 
-/* chapter 2: the invoice, the press, the fingerprint */
-.fp-visual {
-  display: grid;
-  grid-template-columns: minmax(300px, 1fr) clamp(130px, 11vw, 170px) minmax(0, 1.3fr);
-  align-items: center;
-  min-width: 0;
-}
-
-.fp-sheet {
-  position: relative;
-  margin: 0;
-  padding: var(--s-4) var(--s-4) var(--s-3);
-  background: var(--sheet);
-  filter: var(--lift-drop);
-  rotate: -0.8deg;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  z-index: 2;
-}
-
-.fp-sheet-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-2);
-  padding-bottom: var(--s-1);
-  border-bottom: 1px solid var(--fiber);
-}
-
-.fp-sheet-title {
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: var(--t-h3);
-  color: var(--head);
-}
-
-.fp-sheet-no {
+/* ---------- chapter 2: one fingerprint (the registry press) ----------
+   Layout, the caption list and the base drawing rules are shared with chapter 3 (.sc-*, .sd-svg)
+   below; these are chapter 2's own. */
+.fp-no {
   color: var(--ink-2);
   white-space: nowrap;
 }
 
 .fp-rows {
-  display: flex;
-  flex-direction: column;
-}
-
-.fp-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  min-height: 44px;
-  border-bottom: 1px solid var(--fiber);
-  font-size: var(--t-data);
 }
 
-.fp-key {
-  color: var(--ink-2);
-}
-
-.fp-val {
-  color: var(--ink);
-  text-align: right;
-}
-
-.fp-edit .fp-key {
+.fp-rows dt.fp-edit {
   color: var(--seal);
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.fp-amount {
+.fp-rows dd.fp-amount {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
 }
 
@@ -859,116 +804,38 @@ button {
 
 .fp-reset {
   align-self: flex-start;
-  margin-top: var(--s-1);
   background-color: transparent;
   border: 0;
   cursor: pointer;
 }
 
-.fp-press {
-  position: relative;
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-}
-
-.fp-threads {
-  position: absolute;
-  inset: 12% 0;
-  width: 100%;
-  height: 76%;
-  overflow: visible;
-}
-
-.fp-thread {
-  fill: none;
-  stroke: var(--fiber);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-  transition: stroke var(--dur-fade) var(--ease-glide);
-}
-
-.fp-thread.is-lit {
-  stroke: var(--seal);
-}
-
-.fp-pulse {
-  fill: var(--seal);
-}
-
-.fp-hash {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  width: clamp(88px, 7.6vw, 118px);
-  aspect-ratio: 1;
-  max-width: 100%;
-  border-radius: 50%;
-  background: var(--head);
-  color: var(--sheet);
-  text-align: center;
-  gap: 2px;
-  margin: 0 auto; /* centred in its column, clear of the sheet's +1 */
-}
-
-.fp-hash-name {
-  font-weight: 600;
-  font-size: var(--t-data);
-}
-
-.fp-hash-key {
-  font-size: 10px;
-  color: var(--mist);
-}
-
-.fp-out {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  padding-left: var(--s-4);
-  min-width: 0;
-}
-
-.fp-out-label {
+.fp-n-label {
   margin: 0;
   font-size: var(--t-ui);
   color: var(--ink-2);
 }
 
-.fp-grid {
+/* all 64 digits of N, four lines of 16; the ones that differ from the board's N in seal */
+.fp-n {
+  margin: 0;
   display: flex;
   flex-direction: column;
-  font-size: clamp(16px, 1.7vw, 28px);
-  line-height: 1.3;
+  font-size: clamp(14px, 1.3vw, 21px);
+  line-height: 1.35;
   letter-spacing: 0.06em;
   color: var(--head);
 }
 
-.fp-line {
-  display: block;
+.fp-n-line {
   white-space: nowrap;
 }
 
-.fp-digit {
-  display: inline-block;
-  width: 1.05ch;
-  text-align: center;
-  transition: color var(--dur-fade) var(--ease-glide);
-}
-
-.fp-digit.is-hot {
+.fp-n .is-diff {
   color: var(--seal);
 }
 
-.fp-changed {
-  margin: 0;
-  font-size: var(--t-ui);
-  color: var(--ink);
-}
-
 .fp-board {
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -994,7 +861,120 @@ button {
   color: var(--mist);
 }
 
-/* below 1360px the caption sits above the visual, so the sheet, the press and the print have room */
+/* The press's drawing (figures/registry-press.svg, built by scripts/figures/registry-press.build.mjs,
+   moved by figures/registry-press.ts): the kit's --anatomy-* tones mapped onto DS-PAL. */
+.rp-svg .m-page {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--fiber) 70%, var(--sheet));
+  --anatomy-shade-1: color-mix(in srgb, var(--fiber) 50%, var(--sheet));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 30%, var(--sheet));
+  --anatomy-shade-3: var(--paper);
+  --anatomy-faint: color-mix(in srgb, var(--fold) 35%, var(--sheet));
+}
+
+.rp-svg .m-cover,
+.rp-svg .m-stamp,
+.rp-svg .m-wheel {
+  --anatomy-paper: var(--ink-2);
+  --anatomy-top: color-mix(in srgb, var(--ink-2) 66%, var(--fold));
+  --anatomy-shade-0: var(--ink);
+  --anatomy-shade-1: color-mix(in srgb, var(--ink) 50%, var(--ink-2));
+  --anatomy-shade-2: var(--ink-2);
+  --anatomy-shade-3: color-mix(in srgb, var(--ink-2) 78%, var(--fold));
+  --anatomy-hi: var(--ink);
+  --anatomy-mid: color-mix(in srgb, var(--fold) 70%, var(--ink-2));
+  --anatomy-lo: color-mix(in srgb, var(--fold) 50%, var(--ink-2));
+  --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--ink-2));
+}
+
+.rp-svg .m-cover {
+  --anatomy-top: color-mix(in srgb, var(--ink-2) 70%, var(--fold));
+  --anatomy-mid: var(--ink);
+}
+
+.rp-svg .m-drum {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--mist) 85%, var(--pool-2));
+  --anatomy-shade-1: var(--mist);
+  --anatomy-shade-2: color-mix(in srgb, var(--mist) 60%, var(--paper));
+  --anatomy-shade-3: color-mix(in srgb, var(--mist) 30%, var(--paper));
+}
+
+.rp-svg .iso-wire-end { fill: var(--anatomy-paper); stroke: var(--anatomy-mid); stroke-width: var(--anatomy-weight); }
+.rp-svg .eng { fill: color-mix(in srgb, var(--fold) 80%, var(--ink-2)); letter-spacing: 0.2em; }
+.rp-svg .pad-title { fill: color-mix(in srgb, var(--fold) 55%, var(--sheet)); }
+
+/* the press */
+.rp-svg .slot { fill: var(--ink); }
+.rp-svg .plate-face { fill: color-mix(in srgb, var(--fiber) 60%, var(--sheet)); stroke: color-mix(in srgb, var(--ink-2) 50%, var(--paper)); stroke-width: 0.5px; }
+.rp-svg .plate-text { fill: var(--ink-2); letter-spacing: 0.16em; }
+.rp-svg .ribs path { fill: none; stroke: color-mix(in srgb, var(--ink-2) 55%, var(--mist)); stroke-width: 0.6px; }
+.rp-svg .spokes { fill: none; stroke: var(--fiber); stroke-width: 1.1px; stroke-linecap: round; }
+.rp-svg .crank { fill: var(--seal); stroke: var(--ink); stroke-width: 0.5px; }
+.rp-svg .lamp {
+  fill: color-mix(in srgb, var(--mist) 55%, var(--paper));
+  stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper));
+  stroke-width: 0.5px;
+  transition: fill 0.25s var(--ease-glide);
+}
+.rp-svg .lamp.on { fill: var(--seal); }
+.rp-svg .pulse { fill: var(--seal); }
+
+/* the lever: pressable; its knob blinks while the press is at rest */
+.rp-svg .lever { cursor: pointer; outline: none; }
+.rp-svg .lever[aria-disabled="true"] { cursor: default; }
+.rp-svg .lever .hit { fill: transparent; stroke: none; }
+.rp-svg .lever:focus-visible .hit { stroke: var(--seal); stroke-width: 1px; stroke-dasharray: 2 2; }
+.rp-svg .lever-o { fill: none; stroke: var(--ink); stroke-linecap: round; }
+.rp-svg .lever-c { fill: none; stroke: color-mix(in srgb, var(--fold) 60%, var(--ink-2)); stroke-linecap: round; }
+.rp-svg .lever-knob { fill: var(--seal); stroke: var(--ink); stroke-width: 0.6px; }
+.rp-svg .lever-shine { fill: var(--fiber); opacity: 0.7; }
+.rp-svg .lever.cue .lever-knob { animation: rp-cue 1.8s ease-in-out infinite; }
+
+@keyframes rp-cue {
+  0%, 100% { fill: var(--seal); }
+  50% { fill: var(--fold); }
+}
+
+/* the invoice */
+.rp-svg .inv-title { fill: var(--ink-2); }
+.rp-svg .inv-id { fill: var(--ink); font-weight: 600; }
+.rp-svg .inv-label { fill: color-mix(in srgb, var(--fold) 80%, var(--ink-2)); letter-spacing: 0.1em; }
+.rp-svg .inv-val { fill: var(--ink); }
+.rp-svg .inv-val.small { fill: color-mix(in srgb, var(--ink-2) 70%, var(--paper)); }
+.rp-svg .inv-val .edited { fill: var(--seal); font-weight: 700; }
+.rp-svg .hanko-ring { fill: none; stroke: var(--seal); stroke-width: 1px; }
+.rp-svg .hanko-ring.thin { stroke-width: 0.5px; }
+.rp-svg .hanko-k { fill: var(--seal); }
+
+/* the shielded vault */
+.rp-svg .hop-wall { fill: var(--pool-2); }
+.rp-svg .hop-deep { fill: var(--pool); }
+.rp-svg .v-glass { fill: var(--pool); stroke: var(--mist); stroke-width: 0.6px; }
+.rp-svg .v-sheet { fill: none; stroke: var(--mist); stroke-width: 0.9px; opacity: 0; transition: opacity 0.5s var(--ease-land); }
+.rp-svg .v-sheet.on { opacity: 0.85; }
+.rp-svg .v-plate { fill: var(--pool); stroke: color-mix(in srgb, var(--mist) 60%, var(--pool-2)); stroke-width: 0.5px; }
+.rp-svg .v-label { fill: var(--mist); letter-spacing: 0.18em; }
+.rp-svg .v-kanji { fill: var(--mist); opacity: 0.9; }
+
+/* the public board: the press prints N on the next line */
+.rp-svg .board-head { fill: color-mix(in srgb, var(--fold) 85%, var(--ink-2)); letter-spacing: 0.2em; }
+.rp-svg .row-no { fill: color-mix(in srgb, var(--fold) 70%, var(--paper)); }
+.rp-svg .entry-n { fill: var(--ink-2); font-weight: 500; }
+.rp-svg .entry-n.old { fill: color-mix(in srgb, var(--ink-2) 65%, var(--sheet)); }
+.rp-svg .entry { opacity: 0; transition: opacity 0.25s linear; }
+.rp-svg .entry.on { opacity: 1; }
+.rp-svg .entry.fresh .entry-n { fill: var(--seal); font-weight: 700; }
+.rp-svg .ribbon { fill: var(--seal); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-svg .lever.cue .lever-knob { animation: none; }
+  .rp-svg .entry,
+  .rp-svg .v-sheet,
+  .rp-svg .lamp { transition: none; }
+}
+
+/* below 1360px the caption sits above the visual, so the figures have room */
 @media (max-width: 1359px) {
   .chapter {
     grid-template-columns: minmax(0, 1fr);
@@ -1005,124 +985,12 @@ button {
   }
 }
 
-@media (max-width: 1023px) {
-
-  .fp-visual {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--s-3);
-  }
-
-  .fp-press {
-    min-height: 120px;
-  }
-
-  .fp-threads {
-    display: none;
-  }
-
-  .fp-hash {
-    margin: 0 auto;
-    width: 136px;
-  }
-
-  .fp-out {
-    padding-left: 0;
-  }
-
-  .fp-grid {
-    font-size: clamp(15px, 4.6vw, 26px);
-  }
-}
-
-.fp-edit .fp-key {
-  white-space: nowrap;
-}
-
-.fp-print-box {
-  width: min(100%, 460px);
-  max-width: 100%;
-}
-
-/* the illustrated fingerprint */
-.fp-illus {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  overflow: visible;
-}
-
-.fp-tip {
-  fill: var(--sheet);
-  filter: var(--lift-drop);
-}
-
-.fp-tip-line {
-  fill: none;
-  stroke: var(--fiber);
-  stroke-width: 1.5;
-}
-
-.fp-ridge {
-  fill: none;
-  stroke: var(--head);
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 600ms var(--ease-inout);
-}
-
-.fp-ridge.is-core {
-  stroke: var(--ink);
-}
-
-.is-drawing .fp-ridge {
-  stroke: var(--seal);
-  transition: none;
-}
-
-.fp-scan {
-  fill: var(--seal);
-}
-
-.fp-core-ring {
-  fill: var(--sheet);
-  stroke: var(--seal);
-  stroke-width: 2.4;
-}
-
-.fp-core-dot {
-  fill: var(--seal);
-}
-
-.fp-callout-line {
-  fill: none;
-  stroke: var(--ink-2);
-  stroke-width: 1;
-}
-
-.fp-callout-dot {
-  fill: var(--seal);
-}
-
-.fp-callout-text {
-  fill: var(--head);
-  font-family: var(--f-body);
-  font-weight: 600;
-  font-size: 17px;
-}
-
-.fp-callout-sub {
-  fill: var(--ink-2);
-  font-family: var(--f-mono);
-  font-size: 12.5px;
-}
-
 /* ---------- chapter 3: the seal chain (Sign-to-Pay) ---------- */
 .sc-chapter {
   background: var(--paper); /* one paper for every chapter; sheets on it stay --sheet */
 }
 
+.fp-visual,
 .sc-visual {
   display: flex;
   flex-direction: column;
@@ -1130,13 +998,15 @@ button {
   min-width: 0;
 }
 
-/* the seal desk figure (figures/seal-desk.svg): no frame, it stands on the paper */
+/* the figures (seal-desk.svg, registry-press.svg): no frame, they stand on the paper */
+.fp-figure,
 .sc-desk {
   min-width: 0;
   touch-action: manipulation;
 }
 
-/* the caption list under the figure: the letter, the chain, the controls */
+/* the caption list under the figure: the letter (invoice), the chain (fingerprint), the controls */
+.fp-readout,
 .sc-readout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1146,6 +1016,7 @@ button {
   min-width: 0;
 }
 
+.fp-invoice,
 .sc-letter {
   grid-area: letter;
   display: flex;
@@ -1154,6 +1025,7 @@ button {
   min-width: 0;
 }
 
+.fp-head,
 .sc-head {
   margin: 0;
   display: flex;
@@ -1164,6 +1036,7 @@ button {
   border-bottom: 1px solid var(--fiber);
 }
 
+.fp-title,
 .sc-title {
   font-family: var(--f-display);
   font-weight: 700;
@@ -1178,6 +1051,7 @@ button {
   color: var(--seal);
 }
 
+.fp-rows,
 .sc-rows {
   margin: 0;
   display: grid;
@@ -1187,10 +1061,12 @@ button {
   font-size: var(--t-data);
 }
 
+.fp-rows dt,
 .sc-rows dt {
   color: var(--ink-2);
 }
 
+.fp-rows dd,
 .sc-rows dd {
   margin: 0;
   text-align: right;
@@ -1203,6 +1079,7 @@ button {
   font-weight: 600;
 }
 
+.fp-result,
 .sc-chain {
   grid-area: chain;
   display: flex;
@@ -1275,6 +1152,7 @@ button {
   color: var(--seal);
 }
 
+.fp-status,
 .sc-status {
   margin: 0;
   font-size: var(--t-ui);
@@ -1285,6 +1163,7 @@ button {
   color: var(--seal);
 }
 
+.fp-controls,
 .sc-controls {
   grid-area: controls;
   display: flex;
@@ -1305,6 +1184,7 @@ button {
   cursor: pointer;
 }
 
+.fp-hint,
 .sc-hint {
   flex-basis: 100%;
   margin: 0;
@@ -1312,12 +1192,15 @@ button {
   color: var(--ink-2);
 }
 
+.is-waiting .fp-figure,
+.is-waiting .fp-readout,
 .is-waiting .sc-desk,
 .is-waiting .sc-readout {
   opacity: 0;
 }
 
 @media (max-width: 719px) {
+  .fp-readout,
   .sc-readout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "chain" "controls" "letter";
@@ -1326,6 +1209,7 @@ button {
 
 /* The desk's drawing: the anatomy kit's iso-* parts, its --anatomy-* tones mapped onto DS-PAL.
    Built by scripts/figures/seal-desk.build.mjs; moved by figures/seal-desk.ts. */
+.fp-figure,
 .sc-desk {
   --anatomy-weight: 0.6px;
   --anatomy-paper: var(--sheet);
@@ -1343,7 +1227,8 @@ button {
   --anatomy-dot: var(--ink);
 }
 
-.sd-svg {
+.sd-svg,
+.rp-svg {
   display: block;
   width: 100%;
   height: auto;
@@ -1351,31 +1236,31 @@ button {
   outline: none;
 }
 
-.sd-svg path,
-.sd-svg circle {
+:is(.sd-svg, .rp-svg) path,
+:is(.sd-svg, .rp-svg) circle {
   vector-effect: non-scaling-stroke;
 }
 
-.sd-svg .iso-fill {
+:is(.sd-svg, .rp-svg) .iso-fill {
   fill: var(--anatomy-paper);
   stroke: none;
 }
 
-.sd-svg .iso-shade,
-.sd-svg .iso-top {
+:is(.sd-svg, .rp-svg) .iso-shade,
+:is(.sd-svg, .rp-svg) .iso-top {
   stroke: none;
 }
 
-.sd-svg .iso-shade[data-shade="0"] { fill: var(--anatomy-shade-0); }
-.sd-svg .iso-shade[data-shade="1"] { fill: var(--anatomy-shade-1); }
-.sd-svg .iso-shade[data-shade="2"] { fill: var(--anatomy-shade-2); }
-.sd-svg .iso-shade[data-shade="3"] { fill: var(--anatomy-shade-3); }
+:is(.sd-svg, .rp-svg) .iso-shade[data-shade="0"] { fill: var(--anatomy-shade-0); }
+:is(.sd-svg, .rp-svg) .iso-shade[data-shade="1"] { fill: var(--anatomy-shade-1); }
+:is(.sd-svg, .rp-svg) .iso-shade[data-shade="2"] { fill: var(--anatomy-shade-2); }
+:is(.sd-svg, .rp-svg) .iso-shade[data-shade="3"] { fill: var(--anatomy-shade-3); }
 
-.sd-svg .iso-top {
+:is(.sd-svg, .rp-svg) .iso-top {
   fill: var(--anatomy-top);
 }
 
-.sd-svg .iso-halo {
+:is(.sd-svg, .rp-svg) .iso-halo {
   fill: var(--anatomy-halo);
   stroke: none;
   filter: blur(9px);
@@ -1383,7 +1268,7 @@ button {
   transform: translateY(3px);
 }
 
-.sd-svg .iso-line {
+:is(.sd-svg, .rp-svg) .iso-line {
   fill: none;
   stroke: var(--anatomy-lo);
   stroke-width: var(--anatomy-weight);
@@ -1391,13 +1276,13 @@ button {
   stroke-linejoin: round;
 }
 
-.sd-svg .iso-line[data-tone="hi"] { stroke: var(--anatomy-hi); }
-.sd-svg .iso-line[data-tone="mid"] { stroke: var(--anatomy-mid); }
-.sd-svg .iso-line[data-tone="faint"] { stroke: var(--anatomy-faint); }
+:is(.sd-svg, .rp-svg) .iso-line[data-tone="hi"] { stroke: var(--anatomy-hi); }
+:is(.sd-svg, .rp-svg) .iso-line[data-tone="mid"] { stroke: var(--anatomy-mid); }
+:is(.sd-svg, .rp-svg) .iso-line[data-tone="faint"] { stroke: var(--anatomy-faint); }
 
-.sd-svg .iso-dots circle { fill: var(--anatomy-dot); stroke: none; opacity: 0.32; }
-.sd-svg .iso-dots[data-tone="hi"] circle { opacity: 0.85; }
-.sd-svg .iso-dots[data-tone="mid"] circle { opacity: 0.45; }
+:is(.sd-svg, .rp-svg) .iso-dots circle { fill: var(--anatomy-dot); stroke: none; opacity: 0.32; }
+:is(.sd-svg, .rp-svg) .iso-dots[data-tone="hi"] circle { opacity: 0.85; }
+:is(.sd-svg, .rp-svg) .iso-dots[data-tone="mid"] circle { opacity: 0.45; }
 
 /* materials */
 .sd-svg .m-rack {
@@ -1413,7 +1298,8 @@ button {
   --anatomy-faint: color-mix(in srgb, var(--fold) 55%, var(--fiber));
 }
 
-.sd-svg .m-mat {
+.sd-svg .m-mat,
+.rp-svg .m-tray {
   --anatomy-top: color-mix(in srgb, var(--fiber) 45%, var(--paper));
   --anatomy-shade-0: color-mix(in srgb, var(--fold) 40%, var(--fiber));
   --anatomy-shade-1: color-mix(in srgb, var(--fold) 25%, var(--fiber));
@@ -1423,7 +1309,7 @@ button {
   --anatomy-faint: var(--fiber);
 }
 
-.sd-svg .m-sheet {
+:is(.sd-svg, .rp-svg) .m-sheet {
   --anatomy-top: var(--sheet);
   --anatomy-shade-0: color-mix(in srgb, var(--mist) 40%, var(--sheet));
   --anatomy-shade-1: color-mix(in srgb, var(--mist) 30%, var(--sheet));
@@ -1454,7 +1340,8 @@ button {
   --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--seal));
 }
 
-.sd-svg .m-pool {
+.sd-svg .m-pool,
+.rp-svg .m-vault {
   --anatomy-paper: var(--pool-2);
   --anatomy-top: var(--wave);
   --anatomy-shade-0: var(--pool);
@@ -1485,7 +1372,7 @@ button {
 }
 
 /* type drawn on the parts */
-.sd-svg .kj {
+:is(.sd-svg, .rp-svg) .kj {
   font-family: var(--f-seal);
   font-weight: 700;
 }
@@ -1498,7 +1385,7 @@ button {
   fill: var(--seal);
 }
 
-.sd-svg .ui {
+:is(.sd-svg, .rp-svg) .ui {
   font-family: var(--f-body);
   fill: color-mix(in srgb, var(--ink-2) 70%, var(--paper));
   letter-spacing: 0.04em;

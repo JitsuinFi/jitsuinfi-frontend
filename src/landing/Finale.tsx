@@ -17,8 +17,7 @@ import { dur, ease } from "./motion";
 import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { loadWasm } from "./wasm";
-import { mountRegistryOffice, type RegistryOffice } from "./figures/registry-office";
-import officeSvg from "./figures/registry-office.svg?raw";
+import { useFigure } from "./use-figure";
 
 const fn = (f: (t: number) => number) => () => f;
 
@@ -122,7 +121,15 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
   // shows the end state.
   const figHost = useRef<HTMLDivElement>(null);
   const figRead = useRef<HTMLDivElement>(null);
-  const fig = useRef<RegistryOffice | null>(null);
+  // its chunks load as the close comes near, then it is inserted and moved by its controller
+  const { fig, ready } = useFigure(
+    close,
+    figHost,
+    reduced,
+    () => Promise.all([import("./figures/registry-office.svg?raw"), import("./figures/registry-office")]),
+    (svg, m) => m.mountRegistryOffice(svg, { reduced, onPress: () => onPress.current() }),
+    () => labels(),
+  );
   const READY: Said = { key: "fn.fig.st.ready", params: { id: INVOICE_ID } };
   const [figSaid, setFigSaid] = useState<Said>(READY);
   const user = useRef(false);
@@ -161,6 +168,7 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
     roundDone.current = false;
   };
   const playRound = async (stop: () => boolean) => {
+    await ready();
     const id = ++round.current;
     const gone = () => id !== round.current || stop() || !fig.current;
     const say = (x: Said) => void (!gone() && setFigSaid(x));
@@ -239,24 +247,20 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
   const onPress = useRef(press);
   onPress.current = press;
 
-  // the figure: inserted once, moved by its controller
-  useEffect(() => {
-    const host = figHost.current!;
-    host.innerHTML = officeSvg;
-    const f = mountRegistryOffice(host.querySelector("svg")!, { reduced, onPress: () => onPress.current() });
-    fig.current = f;
-    return () => {
+  // a round in play stops when the figure goes (useFigure destroys it)
+  useEffect(
+    () => () => {
       clearTimeout(later.current);
       round.current++;
-      f.destroy();
-      fig.current = null;
-      host.replaceChildren();
-    };
-  }, [reduced]);
+    },
+    [reduced],
+  );
 
-  // its small labels follow EN/中文
+  // its small labels follow EN/中文 (set again on each mount: the figure may arrive after a switch)
+  const labels = () => fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
   useEffect(() => {
-    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
+    labels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, reduced, t]);
 
   // ---------- the switch ----------

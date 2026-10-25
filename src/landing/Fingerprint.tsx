@@ -13,8 +13,8 @@ import { dur, ease, sibling } from "./motion";
 import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { loadWasm } from "./wasm";
-import { mountRegistryPress, type PressPhase, type RegistryPress } from "./figures/registry-press";
-import pressSvg from "./figures/registry-press.svg?raw";
+import type { PressPhase } from "./figures/registry-press";
+import { useFigure } from "./use-figure";
 
 /// The hero invoice (scripts/landing-keys.mjs): test keys from TES- labels; the buyer key is index 7 of a TES- master.
 const BASE = {
@@ -51,13 +51,30 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
   const heads = useRef<(HTMLElement | null)[]>([]);
   const figHost = useRef<HTMLDivElement>(null);
   const readout = useRef<HTMLDivElement>(null);
-  const fig = useRef<RegistryPress | null>(null);
   const amount = useRef<HTMLInputElement>(null);
   const due = useRef<HTMLInputElement>(null);
   const current = useRef(ON_BOARD);
   const pending = useRef(0);
   const pressing = useRef("");
   const busy = useRef(false);
+
+  // the figure: its chunks load as the chapter comes near, then it is inserted and moved by its controller
+  const { fig, ready } = useFigure(
+    sec,
+    figHost,
+    reduced,
+    () => Promise.all([import("./figures/registry-press.svg?raw"), import("./figures/registry-press")]),
+    (svg, m) =>
+      m.mountRegistryPress(svg, {
+        reduced,
+        onPress: () => onPress.current(),
+        onPhase: (p) => setPhase(p === "done" ? null : { p, n: pressing.current }),
+      }),
+    () => {
+      labels();
+      fields(); // the paper shows the sheet's amount and due date
+    },
+  );
 
   // ---------- computing N ----------
   const show = (n: string, from: string) => {
@@ -113,9 +130,10 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
     busy.current = true;
     try {
       const n = await recompute();
-      if (!n || !fig.current) return;
+      if (!n) return;
+      const f = await ready();
       pressing.current = short(n);
-      await fig.current.press(short(n));
+      await f.press(short(n));
     } finally {
       busy.current = false;
     }
@@ -145,6 +163,7 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
     await backToBase();
   };
   const playRound = async (stop: () => boolean) => {
+    await ready();
     await pressLever();
     if (stop()) return;
     if (!reduced) await hold(3000);
@@ -190,28 +209,11 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
   const onPress = useRef(pull);
   onPress.current = pull;
 
-  // the figure: inserted once, moved by its controller
+  // its small labels follow EN/中文 (set again on each mount: the figure may arrive after a switch)
+  const labels = () => fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
   useEffect(() => {
-    const host = figHost.current!;
-    host.innerHTML = pressSvg;
-    const f = mountRegistryPress(host.querySelector("svg")!, {
-      reduced,
-      onPress: () => onPress.current(),
-      onPhase: (p) => setPhase(p === "done" ? null : { p, n: pressing.current }),
-    });
-    fig.current = f;
-    fields(); // the paper shows the sheet's amount and due date
-    return () => {
-      f.destroy();
-      fig.current = null;
-      host.replaceChildren();
-    };
+    labels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduced]);
-
-  // its small labels follow EN/中文
-  useEffect(() => {
-    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
   }, [lang, reduced, t]);
 
   // the due date counts on "change" (a picked date), as before; React's onChange is every input

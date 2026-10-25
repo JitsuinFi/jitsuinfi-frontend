@@ -1000,12 +1000,14 @@ button {
   min-width: 0;
 }
 
-/* the figures (seal-desk.svg, registry-press.svg): no frame, they stand on the paper */
+/* the figures (seal-desk.svg, registry-press.svg): no frame, they stand on the paper. They load
+   as the chapter comes near (use-figure.ts): the host keeps the drawing's 640 x 470 box until then */
 .fp-figure,
 .sc-desk,
 .tw-figure,
 .hs-figure {
   min-width: 0;
+  aspect-ratio: 640 / 470;
   touch-action: manipulation;
 }
 
@@ -2512,6 +2514,7 @@ button {
    shared ones of chapters 2 to 4 (.sd-svg, .rp-svg, .tc-svg) so this chapter stands on its own. */
 .fn-figure {
   min-width: 0;
+  aspect-ratio: 640 / 470;
   touch-action: manipulation;
   --anatomy-weight: 0.6px;
   --anatomy-paper: var(--sheet);

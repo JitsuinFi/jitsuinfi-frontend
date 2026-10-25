@@ -3,8 +3,6 @@
 import "../style.css";
 import "../pages/lobby.css";
 import "../pages/account.css";
-import "../auth.css";
 import "../pages/try.css";
 import "../pages/apply.css";
-import "../pages/desk.css";
 import "../pages/verify.css";

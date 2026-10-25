@@ -139,3 +139,13 @@ test("every relay flow of the level-2 DFDs has a message type (BL-D1-01)", () =>
   for (const [from, to] of flows) assert.ok(covered(from, to), `no message type for ${from} → ${to}`);
   assert.ok(Object.values(TYPES).some((t) => t.flows.includes("5.1")), "seals for the payment request (5.1)");
 });
+
+test("buyer-late: the node's deal.reminder (milestone, due date, amount; financier-signed) is a valid header", async () => {
+  const fin = await keypair();
+  const ok = await signHeader(base("deal.reminder", "financier", { milestone: "d-1", due_date: 20_754, amount_zat: 60_000 }), fin.priv, fin.pub);
+  assert.deepEqual(headerProblems(ok), []);
+  assert.ok(await verifyHeader(ok, fin.pub));
+  assert.ok(headerProblems(base("deal.reminder", "financier", { milestone: "d-3", due_date: 20_754, amount_zat: 60_000 })).some((p) => p.includes('"milestone" is not valid')));
+  assert.ok(headerProblems(base("deal.reminder", "supplier", { milestone: "d+1", due_date: 20_754, amount_zat: 60_000 })).some((p) => p.includes("cannot come from supplier")));
+  assert.ok(headerProblems({ ...base("deal.reminder", "financier", { milestone: "d+1", due_date: 20_754, amount_zat: 60_000 }), n: undefined }).some((p) => p.includes("needs n")));
+});

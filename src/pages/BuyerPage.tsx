@@ -24,12 +24,14 @@ import { boardLine, loadBoard, type BoardData } from "../lib/board";
 import { checkInvoice, type CheckResult } from "../lib/buyer-check";
 import { letterChecks, letterProblems, payProblems, type LetterCheck } from "../lib/buyer-letter";
 import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, freeable, head, HISTORY_ID, localNextIndex, reconcile, type CertFields, type HistoryDoc } from "../lib/buyer-history";
-import { boardStatus, buyerTotals, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, nextAction, routeDone, sealCount, sortInvoices, storeId, withSignature, type BuyerAction, type BuyerInvoice } from "../lib/buyer-invoices";
+import { boardStatus, buyerTotals, invoiceRecord, invoiceStatus, isInvoiceId, nextAction, routeDone, sealCount, sortInvoices, storeId, withSignature, type BuyerAction, type BuyerInvoice } from "../lib/buyer-invoices";
+import { DEFAULT_GRACE_DAYS, lateState, ledgerLine, msToCutoff, reminders, reminderText } from "../lib/buyer-late";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { NET } from "../lib/network";
 import { discard, draft, loadState, RelayError, saveState, send, type Received } from "../lib/relay";
 import { encodeMessage, signingBytes, verifyHeader, type Header } from "../lib/relay-message";
 import { Page } from "../app/AppShell";
+import { LatePanel } from "./BuyerLate";
 import { MailboxCard, takeContact, type InboxAction } from "./MailboxCard";
 import "./role-paper.css";
 import "./buyer.css";
@@ -438,6 +440,12 @@ export function BuyerPage(): ReactNode {
   const [payWhy, setPayWhy] = useState<string[] | null>(null);
   const [payQr, setPayQr] = useState<{ svg: string; uri: string; payTo: string } | null>(null);
   const [press, setPress] = useState<"sig" | "seal" | null>(null);
+  // the slip's countdown to the on-time cut-off, a minute at a time
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
   const first = useRef(true);
 
   // signing locks again whenever the invoice or its PDF changes; sealing whenever the letter, its
@@ -870,6 +878,26 @@ export function BuyerPage(): ReactNode {
       throw new Error("not a seal this device expects for this invoice");
     }),
     "history.request": historyRequest,
+    // buyer-late: the financier's node reminds at D-7, D-1 and D+1; the slip says the rest
+    "deal.reminder": {
+      label: "Open the slip",
+      describe: async (r) => {
+        const hd = r.message.header;
+        const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+        if (!rec) return "A reminder for an invoice this device does not hold.";
+        const s = lateState(rec, today());
+        return s.kind === "due-soon" || s.kind === "overdue" ? `The financier reminds you: ${reminderText({ invoice_id: rec.invoice_id, state: s }, `${zatToZec(rec.amount_zat)} ZEC`)}` : `The financier's reminder for ${rec.invoice_id}, due ${daysToDate(rec.due_date)}.`;
+      },
+      run: async (r) => {
+        const hd = r.message.header;
+        const rec = await account.current?.store?.get<BuyerInvoice>(storeId(hd.n ?? ""));
+        if (!rec) throw new Error("no invoice on this device has this fingerprint N");
+        if (!rec.assignment?.financier_pk || rec.assignment.financier_pk !== hd.signer) throw new Error("not from the financier your letter names");
+        if (hd.body.due_date !== rec.due_date || hd.body.amount_zat !== rec.amount_zat) throw new Error("the reminder names another due date or amount than your invoice");
+        open(rec);
+        return `${rec.invoice_id} is on the desk: its payment slip is below the letter.`;
+      },
+    },
     "deal.bundle": {
       label: "Keep the settlement bundle",
       run: async (r) => {
@@ -1015,7 +1043,8 @@ export function BuyerPage(): ReactNode {
   const status = rec && statuses ? statuses[rec.n] : null;
 
   const totals = buyerTotals(list, statuses, today());
-  const due = dueSoon(list, today());
+  const due = reminders(list, today());
+  const late = rec ? lateState(rec, today(), status) : ({ kind: "none" } as const);
 
   const invoiceSheet = dec ? (
     <article className="by-sheet" key={`i-${dec.nullifier}`} aria-label={`Invoice ${dec.invoice_id}`}>
@@ -1207,13 +1236,22 @@ export function BuyerPage(): ReactNode {
             </div>
           </dl>
         </div>
+        {dec && rec ? (
+          <LatePanel
+            state={late}
+            cutoffMs={msToCutoff(dec.due_date, nowMs)}
+            facts={{ inHistory: !!rec.history_cert, amount: `${zatToZec(dec.amount_zat)} ZEC`, due: daysToDate(dec.due_date), defaultFrom: daysToDate(dec.due_date + DEFAULT_GRACE_DAYS + 1) }}
+          />
+        ) : null}
         {paid ? (
-          <div className="by-why">
-            <span className="rp-hanko is-ok" lang="ja" aria-hidden="true">
-              済
-            </span>
+          <div className={`by-why${late.kind === "paid" ? "" : " is-plain"}`}>
+            {late.kind === "paid" ? (
+              <span className="rp-hanko is-ok" lang="ja" aria-hidden="true">
+                済
+              </span>
+            ) : null}
             <span>
-              {`${dec.invoice_id} is settled${status === "settled on time" ? ", on time" : status === "settled late" ? ", late" : ""}. The bundle is kept on this device and proves the whole deal to anyone. `}
+              {`${dec.invoice_id} is settled. The bundle is kept on this device and proves the whole deal to anyone. `}
               <Button secondary onClick={async () => void (await navigator.clipboard.writeText(rec!.bundle!))}>
                 Copy the bundle
               </Button>{" "}
@@ -1404,7 +1442,7 @@ export function BuyerPage(): ReactNode {
                   期
                 </span>
                 <span>
-                  <b>{due.length === 1 ? "Due soon." : `${due.length} invoices due soon.`}</b> {due.map((d) => `${d.rec.invoice_id}: ${zatToZec(d.rec.amount_zat)} ZEC ${dueWords(d.days_left)}`).join(" · ") + ". Pay each on its slip."}
+                  <b>{due.some((d) => d.state.kind === "overdue") ? "Past due." : due.length === 1 ? "Due soon." : `${due.length} invoices due soon.`}</b> {due.map((d) => reminderText(d, `${zatToZec(d.amount_zat)} ZEC`)).join(" ") + " Pay each on its slip."}
                 </span>
               </p>
             ) : null}
@@ -1423,6 +1461,7 @@ export function BuyerPage(): ReactNode {
                   const a = nextAction(r);
                   const s = sealCount(r);
                   const [word, cls] = TAG[a];
+                  const ll = ledgerLine(lateState(r, today(), statuses?.[r.n] ?? null));
                   return (
                     <li key={r.n}>
                       <button type="button" aria-current={r.n === rec?.n ? "true" : undefined} onClick={() => open(r)}>
@@ -1440,6 +1479,14 @@ export function BuyerPage(): ReactNode {
                           <span className={cls ? `is-${cls}` : undefined}>{a === "pay" ? `${word} · ${dueWords(r.due_date - today())}` : word}</span>
                           <span>{[invoiceStatus(r), statuses?.[r.n]].filter(Boolean).join(" · ")}</span>
                         </span>
+                        {ll ? (
+                          <span className={`by-l-late is-${ll.tone}`}>
+                            <i lang="ja" aria-hidden="true">
+                              {ll.glyph}
+                            </i>
+                            {ll.text}
+                          </span>
+                        ) : null}
                       </button>
                     </li>
                   );

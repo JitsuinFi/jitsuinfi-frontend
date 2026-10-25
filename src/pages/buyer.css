@@ -67,6 +67,9 @@
 .by-l-tag span { padding: 3px 9px; border-radius: 999px; font: 500 11.5px/1.2 var(--f-body); color: var(--ink-2); background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
 .by-l-tag span.is-act { color: var(--sheet); background: var(--seal); box-shadow: none; }
 .by-l-tag span.is-done { color: var(--pool-2); }
+.by-l-late { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; margin-top: 2px; font: 500 12px/1.3 var(--f-body); color: var(--seal); }
+.by-l-late i { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; font: 800 9.5px/1 var(--f-seal); font-style: normal; transform: rotate(-8deg); }
+.by-l-late.is-ok { color: var(--pool-2); }
 
 /* ---------- the visual: route stepper, the sheet, the checks ---------- */
 .by-route { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -155,12 +158,32 @@
 .by-slip-facts dd { margin: 0; font: 500 14px/1.35 var(--f-body); color: var(--head); min-width: 0; }
 .by-slip-facts dd.is-big { font: 500 24px/1 var(--f-mono); }
 .by-why { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font: 400 13.5px/1.5 var(--f-body); color: var(--ink); }
+.by-why.is-plain { grid-template-columns: minmax(0, 1fr); padding-left: 58px; }
 .by-why .rp-hanko { width: 26px; height: 26px; font-size: 13px; }
 .by-why button { padding: 6px 12px; font-size: 12.5px; vertical-align: baseline; }
 .by-a { font: 500 13.5px/1.3 var(--f-body); color: var(--seal); text-underline-offset: 3px; }
 .by-slip .actions .hint { flex: 1 1 240px; font-size: 12.5px; }
 .by-uri .code { max-height: 74px; }
 .by-paid { position: absolute; right: 26px; top: 18px; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; box-shadow: inset 0 0 0 3.5px var(--pool-2); color: var(--pool-2); font: 800 34px/1 var(--f-seal); transform: rotate(-10deg); opacity: .9; }
+
+/* "If you pay late" (buyer-late): the countdown to the on-time cut-off and the facts, each stamped
+   in under its hanko in turn (snapSettle, the sibling stagger); hairlines, never a panel */
+.by-late { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--rule-2); }
+.by-late-h { display: grid; gap: 6px; }
+.by-late-h > b { font: 800 19px/1.15 var(--f-display); color: var(--head); }
+.by-late.is-over .by-late-h > b { color: var(--seal); }
+.by-late-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.by-late-count strong { font: 500 26px/1 var(--f-mono); color: var(--seal); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.by-late-count small { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); }
+.by-late-lines { list-style: none; margin: 0; padding: 0; }
+.by-late-lines li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--rule); font: 400 13.5px/1.5 var(--f-body); color: var(--ink); }
+.by-late-lines li:first-child { border-top: 0; }
+.by-late-lines .rp-hanko { width: 26px; height: 26px; font-size: 13px; color: var(--seal); animation: rp-hk var(--dur-seal) var(--ease-snap) var(--d, 0ms) both; }
+.by-late.is-over .by-late-lines li:first-child > span:last-child { color: var(--head); font-weight: 500; }
+p.by-late { grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; font: 400 13.5px/1.5 var(--f-body); color: var(--ink); }
+p.by-late b { color: var(--head); font-weight: 600; }
+.by-late-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; box-shadow: inset 0 0 0 2.5px currentColor; font: 800 21px/1 var(--f-seal); color: var(--pool-2); transform: rotate(-8deg); animation: rp-hk var(--dur-seal) var(--ease-snap) both; }
+.by-late.is-late .by-late-mark, .by-late.is-late b { color: var(--seal); }
 
 /* the checks: lines that tick */
 .by-side { display: grid; gap: 18px; align-content: start; min-width: 0; }

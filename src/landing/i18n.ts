@@ -106,7 +106,6 @@ const D: Record<string, Entry> = {
   "sc.press.supplier": { en: "Press the supplier’s seal", zh: "盖下供应商的印章" },
   "sc.press.buyer": { en: "Press the buyer’s seal", zh: "盖下买方的印章" },
   "sc.press.financier": { en: "Press the financier’s seal", zh: "盖下资金方的印章" },
-  "sc.complete": { en: "Chain complete", zh: "印章链完整" },
   "sc.tamper": { en: "Change one zat on the sealed letter", zh: "在已盖章的通知书上改动一个 zat" },
   "sc.reset": { en: "Start over", zh: "重新开始" },
   "sc.wait.supplier": { en: "Waiting for the supplier’s seal.", zh: "等待供应商盖章。" },
@@ -116,6 +115,16 @@ const D: Record<string, Entry> = {
   "sc.refused": { en: "Refused: {msg}", zh: "被拒绝：{msg}" },
   "sc.broken": { en: "One zat changed, the seals no longer match: {msg}. Financing refused.", zh: "改动了一个 zat，印章不再匹配：{msg}。融资被拒绝。" },
   "sc.advance": { en: "+ 0.0004 ZEC advance", zh: "+ 0.0004 ZEC 预付款" },
+  // chapter 3, the seal desk figure (labels drawn inside the SVG)
+  "sc.fig.aria": {
+    en: "A seal desk. An assignment letter with three empty seal circles for supplier, buyer and financier lies in front of a rack of three hanko seals. Behind it a gate holds a coin at the top of a chute that runs into the shielded pool. Each seal lifts one latch of the gate; after the third, the shutter rises and the coin rolls into the pool.",
+    zh: "一张盖章桌。债权转让通知书上有供应商、买方、资金方三个空印位，前面是放着三枚印章的印架。后面的闸门把一枚硬币挡在滑槽顶端，滑槽通向屏蔽池。每盖一枚印章就抬起闸门的一个闩；盖完第三枚，挡板升起，硬币滚入池中。",
+  },
+  "sc.fig.pool": { en: "SHIELDED POOL", zh: "屏蔽池" },
+  "sc.fig.supplier": { en: "supplier", zh: "供应商" },
+  "sc.fig.buyer": { en: "buyer", zh: "买方" },
+  "sc.fig.financier": { en: "financier", zh: "资金方" },
+  "sc.fig.hint": { en: "The seals press themselves in order: 売, 買, 融. Start over to watch it again.", zh: "印章会按顺序自动盖下：売、買、融。点击“重新开始”再看一遍。" },
 
   // chapter 5
   "hs.kanji": { en: "履歴 · Chapter 5", zh: "履历 · 第 5 章" },

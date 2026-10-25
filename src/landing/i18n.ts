@@ -198,8 +198,6 @@ const D: Record<string, Entry> = {
   "fn.foot": { en: "ZECATHON 2026 · Private Markets. Every key on this page is a test key derived from a TES- label.", zh: "ZECATHON 2026 · Private Markets。本页所有密钥都是由 TES- 标签派生的测试密钥。" },
 
   // chapter 4
-  "tw.k.n": { en: "invoice fingerprint N", zh: "发票指纹 N" },
-  "tw.k.c": { en: "financier commitment", zh: "融资方承诺" },
   "tw.kanji": { en: "二重 · Chapter 4", zh: "二重 · 第 4 章" },
   "tw.title": { en: "Pressed twice, caught once.", zh: "盖了两次，\n一次识破。" },
   "tw.lede": {
@@ -215,14 +213,11 @@ const D: Record<string, Entry> = {
   "tw.st.same": { en: "Same N, another financier", zh: "相同的 N，另一家资金方" },
   "tw.st.refuse": { en: "B refuses", zh: "B 拒绝融资" },
   "tw.st.proof": { en: "Proof, checked offline", zh: "证明，离线验证" },
-  "tw.signedBy": { en: "signed by the supplier", zh: "由供应商签名" },
-  "tw.toFin": { en: "to Financier {x}", zh: "给资金方 {x}" },
   "tw.found": { en: "found on the board", zh: "在登记板上找到" },
   "tw.notFound": { en: "not on the board", zh: "不在登记板上" },
   "tw.registered": { en: "registered", zh: "已登记" },
   "tw.again": { en: "again", zh: "重复" },
   "tw.refused": { en: "not financed", zh: "不予融资" },
-  "tw.verified": { en: "verified", zh: "已验证" },
   "tw.run": { en: "Run it again", zh: "再运行一次" },
   "tw.idle": { en: "Runs by itself when it comes into view.", zh: "进入视野时自动运行。" },
   "tw.running": { en: "Running…", zh: "运行中…" },
@@ -246,6 +241,29 @@ const D: Record<string, Entry> = {
   "tw.p.verdict": { en: "Verified: one supplier key signed one N for two financiers.", zh: "已验证：同一把供应商密钥为同一个 N 签给了两家资金方。" },
   "tw.p.supplier": { en: "supplier {k}", zh: "供应商 {k}" },
   "tw.p.commit": { en: "commitment {k}", zh: "承诺 {k}" },
+  // chapter 4, the second financier's counter (labels drawn inside the SVG, and its readout)
+  "tw.fig.aria": {
+    en: "A second financier’s counter. On the left an invoice, TES-INV-0007 with the buyer’s seal, slides out of an intake slot onto a tray. A board reader in the middle scans it and looks its fingerprint N up on the public board at the back, where the same N is already registered under financier A’s commitment. A round lamp marked 重 lights on financier B’s counter, a rolling shutter comes down over B’s Zcash drawer so no money leaves, and a small printer at the front prints Exhibit A: the supplier signed twice. Click it or press Enter to run it.",
+    zh: "第二家资金方的柜台。左边，一张盖有买方印章的发票 TES-INV-0007 从投入口滑出，落在托盘上。中间的登记板读取器扫描它，并在后方的公开登记板上查询它的指纹 N：同一个 N 已经登记在资金方 A 的承诺名下。资金方 B 的柜台上，一盏写着「重」的圆灯亮起，卷帘落下盖住 B 的 Zcash 抽屉，资金不动；前方的小打印机打印出证据 A：供应商签了两次。点击它或按 Enter 键即可运行。",
+  },
+  "tw.fig.status": { en: "STATUS", zh: "状态" },
+  "tw.fig.registered": { en: "registered", zh: "已登记" },
+  "tw.fig.financierA": { en: "financier A", zh: "资金方 A" },
+  "tw.fig.commitment": { en: "commitment", zh: "承诺" },
+  "tw.fig.financier": { en: "FINANCIER", zh: "资金方" },
+  "tw.fig.offers": { en: "OFFERS IN", zh: "报价投入" },
+  "tw.fig.lookup": { en: "BOARD LOOKUP", zh: "登记板查询" },
+  "tw.fig.seen": { en: "SEEN · A", zh: "已见 · A" },
+  "tw.fig.exhibit": { en: "EXHIBIT A", zh: "证据 A" },
+  "tw.fig.double": { en: "double signature", zh: "双重签名" },
+  "tw.fig.offline": { en: "checked offline", zh: "离线验证" },
+  "tw.fig.hint": { en: "It plays by itself. Click the counter to run it yourself.", zh: "它会自动播放。点击柜台即可自己运行。" },
+  "tw.fig.st.arrive": { en: "An offer arrives at financier B: {id}.", zh: "一份报价送到资金方 B：{id}。" },
+  "tw.fig.st.post": { en: "A’s entry is on the public board: N {n}, commitment {c}.", zh: "A 的登记已在公开登记板上：N {n}，承诺 {c}。" },
+  "tw.fig.st.lookup": { en: "B’s reader looks N {n} up on the board.", zh: "B 的读取器在登记板上查询 N {n}。" },
+  "tw.fig.st.found": { en: "Same N, another financier: registered under A’s commitment {c}. 重.", zh: "相同的 N，另一家资金方：已登记在 A 的承诺 {c} 名下。重。" },
+  "tw.fig.st.refuse": { en: "B refuses: the shutter comes down, no money moves.", zh: "B 拒绝：卷帘落下，资金不动。" },
+  "tw.fig.st.exhibit": { en: "Exhibit A: the supplier signed twice; the proof checks out offline.", zh: "证据 A：供应商签了两次；证明已离线验证通过。" },
 };
 
 const KEY = "jitsuinfi.lang";

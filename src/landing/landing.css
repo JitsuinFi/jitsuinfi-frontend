@@ -991,7 +991,8 @@ button {
 }
 
 .fp-visual,
-.sc-visual {
+.sc-visual,
+.tw-visual {
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
@@ -1000,14 +1001,16 @@ button {
 
 /* the figures (seal-desk.svg, registry-press.svg): no frame, they stand on the paper */
 .fp-figure,
-.sc-desk {
+.sc-desk,
+.tw-figure {
   min-width: 0;
   touch-action: manipulation;
 }
 
 /* the caption list under the figure: the letter (invoice), the chain (fingerprint), the controls */
 .fp-readout,
-.sc-readout {
+.sc-readout,
+.tw-readout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: "letter chain" "controls controls";
@@ -1164,7 +1167,8 @@ button {
 }
 
 .fp-controls,
-.sc-controls {
+.sc-controls,
+.tw-controls {
   grid-area: controls;
   display: flex;
   flex-wrap: wrap;
@@ -1172,20 +1176,23 @@ button {
   gap: var(--s-2) var(--s-4);
 }
 
-.sc-controls button:disabled {
+.sc-controls button:disabled,
+.tw-controls button:disabled {
   opacity: 0.45;
   cursor: default;
 }
 
 .sc-tamper,
-.sc-reset {
+.sc-reset,
+.tw-exec {
   border: 0;
   background-color: transparent;
   cursor: pointer;
 }
 
 .fp-hint,
-.sc-hint {
+.sc-hint,
+.tw-hint {
   flex-basis: 100%;
   margin: 0;
   font-size: var(--t-data);
@@ -1195,7 +1202,9 @@ button {
 .is-waiting .fp-figure,
 .is-waiting .fp-readout,
 .is-waiting .sc-desk,
-.is-waiting .sc-readout {
+.is-waiting .sc-readout,
+.is-waiting .tw-figure,
+.is-waiting .tw-readout {
   opacity: 0;
 }
 
@@ -1210,7 +1219,8 @@ button {
 /* The desk's drawing: the anatomy kit's iso-* parts, its --anatomy-* tones mapped onto DS-PAL.
    Built by scripts/figures/seal-desk.build.mjs; moved by figures/seal-desk.ts. */
 .fp-figure,
-.sc-desk {
+.sc-desk,
+.tw-figure {
   --anatomy-weight: 0.6px;
   --anatomy-paper: var(--sheet);
   --anatomy-top: var(--sheet);
@@ -1228,7 +1238,8 @@ button {
 }
 
 .sd-svg,
-.rp-svg {
+.rp-svg,
+.tc-svg {
   display: block;
   width: 100%;
   height: auto;
@@ -1236,31 +1247,31 @@ button {
   outline: none;
 }
 
-:is(.sd-svg, .rp-svg) path,
-:is(.sd-svg, .rp-svg) circle {
+:is(.sd-svg, .rp-svg, .tc-svg) path,
+:is(.sd-svg, .rp-svg, .tc-svg) circle {
   vector-effect: non-scaling-stroke;
 }
 
-:is(.sd-svg, .rp-svg) .iso-fill {
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-fill {
   fill: var(--anatomy-paper);
   stroke: none;
 }
 
-:is(.sd-svg, .rp-svg) .iso-shade,
-:is(.sd-svg, .rp-svg) .iso-top {
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-shade,
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-top {
   stroke: none;
 }
 
-:is(.sd-svg, .rp-svg) .iso-shade[data-shade="0"] { fill: var(--anatomy-shade-0); }
-:is(.sd-svg, .rp-svg) .iso-shade[data-shade="1"] { fill: var(--anatomy-shade-1); }
-:is(.sd-svg, .rp-svg) .iso-shade[data-shade="2"] { fill: var(--anatomy-shade-2); }
-:is(.sd-svg, .rp-svg) .iso-shade[data-shade="3"] { fill: var(--anatomy-shade-3); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-shade[data-shade="0"] { fill: var(--anatomy-shade-0); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-shade[data-shade="1"] { fill: var(--anatomy-shade-1); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-shade[data-shade="2"] { fill: var(--anatomy-shade-2); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-shade[data-shade="3"] { fill: var(--anatomy-shade-3); }
 
-:is(.sd-svg, .rp-svg) .iso-top {
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-top {
   fill: var(--anatomy-top);
 }
 
-:is(.sd-svg, .rp-svg) .iso-halo {
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-halo {
   fill: var(--anatomy-halo);
   stroke: none;
   filter: blur(9px);
@@ -1268,7 +1279,7 @@ button {
   transform: translateY(3px);
 }
 
-:is(.sd-svg, .rp-svg) .iso-line {
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-line {
   fill: none;
   stroke: var(--anatomy-lo);
   stroke-width: var(--anatomy-weight);
@@ -1276,13 +1287,13 @@ button {
   stroke-linejoin: round;
 }
 
-:is(.sd-svg, .rp-svg) .iso-line[data-tone="hi"] { stroke: var(--anatomy-hi); }
-:is(.sd-svg, .rp-svg) .iso-line[data-tone="mid"] { stroke: var(--anatomy-mid); }
-:is(.sd-svg, .rp-svg) .iso-line[data-tone="faint"] { stroke: var(--anatomy-faint); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-line[data-tone="hi"] { stroke: var(--anatomy-hi); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-line[data-tone="mid"] { stroke: var(--anatomy-mid); }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-line[data-tone="faint"] { stroke: var(--anatomy-faint); }
 
-:is(.sd-svg, .rp-svg) .iso-dots circle { fill: var(--anatomy-dot); stroke: none; opacity: 0.32; }
-:is(.sd-svg, .rp-svg) .iso-dots[data-tone="hi"] circle { opacity: 0.85; }
-:is(.sd-svg, .rp-svg) .iso-dots[data-tone="mid"] circle { opacity: 0.45; }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-dots circle { fill: var(--anatomy-dot); stroke: none; opacity: 0.32; }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-dots[data-tone="hi"] circle { opacity: 0.85; }
+:is(.sd-svg, .rp-svg, .tc-svg) .iso-dots[data-tone="mid"] circle { opacity: 0.45; }
 
 /* materials */
 .sd-svg .m-rack {
@@ -1299,7 +1310,9 @@ button {
 }
 
 .sd-svg .m-mat,
-.rp-svg .m-tray {
+.rp-svg .m-tray,
+.tc-svg .m-tray,
+.tc-svg .m-intake {
   --anatomy-top: color-mix(in srgb, var(--fiber) 45%, var(--paper));
   --anatomy-shade-0: color-mix(in srgb, var(--fold) 40%, var(--fiber));
   --anatomy-shade-1: color-mix(in srgb, var(--fold) 25%, var(--fiber));
@@ -1309,7 +1322,7 @@ button {
   --anatomy-faint: var(--fiber);
 }
 
-:is(.sd-svg, .rp-svg) .m-sheet {
+:is(.sd-svg, .rp-svg, .tc-svg) .m-sheet {
   --anatomy-top: var(--sheet);
   --anatomy-shade-0: color-mix(in srgb, var(--mist) 40%, var(--sheet));
   --anatomy-shade-1: color-mix(in srgb, var(--mist) 30%, var(--sheet));
@@ -1341,7 +1354,8 @@ button {
 }
 
 .sd-svg .m-pool,
-.rp-svg .m-vault {
+.rp-svg .m-vault,
+.tc-svg .m-vault {
   --anatomy-paper: var(--pool-2);
   --anatomy-top: var(--wave);
   --anatomy-shade-0: var(--pool);
@@ -1372,7 +1386,7 @@ button {
 }
 
 /* type drawn on the parts */
-:is(.sd-svg, .rp-svg) .kj {
+:is(.sd-svg, .rp-svg, .tc-svg) .kj {
   font-family: var(--f-seal);
   font-weight: 700;
 }
@@ -1385,7 +1399,7 @@ button {
   fill: var(--seal);
 }
 
-:is(.sd-svg, .rp-svg) .ui {
+:is(.sd-svg, .rp-svg, .tc-svg) .ui {
   font-family: var(--f-body);
   fill: color-mix(in srgb, var(--ink-2) 70%, var(--paper));
   letter-spacing: 0.04em;
@@ -1488,387 +1502,29 @@ button {
   .sd-svg .new-note { transition: none; }
 }
 
-/* ---------- chapter 4: pressed twice (a flow on the day paper) ---------- */
-.tw-chapter {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch; /* a wide frame, unlike the side-by-side chapters */
-  gap: var(--s-4);
-  padding-block: clamp(56px, 7vw, 112px);
-  background:
-    radial-gradient(circle at 1px 1px, var(--fiber) 1px, transparent 1.5px) 0 0 / 24px 24px,
-    var(--paper);
-}
+/* ---------- chapter 4: pressed twice (the second financier's counter) ----------
+   Layout, the caption list and the base drawing rules are shared with chapters 2 and 3 (.sc-*,
+   .sd-svg) above; these are chapter 4's own. */
 
-.tw-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: var(--s-4) clamp(32px, 6vw, 120px);
-  align-items: end;
-}
-
-.tw-head-title,
-.tw-head-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-}
-
-.tw-chapter .chapter-title {
-  font-size: clamp(36px, 5.4vw, 92px);
-  line-height: 0.98;
-}
-
-.tw-chapter .chapter-lede {
-  max-width: 46ch;
-}
-
-.tw-stage {
-  position: relative;
-}
-
-.tw-flowart {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  overflow: visible;
-}
-
-/* wires */
-.tw-wire {
-  fill: none;
-  stroke: var(--fiber);
-  stroke-width: 3;
-  stroke-linecap: round;
-  transition: stroke 400ms var(--ease-inout);
-}
-
-.tw-wire.is-read {
-  stroke-dasharray: 2 8;
-}
-
-.tw-wire.is-live {
-  stroke: var(--ink-2);
-}
-
-.tw-flowdot {
-  fill: var(--seal);
-}
-
-/* stations */
-.tw-st {
-  opacity: 0.45;
-  transition: opacity var(--dur-fade) var(--ease-glide);
-}
-
-.tw-st.is-run,
-.tw-st.is-done,
-.tw-st.is-stop {
-  opacity: 1;
-}
-
-.tw-halo {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 2;
-}
-
-.tw-st.is-run .tw-halo {
-  stroke: var(--seal);
-  stroke-dasharray: 10 8;
-  animation: tw-march 600ms linear infinite;
-}
-
-@keyframes tw-march {
-  to {
-    stroke-dashoffset: -18;
-  }
-}
-
-.tw-draw {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.tw-st-label {
-  fill: var(--head);
-  font-family: var(--f-body);
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.tw-st-out {
-  fill: var(--seal);
-  font-family: var(--f-mono);
-  font-size: 12.5px;
-}
-
-.tw-check {
-  opacity: 0;
-  transition: opacity var(--dur-fade) var(--ease-glide);
-}
-
-.tw-st.is-done .tw-check {
-  opacity: 1;
-}
-
-.tw-check-dot {
-  fill: var(--head);
-}
-
-.tw-check-tick {
-  fill: none;
-  stroke: var(--sheet);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* the drawings */
-.tw-paper {
-  fill: var(--sheet);
-  stroke: var(--head);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 6px 8px rgba(70, 29, 58, .12));
-}
-
-.tw-rule {
-  fill: none;
-  stroke: var(--fiber);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.tw-seal,
-.tw-seal-fine {
-  fill: none;
-  stroke: var(--seal);
-}
-
-.tw-seal {
-  stroke-width: 3;
-}
-
-.tw-seal-fine {
-  stroke-width: 1;
-}
-
-.tw-seal-kanji {
-  fill: var(--seal);
-  font-family: var(--f-seal);
-  font-weight: 800;
-  font-size: 14px;
-}
-
-.tw-mono-s {
-  fill: var(--ink);
-  font-family: var(--f-mono);
-  font-size: 12px;
-}
-
-/* board rows: light mono on the dark board */
-.tw-mono-xs {
-  fill: var(--mist);
-  font-family: var(--f-mono);
-  font-size: 9.5px;
-}
-
-.tw-mono-s.is-ours {
-  fill: var(--sheet);
-}
-
-.tw-sign {
-  fill: none;
-  stroke: var(--seal);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-.tw-slip-to {
-  fill: var(--ink-2);
-  font-family: var(--f-body);
-  font-size: 12px;
-}
-
-.tw-slip-mark {
-  fill: var(--seal);
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: 24px;
-}
-
-.tw-board {
-  fill: var(--head);
-}
-
-.tw-board-title {
-  fill: var(--sheet);
-  font-family: var(--f-seal);
-  font-weight: 800;
-  font-size: 13px;
-}
-
-.tw-row {
-  fill: var(--pool-2);
-}
-
-.tw-row.is-ours {
-  fill: none;
-  stroke: var(--mist);
-  stroke-dasharray: 3 4;
-}
-
-.is-registered .tw-row.is-ours {
-  fill: var(--wave);
-  stroke: none;
-}
-
-.is-caught .tw-row.is-ours {
-  fill: var(--seal);
-}
-
-.tw-row.is-look {
-  fill: var(--sheet);
-  stroke: var(--head);
-  stroke-width: 1.5;
-}
-
-.tw-lens {
-  fill: rgba(196, 199, 242, .35);
-  stroke: var(--head);
-  stroke-width: 4;
-}
-
-.tw-lens-handle {
-  stroke: var(--head);
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-
-.tw-cmp-key {
-  fill: var(--ink-2);
-  font-family: var(--f-body);
-  font-size: 11px;
-}
-
-.tw-eq {
-  fill: var(--head);
-  font-family: var(--f-body);
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.tw-neq {
-  fill: var(--seal);
-  font-family: var(--f-body);
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.tw-roof {
-  fill: var(--head);
-}
-
-.tw-wall {
-  fill: var(--sheet);
-  stroke: var(--head);
-  stroke-width: 2;
-}
-
-.tw-col {
-  fill: var(--paper);
-  stroke: var(--head);
-  stroke-width: 1.4;
-}
-
-.tw-doorway {
-  fill: var(--head);
-}
-
-.tw-shutter {
-  fill: var(--mist);
-  stroke: var(--ink-2);
-  stroke-width: 1;
-}
-
-.tw-step {
-  fill: var(--fiber);
-}
-
-.tw-stamp {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.tw-stamp-box {
-  fill: var(--sheet);
-  stroke: var(--seal);
-  stroke-width: 4;
-}
-
-.tw-stamp-jp {
-  fill: var(--seal);
-  font-family: var(--f-seal);
-  font-weight: 800;
-  font-size: 18px;
-}
-
-.tw-stamp-en {
-  fill: var(--seal);
-  font-family: var(--f-body);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
-.tw-ok {
-  fill: var(--head);
-}
-
-.tw-ok-tick {
-  fill: none;
-  stroke: var(--sheet);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.tw-st.is-stop .tw-st-label {
-  fill: var(--seal);
-}
-
-/* under the flow: the log beside the proof */
-.tw-below {
-  margin-top: var(--s-4);
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
-  gap: var(--s-4) clamp(24px, 4vw, 64px);
-  align-items: start;
+/* the caption list: the log of real calls beside the proof */
+.tw-readout {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-areas: "log proof" "controls controls";
 }
 
 .tw-log-wrap {
+  grid-area: log;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-}
-
-.tw-log-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2) var(--s-3);
-}
-
-.tw-exec:disabled {
-  opacity: 0.55;
-  cursor: default;
+  min-width: 0;
 }
 
 .tw-run-status {
+  margin: 0;
+  min-height: 3em;
   font-size: var(--t-ui);
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
 .tw-log {
@@ -1882,34 +1538,55 @@ button {
 
 .tw-log-line {
   display: grid;
-  grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1.4fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: var(--s-2);
-  padding: 8px 0;
+  gap: 2px var(--s-2);
+  padding: 6px 0;
   border-bottom: 1px solid var(--fiber);
-  font-size: var(--t-ui);
+  font-size: var(--t-data);
   color: var(--ink);
 }
 
 .tw-log-st {
+  font-size: var(--t-ui);
   font-weight: 600;
   color: var(--head);
 }
 
-.tw-log-ms {
-  color: var(--seal);
+/* a step not run yet this round: dimmed, its time a dash */
+.tw-log-line > * {
+  transition: opacity var(--dur-fade) var(--ease-glide);
 }
 
+.tw-log-line:not(.is-done) > * {
+  opacity: 0.45;
+}
+
+.tw-log-ms {
+  justify-self: end;
+  text-align: right;
+  color: var(--seal);
+  white-space: nowrap;
+}
+
+.tw-log-text {
+  color: var(--ink-2);
+}
+
+.tw-log-out {
+  justify-self: end;
+  text-align: right;
+  color: var(--seal);
+  white-space: nowrap;
+}
+
+/* the proof: in the caption list, under its own rule, once the round has it */
 .tw-proof {
-  position: relative;
-  padding: var(--s-4);
-  background: var(--sheet);
-  color: var(--ink);
-  filter: var(--lift-drop);
-  rotate: -1.2deg;
+  grid-area: proof;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
+  min-width: 0;
   opacity: 0;
   visibility: hidden;
 }
@@ -1920,6 +1597,7 @@ button {
 }
 
 .tw-proof-head {
+  margin: 0;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1931,7 +1609,7 @@ button {
 .tw-proof-title {
   font-family: var(--f-display);
   font-weight: 700;
-  font-size: clamp(18px, 1.5vw, 24px);
+  font-size: clamp(17px, 1.3vw, 22px);
   color: var(--head);
 }
 
@@ -1947,7 +1625,7 @@ button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: var(--s-3);
-  row-gap: 8px;
+  row-gap: 6px;
   font-size: var(--t-data);
 }
 
@@ -1971,34 +1649,168 @@ button {
   font-weight: 600;
 }
 
-.is-waiting .tw-flowart {
-  opacity: 0;
-}
-
-@media (max-width: 1023px) {
-  .tw-head,
-  .tw-below {
+@media (max-width: 719px) {
+  .tw-readout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-}
-
-/* between phone and desk the wide flow scrolls inside its own frame; phones get the tall flow */
-@media (min-width: 701px) and (max-width: 899px) {
-  .tw-stage {
-    overflow-x: auto;
-  }
-
-  .tw-flowart {
-    min-width: 860px;
+    grid-template-areas: "log" "proof" "controls";
   }
 }
 
-@media (max-width: 700px) {
-  .tw-flowart {
-    max-width: 460px;
-    margin-inline: auto;
-  }
+/* The counter's drawing (figures/second-counter.svg, built by
+   scripts/figures/second-counter.build.mjs, moved by figures/second-counter.ts): the kit's
+   --anatomy-* tones mapped onto DS-PAL. The whole figure is the button. */
+.tc-svg { cursor: pointer; }
+.tc-svg:focus-visible { outline: 1px dashed var(--seal); outline-offset: 4px; }
+
+.tc-svg .m-page {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--fiber) 70%, var(--sheet));
+  --anatomy-shade-1: color-mix(in srgb, var(--fiber) 50%, var(--sheet));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 30%, var(--sheet));
+  --anatomy-shade-3: var(--paper);
+  --anatomy-faint: color-mix(in srgb, var(--fold) 35%, var(--sheet));
+}
+
+.tc-svg .m-cover {
+  --anatomy-paper: var(--ink-2);
+  --anatomy-top: color-mix(in srgb, var(--ink-2) 70%, var(--fold));
+  --anatomy-shade-0: var(--ink);
+  --anatomy-shade-1: color-mix(in srgb, var(--ink) 50%, var(--ink-2));
+  --anatomy-shade-2: var(--ink-2);
+  --anatomy-shade-3: color-mix(in srgb, var(--ink-2) 78%, var(--fold));
+  --anatomy-hi: var(--ink);
+  --anatomy-mid: var(--ink);
+  --anatomy-lo: color-mix(in srgb, var(--fold) 50%, var(--ink-2));
+  --anatomy-faint: color-mix(in srgb, var(--fold) 60%, var(--ink-2));
+  --anatomy-dot: var(--fiber);
+}
+
+.tc-svg .m-stand {
+  --anatomy-top: color-mix(in srgb, var(--fiber) 30%, var(--sheet));
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 34%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fold) 18%, var(--fiber));
+  --anatomy-shade-2: color-mix(in srgb, var(--fiber) 70%, var(--sheet));
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 45%, var(--sheet));
+}
+
+.tc-svg .m-booth {
+  --anatomy-top: var(--sheet);
+  --anatomy-shade-0: color-mix(in srgb, var(--fold) 30%, var(--fiber));
+  --anatomy-shade-1: color-mix(in srgb, var(--fiber) 80%, var(--fold));
+  --anatomy-shade-2: var(--fiber);
+  --anatomy-shade-3: color-mix(in srgb, var(--fiber) 55%, var(--sheet));
+  --anatomy-mid: color-mix(in srgb, var(--ink-2) 62%, var(--paper));
+}
+
+.tc-svg .m-reader,
+.tc-svg .m-printer {
+  --anatomy-top: var(--sheet);
+}
+
+.tc-svg .m-key {
+  --anatomy-paper: var(--fiber);
+  --anatomy-top: color-mix(in srgb, var(--fiber) 60%, var(--sheet));
+  --anatomy-shade-0: var(--fold);
+  --anatomy-shade-1: color-mix(in srgb, var(--fold) 60%, var(--fiber));
+  --anatomy-shade-2: var(--fiber);
+  --anatomy-shade-3: var(--fiber);
+}
+
+.tc-svg .m-coin {
+  --anatomy-paper: var(--wave);
+  --anatomy-top: var(--wave);
+  --anatomy-shade-0: var(--pool);
+  --anatomy-shade-1: var(--pool-2);
+  --anatomy-shade-2: var(--wave);
+  --anatomy-shade-3: color-mix(in srgb, var(--wave) 80%, var(--mist));
+  --anatomy-hi: var(--pool);
+  --anatomy-mid: var(--mist);
+  --anatomy-faint: color-mix(in srgb, var(--glint) 60%, var(--wave));
+}
+
+.tc-svg .iso-wire-end { fill: var(--anatomy-paper); stroke: var(--anatomy-mid); stroke-width: var(--anatomy-weight); }
+.tc-svg .coin-ring { stroke: var(--glint); }
+
+/* B's counter: the Zcash drawer, the shutter, the 重 lamp */
+.tc-svg .hop-wall { fill: var(--pool-2); }
+.tc-svg .hop-deep { fill: var(--pool); }
+.tc-svg .v-plate { fill: var(--pool); stroke: color-mix(in srgb, var(--mist) 60%, var(--pool-2)); stroke-width: 0.5px; }
+.tc-svg .v-label { fill: var(--mist); font-weight: 500; letter-spacing: 0.1em; }
+.tc-svg .booth-shade { fill: var(--ink-2); opacity: 0.07; }
+.tc-svg .curtain { fill: color-mix(in srgb, var(--fiber) 70%, var(--sheet)); stroke: color-mix(in srgb, var(--ink-2) 50%, var(--paper)); stroke-width: 0.5px; }
+.tc-svg .tray-well { fill: color-mix(in srgb, var(--fiber) 60%, var(--sheet)); stroke: color-mix(in srgb, var(--fold) 60%, var(--paper)); stroke-width: 0.5px; }
+.tc-svg .lamp-glow { fill: var(--seal); opacity: 0; transition: opacity 0.35s var(--ease-glide); }
+.tc-svg .lamp-face { fill: color-mix(in srgb, var(--fiber) 75%, var(--sheet)); transition: fill 0.3s var(--ease-glide); }
+.tc-svg .lamp-k { fill: color-mix(in srgb, var(--fold) 70%, var(--fiber)); transition: fill 0.3s var(--ease-glide); }
+.tc-svg .lamp-shine { fill: var(--sheet); opacity: 0.55; }
+.tc-svg .lamp.on .lamp-glow { opacity: 0.2; }
+.tc-svg .lamp.on .lamp-face { fill: var(--seal); }
+.tc-svg .lamp.on .lamp-k { fill: var(--fiber); }
+.tc-svg .lamp.on .lamp-shine { opacity: 0.3; }
+
+/* plates, slots, the reader's screen, the lamps on the head and the printer */
+.tc-svg .slot { fill: var(--ink); }
+.tc-svg .plate-face,
+.tc-svg .bezel { fill: color-mix(in srgb, var(--fiber) 65%, var(--sheet)); stroke: color-mix(in srgb, var(--ink-2) 50%, var(--paper)); stroke-width: 0.5px; }
+.tc-svg .plate-text { fill: var(--ink-2); letter-spacing: 0.16em; }
+.tc-svg .plate-b { fill: var(--ink); font-weight: 600; }
+.tc-svg .screen { fill: var(--ink); }
+.tc-svg .scr-label { fill: color-mix(in srgb, var(--fold) 75%, var(--ink)); letter-spacing: 0.14em; }
+.tc-svg .scr-n { fill: var(--fiber); font-weight: 500; }
+.tc-svg .scr-v { fill: var(--fiber); font-weight: 600; letter-spacing: 0.12em; opacity: 0; transition: opacity 0.25s var(--ease-glide); }
+.tc-svg .scr-v.on { opacity: 1; }
+.tc-svg .head-led,
+.tc-svg .pled { fill: color-mix(in srgb, var(--mist) 55%, var(--paper)); stroke: color-mix(in srgb, var(--ink-2) 60%, var(--paper)); stroke-width: 0.5px; transition: fill 0.2s var(--ease-glide); }
+.tc-svg .head-led.on,
+.tc-svg .pled.on { fill: var(--fold); }
+.tc-svg .beam { fill: var(--fold); opacity: 0.16; }
+.tc-svg .scan { fill: none; stroke: var(--fold); stroke-width: 1.1px; stroke-linecap: round; }
+.tc-svg .pulse { fill: var(--ink-2); }
+.tc-svg .pulse-halo { fill: var(--fold); }
+
+/* the offer and Exhibit A */
+.tc-svg .inv-title { fill: var(--ink-2); }
+.tc-svg .inv-id { fill: var(--ink); font-weight: 600; }
+.tc-svg .inv-label { fill: color-mix(in srgb, var(--fold) 80%, var(--ink-2)); letter-spacing: 0.1em; }
+.tc-svg .inv-val { fill: var(--ink); }
+.tc-svg .inv-val.small { fill: color-mix(in srgb, var(--ink-2) 70%, var(--paper)); }
+.tc-svg .hanko-ring { fill: none; stroke: var(--seal); stroke-width: 1px; }
+.tc-svg .hanko-ring.thin { stroke-width: 0.5px; }
+.tc-svg .hanko-k { fill: var(--seal); }
+.tc-svg .slip-title { fill: var(--ink); font-weight: 700; letter-spacing: 0.12em; }
+.tc-svg .slip-line { fill: var(--ink-2); }
+.tc-svg .slip-n { fill: var(--seal); font-weight: 600; }
+
+/* the public board: A's line is inked when A's entry is posted, then lights when B finds it */
+.tc-svg .board-head { fill: color-mix(in srgb, var(--fold) 85%, var(--ink-2)); letter-spacing: 0.2em; }
+.tc-svg .row-no { fill: color-mix(in srgb, var(--fold) 70%, var(--paper)); }
+.tc-svg .row-no.hot { fill: var(--seal); font-weight: 700; }
+.tc-svg .entry-n { fill: var(--ink-2); font-weight: 500; }
+.tc-svg .entry-n.old { fill: color-mix(in srgb, var(--ink-2) 65%, var(--sheet)); }
+.tc-svg .entry-n.red { fill: var(--seal); font-weight: 700; }
+.tc-svg .entry-reg { fill: var(--seal); }
+.tc-svg .entry-h { fill: color-mix(in srgb, var(--ink-2) 55%, var(--sheet)); }
+.tc-svg .entry-c { fill: var(--ink-2); font-weight: 500; }
+.tc-svg .entry-a { fill: color-mix(in srgb, var(--ink-2) 60%, var(--sheet)); transition: fill 0.25s var(--ease-glide); }
+.tc-svg .entry-row { opacity: 0; transition: opacity 0.4s linear; }
+.tc-svg .entry-row.on { opacity: 1; }
+.tc-svg .entry-row.found .entry-a { fill: var(--ink); font-weight: 600; }
+.tc-svg .row-hl { fill: var(--seal); opacity: 0; transition: opacity 0.35s var(--ease-glide); }
+.tc-svg .row-hl.on { opacity: 0.13; }
+.tc-svg .row-hl.soft.on { opacity: 0.07; }
+.tc-svg .ribbon { fill: var(--seal); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-svg .scr-v,
+  .tc-svg .head-led,
+  .tc-svg .pled,
+  .tc-svg .lamp-glow,
+  .tc-svg .lamp-face,
+  .tc-svg .lamp-k,
+  .tc-svg .entry-a,
+  .tc-svg .entry-row,
+  .tc-svg .row-hl,
+  .tw-log-line > * { transition: none; }
 }
 
 /* ---------- chapter 5: paid, and remembered (the buyer's ribbon) ---------- */

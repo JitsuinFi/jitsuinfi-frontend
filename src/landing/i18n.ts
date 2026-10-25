@@ -81,14 +81,20 @@ const D: Record<string, Entry> = {
   "fp.onBoard": { en: "already on the board · a second financing is refused", zh: "已在登记板上 · 第二次融资将被拒绝" },
   "fp.newN": { en: "new fingerprint · not on the board", zh: "新指纹 · 不在登记板上" },
   "fp.invalid": { en: "That invoice is not valid: {msg}", zh: "该发票无效：{msg}" },
-  "pr.core": { en: "core", zh: "核心" },
-  "pr.ridges": { en: "{n} ridges", zh: "{n} 条纹线" },
-  "pr.tilt": { en: "tilt {deg}", zh: "倾角 {deg}" },
-  "pr.rings": { en: "whorl", zh: "斗形纹" },
-  "pr.spiral": { en: "spiral whorl", zh: "螺旋斗形纹" },
-  "pr.loop": { en: "loop", zh: "箕形纹" },
-  "pr.byte": { en: "byte {b}", zh: "字节 {b}" },
-  "pr.bytes": { en: "bytes {b}", zh: "字节 {b}" },
+  "fp.st.feed": { en: "Lever down: {id} feeds into the press.", zh: "压杆按下：{id} 送入压印机。" },
+  "fp.st.hash": { en: "Hashing the whole invoice (BLAKE2b-256)…", zh: "正在对整张发票做哈希（BLAKE2b-256）……" },
+  "fp.st.print": { en: "N {n} goes on the public board; the paper drops into the shielded vault.", zh: "N {n} 印上公开登记板；纸质发票落入屏蔽金库。" },
+  // chapter 2, the registry press figure (labels drawn inside the SVG)
+  "fp.fig.aria": {
+    en: "A registry press. A paper invoice, TES-INV-0007, lies in a feed tray in front of it. Pulling the lever feeds it into the press, where a hashing drum turns; a print carriage then stamps the invoice’s short fingerprint N on the next ruled line of an open public board, and the paper invoice drops into the shielded vault under the board. Only N is public.",
+    zh: "一台登记压印机。纸质发票 TES-INV-0007 放在前方的进纸托盘里。拉下压杆，发票被送入压印机，哈希滚筒随之转动；随后打印滑架把发票的短指纹 N 印在公开登记簿的下一行，纸质发票则落入登记簿下方的屏蔽金库。公开的只有 N。",
+  },
+  "fp.fig.feed": { en: "FEED", zh: "进纸" },
+  "fp.fig.press": { en: "REGISTRY PRESS", zh: "登记压印机" },
+  "fp.fig.vault": { en: "SHIELDED VAULT", zh: "屏蔽金库" },
+  "fp.fig.board": { en: "PUBLIC BOARD", zh: "公开登记板" },
+  "fp.fig.lever": { en: "Pull the lever (P)", zh: "拉下压杆（P）" },
+  "fp.fig.hint": { en: "It plays by itself. Pull the lever (or key P) to take over.", zh: "它会自动播放。拉下压杆（或按 P 键）即可自己操作。" },
 
   // chapter 3
   "sc.kanji": { en: "連署 · Chapter 3", zh: "联署 · 第 3 章" },
@@ -262,21 +268,7 @@ export function t(key: string, params: Params = {}): string {
   return s;
 }
 
-/** Bound texts (the fingerprint print's callouts, drawn as DOM): element → slot → how to rewrite it. */
-const bound = new Map<Element, Map<string, () => void>>();
 const listeners = new Set<() => void>();
-const bind = (el: Element, slot: string, paint: () => void) => {
-  let slots = bound.get(el);
-  if (!slots) bound.set(el, (slots = new Map()));
-  slots.set(slot, paint);
-  paint();
-};
-
-/** Sets an element's text from a key now and on every switch. */
-export function tx<E extends Element>(el: E, key: string, params: Params = {}): E {
-  bind(el, "text", () => (el.textContent = t(key, params)));
-  return el;
-}
 
 /** Calls `f` on every switch, not now; returns the unsubscribe (for React components). */
 export function subscribeLang(f: () => void): () => void {
@@ -293,7 +285,6 @@ export function setLang(next: Lang): void {
     /* not remembered: fine */
   }
   document.documentElement.lang = next === "zh" ? "zh-Hans" : "en";
-  bound.forEach((slots, el) => (el.isConnected ? slots.forEach((paint) => paint()) : bound.delete(el)));
   listeners.forEach((f) => f());
 }
 

@@ -2,16 +2,19 @@
 // computed again in the browser by jitsuin-wasm (BLAKE2b-256 over the canonical invoice bytes,
 // personal string "JitsuinNullifier"). One zat more and N changes almost everywhere; put it back
 // and N is the same again, already on the board. Nothing leaves the page.
-// React since HNK-31.T4: the sheet, the texts and the board row are components and state; the 64
-// digits scramble by hand on their own nodes (React never rewrites them), and the illustrated
-// print stays the DOM view of print.ts.
+// React since HNK-31.T4: the sheet, the texts and the board row are components and state.
+// HNK-33.T3: the visual is the registry press, an isometric figure (figures/registry-press.svg,
+// built by scripts/figures/registry-press.build.mjs) moved by figures/registry-press.ts: a pull on
+// its lever feeds the invoice, hashes it and prints the real N on the public board.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { animate, stagger, svg as animeSvg } from "animejs";
+import { animate } from "animejs";
 import { inView } from "motion";
 import { dur, ease, sibling } from "./motion";
-import { createPrintView, type PrintView } from "./print";
+import { getLang } from "./i18n";
 import { useT } from "./use-lang";
 import { loadWasm } from "./wasm";
+import { mountRegistryPress, type PressPhase, type RegistryPress } from "./figures/registry-press";
+import pressSvg from "./figures/registry-press.svg?raw";
 
 /// The hero invoice (scripts/landing-keys.mjs): test keys from TES- labels; the buyer key is index 7 of a TES- master.
 const BASE = {
@@ -30,40 +33,31 @@ const fn = (f: (t: number) => number) => () => f;
 const short = (h: string) => `${h.slice(0, 4)}…${h.slice(-4)}`;
 const days = (iso: string) => Math.floor(Date.parse(iso + "T00:00:00Z") / 86_400_000);
 const iso = (d: number) => new Date(d * 86_400_000).toISOString().slice(0, 10);
-const HEX = "0123456789abcdef";
-const boardShort = (n: string) => `${n.slice(0, 8)}…${n.slice(-6)}`;
+const zat = (n: number) => n.toLocaleString("en-US");
+/** Keys of the texts and aria labels drawn inside the registry press. */
+const FIG_KEYS = ["fp.fig.aria", "fp.fig.feed", "fp.fig.press", "fp.fig.vault", "fp.fig.board", "fp.fig.lever", "doc.amount", "doc.due", "doc.terms"];
 
 type Said = { key: string; params?: Record<string, string | number> };
 
 export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
   const t = useT();
+  const lang = getLang();
   const [changed, setChanged] = useState<Said>({ key: "fp.asRegistered" });
   const [shown, setShown] = useState(ON_BOARD);
+  const [phase, setPhase] = useState<{ p: Exclude<PressPhase, "done">; n: string } | null>(null);
   const [waiting, setWaiting] = useState(!reduced);
 
   const sec = useRef<HTMLElement>(null);
   const heads = useRef<(HTMLElement | null)[]>([]);
-  const sheet = useRef<HTMLFormElement>(null);
+  const figHost = useRef<HTMLDivElement>(null);
+  const readout = useRef<HTMLDivElement>(null);
+  const fig = useRef<RegistryPress | null>(null);
   const amount = useRef<HTMLInputElement>(null);
   const due = useRef<HTMLInputElement>(null);
-  const paths = useRef<(SVGPathElement | null)[]>([]);
-  const pulse = useRef<SVGCircleElement>(null);
-  const hashMark = useRef<HTMLDivElement>(null);
-  const out = useRef<HTMLDivElement>(null);
-  const printBox = useRef<HTMLDivElement>(null);
-  const print = useRef<PrintView | null>(null);
-  const digits = useRef<(HTMLSpanElement | null)[]>([]);
   const current = useRef(ON_BOARD);
   const pending = useRef(0);
-
-  // N drawn as an illustrated fingerprint, with callouts for the bytes that shape it
-  useEffect(() => {
-    const p = createPrintView();
-    print.current = p;
-    printBox.current!.append(p.el);
-    p.set(ON_BOARD, false);
-    return () => p.el.remove();
-  }, []);
+  const pressing = useRef("");
+  const busy = useRef(false);
 
   // ---------- computing N ----------
   const show = (n: string, from: string) => {
@@ -71,89 +65,162 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
     setShown(n);
     if (n === ON_BOARD) setChanged({ key: diff ? "fp.changedBack" : "fp.asRegistered", params: { d: diff } });
     else setChanged({ key: "fp.changed", params: { d: diff } });
-    print.current!.set(n, !reduced);
-    const ds = digits.current as HTMLSpanElement[];
-    if (reduced) {
-      ds.forEach((d, i) => (d.textContent = n[i]));
-      return;
-    }
-    // each changed digit cycles 3-6 glyphs over 400ms, left to right, 20ms apart
-    const clock = { t: 0 };
-    const total = dur.enter + 64 * 20;
-    ds.forEach((d, i) => d.classList.toggle("is-hot", n[i] !== from[i]));
-    animate(clock, {
-      t: total,
-      duration: total,
-      ease: "linear",
-      onUpdate: () =>
-        ds.forEach((d, i) => {
-          if (n[i] === from[i]) return;
-          const k = (clock.t - i * 20) / dur.enter;
-          if (k <= 0) return;
-          if (k >= 1) {
-            d.textContent = n[i];
-            d.classList.remove("is-hot");
-            return;
-          }
-          d.textContent = HEX[(i * 7 + Math.floor(k * (3 + (i % 4))) * 5) % 16];
-        }),
-      onComplete: () => ds.forEach((d, i) => ((d.textContent = n[i]), d.classList.remove("is-hot"))),
-    });
-    // a pulse runs each thread into the press
-    paths.current.forEach((path, i) => {
-      const len = path!.getTotalLength();
-      const q = { t: 0 };
-      animate(q, {
-        t: 1,
-        duration: dur.enter + 200,
-        delay: sibling(i),
-        ease: fn(ease.softInOut),
-        onUpdate: () => {
-          if (i !== 2) return; // one visible pulse; the threads themselves light
-          const pt = path!.getPointAtLength(len * q.t);
-          pulse.current!.setAttribute("cx", pt.x.toFixed(1));
-          pulse.current!.setAttribute("cy", pt.y.toFixed(1));
-          pulse.current!.setAttribute("opacity", q.t < 0.98 ? "1" : "0");
-        },
-      });
-      path!.classList.add("is-lit");
-      setTimeout(() => path!.classList.remove("is-lit"), dur.enter + 400 + sibling(i));
-    });
-    animate(hashMark.current!, { scale: [1, 1.06, 1], duration: dur.seal + dur.press, delay: 300, ease: fn(ease.snapSettle) });
   };
 
-  const recompute = async () => {
-    const ticket = ++pending.current;
+  /** The invoice as the sheet has it now; the press's paper shows the same amount and due date. */
+  const fields = () => {
     const amt = Math.max(1, Math.floor(Number(amount.current!.value) || 0));
     const dueDays = due.current!.value ? days(due.current!.value) : BASE.due_date;
+    fig.current?.editAmount(zat(amt), amt !== BASE.amount_zat);
+    fig.current?.editDue(iso(dueDays), dueDays !== BASE.due_date);
+    return { ...BASE, amount_zat: amt, due_date: dueDays };
+  };
+
+  /** N of the sheet's invoice, from jitsuin-wasm; null when a newer edit came in or it is not valid. */
+  const recompute = async (): Promise<string | null> => {
+    const ticket = ++pending.current;
+    const inv = fields();
     try {
       const w = await loadWasm();
-      if (ticket !== pending.current) return;
-      const code = w.invoiceEncode(JSON.stringify({ ...BASE, amount_zat: amt, due_date: dueDays }));
-      const n = w.invoiceNullifier(code);
-      if (n === current.current) return;
-      const from = current.current;
-      current.current = n;
-      show(n, from);
+      if (ticket !== pending.current) return null;
+      const n = w.invoiceNullifier(w.invoiceEncode(JSON.stringify(inv)));
+      if (n !== current.current) {
+        const from = current.current;
+        current.current = n;
+        show(n, from);
+      }
+      return n;
     } catch (e) {
       setChanged({ key: "fp.invalid", params: { msg: (e as Error).message } });
+      return null;
     }
   };
   const step = (by: number) => {
     const a = amount.current!;
     a.value = String(by < 0 ? Math.max(1, Number(a.value) - 1) : Number(a.value) + 1);
-    void recompute();
+    return recompute();
   };
-  const reset = () => {
+  const backToBase = () => {
     amount.current!.value = String(BASE.amount_zat);
     due.current!.value = iso(BASE.due_date);
-    void recompute();
+    return recompute();
   };
+
+  // ---------- the press ----------
+  /** The lever: the sheet's invoice goes through the press and its real N is printed on the board. */
+  const pressLever = async () => {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      const n = await recompute();
+      if (!n || !fig.current) return;
+      pressing.current = short(n);
+      await fig.current.press(short(n));
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  // The press plays by itself and loops while the chapter is in view (as chapter 3): the registered
+  // invoice is pressed, its N printed; one zat is added and it is pressed again, a different N
+  // printed; then it starts over. Every N is the real one from jitsuin-wasm. The visitor's first
+  // pull, key or control stops the loop for good and hands the press over. Reduced motion plays
+  // one round, straight to the end state.
+  const user = useRef(false);
+  const visible = useRef(false);
+  const looping = useRef(false);
+  const roundDone = useRef(false);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** Waits ms, then on while the chapter is off screen. */
+  const hold = async (ms: number) => {
+    await wait(ms);
+    while (!visible.current && !user.current) await wait(400);
+  };
+  const takeOver = () => {
+    user.current = true;
+  };
+  const resetAll = async () => {
+    fig.current?.reset();
+    roundDone.current = false;
+    await backToBase();
+  };
+  const playRound = async (stop: () => boolean) => {
+    await pressLever();
+    if (stop()) return;
+    if (!reduced) await hold(3000);
+    if (stop()) return;
+    await step(1); // change one zat
+    if (!reduced) await hold(900);
+    if (stop()) return;
+    await pressLever();
+    roundDone.current = true;
+  };
+  const loop = async () => {
+    if (looping.current) return;
+    looping.current = true;
+    try {
+      if (reduced) {
+        await playRound(() => user.current);
+        return;
+      }
+      while (!user.current) {
+        if (!visible.current) {
+          await wait(400);
+          continue;
+        }
+        if (roundDone.current) {
+          await hold(3000); // hold the second print, then the next round
+          if (user.current) break;
+          await resetAll();
+          await wait(700);
+          if (user.current) break;
+        }
+        await playRound(() => user.current);
+      }
+    } finally {
+      looping.current = false;
+    }
+  };
+
+  // the visitor's hand: each control takes over first
+  const pull = () => {
+    takeOver();
+    void pressLever();
+  };
+  const onPress = useRef(pull);
+  onPress.current = pull;
+
+  // the figure: inserted once, moved by its controller
+  useEffect(() => {
+    const host = figHost.current!;
+    host.innerHTML = pressSvg;
+    const f = mountRegistryPress(host.querySelector("svg")!, {
+      reduced,
+      onPress: () => onPress.current(),
+      onPhase: (p) => setPhase(p === "done" ? null : { p, n: pressing.current }),
+    });
+    fig.current = f;
+    fields(); // the paper shows the sheet's amount and due date
+    return () => {
+      f.destroy();
+      fig.current = null;
+      host.replaceChildren();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced]);
+
+  // its small labels follow EN/中文
+  useEffect(() => {
+    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])));
+  }, [lang, reduced, t]);
 
   // the due date counts on "change" (a picked date), as before; React's onChange is every input
   useEffect(() => {
     const d = due.current!;
-    const on = () => void recompute();
+    const on = () => {
+      takeOver();
+      void recompute();
+    };
     d.addEventListener("change", on);
     return () => d.removeEventListener("change", on);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,10 +235,14 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
           void loadWasm();
           io.disconnect();
         }
+        if (reduced && e.isIntersecting) void loop();
       },
       { rootMargin: "600px 0px" },
     );
     io.observe(sec.current!);
+    // the loop pauses while the chapter is off screen
+    const seen = new IntersectionObserver(([e]) => void (visible.current = e.isIntersecting), { threshold: 0.15 });
+    seen.observe(sec.current!);
     const stop = reduced
       ? () => undefined
       : inView(
@@ -181,29 +252,27 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
             heads.current.forEach((x, i) =>
               animate(x!, { y: { from: 16, to: 0 }, filter: { from: "blur(8px)", to: "blur(0px)" }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: sibling(i), ease: fn(ease.softLand) }),
             );
-            animate(sheet.current!, { y: { from: 24, to: 0 }, rotate: { from: -2, to: -0.8 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
-            const drawn = animeSvg.createDrawable(paths.current as SVGPathElement[]);
-            animate(drawn, { draw: ["0 0", "0 1"], duration: dur.ripple, delay: stagger(67, { start: 300 }), ease: fn(ease.softInOut) });
-            animate(hashMark.current!, { scale: { from: 0.6, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay: 700, ease: fn(ease.snapSettle) });
-            // the print draws itself in
-            setTimeout(() => print.current!.set(current.current, true), 900); // the N on the sheet now, which may already be edited
-            animate(out.current!, { opacity: { from: 0, to: 1 }, y: { from: 12, to: 0 }, duration: dur.enter, delay: 900, ease: fn(ease.softLand) });
+            animate(figHost.current!, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
+            animate(readout.current!, { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
+            setTimeout(() => void loop(), dur.enter + 700);
           },
-          { amount: 0.3 },
+          { amount: 0.25 },
         );
     return () => {
       io.disconnect();
+      seen.disconnect();
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fixed = (k: string, v: string) => (
-    <div className="fp-row">
-      <span className="fp-key">{t(k)}</span>
-      <span className="fp-val data">{v}</span>
-    </div>
-  );
+  const fixed = (k: string, v: string) => [
+    <dt key={`k${k}`}>{t(k)}</dt>,
+    <dd key={`v${k}`} className="data">
+      {v}
+    </dd>,
+  ];
+  const status = phase ? t(`fp.st.${phase.p}`, { id: BASE.invoice_id, n: phase.n }) : t(changed.key, changed.params);
 
   return (
     <section className={`chapter fp-chapter${waiting ? " is-waiting" : ""}`} id="story" aria-labelledby="fp-title" ref={sec}>
@@ -222,79 +291,79 @@ export function Fingerprint({ reduced }: { reduced: boolean }): ReactNode {
           {t("fp.note")}
         </p>
       </div>
-      {/* the visual: the invoice sheet, the press, the fingerprint */}
       <div className="fp-visual">
-        <form className="fp-sheet" aria-label={t("fp.sheet")} onSubmit={(e) => e.preventDefault()} ref={sheet}>
-          <div className="fp-sheet-head">
-            <span className="fp-sheet-title">{t("doc.invoice")}</span>
-            <span className="fp-sheet-no data">{BASE.invoice_id}</span>
-          </div>
-          <div className="fp-rows">
-            {fixed("doc.supplier", short(BASE.supplier_pk))}
-            {fixed("doc.buyer", short(BASE.buyer_pk))}
-            {/* editable: amount (zat) with one-zat steps, and the due date */}
-            <div className="fp-row fp-edit">
-              <label className="fp-key" htmlFor="fp-amount">
-                {t("doc.amountZat")}
-              </label>
-              <span className="fp-val fp-amount">
-                <button className="fp-step" type="button" aria-label={t("fp.less")} onClick={() => step(-1)}>
+        {/* the registry press: feed tray, press, the public board over the shielded vault */}
+        <div className="fp-figure" ref={figHost} />
+        <div className="fp-readout" ref={readout}>
+          {/* the invoice the press takes: its fields, two of them editable */}
+          <form className="fp-invoice" aria-label={t("fp.sheet")} onSubmit={(e) => e.preventDefault()}>
+            <p className="fp-head">
+              <span className="fp-title">{t("doc.invoice")}</span>
+              <span className="fp-no data">{BASE.invoice_id}</span>
+            </p>
+            <dl className="fp-rows">
+              {fixed("doc.supplier", short(BASE.supplier_pk))}
+              {fixed("doc.buyer", short(BASE.buyer_pk))}
+              <dt className="fp-edit">
+                <label htmlFor="fp-amount">{t("doc.amountZat")}</label>
+              </dt>
+              <dd className="fp-amount">
+                <button className="fp-step" type="button" aria-label={t("fp.less")} onClick={() => (takeOver(), void step(-1))}>
                   −1
                 </button>
-                <input className="fp-input data" id="fp-amount" type="number" min="1" step="1" inputMode="numeric" defaultValue={String(BASE.amount_zat)} ref={amount} onInput={() => void recompute()} />
-                <button className="fp-step" type="button" aria-label={t("fp.more")} onClick={() => step(1)}>
+                <input
+                  className="fp-input data"
+                  id="fp-amount"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  defaultValue={String(BASE.amount_zat)}
+                  ref={amount}
+                  onInput={() => (takeOver(), void recompute())}
+                />
+                <button className="fp-step" type="button" aria-label={t("fp.more")} onClick={() => (takeOver(), void step(1))}>
                   +1
                 </button>
-              </span>
-            </div>
-            <div className="fp-row fp-edit">
-              <label className="fp-key" htmlFor="fp-due">
-                {t("doc.due")}
-              </label>
-              <span className="fp-val">
+              </dd>
+              <dt className="fp-edit">
+                <label htmlFor="fp-due">{t("doc.due")}</label>
+              </dt>
+              <dd>
                 <input className="fp-input fp-date data" id="fp-due" type="date" defaultValue={iso(BASE.due_date)} ref={due} />
-              </span>
-            </div>
-            {fixed("doc.terms", short(BASE.terms_hash))}
+              </dd>
+              {fixed("doc.terms", short(BASE.terms_hash))}
+            </dl>
+            <button className="fp-reset ink-link" type="button" onClick={() => (takeOver(), void backToBase())}>
+              {t("fp.reset")}
+            </button>
+          </form>
+          {/* its fingerprint: all 64 digits (the ones that differ from the board's N marked), the board, the press */}
+          <div className="fp-result">
+            <p className="fp-n-label">{t("doc.fingerprint")}</p>
+            <p className="fp-n data">
+              {[0, 1, 2, 3].map((r) => (
+                <span className="fp-n-line" key={r} aria-hidden="true">
+                  {[...shown.slice(r * 16, r * 16 + 16)].map((ch, c) => (
+                    <span key={c} className={ch !== ON_BOARD[r * 16 + c] ? "is-diff" : undefined}>
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+              ))}
+              <span className="sr-only">{`N ${shown}`}</span>
+            </p>
+            <p className={`fp-board${shown !== ON_BOARD ? " is-new" : ""}`}>
+              <span className="fp-board-tag">登記簿</span>
+              <span className="fp-board-n data">{`N ${short(shown)}`}</span>
+              <span className="fp-board-st">{t(shown === ON_BOARD ? "fp.onBoard" : "fp.newN")}</span>
+            </p>
+            <p className="fp-status" role="status" aria-live="polite">
+              {status}
+            </p>
           </div>
-          <button className="fp-reset ink-link" type="button" onClick={reset}>
-            {t("fp.reset")}
-          </button>
-        </form>
-        {/* the press: threads from the fields into the hash, then out to N */}
-        <div className="fp-press" aria-hidden="true">
-          <svg className="fp-threads" viewBox="0 0 200 300" preserveAspectRatio="none">
-            {[0, 1, 2, 3, 4, 5].map((i) => {
-              const y = 40 + i * 44;
-              return <path key={i} d={`M0 ${y} C 90 ${y}, 90 150, 200 150`} className="fp-thread" ref={(e) => void (paths.current[i] = e)} />;
-            })}
-            <circle r={4.5} className="fp-pulse" cx={-10} cy={-10} opacity={0} ref={pulse} />
-          </svg>
-          <div className="fp-hash" ref={hashMark}>
-            <span className="fp-hash-name">BLAKE2b-256</span>
-            <span className="fp-hash-key data">“JitsuinNullifier”</span>
-          </div>
-        </div>
-        <div className="fp-out" ref={out}>
-          <p className="fp-out-label">{t("doc.fingerprint")}</p>
-          <div className="fp-print-box" ref={printBox} />
-          <div className="fp-grid data" role="status" aria-live="polite">
-            {[0, 1, 2, 3].map((r) => (
-              <span className="fp-line" key={r}>
-                {Array.from({ length: 16 }, (_, c) => (
-                  <span className="fp-digit" key={c} ref={(e) => void (digits.current[r * 16 + c] = e)}>
-                    {ON_BOARD[r * 16 + c]}
-                  </span>
-                ))}
-              </span>
-            ))}
-            <span className="sr-only">{`N ${shown}`}</span>
-          </div>
-          <p className="fp-changed">{t(changed.key, changed.params)}</p>
-          <div className={`fp-board${shown !== ON_BOARD ? " is-new" : ""}`}>
-            <span className="fp-board-tag">登記簿</span>
-            <span className="fp-board-n data">{boardShort(shown)}</span>
-            <span className="fp-board-st">{t(shown === ON_BOARD ? "fp.onBoard" : "fp.newN")}</span>
+          <div className="fp-controls">
+            <p className="fp-hint">{t("fp.fig.hint")}</p>
           </div>
         </div>
       </div>

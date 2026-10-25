@@ -61,7 +61,7 @@ function Message({ r, action, got }: { r: Received; action: InboxAction | undefi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div className="deal">
+    <div className="deal" data-type={t} data-sig={r.signatureOk ? "ok" : "bad"} data-act={action ? "yes" : "no"}>
       <div className="deal-head">
         <strong>{TYPE_LABEL[t] ?? t}</strong>
         <span>{`from a ${r.message.header.from.role} · ${new Date(r.receivedAt).toLocaleString()}`}</span>
@@ -109,7 +109,7 @@ export function MailboxCard({ handlers }: { handlers: Partial<Record<MessageType
         <>
           {got.refused ? <Banner kind="warn" title={`${got.refused} message${got.refused > 1 ? "s" : ""} could not be opened`} text="Not sealed to your mailbox or not a JitsuinFi message; ignored." /> : null}
           {got.messages.length ? (
-            <div className="deals">
+            <div className="deals" data-count={got.messages.length}>
               {got.messages.map((r) => (
                 <Message key={r.relayId} r={r} action={handlers[r.message.header.type]} got={got} />
               ))}
@@ -155,9 +155,15 @@ export function MailboxCard({ handlers }: { handlers: Partial<Record<MessageType
   return (
     <Card step="Mailbox" title="Contact card and inbox" hint="Give your contact card to the people you deal with; compare the key fingerprint with them by phone or in person. Documents they send arrive sealed to you.">
       {status.el}
-      {contact ? <CodeBlock label="Your contact card" value={contact} filename="contact-card.txt" /> : null}
-      {contact ? <QrToggle code={contact} /> : null}
-      <ContactsBook />
+      {/* HNK-34.T5: the contact card and the contacts fold away under one line (名刺); open by default */}
+      <details className="mb-card" open>
+        <summary>
+          <b lang="ja">名刺</b> Contact card and contacts
+        </summary>
+        {contact ? <CodeBlock label="Your contact card" value={contact} filename="contact-card.txt" /> : null}
+        {contact ? <QrToggle code={contact} /> : null}
+        <ContactsBook />
+      </details>
       <Actions>
         <Button secondary onClick={() => check()}>
           Check inbox

@@ -124,7 +124,7 @@ const D: Record<string, Entry> = {
   "sc.fig.supplier": { en: "supplier", zh: "供应商" },
   "sc.fig.buyer": { en: "buyer", zh: "买方" },
   "sc.fig.financier": { en: "financier", zh: "资金方" },
-  "sc.fig.hint": { en: "The seals press themselves in order: 売, 買, 融. Start over to watch it again.", zh: "印章会按顺序自动盖下：売、買、融。点击“重新开始”再看一遍。" },
+  "sc.fig.hint": { en: "It plays by itself. Press a seal (売, 買, 融 or keys 1, 2, 3) to take over.", zh: "它会自动播放。点击印章（売、買、融，或按键 1、2、3）即可自己操作。" },
 
   // chapter 5
   "hs.kanji": { en: "履歴 · Chapter 5", zh: "履历 · 第 5 章" },

@@ -55,7 +55,6 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
   const lang = getLang();
   const [count, setCount] = useState(0);
   // the button names the next seal once the press is over, as before
-  const [pressed, setPressed] = useState(0);
   const [broken, setBroken] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -131,7 +130,6 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     } finally {
       busyRef.current = false;
       setBusy(false);
-      setPressed(c.seals.length);
     }
   };
 
@@ -169,6 +167,18 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     desk.current?.breakSeals();
   };
 
+  // the chain plays by itself once the chapter is in view (user, 2026-10-25: nobody has to click);
+  // each step is still a real seal from jitsuin-wasm, in order
+  const played = useRef(false);
+  const autoplay = async () => {
+    if (played.current) return;
+    played.current = true;
+    for (let i = 0; i < 3 && !chain.current.broken; i++) {
+      await pressNext();
+      if (!reduced) await new Promise((r) => setTimeout(r, 450));
+    }
+  };
+
   const startOver = () => {
     const c = chain.current;
     c.seals.length = 0;
@@ -176,11 +186,12 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     setBroken(false);
     setOpen(false);
     setCount(0);
-    setPressed(0);
     setBytes([null, null, null]);
     desk.current?.reset();
     setStatus({ key: "sc.wait.supplier" });
     setCanTamper(false);
+    played.current = false;
+    setTimeout(() => void autoplay(), reduced ? 0 : 600);
   };
 
   // the figure: inserted once, moved by its controller
@@ -209,6 +220,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
           void setup();
           io.disconnect();
         }
+        if (reduced && e.isIntersecting) void autoplay();
       },
       { rootMargin: "600px 0px" },
     );
@@ -224,6 +236,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
             );
             animate(deskHost.current!, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
             animate(readout.current!, { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
+            setTimeout(() => void autoplay(), dur.enter + 700);
           },
           { amount: 0.25 },
         );
@@ -234,7 +247,6 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const next = ROLES[pressed];
   const row = (k: string, v: ReactNode, data = true, cls = "") => [
     <dt key={`k${k}`}>{t(k)}</dt>,
     <dd key={`v${k}`} className={[data ? "data" : "", cls].filter(Boolean).join(" ") || undefined}>
@@ -298,9 +310,6 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
             </p>
           </div>
           <div className="sc-controls">
-            <button className="seal-btn sc-press" type="button" disabled={busy || count >= 3 || broken} onClick={() => void pressNext()}>
-              <span className="seal-btn-label">{t(next ? `sc.press.${next.role}` : "sc.complete")}</span>
-            </button>
             <button className="ink-link sc-tamper" type="button" disabled={!canTamper || busy} onClick={() => void breakSeals()}>
               {t("sc.tamper")}
             </button>

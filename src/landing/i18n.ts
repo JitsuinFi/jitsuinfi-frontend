@@ -106,7 +106,6 @@ const D: Record<string, Entry> = {
   "sc.press.supplier": { en: "Press the supplier’s seal", zh: "盖下供应商的印章" },
   "sc.press.buyer": { en: "Press the buyer’s seal", zh: "盖下买方的印章" },
   "sc.press.financier": { en: "Press the financier’s seal", zh: "盖下资金方的印章" },
-  "sc.complete": { en: "Chain complete", zh: "印章链完整" },
   "sc.tamper": { en: "Change one zat on the sealed letter", zh: "在已盖章的通知书上改动一个 zat" },
   "sc.reset": { en: "Start over", zh: "重新开始" },
   "sc.wait.supplier": { en: "Waiting for the supplier’s seal.", zh: "等待供应商盖章。" },
@@ -125,7 +124,7 @@ const D: Record<string, Entry> = {
   "sc.fig.supplier": { en: "supplier", zh: "供应商" },
   "sc.fig.buyer": { en: "buyer", zh: "买方" },
   "sc.fig.financier": { en: "financier", zh: "资金方" },
-  "sc.fig.hint": { en: "Or press the seals on the desk in order: 売, 買, 融 (keys 1, 2, 3).", zh: "也可以按顺序点击桌上的印章：売、買、融（按键 1、2、3）。" },
+  "sc.fig.hint": { en: "The seals press themselves in order: 売, 買, 融. Start over to watch it again.", zh: "印章会按顺序自动盖下：売、買、融。点击“重新开始”再看一遍。" },
 
   // chapter 5
   "hs.kanji": { en: "履歴 · Chapter 5", zh: "履历 · 第 5 章" },

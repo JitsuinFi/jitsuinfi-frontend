@@ -11,7 +11,9 @@ import {
   invoiceIdTaken,
   looksShielded,
   nextAction,
+  nextMove,
   nextStep,
+  route,
   sortDeals,
   timeline,
   type SupplierDeal,
@@ -118,4 +120,25 @@ test("a request for another invoice or from another financier does not fit the d
   assert.deepEqual(entryRequestProblems(d, request), []);
   assert.equal(entryRequestProblems(d, { ...request, n: "cd".repeat(32) }).length, 1);
   assert.equal(entryRequestProblems(d, { ...request, financier_pk: "66".repeat(32) }).length, 1);
+});
+
+test("the route marks the steps that wait on someone else, then 済 (HNK-34.T5)", () => {
+  const states = (d: SupplierDeal, settled = false) => route(d, settled).map((s) => s.state);
+  assert.deepEqual(states(deal()), ["next", "later", "later", "later", "later", "later"]);
+  assert.deepEqual(nextMove(deal()), { text: "check the buyer's signature", wait: false });
+  const asked = deal({ sign_request: { to: "aa", at: 1 } });
+  assert.deepEqual(states(asked), ["wait", "later", "later", "later", "later", "later"]);
+  assert.equal(nextMove(asked)!.text, "wait for the buyer's signature (or paste it)");
+  const offered = deal({ buyer_signature: "00", offer });
+  assert.deepEqual(states(offered), ["done", "done", "wait", "later", "later", "later"]);
+  assert.deepEqual(states(deal({ buyer_signature: "00", offer, entry_request: request })), ["done", "done", "next", "later", "later", "later"]);
+  const sealed = deal({ buyer_signature: "00", offer, entry: { memo: "m", commitment: "c", tagged: false, discount: 0, tenor: 0 }, seal: { letter: "l", s0: "s" } });
+  assert.deepEqual(states(sealed), ["done", "done", "done", "done", "wait", "later"]);
+  assert.equal(nextMove(sealed)!.text, "wait for the advance, then check it");
+  assert.equal(states(deal({ ...sealed, advance_notice: { txid: "t", advance_zat: 38_000, at: 1 } }))[4], "next");
+  const paid = deal({ ...sealed, advance: { txid: "t", received_zat: 38_000, matches: true } });
+  assert.equal(nextMove(paid), null);
+  assert.deepEqual(states(paid), ["done", "done", "done", "done", "done", "wait"]);
+  assert.deepEqual(states(paid, true), ["done", "done", "done", "done", "done", "done"]);
+  assert.equal(route(paid, true)[5].key, "settled");
 });

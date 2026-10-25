@@ -14,13 +14,36 @@ export interface LetterCheckInput {
   supplierSeal: string | null;
 }
 
+/** One of the three letter checks: held (true), failed (false), or waiting for input (null). */
+export interface LetterCheck {
+  label: string;
+  ok: boolean | null;
+  /** What the check found, in words. */
+  text: string;
+  /** Why it stops the seal; null when it holds. */
+  problem: string | null;
+}
+
+/** The three checks one by one, as the buyer's screen lists them (HNK-34.T5). */
+export function letterChecks(c: LetterCheckInput): LetterCheck[] {
+  const other = "the letter is for another invoice (N, amount or due date differ)";
+  const pdfOk = c.fileHash !== null && c.fileHash.toLowerCase() === c.termsHash.toLowerCase();
+  const sealOk = c.supplierSeal === "AwaitingSeal:Buyer";
+  const sealBad = "the supplier's seal does not hold for this letter, so the supplier did not assign the invoice to this financier";
+  return [
+    { label: "Letter for this invoice", ok: c.matchesInvoice === true, text: c.matchesInvoice === true ? "N, amount and due date equal the invoice's" : other, problem: c.matchesInvoice === true ? null : other },
+    c.fileHash === null
+      ? { label: "PDF hash", ok: null, text: "choose the letter's PDF", problem: "choose the letter's PDF" }
+      : { label: "PDF hash", ok: pdfOk, text: pdfOk ? "the PDF is the letter's document" : "the PDF is not the letter's document", problem: pdfOk ? null : "the PDF is not the letter's document" },
+    { label: "Supplier's seal", ok: sealOk, text: sealOk ? "holds for this letter: the supplier assigned the invoice to this financier" : sealBad, problem: sealOk ? null : sealBad },
+  ];
+}
+
 /** What stops the buyer from sealing; empty when the letter checks out. */
 export function letterProblems(c: LetterCheckInput): string[] {
-  return [
-    c.matchesInvoice === true ? null : "the letter is for another invoice (N, amount or due date differ)",
-    c.fileHash === null ? "choose the letter's PDF" : c.fileHash.toLowerCase() === c.termsHash.toLowerCase() ? null : "the PDF is not the letter's document",
-    c.supplierSeal === "AwaitingSeal:Buyer" ? null : "the supplier's seal does not hold for this letter, so the supplier did not assign the invoice to this financier",
-  ].filter((p): p is string => p !== null);
+  return letterChecks(c)
+    .map((x) => x.problem)
+    .filter((p): p is string => p !== null);
 }
 
 export interface PayCheckInput {

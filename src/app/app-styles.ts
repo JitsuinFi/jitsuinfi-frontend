@@ -2,7 +2,7 @@
 // the cascade is the same as before the move to components.
 import "../style.css";
 import "../pages/lobby.css";
-import "../pages/seal-card.css";
+import "../pages/account.css";
 import "../auth.css";
 import "../pages/try.css";
 import "../pages/apply.css";

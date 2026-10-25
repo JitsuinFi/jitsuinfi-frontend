@@ -1,69 +1,193 @@
-/* #/apply as the 登記所's application window (HNK-30.T15, MASTER.md §8): the 申請書 on the
-   counter, the relay's post box and the reply tray behind the glass. Builds on try.css. */
-.ap-desk { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; align-content: start; gap: 24px; }
-.ap-desk .ct-act { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
-.ap-form {
-  display: grid; gap: 16px; padding: clamp(24px, 2.6vw, 36px); background: var(--page); color: var(--ink);
-  box-shadow: 0 24px 36px rgba(2, 13, 47, .45); transform: rotate(-1deg); transform-origin: 50% 0;
-}
-.ap-form header { display: grid; gap: 6px; justify-items: center; padding-bottom: 10px; border-bottom: 1.5px solid var(--head); }
-.ap-t { margin: 0; font: 800 clamp(28px, 2.6vw, 38px)/1 var(--f-seal); letter-spacing: .32em; text-indent: .32em; color: var(--head); }
-.ap-sub { margin: 0; font: 500 12px/1 var(--f-body); color: var(--ink-2); }
-.ap-line { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); gap: 14px; align-items: start; padding-bottom: 10px; border-bottom: 1px solid rgba(2, 13, 47, .14); }
-.ap-line > span { display: grid; gap: 3px; font: 400 11px/1.25 var(--f-body); color: var(--ink-2); }
-.ap-line b { font: 800 15px/1 var(--f-seal); color: var(--head); letter-spacing: .1em; }
-.ap-line input, .ap-line textarea {
-  width: 100%; min-width: 0; padding: 4px 0 6px; border: 0; border-bottom: 1px dotted rgba(2, 13, 47, .35); border-radius: 0;
-  background: transparent; color: var(--head); font: 500 16px/1.4 var(--f-body); resize: vertical;
-}
-.ap-line input:focus, .ap-line textarea:focus { outline: none; border-bottom: 2px solid var(--seal); }
-.ap-line :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
-.ap-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; cursor: pointer; }
-.ap-opt input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--seal); }
-.ap-opt span { display: grid; gap: 4px; font: 400 13px/1.45 var(--f-body); color: var(--ink); }
-.ap-opt b { font: 800 14px/1 var(--f-seal); color: var(--head); letter-spacing: .1em; }
-.ap-small { margin: 0; font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
+/* Apply as financier (HNK-34.T5, approved sample design-samples/internal/apply.html): the 申請書
+   is a sheet of letter paper on the page; sending folds it into an envelope sealed 〆 that drops
+   into the relay's post box 中継, and the applicant's copy gets the 受付 stamp. The invite comes
+   back to the reply tray as a 招待状 (or a letter stamped 偽 when the provider did not sign it).
+   Caption ≤ 35% with the four-step path; palette DS-PAL, tokens from landing/tokens.css; no style
+   attributes (motion goes through anime.js on the CSSOM). */
 
-.ap { min-height: 0; }
-.ap-room { min-height: 640px; }
-.ap-route {
-  position: absolute; left: 22%; right: 22%; top: 52%; aspect-ratio: 5 / 4; max-height: 34%; margin: 0 auto;
-  --hairline-plate: var(--pool-2); --hairline-hi: var(--sheet); --hairline-edge: var(--mist);
-  --hairline-mid: rgba(196, 199, 242, .55); --hairline-lo: var(--pool); --hairline-stroke: 1.1;
+.ap {
+  --rule: rgba(2, 13, 47, .12);
+  --rule-2: rgba(2, 13, 47, .22);
+  --seal-wash: rgba(236, 208, 236, .72);
+  color: var(--ink);
 }
-.ap-box {
-  position: absolute; left: 10%; top: 18%; width: 150px; height: 230px; display: grid; justify-items: center; align-content: start; gap: 6px; padding-top: 70px;
-  border-radius: 70px 70px 10px 10px; background: var(--pool-2); box-shadow: inset -14px 0 0 rgba(2, 13, 47, .35), inset 0 3px 0 rgba(196, 199, 242, .3), 0 24px 30px rgba(2, 13, 47, .55);
-}
-.ap-box-mouth { position: absolute; top: 36px; left: 26px; right: 26px; height: 12px; border-radius: 6px; background: var(--pool); box-shadow: inset 0 4px 4px rgba(2, 13, 47, .9); }
-.ap-box-label { font: 800 26px/1 var(--f-seal); color: var(--sheet); letter-spacing: .2em; text-indent: .2em; }
-.ap-box-sub { font: 500 12px/1 var(--f-body); color: var(--mist); }
-.ap-box-count { margin-top: 30px; padding: 6px 12px; border-radius: 999px; background: rgba(196, 199, 242, .12); font: 500 11.5px/1 var(--f-mono); color: var(--mist); }
-.ap-tray {
-  position: absolute; right: 8%; top: 16%; width: min(52%, 340px); min-height: 260px; padding: 16px; display: grid; align-content: start; gap: 10px;
-  border-radius: 6px; box-shadow: inset 0 0 0 2px rgba(196, 199, 242, .35), inset 0 -40px 0 rgba(8, 65, 201, .25);
-}
-.ap-tray-k { margin: 0; display: flex; align-items: baseline; gap: 10px; font: 500 12px/1 var(--f-body); color: var(--mist); }
-.ap-tray-k b { font: 800 18px/1 var(--f-seal); color: var(--sheet); letter-spacing: .2em; }
-.ap-letter { position: relative; display: grid; gap: 12px; padding: 22px 20px; background: var(--page); color: var(--ink); box-shadow: 0 18px 26px rgba(2, 13, 47, .5); transform: rotate(-1deg); }
-.ap-letter p { margin: 0; font: 400 14px/1.5 var(--f-body); }
-.ap-letter .ap-t { font-size: 24px; }
-.ap-letter .seal-btn { justify-self: start; }
-.ap-letter-seal { position: absolute; right: 16px; top: 14px; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 6px; box-shadow: inset 0 0 0 3px var(--seal); font: 800 13px/1.1 var(--f-seal); color: var(--seal); transform: rotate(6deg); text-align: center; }
-.ap-env {
-  position: absolute; z-index: 9; width: 140px; height: 92px; display: grid; place-items: center; pointer-events: none;
-  background: var(--fiber); box-shadow: 0 14px 20px rgba(2, 13, 47, .4);
-}
-.ap-env::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 50%; background: var(--fold); clip-path: polygon(0 0, 100% 0, 50% 100%); opacity: .7; }
-.ap-env b { position: relative; font: 800 30px/1 var(--f-seal); color: var(--seal); }
+.ap p { margin: 0; }
+.ap [hidden] { display: none !important; }
+/* the app's global button and field looks (style.css) stay off the letter */
+.ap button { min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; color: inherit; font: inherit; transform: none; }
+.ap button:active { transform: none; }
 
-@media (max-width: 980px) {
-  .ap-room { min-height: 760px; }
-  .ap-route { top: 40%; left: 18%; right: 18%; }
-  .ap-box { left: 8%; top: 10%; }
-  .ap-tray { top: auto; bottom: 120px; right: 6%; left: 6%; width: auto; min-height: 200px; }
+/* ---------- page grid: caption ≤ 35%, visual ≥ 65% ---------- */
+.ap-sec { display: grid; gap: 32px; padding: 0 0 clamp(32px, 4vw, 56px); }
+@media (min-width: 1360px) {
+  .ap-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
 }
-@media (max-width: 560px) {
-  .ap-line { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .ap-box { width: 120px; height: 190px; padding-top: 60px; }
+.ap-cap { display: grid; gap: 18px; align-content: start; max-width: 52ch; min-width: 0; }
+.ap-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+.ap-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
+.ap h1 { margin: 0; color: var(--head); font: 800 clamp(38px, 4vw, 60px)/1.02 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
+.ap-lede { font: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+
+/* the application's path: a checked timeline (DS-06), no boxes */
+.ap-path { position: relative; display: grid; margin: 6px 0 0; padding: 0; list-style: none; }
+.ap-path li { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding: 0 0 18px; }
+.ap-path li::before { content: ""; position: absolute; left: 19px; top: 38px; bottom: 2px; width: 2px; border-radius: 2px; background: var(--rule-2); transition: background-color var(--dur-enter) var(--ease-land); }
+.ap-path li:last-child::before { display: none; }
+.ap-path li.is-done::before { background: var(--seal); }
+.ap-k { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--rule-2); color: var(--ink-2); font: 800 18px/1 var(--f-seal); transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land); }
+.ap-path li.is-now .ap-k { box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); }
+.ap-path li.is-done .ap-k { background: var(--seal); box-shadow: none; color: var(--sheet); }
+.ap-path li.is-bad .ap-k { background: var(--seal-wash); box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); }
+.ap-path strong { display: block; padding-top: 2px; font: 500 16px/1.35 var(--f-body); color: var(--head); }
+.ap-path div span { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); }
+.ap-path li.is-now strong { color: var(--seal); }
+
+/* ---------- the visual: the letter, the post box, the reply tray ---------- */
+.ap-vis { position: relative; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: start; min-width: 0; }
+.ap-left { display: grid; gap: 22px; min-width: 0; }
+
+/* the 申請書: a sheet of letter paper */
+.ap-letter { position: relative; display: grid; padding: 40px 44px 34px; min-width: 0; background: var(--sheet); border-radius: 3px; box-shadow: var(--lift), inset 0 0 0 1px var(--rule); transform-origin: 50% 50%; }
+.ap-letter::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 8px; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 100% 30%, 96% 70%, 91% 35%, 85% 80%, 80% 40%, 73% 75%, 67% 30%, 60% 70%, 54% 35%, 47% 80%, 41% 40%, 34% 70%, 28% 30%, 21% 75%, 15% 35%, 9% 70%, 4% 40%, 0 70%); }
+.ap-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.ap-to { font: 700 clamp(17px, 1.4vw, 20px)/1.35 var(--f-display); color: var(--head); }
+.ap-to small, .ap-date small { display: block; font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.ap-date { flex: none; white-space: nowrap; text-align: right; font: 700 15px/1.3 var(--f-display); color: var(--head); }
+.ap .ap-title { margin: 26px 0 4px; text-align: center; font: 800 clamp(30px, 3vw, 44px)/1 var(--f-seal); color: var(--head); letter-spacing: .6em; margin-right: -.6em; }
+.ap .ap-sub { margin: 0 0 18px; text-align: center; font: 400 13.5px/1.3 var(--f-body); color: var(--ink-2); }
+.ap-say-l { font: 400 15px/1.6 var(--f-body); color: var(--ink); }
+.ap .ap-ki { margin: 14px 0 0; text-align: center; font: 700 18px/1 var(--f-seal); color: var(--head); }
+.ap-fl { position: relative; display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 4px 16px; align-items: end; padding: 18px 0 6px; border-bottom: 1px solid var(--rule-2); }
+.ap-fl::after { content: ""; position: absolute; left: 152px; right: 0; bottom: -1px; height: 2px; background: var(--seal); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-enter) var(--ease-land); }
+.ap-fl:focus-within::after, .ap-fl.is-bad::after { transform: none; }
+.ap-lab { display: grid; gap: 1px; padding-bottom: 5px; }
+.ap-lab b { font: 700 16px/1.15 var(--f-seal); color: var(--head); letter-spacing: .08em; }
+.ap-lab b i { font-style: normal; color: var(--ink-2); margin-right: .35em; }
+.ap-lab small { font: 400 12.5px/1.25 var(--f-body); color: var(--ink-2); }
+.ap .ap-fl input, .ap .ap-fl textarea { width: 100%; min-width: 0; padding: 4px 0 2px; border: 0; border-radius: 0; background: transparent; outline: none; color: var(--head); font: 700 clamp(19px, 1.7vw, 24px)/1.3 var(--f-display); }
+.ap .ap-fl input:focus-visible, .ap .ap-fl textarea:focus-visible { outline: none; background: transparent; }
+.ap .ap-fl input.is-plain { font: 500 clamp(16px, 1.3vw, 19px)/1.4 var(--f-body); }
+.ap-fl input::placeholder, .ap-fl textarea::placeholder { color: rgba(80, 42, 80, .34); font-family: var(--f-body); font-weight: 400; font-size: 16px; }
+.ap-fl.is-note { align-items: start; border-bottom: 0; }
+.ap-fl.is-note::after { display: none; }
+.ap-fl.is-note .ap-lab { padding-top: 6px; }
+.ap .ap-fl textarea { resize: vertical; min-height: 96px; font: 400 16px/32px var(--f-body); padding: 0; background: repeating-linear-gradient(180deg, transparent 0 31px, var(--rule-2) 31px 32px); }
+.ap .ap-fl.is-note:focus-within textarea { background: repeating-linear-gradient(180deg, transparent 0 30px, var(--seal) 30px 32px); }
+.ap-opt { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; margin: 18px 0 0; cursor: pointer; }
+.ap-opt input { appearance: none; -webkit-appearance: none; margin: 2px 0 0; width: 24px; height: 24px; border-radius: 7px; box-shadow: inset 0 0 0 1.6px var(--ink-2); background: var(--sheet); display: grid; place-items: center; cursor: pointer; transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land); }
+.ap-opt input::after { content: ""; width: 11px; height: 6px; border-left: 2.4px solid var(--sheet); border-bottom: 2.4px solid var(--sheet); transform: translateY(-2px) rotate(-45deg) scale(0); transition: transform var(--dur-seal) var(--ease-snap); }
+.ap-opt input:checked { background: var(--seal); box-shadow: none; }
+.ap-opt input:checked::after { transform: translateY(-2px) rotate(-45deg) scale(1); }
+.ap-opt span { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
+.ap-opt b { font: 700 15px/1.2 var(--f-seal); color: var(--head); margin-right: 8px; }
+.ap-end { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-top: 24px; }
+.ap-end p { max-width: 24ch; font: 400 12.5px/1.5 var(--f-body); color: var(--ink-2); }
+.ap-lseal { display: grid; justify-items: center; gap: 4px; flex: none; }
+.ap-lseal > span { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--rule-2); }
+.ap-lseal b { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 26px/1 var(--f-seal); transform: rotate(-6deg); opacity: 0; transition: opacity var(--dur-seal) var(--ease-snap); }
+.ap-lseal small { font: 700 12px/1 var(--f-seal); color: var(--ink-2); letter-spacing: .2em; }
+.ap-letter.is-sealed .ap-lseal b { opacity: 1; }
+/* 受付: the date stamp pressed on the applicant's copy after posting */
+.ap-uke { position: absolute; bottom: 28px; right: 100px; width: 92px; height: 92px; pointer-events: none; transform: rotate(-12deg); opacity: 0; }
+.ap-uke svg { width: 100%; height: 100%; overflow: visible; }
+.ap-uke circle { fill: none; stroke: var(--seal); }
+.ap-uke line { stroke: var(--seal); stroke-width: 1.5; }
+.ap-uke text { fill: var(--seal); text-anchor: middle; }
+.ap-uke .t1 { font: 800 21px/1 var(--f-seal); letter-spacing: .2em; }
+.ap-uke .t2 { font: 500 12.5px/1 var(--f-mono); }
+.ap-uke .t3 { font: 500 10px/1 var(--f-body); letter-spacing: .08em; }
+.ap-letter.is-received .ap-uke { opacity: .92; }
+
+.ap-act { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.ap .ap-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px 26px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 16px/1 var(--f-body); white-space: nowrap; text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
+.ap .ap-btn:hover { background: var(--seal-hi); }
+.ap .ap-btn:active { transform: scale(.97); }
+.ap .ap-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.ap-btn b { font: 800 16px/1 var(--f-seal); }
+.ap-btn.is-busy::after, .ap-link.is-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%; border: 2px solid rgba(126, 42, 83, .3); border-top-color: currentColor; animation: ap-spin 800ms linear infinite; }
+@keyframes ap-spin { to { transform: rotate(360deg); } }
+.ap .ap-link { cursor: pointer; color: var(--seal); font: 500 15px/1.4 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
+.ap .ap-link:hover { background: none; text-decoration-thickness: 3px; }
+.ap .ap-link:disabled { opacity: .45; cursor: default; }
+
+/* the window: the relay's post box and the reply tray (drawn flat, ink on paper) */
+.ap-right { display: grid; gap: 26px; justify-items: center; min-width: 0; padding-top: 4px; }
+.ap-plaque { display: grid; justify-items: center; gap: 2px; }
+.ap-plaque b { font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .4em; margin-right: -.4em; }
+.ap-plaque small { font: 400 12.5px/1.2 var(--f-body); color: var(--ink-2); }
+.ap-box { position: relative; width: min(260px, 100%); }
+.ap-box svg { display: block; width: 100%; height: auto; }
+.ap-box .body { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 2; }
+.ap-box .lid { fill: var(--paper); stroke: var(--ink-2); stroke-width: 2; }
+.ap-box .mouth { fill: var(--ink); }
+.ap-box .lip { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 1.6; }
+.ap-box .rule { stroke: var(--rule-2); stroke-width: 1; }
+.ap-box .kj { font: 800 30px/1 var(--f-seal); fill: var(--head); letter-spacing: .2em; text-anchor: middle; }
+.ap-box .en { font: 400 12px/1 var(--f-body); fill: var(--ink-2); text-anchor: middle; }
+.ap-box .ct { font: 500 12.5px/1 var(--f-mono); fill: var(--seal); text-anchor: middle; }
+.ap-box .ctp { fill: var(--seal-wash); }
+.ap-box .post { stroke: var(--ink-2); stroke-width: 2; }
+.ap-box .door { fill: none; stroke: var(--rule-2); stroke-width: 1.4; }
+.ap-box .keyhole { fill: var(--ink-2); }
+.ap .ap-box-note { margin: -14px 0 0; text-align: center; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 30ch; }
+
+.ap-tray { position: relative; width: 100%; max-width: 360px; display: grid; gap: 8px; }
+.ap-tray-k { display: flex; align-items: baseline; gap: 10px; font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }
+.ap-tray-k b { font: 700 16px/1 var(--f-seal); color: var(--head); letter-spacing: .2em; }
+.ap-bed { position: relative; min-height: 210px; padding: 16px 16px 26px; border-radius: 16px 16px 10px 10px; background: var(--paper); box-shadow: inset 0 0 0 1.6px var(--ink-2), inset 0 10px 18px rgba(70, 29, 58, .06); display: grid; align-items: end; }
+.ap-bed::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -6px; height: 26px; border-radius: 0 0 12px 12px; background: var(--sheet); box-shadow: inset 0 0 0 1.6px var(--ink-2); }
+.ap .ap-empty { position: relative; z-index: 1; margin: 0 0 18px; text-align: center; font: 400 13px/1.45 var(--f-body); color: var(--ink-2); }
+/* the invite: a letter that lands in the tray */
+.ap-inv { position: relative; z-index: 2; display: grid; gap: 10px; padding: 18px; margin-bottom: 2px; background: var(--sheet); border-radius: 3px; box-shadow: 0 10px 22px rgba(70, 29, 58, .14), inset 0 0 0 1px var(--rule); transform: rotate(-1deg); }
+.ap .ap-inv-t { font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .5em; }
+.ap-inv p { font: 400 14px/1.5 var(--f-body); color: var(--ink); }
+.ap-from { position: absolute; top: 12px; right: 14px; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 11.5px/1.1 var(--f-seal); text-align: center; transform: rotate(8deg); }
+.ap .ap-inv .ap-btn { justify-self: start; padding: 12px 20px; font-size: 15px; }
+.ap-inv.is-forged { filter: grayscale(.55); }
+.ap-inv.is-forged p { opacity: .55; }
+.ap-gi { position: absolute; left: 50%; top: 50%; display: none; place-items: center; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 12px; box-shadow: inset 0 0 0 5px var(--seal); color: var(--seal); font: 800 60px/1 var(--f-seal); transform: rotate(-10deg); background: rgba(252, 252, 254, .55); }
+.ap-inv.is-forged .ap-gi { display: grid; }
+.ap-inv.is-forged .ap-from { box-shadow: inset 0 0 0 2px var(--fold); color: var(--fold); }
+
+/* the clerk's line under the window */
+.ap-say { display: flex; align-items: flex-start; gap: 12px; width: 100%; max-width: 360px; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); }
+.ap-mk { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 18px/1 var(--f-seal); transform: rotate(-4deg); }
+.ap-say.is-bad { color: var(--seal); }
+
+/* the envelope that carries the folded application */
+.ap-env { position: absolute; z-index: 25; left: 0; top: 0; width: 150px; height: 96px; pointer-events: none; display: none; }
+.ap-env.is-on { display: block; }
+.ap-env svg { width: 100%; height: 100%; overflow: visible; }
+.ap-env .e-body { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 1.6; }
+.ap-env .e-flap { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+.ap-env text { font: 800 30px/1 var(--f-seal); fill: var(--seal); text-anchor: middle; }
+
+@media (max-width: 1359px) { .ap-cap { max-width: 64ch; } }
+@media (max-width: 1100px) {
+  .ap-vis { grid-template-columns: minmax(0, 1fr); }
+  .ap-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; justify-items: center; }
+  .ap-say { grid-column: 1 / -1; max-width: none; }
+}
+@media (max-width: 760px) {
+  .ap-sec { gap: 22px; }
+  .ap-path li { padding-bottom: 12px; }
+  .ap-path div span { display: none; }
+  .ap-path li.is-now div span { display: block; }
+  .ap-vis { gap: 28px; }
+  .ap-letter { padding: 26px 18px 24px; }
+  .ap-top { flex-direction: column; gap: 8px; }
+  .ap-date { text-align: left; white-space: normal; }
+  .ap-title { margin-top: 18px; letter-spacing: .4em; margin-right: -.4em; }
+  .ap-fl { grid-template-columns: minmax(0, 1fr); gap: 2px; padding-top: 14px; }
+  .ap-fl::after { left: 0; }
+  .ap-lab { grid-template-columns: auto 1fr; align-items: baseline; gap: 8px; padding: 0; }
+  .ap-end { flex-direction: column-reverse; align-items: flex-start; }
+  .ap-uke { bottom: auto; top: 18px; right: 14px; width: 86px; height: 86px; }
+  .ap-act .ap-btn { flex: 1 1 100%; justify-content: center; }
+  .ap-act .ap-link { flex: 1 1 100%; text-align: center; }
+  .ap-right { grid-template-columns: minmax(0, 1fr); }
+  .ap-box { width: 200px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap *, .ap *::before, .ap *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }

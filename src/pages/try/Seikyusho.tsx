@@ -53,7 +53,8 @@ export interface BlankSheet {
  * buyer's signature on these bytes (jitsuin-wasm), not a field comparison.
  */
 export interface CaseSheet {
-  sealed: boolean;
+  /** "pending": the buyer has not signed yet (the supplier's open deal, HNK-34.T5): an empty box. */
+  sealed: boolean | "pending";
   nCode: Ref<HTMLElement>;
   ring: Ref<SVGCircleElement>;
   crack: Ref<SVGPathElement>;
@@ -66,9 +67,10 @@ const lines = (n: string) => [0, 1, 2, 3].map((i) => n.slice(i * 16, i * 16 + 16
 /**
  * The sheet. Its inputs are uncontrolled (the page reads and resets them through `fields`);
  * `changed` marks edited fields and cracks the seal (null: not compared, as on a blank sheet),
- * `n` is the fingerprint of these bytes.
+ * `n` is the fingerprint of these bytes. `readOnly`: a sheet to read, not to write on (the
+ * supplier's open deal), and `note` the line under it.
  */
-export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet }): ReactNode {
+export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, readOnly, note: said }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet; readOnly?: boolean; note?: string }): ReactNode {
   const isChanged = (k: keyof SheetFields) => {
     if (changed === null) return undefined;
     const f = KEYS.find(([key]) => key === k)![1];
@@ -84,7 +86,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }
       defaultValue={value}
       size={opts.size}
       placeholder={blank?.placeholders[k]}
-      readOnly={blank && k === "terms" ? blank.termsReadOnly : undefined}
+      readOnly={readOnly || (blank && k === "terms" ? blank.termsReadOnly : undefined)}
       data-changed={isChanged(k)}
       ref={fields[k]}
       onInput={onInput}
@@ -99,7 +101,9 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }
       <td>{value}</td>
     </tr>
   );
-  const note = blank
+  const note = said
+    ? said
+    : blank
     ? blank.note
     : !changed?.length
     ? "The buyer sealed exactly these bytes."
@@ -107,7 +111,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }
       ? "This is no longer a valid invoice: no seal can hold."
       : `You changed the ${changed.map((c) => WORD[c]).join(", ")}. The buyer's seal no longer holds.`;
 
-  const seal = blank ? blank.seal : kase ? (kase.sealed ? "whole" : "broken") : changed?.length ? "broken" : "whole";
+  const seal = blank ? blank.seal : kase ? (kase.sealed === "pending" ? "pending" : kase.sealed ? "whole" : "broken") : changed?.length ? "broken" : "whole";
 
   return (
     <article className={kase ? "sk is-case" : "sk"} aria-label="The invoice (請求書)" data-seal={seal} ref={sheet}>
@@ -171,7 +175,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }
           <div>
             {kase ? (
               <code className={n ? undefined : "is-none"} ref={kase.nCode}>
-                {n ? lines(n).map((l, i) => <span key={i}>{l}</span>) : <span>none: the fields do not make an invoice</span>}
+                {n ? lines(n).map((l, i) => <span key={i}>{l}</span>) : <span>{blank ? blank.n : "none: the fields do not make an invoice"}</span>}
               </code>
             ) : (
               <code>{blank ? blank.n : (n ?? "none: the fields do not make an invoice")}</code>

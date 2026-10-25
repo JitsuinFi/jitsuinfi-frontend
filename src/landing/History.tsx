@@ -1,20 +1,25 @@
-// Chapter 5, "Paid, and remembered" (履歴): the buyer's history as a paper ribbon, April to December.
-// Each invoice the buyer was given is a seal at its due date; a red thread joins the seals (each
-// history certificate commits to the one before), and a line ties each seal to its entry on the
-// public board. Everything is real jitsuin-wasm in the browser: eight certificates, the register
-// entries that carry their tags, the buyer's repayments and the financier's settlements, then
-// verifyHistory as a new financier would run it. "Pay" settles TES-INV-0007 by ZIP-321; "Hide the
-// late invoice" leaves certificate 4 out, and the check refuses the history.
-// React since HNK-31.T4. The ribbon was redrawn whole on every change; here its nodes stay, so each
-// repaint cancels the running animations and clears what they left inline, as fresh nodes would.
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { flushSync } from "react-dom";
-import { animate, stagger, svg as animeSvg, type JSAnimation } from "animejs";
+// Chapter 5, "Paid, and remembered" (履歴): the buyer's history, checked by a new lender. Each
+// invoice the buyer was given gets a history certificate that commits to the one before, and a
+// register entry on the public board that carries its tag; the buyer repays, the financier settles
+// on the board. Everything is real jitsuin-wasm in the browser: five certificates (TES-INV-0000 to
+// 0004, #4 paid three days late), their register entries, the repayments and the settlements, then
+// verifyHistory as a new lender runs it, certificate by certificate and over the whole chain.
+// "Hide the late invoice" leaves certificate 4 out: its entry is still on the board, so the check
+// refuses the history.
+// React since HNK-31.T4. HNK-33.T5: the visual is the buyer's history cabinet, an isometric figure
+// (figures/history-cabinet.svg, built by scripts/figures/history-cabinet.build.mjs) moved by
+// figures/history-cabinet.ts: as each real call finishes, the cabinet shows it (the board rows are
+// inked, each drawer opens and its certificate is read against the board, 済 or 遅 lands, the link
+// to the certificate before lights, the flaps turn to the tally).
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { animate } from "animejs";
 import { inView } from "motion";
+import { dur, ease, sibling } from "./motion";
 import { getLang } from "./i18n";
-import { dur, ease } from "./motion";
 import { useT } from "./use-lang";
 import { labelKey, loadWasm, type Wasm } from "./wasm";
+import { mountHistoryCabinet, type HistoryCabinet } from "./figures/history-cabinet";
+import cabinetSvg from "./figures/history-cabinet.svg?raw";
 
 const fn = (f: (t: number) => number) => () => f;
 const day = (iso: string) => Math.floor(Date.parse(iso + "T00:00:00Z") / 86400000);
@@ -22,425 +27,382 @@ const TODAY = day("2026-10-19");
 const GRACE = 7;
 const PAY_TO = "utest1landingfinanciera";
 /// The buyer's invoices (scripts/landing-keys.mjs): index i of the TES- master is TES-INV-000i;
-/// 0..6 are paid, 7 is the landing invoice, still open.
+/// the history the lender sees is the first five, all paid, #4 three days late.
 const BOOK = [
   { amount: 25000, due: "2026-04-15", paid: "2026-04-14" },
   { amount: 32000, due: "2026-05-15", paid: "2026-05-15" },
   { amount: 18000, due: "2026-06-12", paid: "2026-06-10" },
   { amount: 40000, due: "2026-07-15", paid: "2026-07-15" },
   { amount: 27500, due: "2026-08-14", paid: "2026-08-17" },
-  { amount: 36000, due: "2026-09-15", paid: "2026-09-15" },
-  { amount: 30000, due: "2026-10-15", paid: "2026-10-13" },
-  { amount: 40000, due: "2026-12-18", paid: null },
 ] as const;
-const HERO = 7;
 const LATE = 4;
-const MONTHS = ["2026-04-01", "2026-05-01", "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01", "2026-10-01", "2026-11-01", "2026-12-01"];
 
 type Outcome = "PaidOnTime" | "PaidLate" | "Default" | "Open";
 type Report = { on_time: number; late: number; defaults: number; open: number; lines: { index: number; nullifier: string; outcome: Outcome }[] };
-
-/** Ribbon space: u runs along time (60..1140), v across it (the board is at negative v). */
-const U0 = day("2026-04-01");
-const U1 = day("2026-12-31");
-const uOf = (d: number) => 60 + ((d - U0) / (U1 - U0)) * 1080;
-type Layout = { box: [number, number]; at: (u: number, v: number) => [number, number]; tall: boolean };
-const WIDE: Layout = { box: [1200, 400], at: (u, v) => [u, 214 + v], tall: false };
-const TALL: Layout = { box: [420, 980], at: (u, v) => [214 + v, 30 + (u - 20) * 0.82], tall: true };
-const BV = -140;
+type Keys = { supplier: string; master: string; finSk: string; finPk: string; supplierPk: string; identity: string };
+type Entry = { txid: string; height: number; tx_index: number; output_index: number; memo: string };
+/** One certificate's line in the log: N, the check's time and what it found. */
+type Line = { n: string; ms?: number; out?: Outcome | "Hidden" };
+type Said = { key: string; params?: Record<string, string | number> };
+type Verdict = { report: Report | null; error: string; stats: { c: number; e: number; ms: string } };
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-/** "14 Apr" or "4月14日"; with `month`, "Apr" or "4月". */
-const dateFmt = (d: number, month = false) => {
-  const at = new Date(d * 86400000);
+/** "14 Apr" or "4月14日". */
+const dateFmt = (iso: string) => {
+  const at = new Date(day(iso) * 86400000);
   const m = at.getUTCMonth();
   const dd = at.getUTCDate();
-  if (getLang() === "zh") return month ? `${m + 1}月` : `${m + 1}月${dd}日`;
-  return month ? MON[m] : `${dd} ${MON[m]}`;
+  return getLang() === "zh" ? `${m + 1}月${dd}日` : `${dd} ${MON[m]}`;
 };
-
-type Book = { w: Wasm; certs: string[]; ns: string[]; board: unknown[]; identity: string; finPk: string; master: string; hero: { inv: string; letter: string; finSk: string } };
-
-async function build(): Promise<Book> {
-  const w = await loadWasm();
-  const supplier = await labelKey("TES-landing-supplier");
-  const master = await labelKey("TES-landing-buyer-master");
-  const finSk = await labelKey("TES-landing-financier-a");
-  const finPk = w.publicKey(finSk);
-  const supplierPk = w.publicKey(supplier);
-  const certs: string[] = [];
-  const ns: string[] = [];
-  const board: unknown[] = [];
-  let hero = { inv: "", letter: "", finSk };
-  const post = (memo: string, k: number) => board.push({ txid: (k % 16).toString(16).repeat(64), height: 4_500_000 + k, tx_index: 0, output_index: 0, memo });
-  for (let i = 0; i < BOOK.length; i++) {
-    const b = BOOK[i];
-    const id = `TES-INV-000${i}`;
-    const due = day(b.due);
-    const inv = w.invoiceEncode(
-      JSON.stringify({
-        invoice_id: id,
-        supplier_pk: supplierPk,
-        buyer_pk: JSON.parse(w.buyerKeys(master, i)).invoice_pk,
-        amount_zat: b.amount,
-        issue_date: i === HERO ? TODAY : due - 60,
-        due_date: due,
-        terms_hash: await labelKey(`${id} terms: 60 days net`),
-      }),
-    );
-    ns.push(w.invoiceNullifier(inv));
-    const cert = w.buyerHistoryCert(master, i, inv, finPk, certs[i - 1] ?? "");
-    certs.push(cert);
-    post(JSON.parse(w.supplierRegisterHistoryEntry(supplier, inv, finPk, await labelKey(`TES-landing-salt-h${i}`), cert)).memo, 2 * i);
-    const letter = w.assignmentEncode(inv, finPk, PAY_TO, await labelKey(`${id} assignment terms`));
-    if (b.paid) {
-      const pay = JSON.parse(w.buyerRepayment(master, i, inv, letter, day(b.paid)));
-      post(JSON.parse(w.financierSettle(finSk, inv, letter, pay.memo)).memo, 2 * i + 1);
-    } else hero = { inv, letter, finSk };
-  }
-  const identity = JSON.parse(w.buyerKeys(master, 0)).identity_pk;
-  // the master stays here: the repayment of the open invoice needs the buyer's key
-  return { w, certs, ns, board, identity, finPk, master, hero };
-}
-
-type Check = { report: Report | null; error: string; settledAs: Map<number, Outcome>; stats: { c: number; e: number; ms: string } };
-
-/** verifyHistory as a new financier runs it; the stamps keep what the board settled when refused. */
-function check(b: Book, hidden: boolean, prev: Map<number, Outcome>): Check {
-  const certs = hidden ? b.certs.filter((_, i) => i !== LATE) : b.certs;
-  const t0 = performance.now();
-  let report: Report | null = null;
-  let error = "";
-  let settledAs = prev;
-  try {
-    report = JSON.parse(b.w.verifyHistory(JSON.stringify(certs), b.identity, JSON.stringify([b.finPk]), JSON.stringify(b.board), TODAY, GRACE));
-    settledAs = new Map(report!.lines.map((l) => [l.index, l.outcome]));
-  } catch (e) {
-    error = (e as Error).message ?? String(e);
-  }
-  return { report, error, settledAs, stats: { c: certs.length, e: b.board.length, ms: (performance.now() - t0).toFixed(1) } };
-}
-
-type MarkRefs = { g: SVGGElement | null; imp: SVGGElement | null; stamp: SVGGElement | null; anchor: SVGPathElement | null };
-const tallQuery = () => matchMedia("(max-width: 700px)");
+const short = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
+/** The figure's short form, as chapters 2 to 4 draw N. */
+const tiny = (h: string) => `${h.slice(0, 4)}…${h.slice(-4)}`;
+const lateDays = (i: number) => day(BOOK[i].paid) - day(BOOK[i].due);
+/** Keys of the texts and aria labels drawn inside the cabinet. */
+const FIG_KEYS = [
+  "hs.fig.aria", "fp.fig.board", "hs.fig.block", "hs.fig.tag", "hs.fig.history", "hs.fig.onTime", "hs.fig.late", "hs.fig.defaulted",
+  "hs.fig.buyer", "hs.fig.certs", "hs.fig.check", "hs.fig.anchored", "hs.fig.missing", "hs.fig.with", "hs.due", "hs.paidOn", "hs.late",
+];
 
 export function History({ reduced }: { reduced: boolean }): ReactNode {
   const t = useT();
   const lang = getLang();
-  const [tall, setTall] = useState(() => tallQuery().matches);
-  const [book, setBook] = useState<Book | null>(null);
-  const [paid, setPaid] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [paying, setPaying] = useState(false);
-  const [result, setResult] = useState<Check | null>(null);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [failed, setFailed] = useState("");
+  const [hidden, setHidden] = useState(false);
+  const [status, setStatus] = useState<Said>({ key: "hs.fig.idle" });
   const [waiting, setWaiting] = useState(!reduced);
-  const [slip, setSlip] = useState<{ qr: string; uri: string } | null>(null);
 
-  const marks = useRef<MarkRefs[]>(BOOK.map(() => ({ g: null, imp: null, stamp: null, anchor: null })));
-  const threads = useRef<(SVGPathElement | null)[]>([]);
-  const art = useRef<SVGSVGElement>(null);
-  const slipEl = useRef<HTMLElement>(null);
-  const qr = useRef<HTMLDivElement>(null);
+  const sec = useRef<HTMLElement>(null);
+  const heads = useRef<(HTMLElement | null)[]>([]);
+  const figHost = useRef<HTMLDivElement>(null);
+  const readout = useRef<HTMLDivElement>(null);
   const tally = useRef<HTMLDivElement>(null);
-  const numsEl = useRef<HTMLElement[]>([]);
-  const running = useRef<JSAnimation[]>([]);
-  const started = useRef(false);
+  const fig = useRef<HistoryCabinet | null>(null);
+  const running = useRef(false);
+  const pending = useRef(false);
+  const hide = useRef(false);
+  const keys = useRef<Keys | null>(null);
 
-  const L = tall ? TALL : WIDE;
-  const P = (u: number, v: number) => L.at(u, v);
-  const settledAs = result?.settledAs ?? new Map<number, Outcome>();
-
-  const play = (a: JSAnimation) => void running.current.push(a);
-  /** A repaint: what the old code did by drawing fresh nodes. */
-  const fresh = () => {
-    running.current.forEach((a) => a.cancel());
-    running.current = [];
-    for (const m of marks.current) for (const n of [m.g, m.imp, m.stamp, m.anchor]) n?.removeAttribute("style");
-    for (const p of threads.current) p?.removeAttribute("style");
-  };
-
-  useEffect(() => {
-    const q = tallQuery();
-    const on = () => setTall(q.matches);
-    q.addEventListener("change", on);
-    return () => q.removeEventListener("change", on);
-  }, []);
-  // a layout or language switch redrew the ribbon without motion
-  useLayoutEffect(() => fresh(), [tall, lang]);
-
-  // ---------- motion ----------
-  const enter = () => {
+  // The history plays by itself and loops while the chapter is in view (as chapters 2 to 4): each
+  // round is the real flow, every value from jitsuin-wasm. The visitor's first click on the cabinet,
+  // key or control stops the loop for good; each click then runs one round. Reduced motion plays
+  // one round, straight to the end state.
+  const user = useRef(false);
+  const visible = useRef(false);
+  const looping = useRef(false);
+  const roundDone = useRef(false);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** Waits ms, then on while the chapter is off screen (unless the visitor has it). */
+  const hold = async (ms: number) => {
     if (reduced) return;
-    // seals press down left to right, the thread draws behind them, the stamps land last
-    marks.current.forEach((m, i) => {
-      const delay = 200 + i * 140;
-      play(animate(m.anchor!, { opacity: { from: 0, to: 1 }, duration: dur.enter, delay, ease: fn(ease.softLand) }));
-      if (m.g!.classList.contains("is-sealed")) play(animate(m.imp!, { scale: { from: 1.8, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay, ease: fn(ease.snapSettle) }));
-      if (m.g!.classList.contains("is-stamped")) play(animate(m.stamp!, { scale: { from: 1.6, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay: delay + 260, ease: fn(ease.snapSettle) }));
-    });
-    const on = threads.current.filter((p) => p!.classList.contains("is-on")) as SVGPathElement[];
-    play(animate(animeSvg.createDrawable(on), { draw: ["0 0", "0 1"], duration: 260, delay: stagger(140, { start: 340 }), ease: fn(ease.softInOut) }));
-    play(animate(numsEl.current, { y: { from: 18, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 100, delay: stagger(67, { start: 200 + BOOK.length * 140 }), ease: fn(ease.softLand) }));
+    await wait(ms);
+    while (!visible.current && !user.current) await wait(400);
+  };
+  const takeOver = () => {
+    user.current = true;
   };
 
-  // build as soon as the chapter nears; play when it is in view
-  useEffect(() => {
-    const stop = inView(
-      art.current!,
-      () => {
-        setWaiting(false);
-        if (started.current) return;
-        started.current = true;
-        build()
-          .then((b) => {
-            flushSync(() => {
-              setBook(b);
-              setResult(check(b, false, new Map()));
-            });
-            fresh();
-            enter();
-          })
-          .catch((e) => setFailed((e as Error).message ?? String(e)));
-      },
-      { amount: 0.25 },
-    );
-    return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const pay = async () => {
-    if (!book || paid || hidden) return;
-    setPaying(true);
-    const b = book;
-    // the buyer's wallet request: amount, the financier's address, the receipt in the memo
-    const req = JSON.parse(b.w.buyerRepayment(b.master, HERO, b.hero.inv, b.hero.letter, TODAY));
-    flushSync(() => setSlip({ qr: req.qr_svg, uri: `${req.uri.slice(0, 34)}…` }));
-    if (!reduced) {
-      animate(slipEl.current!, { y: { from: 24, to: 0 }, rotate: { from: -6, to: -1.5 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, ease: fn(ease.softLand) });
-      await new Promise((r) => setTimeout(r, 1100));
-    }
-    // the financier sees the payment, countersigns, and the settlement goes on the board
-    const settled = JSON.parse(b.w.financierSettle(b.hero.finSk, b.hero.inv, b.hero.letter, req.memo));
-    b.board.push({ txid: "f".repeat(64), height: 4_500_020, tx_index: 0, output_index: 0, memo: settled.memo });
-    flushSync(() => {
-      setPaid(true);
-      setPaying(false);
-      setResult((r) => check(b, hidden, r?.settledAs ?? new Map()));
-    });
-    fresh();
-    if (!reduced) {
-      const m = marks.current[HERO];
-      play(animate(m.imp!, { scale: { from: 2.2, to: 1 }, opacity: { from: 0, to: 1 }, filter: { from: "blur(6px)", to: "blur(0px)" }, duration: dur.seal, ease: fn(ease.snapSettle) }));
-      play(animate(animeSvg.createDrawable(threads.current[HERO - 1]!), { draw: ["0 0", "0 1"], duration: dur.enter, delay: dur.seal, ease: fn(ease.softInOut) }));
-      play(animate(m.stamp!, { scale: { from: 1.8, to: 1 }, opacity: { from: 0, to: 1 }, duration: dur.seal, delay: dur.seal + dur.enter, ease: fn(ease.snapSettle) }));
-      play(animate([numsEl.current[0].firstElementChild!, numsEl.current[3].firstElementChild!], { scale: [1, 1.18, 1], duration: dur.proof, delay: dur.seal + dur.enter, ease: fn(ease.softInOut) }));
-    }
+  // ---------- running ----------
+  const keysOf = async (w: Wasm): Promise<Keys> => {
+    if (keys.current) return keys.current;
+    const supplier = await labelKey("TES-landing-supplier");
+    const master = await labelKey("TES-landing-buyer-master");
+    const finSk = await labelKey("TES-landing-financier-a");
+    keys.current = { supplier, master, finSk, finPk: w.publicKey(finSk), supplierPk: w.publicKey(supplier), identity: JSON.parse(w.buyerKeys(master, 0)).identity_pk };
+    return keys.current;
   };
 
-  const hide = () => {
-    if (!book) return;
-    const next = !hidden;
-    flushSync(() => {
-      setHidden(next);
-      setResult((r) => check(book, next, r?.settledAs ?? new Map()));
-    });
-    fresh();
-    if (reduced) return;
-    const m = marks.current[LATE];
-    if (next) {
-      play(animate(m.g!, { translateY: { from: 0, to: tall ? 0 : -18 }, translateX: { from: 0, to: tall ? 24 : 0 }, duration: dur.exit, ease: fn(ease.accelExit) }));
-      animate(tally.current!, { x: [0, -6, 6, -3, 0], duration: dur.proof, delay: dur.micro, ease: "linear" });
-    } else play(animate(m.g!, { opacity: { from: 0.2, to: 1 }, duration: dur.enter, ease: fn(ease.softLand) }));
+  /** verifyHistory as a new lender runs it. */
+  const check = (w: Wasm, k: Keys, certs: string[], board: Entry[]): Verdict => {
+    const t0 = performance.now();
+    let report: Report | null = null;
+    let error = "";
+    try {
+      report = JSON.parse(w.verifyHistory(JSON.stringify(certs), k.identity, JSON.stringify([k.finPk]), JSON.stringify(board), TODAY, GRACE));
+    } catch (e) {
+      error = (e as Error).message ?? String(e);
+    }
+    return { report, error, stats: { c: certs.length, e: board.length, ms: (performance.now() - t0).toFixed(1) } };
   };
 
   const reset = () => {
-    if (!book) return;
-    book.board = book.board.filter((e) => (e as { txid: string }).txid !== "f".repeat(64));
-    flushSync(() => {
-      setPaid(false);
-      setHidden(false);
-      setSlip(null);
-      setResult((r) => check(book, false, r?.settledAs ?? new Map()));
-    });
-    fresh();
+    fig.current?.reset();
+    setLines([]);
+    setVerdict(null);
+    setFailed("");
+    roundDone.current = false;
   };
 
-  // the repayment slip: the ZIP-321 request the buyer's wallet pays, drawn by jitsuin-wasm
-  useLayoutEffect(() => {
-    if (!qr.current) return;
-    if (!slip) return void qr.current.replaceChildren();
-    const doc = new DOMParser().parseFromString(slip.qr, "image/svg+xml").documentElement;
-    doc.removeAttribute("width");
-    doc.removeAttribute("height");
-    doc.setAttribute("aria-hidden", "true");
-    qr.current.replaceChildren(document.importNode(doc, true));
-  }, [slip]);
-
-  const line = (u0: number, v0: number, u1: number, v1: number, cls: string, key?: string) => {
-    const [x0, y0] = P(u0, v0);
-    const [x1, y1] = P(u1, v1);
-    return <path key={key} d={`M${x0} ${y0} L${x1} ${y1}`} className={cls} />;
+  const execute = async () => {
+    if (running.current) {
+      pending.current = true;
+      return;
+    }
+    running.current = true;
+    reset();
+    const hiding = hide.current;
+    setStatus({ key: "hs.working" });
+    try {
+      const w = await loadWasm();
+      const k = await keysOf(w);
+      // the buyer's history as it happened: each invoice, its certificate (over the one before), its
+      // register entry on the board, the repayment and the financier's settlement
+      const certs: string[] = [];
+      const ns: string[] = [];
+      const board: Entry[] = [];
+      const post = (memo: string, h: number) => board.push({ txid: (h % 16).toString(16).repeat(64), height: 4_500_000 + h, tx_index: 0, output_index: 0, memo });
+      for (let i = 0; i < BOOK.length; i++) {
+        await hold(160);
+        const b = BOOK[i];
+        const id = `TES-INV-000${i}`;
+        const due = day(b.due);
+        const inv = w.invoiceEncode(
+          JSON.stringify({
+            invoice_id: id,
+            supplier_pk: k.supplierPk,
+            buyer_pk: JSON.parse(w.buyerKeys(k.master, i)).invoice_pk,
+            amount_zat: b.amount,
+            issue_date: due - 60,
+            due_date: due,
+            terms_hash: await labelKey(`${id} terms: 60 days net`),
+          }),
+        );
+        ns.push(w.invoiceNullifier(inv));
+        const cert = w.buyerHistoryCert(k.master, i, inv, k.finPk, certs[i - 1] ?? "");
+        certs.push(cert);
+        post(JSON.parse(w.supplierRegisterHistoryEntry(k.supplier, inv, k.finPk, await labelKey(`TES-landing-salt-h${i}`), cert)).memo, 2 * i);
+        const letter = w.assignmentEncode(inv, k.finPk, PAY_TO, await labelKey(`${id} assignment terms`));
+        const pay = JSON.parse(w.buyerRepayment(k.master, i, inv, letter, day(b.paid)));
+        post(JSON.parse(w.financierSettle(k.finSk, inv, letter, pay.memo)).memo, 2 * i + 1);
+        setLines((l) => [...l, { n: ns[i] }]);
+        setStatus({ key: "hs.fig.st.post", params: { i, id, n: tiny(ns[i]) } });
+        await fig.current?.post(i, tiny(ns[i]));
+      }
+      // the new lender's check, drawer by drawer: each certificate with the ones before it, against
+      // the board as it stood once that invoice was settled
+      for (let i = 0; i < BOOK.length; i++) {
+        await hold(260);
+        if (hiding && i === LATE) {
+          setStatus({ key: "hs.fig.st.missing", params: { i, n: tiny(ns[i]) } });
+          await fig.current?.missing(i, tiny(ns[i]));
+          setLines((l) => l.map((x, j) => (j === i ? { ...x, out: "Hidden" } : x)));
+          continue;
+        }
+        await fig.current?.open(i);
+        setStatus({ key: "hs.fig.st.check", params: { i } });
+        await fig.current?.scan(i, tiny(ns[i]));
+        const v = check(w, k, certs.slice(0, i + 1), board.slice(0, 2 * i + 2));
+        if (!v.report) throw new Error(v.error);
+        const out = v.report.lines[i].outcome;
+        setLines((l) => l.map((x, j) => (j === i ? { ...x, ms: Number(v.stats.ms), out } : x)));
+        setStatus(out === "PaidLate" ? { key: "hs.fig.st.late", params: { i, n: lateDays(i) } } : { key: "hs.fig.st.onTime", params: { i } });
+        await fig.current?.anchor(i, out === "PaidLate");
+      }
+      // the verdict over the whole history the buyer shows
+      await hold(300);
+      const shown = hiding ? certs.filter((_, i) => i !== LATE) : certs;
+      const v = check(w, k, shown, board);
+      setVerdict(v);
+      if (v.report) {
+        setStatus({ key: "hs.fig.st.closes", params: { last: BOOK.length - 1 } });
+        await fig.current?.verdict([v.report.on_time, v.report.late, v.report.defaults]);
+        setStatus({ key: "hs.fig.st.final", params: { a: v.report.on_time, b: v.report.late, c: v.report.defaults } });
+        if (!reduced) animate(tally.current!, { y: { from: 12, to: 0 }, opacity: { from: 0.4, to: 1 }, duration: dur.enter, ease: fn(ease.softLand) });
+      } else {
+        setStatus({ key: "hs.fig.st.refused" });
+        await fig.current?.refuse();
+        if (!reduced) animate(tally.current!, { x: [0, -6, 6, -3, 0], duration: dur.proof, ease: "linear" });
+      }
+      roundDone.current = true;
+    } catch (e) {
+      const msg = (e as Error).message ?? String(e);
+      setFailed(msg);
+      setStatus({ key: "hs.fig.st.stopped", params: { msg } });
+    } finally {
+      running.current = false;
+      // a press during the round runs the next one, once this one's end has shown for a moment
+      if (pending.current) {
+        pending.current = false;
+        void (roundDone.current && !reduced ? wait(1500) : Promise.resolve()).then(() => execute());
+      }
+    }
   };
 
-  // ---------- the drawing ----------
-  const [bx, by] = P(L.tall ? 30 : 60, BV - 44);
-  const [rx0, ry0] = P(-40, -34);
-  const [rx1, ry1] = P(1240, 34);
-  const [tx0, ty0] = P(uOf(TODAY), -72);
-  const report = result?.report ?? null;
-  const error = result?.error ?? "";
-  const num = (key: string, cls: string, v: number | null, i: number) => (
-    <div className={`hs-num ${cls}`} ref={(e) => void (numsEl.current[i] = e!)}>
+  const loop = async () => {
+    if (looping.current) return;
+    looping.current = true;
+    try {
+      if (reduced) {
+        await execute();
+        return;
+      }
+      while (!user.current) {
+        if (!visible.current) {
+          await wait(400);
+          continue;
+        }
+        if (roundDone.current) {
+          await hold(3200); // hold the end state, then the next round
+          if (user.current) break;
+          reset();
+          await wait(700);
+          if (user.current) break;
+        }
+        await execute();
+      }
+    } finally {
+      looping.current = false;
+    }
+  };
+
+  // the visitor's hand: the cabinet or a control takes over, then runs one round
+  const runOnce = () => {
+    takeOver();
+    void execute();
+  };
+  const onPress = useRef(runOnce);
+  onPress.current = runOnce;
+  const toggleHide = () => {
+    hide.current = !hide.current;
+    setHidden(hide.current);
+    runOnce();
+  };
+  const startOver = () => {
+    hide.current = false;
+    setHidden(false);
+    runOnce();
+  };
+
+  // the figure: inserted once, moved by its controller
+  useEffect(() => {
+    const host = figHost.current!;
+    host.innerHTML = cabinetSvg;
+    const f = mountHistoryCabinet(host.querySelector("svg")!, { reduced, onPress: () => onPress.current() });
+    fig.current = f;
+    return () => {
+      f.destroy();
+      fig.current = null;
+      host.replaceChildren();
+    };
+  }, [reduced]);
+
+  // its small labels (and the dates on the certificates) follow EN/中文
+  useEffect(() => {
+    fig.current?.setLabels(Object.fromEntries(FIG_KEYS.map((k) => [k, t(k)])), dateFmt);
+  }, [lang, reduced, t]);
+
+  // ---------- entry ----------
+  // the wasm loads when the chapter comes near, the scene enters when it is in view
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          void loadWasm();
+          io.disconnect();
+        }
+        if (reduced && e.isIntersecting) void loop();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(sec.current!);
+    // the loop pauses while the chapter is off screen
+    const seen = new IntersectionObserver(([e]) => void (visible.current = e.isIntersecting), { threshold: 0.15 });
+    seen.observe(sec.current!);
+    const stop = reduced
+      ? () => undefined
+      : inView(
+          sec.current!,
+          () => {
+            setWaiting(false);
+            heads.current.forEach((x, i) =>
+              animate(x!, { y: { from: 16, to: 0 }, filter: { from: "blur(8px)", to: "blur(0px)" }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: sibling(i), ease: fn(ease.softLand) }),
+            );
+            animate(figHost.current!, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
+            animate(readout.current!, { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
+            setTimeout(() => void loop(), dur.enter + 700);
+          },
+          { amount: 0.25 },
+        );
+    return () => {
+      io.disconnect();
+      seen.disconnect();
+      stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const report = verdict?.report ?? null;
+  const error = failed || verdict?.error || "";
+  const outText = (i: number, o: Line["out"]) =>
+    o === "Hidden" ? t("hs.fig.notShown") : o === "PaidLate" ? t("hs.late", { n: lateDays(i) }) : o === "PaidOnTime" ? t("hs.onTime") : o ? o : "";
+  const num = (key: string, cls: string, v: number | null) => (
+    <div className={`hs-num ${cls}`}>
       <dd className="hs-num-v">{v === null ? "–" : String(v)}</dd>
       <dt className="hs-num-k">{t(key)}</dt>
     </div>
   );
 
   return (
-    <section className={`chapter hs-chapter${waiting ? " is-waiting" : ""}`} id="history" aria-labelledby="hs-title">
-      {/* the ribbon, edge to edge */}
-      <div className="hs-stage">
-        <svg className={`hs-art${L.tall ? " is-tall" : ""}`} role="img" viewBox={`0 0 ${L.box[0]} ${L.box[1]}`} ref={art}>
-          <title>{t("hs.aria")}</title>
-          {/* the board, as one rule all entries hang from */}
-          {line(-40, BV, 1240, BV, "hs-board-rule")}
-          {/* the board's name sits above its rule, clear of the N labels that hang under it */}
-          <text x={L.tall ? bx - 20 : bx} y={L.tall ? by + 24 : by} className="hs-board-name" textAnchor={L.tall ? "middle" : "start"}>
-            登記簿
-          </text>
-          {L.tall ? null : (
-            <text x={bx + 62} y={by} className="hs-board-sub">
-              {t("hs.board")}
-            </text>
-          )}
-          {/* the ribbon */}
-          <rect x={Math.min(rx0, rx1)} y={Math.min(ry0, ry1)} width={Math.abs(rx1 - rx0)} height={Math.abs(ry1 - ry0)} className="hs-ribbon" />
-          {line(-40, -34, 1240, -34, "hs-ribbon-edge")}
-          {line(-40, 34, 1240, 34, "hs-ribbon-edge")}
-          {/* months */}
-          {MONTHS.map((m) => {
-            const u = uOf(day(m));
-            const [x, y] = P(u + (L.tall ? 0 : 6), L.tall ? 48 : 52);
-            return [
-              line(u, 26, u, 34, "hs-tick", `t${m}`),
-              <text key={`m${m}`} x={L.tall ? x + 6 : x} y={L.tall ? y + 4 : y} className="hs-month" textAnchor="start">
-                {dateFmt(day(m), true)}
-              </text>,
-            ];
-          })}
-          {/* today */}
-          {line(uOf(TODAY), -72, uOf(TODAY), 34, "hs-today")}
-          <text x={L.tall ? tx0 - 8 : tx0 + 8} y={L.tall ? ty0 + 18 : ty0 + 4} className="hs-today-label" textAnchor={L.tall ? "end" : "start"}>
-            {t("hs.today")}
-          </text>
-          {/* the thread: one segment per link, sagging a little between seals */}
-          {BOOK.slice(1).map((b, k) => {
-            const i = k + 1;
-            const ua = uOf(day(BOOK[i - 1].due));
-            const ub = uOf(day(b.due));
-            const [x0, y0] = P(ua, 0);
-            const [x1, y1] = P(ub, 0);
-            const [cx, cy] = P((ua + ub) / 2, 16);
-            const cls = `hs-thread${i < HERO || paid ? " is-on" : ""}${hidden && (i === LATE || i === LATE + 1) ? " is-cut" : ""}`;
-            return <path key={i} d={`M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`} className={cls} ref={(e) => void (threads.current[k] = e)} />;
-          })}
-          {/* the seals */}
-          {BOOK.map((b, i) => {
-            const u = uOf(day(b.due));
-            const [x, y] = P(u, 0);
-            const [ax, ay] = P(u, BV - 12);
-            const [dotX, dotY] = P(u, BV);
-            const [dx, dy] = P(u, 64);
-            const [sx, sy] = P(u, L.tall ? 128 : 112);
-            const o = settledAs.get(i) ?? null;
-            const paidLate = o === "PaidLate";
-            const stamped = o === "PaidOnTime" || paidLate;
-            const [dateText, subText] = b.paid
-              ? [t("hs.paidOn", { d: dateFmt(day(b.paid)) }), paidLate ? t("hs.late", { n: day(b.paid) - day(b.due) }) : t("hs.onTime")]
-              : paid
-                ? [t("hs.paidOn", { d: dateFmt(TODAY) }), t("hs.onTime")]
-                : [t("hs.due", { d: dateFmt(day(b.due)) }), t("hs.open")];
-            const cls = `hs-mark${b.paid || paid ? " is-sealed" : ""}${stamped ? " is-stamped" : ""}${i === HERO ? " is-hero" : ""}${hidden && i === LATE ? " is-hidden" : ""}`;
-            const m = marks.current[i];
-            const [lx0, ly0] = P(u, -26);
-            const [lx1, ly1] = P(u, BV);
-            return (
-              <g key={i} className={cls} ref={(e) => void (m.g = e)}>
-                <path d={`M${lx0} ${ly0} L${lx1} ${ly1}`} className="hs-anchor" ref={(e) => void (m.anchor = e)} />
-                <circle cx={dotX} cy={dotY} r={3.2} className="hs-anchor-dot" />
-                <text x={L.tall ? ax - 8 : ax} y={L.tall ? ay + 4 : ay} className="hs-n" textAnchor={L.tall ? "end" : "middle"}>
-                  {book ? book.ns[i].slice(0, 8) : "········"}
-                </text>
-                <circle cx={x} cy={y} r={23} className="hs-ring" />
-                <g className="hs-imp" ref={(e) => void (m.imp = e)}>
-                  <circle cx={x} cy={y} r={22} className="hs-imp-disc" />
-                  <circle cx={x} cy={y} r={17.5} className="hs-imp-fine" />
-                  <text x={x} y={y + 7.5} textAnchor="middle" className="hs-imp-kanji">
-                    買
-                  </text>
-                </g>
-                {/* under the ribbon: the date, then the verdict stamp */}
-                <text x={L.tall ? dx - 20 : dx} y={L.tall ? dy - 4 : dy} textAnchor={L.tall ? "start" : "middle"} className="hs-date">
-                  {dateText}
-                </text>
-                <text x={L.tall ? dx - 20 : dx} y={L.tall ? dy + 12 : dy + 16} textAnchor={L.tall ? "start" : "middle"} className="hs-sub">
-                  {subText}
-                </text>
-                {/* the placed group keeps its transform; the inner one is what moves (CSS would replace it) */}
-                <g transform={`translate(${L.tall ? sx + 18 : sx} ${sy}) rotate(${-8 + (i % 3) * 5})`}>
-                  <g className={`hs-stamp${paidLate ? " is-late" : ""}`} ref={(e) => void (m.stamp = e)}>
-                    <rect x={-15} y={-15} width={30} height={30} rx={3} className="hs-stamp-box" />
-                    <text x={0} y={7} textAnchor="middle" className="hs-stamp-kanji">
-                      {paidLate ? "遅" : "済"}
-                    </text>
-                  </g>
-                </g>
-              </g>
-            );
-          })}
-        </svg>
+    <section className={`chapter hs-chapter${waiting ? " is-waiting" : ""}`} id="history" aria-labelledby="hs-title" ref={sec}>
+      {/* caption (the 35%) */}
+      <div className="chapter-cap">
+        <p className="chapter-kanji" ref={(e) => void (heads.current[0] = e)}>
+          {t("hs.kanji")}
+        </p>
+        <h2 className="chapter-title" id="hs-title" ref={(e) => void (heads.current[1] = e)}>
+          {t("hs.title")}
+        </h2>
+        <p className="chapter-lede" ref={(e) => void (heads.current[2] = e)}>
+          {t("hs.lede")}
+        </p>
+        <p className="chapter-note" ref={(e) => void (heads.current[3] = e)}>
+          {t("hs.note")}
+        </p>
       </div>
-      {/* under it: the caption, the actions, the tally */}
-      <div className="hs-below">
-        <div className="chapter-cap hs-cap">
-          <p className="chapter-kanji">{t("hs.kanji")}</p>
-          <h2 className="chapter-title" id="hs-title">
-            {t("hs.title")}
-          </h2>
-          <p className="chapter-lede">{t("hs.lede")}</p>
-          <p className="chapter-note">{t("hs.note")}</p>
-        </div>
-        <div className="hs-act">
-          <button className="seal-btn hs-pay" type="button" disabled={paid || hidden || !book || paying} onClick={() => void pay()}>
-            <span className="seal-btn-label">{t(paid ? "hs.paid" : "hs.pay")}</span>
-          </button>
-          <div className="hs-links">
-            <button className="ink-link hs-hide" type="button" disabled={!book} onClick={hide}>
+      <div className="hs-visual">
+        {/* the buyer's history cabinet: five drawers, the lender's reader, the public board, the tally */}
+        <div className="hs-figure" ref={figHost} />
+        <div className="hs-readout" ref={readout}>
+          {/* each certificate: its N, the check's measured time, what the board says */}
+          <div className="hs-log-wrap">
+            <p className="hs-run-status" role="status" aria-live="polite">
+              {t(status.key, status.params)}
+            </p>
+            <ol className="hs-log">
+              {BOOK.map((_, i) => {
+                const l = lines[i];
+                return (
+                  <li key={i} className={`hs-log-line${l?.out ? " is-done" : ""}${l?.out === "Hidden" || l?.out === "PaidLate" ? " is-late" : ""}`}>
+                    <span className="hs-log-st">{`#${i} · TES-INV-000${i}`}</span>
+                    <span className="hs-log-ms data">{l?.ms === undefined ? "—" : `${l.ms.toFixed(1)} ms`}</span>
+                    <span className="hs-log-n data">{l ? `N ${short(l.n)}` : "N —"}</span>
+                    <span className="hs-log-out">{outText(i, l?.out)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          {/* the lender's tally: verifyHistory over the whole chain the buyer shows */}
+          <div className={`hs-tally${error ? " is-caught" : ""}`} ref={tally}>
+            <dl className="hs-nums">
+              {num("hs.t.onTime", "is-ok", report?.on_time ?? null)}
+              {num("hs.t.late", "is-late", report?.late ?? null)}
+              {num("hs.t.default", "is-default", report?.defaults ?? null)}
+            </dl>
+            <p className="hs-verdict">{error ? t("hs.caught", { msg: error }) : report ? t("hs.ok", { n: report.lines.length }) : t("hs.working")}</p>
+            <p className="hs-stats data">{verdict ? t("hs.stats", verdict.stats) : ""}</p>
+          </div>
+          <div className="hs-controls">
+            <button className="ink-link hs-hide" type="button" onClick={toggleHide}>
               {t(hidden ? "hs.unhide" : "hs.hide")}
             </button>
-            <button className="ink-link hs-reset" type="button" onClick={reset}>
+            <button className="ink-link hs-reset" type="button" onClick={startOver}>
               {t("hs.reset")}
             </button>
+            <p className="hs-hint">{t("hs.fig.hint")}</p>
           </div>
-          <figure className={`hs-slip${slip ? " is-shown" : ""}`} ref={slipEl}>
-            <div className="hs-qr" ref={qr} />
-            <figcaption className="hs-slip-cap">
-              <span className="hs-slip-title">{t("hs.slip")}</span>
-              <span className="hs-slip-to">{t("hs.slipTo")}</span>
-              <span className="hs-slip-uri data">{slip?.uri ?? ""}</span>
-            </figcaption>
-          </figure>
-        </div>
-        <div className={`hs-tally${error ? " is-caught" : ""}`} role="status" aria-live="polite" ref={tally}>
-          <dl className="hs-nums">
-            {num("hs.t.onTime", "is-ok", report?.on_time ?? null, 0)}
-            {num("hs.t.late", "is-late", report?.late ?? null, 1)}
-            {num("hs.t.default", "is-default", report?.defaults ?? null, 2)}
-            {num("hs.t.open", "is-open", report?.open ?? null, 3)}
-          </dl>
-          <p className="hs-verdict">{failed ? t("hs.caught", { msg: failed }) : error ? t("hs.caught", { msg: error }) : report ? t("hs.ok", { n: report.lines.length }) : t("hs.working")}</p>
-          <p className="hs-stats data">{result ? t("hs.stats", result.stats) : ""}</p>
         </div>
       </div>
     </section>

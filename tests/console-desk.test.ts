@@ -2,7 +2,7 @@
 // node's own deal and mail rows, never from invented values.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bigStamp, refusal, seals, stations, stopStation, tabOf, tagGroups, totals } from "../src/console/model.ts";
+import { acceptedLine, bigStamp, doubleNote, refusal, seals, stations, stopStation, tabOf, tagGroups, totals } from "../src/console/model.ts";
 
 const deal = (state: string, more: Record<string, unknown> = {}) => ({ n: "ab".repeat(32), invoice_id: "TES-INV-0007", advance_zat: 80000, state, ...more });
 
@@ -51,4 +51,24 @@ test("a refused offer reads in plain words and keeps the node's phrase", () => {
 test("the key tag engraves the invite code in four groups", () => {
   assert.deepEqual(tagGroups("q7rm-4kx"), ["Q7RM", "4KX·", null, null]);
   assert.deepEqual(tagGroups(""), [null, null, null, null]);
+});
+
+// E2E audit 2026-10-25 (TES-INV-DBL-24689): the production node's own entry came first, while the
+// 重 card said another financier's did.
+test("the 重 card says whose entry came first, in either order", () => {
+  assert.match(doubleNote("ours_first"), /^Your entry was first on the board/);
+  assert.doesNotMatch(doubleNote("ours_first"), /Another financier registered this invoice first/);
+  assert.match(doubleNote("theirs_first"), /^Another financier registered this invoice first/);
+  assert.match(doubleNote("others_only"), /two other financiers/);
+  // an older node without the field: nothing about the order is claimed
+  assert.doesNotMatch(doubleNote(undefined), /first/);
+  for (const o of ["ours_first", "theirs_first", "others_only", undefined]) assert.match(doubleNote(o), /No money left this node/);
+});
+
+test("an accepted offer says when the supplier gets the commitment opening", () => {
+  const a = { advance_zat: 90000, min_confirmations: 1 };
+  assert.equal(acceptedLine(a, "sent"), "Accepted: 0.0009 ZEC after 1 confirmation. The supplier has your commitment opening.");
+  assert.equal(acceptedLine(a, "awaiting_history"), "Accepted: 0.0009 ZEC after 1 confirmation. Waiting for the buyer's history; the supplier gets your commitment opening once it passes.");
+  assert.match(acceptedLine({ advance_zat: 90000, min_confirmations: 3 }, "sent_after_history"), /3 confirmations\. The buyer's history passed; the supplier has your commitment opening\.$/);
+  assert.doesNotMatch(acceptedLine(a, undefined), /has your commitment opening/);
 });

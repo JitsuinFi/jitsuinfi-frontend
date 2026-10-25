@@ -52,7 +52,10 @@ export interface Portfolio {
   open: number;
   open_zat: number;
   overdue: number;
+  /** What overdue receivables count for: 0, written off in full until repaid (2026-10-25). */
   overdue_zat: number;
+  /** What is still unpaid on them, shown, not counted (absent from a node before 2026-10-25). */
+  overdue_face_zat?: number;
   repaid: number;
   due_within: [number, number, number];
 }

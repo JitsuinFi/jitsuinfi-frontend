@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { download } from "../lib/download";
 import { explain, stopReason } from "../lib/explain";
 import { Act, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
-import { agoSec, bigStamp, dueDay, isDouble, ROUTE, seals, short, stations, tabOf, totals, WAITING, zec } from "./model";
+import { agoSec, bigStamp, doubleNote, dueDay, isDouble, ROUTE, seals, short, stations, tabOf, totals, WAITING, zec } from "./model";
 import { keepName } from "./name";
 import { approvePayment, contactFingerprint, get, post } from "./node";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
@@ -111,7 +111,7 @@ function Memos({ d }: { d: DealRow }): ReactNode {
         <p>{stopReason(d.stopped ?? "", d.stopped_winner)}</p>
         {d.exhibit ? (
           <>
-            <p>Another financier registered this invoice first; the supplier signed it for both of you. No money left this node. Exhibit A proves it to anyone without showing the deal.</p>
+            <p>{doubleNote(d.stopped_order)}</p>
             <div className="cs-actions">
               <CopyButton label="Copy Exhibit A" value={d.exhibit} failed="Copy failed: select the code" />
               {d.proof ? <CopyButton label="Copy the full proof" value={d.proof} failed="Copy failed: select the code" /> : null}

@@ -23,7 +23,7 @@ import { account } from "../lib/app-session";
 import { boardLine, loadBoard, type BoardData } from "../lib/board";
 import { checkInvoice, type CheckResult } from "../lib/buyer-check";
 import { letterChecks, letterProblems, payProblems, type LetterCheck } from "../lib/buyer-letter";
-import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, head, HISTORY_ID, localNextIndex, reconcile, type CertFields, type HistoryDoc } from "../lib/buyer-history";
+import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, freeable, head, HISTORY_ID, localNextIndex, reconcile, type CertFields, type HistoryDoc } from "../lib/buyer-history";
 import { boardStatus, buyerTotals, dueSoon, invoiceRecord, invoiceStatus, isInvoiceId, nextAction, routeDone, sealCount, sortInvoices, storeId, withSignature, type BuyerAction, type BuyerInvoice } from "../lib/buyer-invoices";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../lib/core";
 import { NET } from "../lib/network";
@@ -76,6 +76,20 @@ function backupProblem(e: unknown): string {
     return `The relay refused to hand it over (${e.status}).`;
   }
   return "The copy on the relay could not be opened.";
+}
+
+/** The N of every register entry on the board (decoded only; signatures are not checked here). */
+function registeredNs(boardJson: string): Set<string> {
+  const out = new Set<string>();
+  for (const r of json<Array<{ memo: string }>>(boardJson)) {
+    try {
+      const d = json<{ kind: string; nullifier?: string }>(wasm.boardMemoDescribe(r.memo));
+      if (d.kind !== "Settled" && d.nullifier) out.add(d.nullifier);
+    } catch {
+      /* not a JitsuinFi memo */
+    }
+  }
+  return out;
 }
 
 /** How far `findIndex` looks past the next index for an invoice addressed to an older key. */
@@ -528,22 +542,30 @@ export function BuyerPage(): ReactNode {
         const boardJson = (await board.current!.files?.[0]?.text()) ?? (await loadBoard((u, i) => fetch(u, i)).catch(() => undefined))?.json;
         if (boardJson) {
           const r = json<{ next_index: number; dropped: number[]; successor_on_board: boolean }>(wasm.historyNext(JSON.stringify(hist.certs), id, boardJson));
-          if (r.dropped.length) {
-            hist = dropTail(hist, r.dropped);
+          // E2E audit 2026-10-25: a certificate not on the board yet is dropped only when its deal
+          // is over; one that may still be registered keeps its index (freeable)
+          const loose = r.dropped.length ? freeable(hist.certs.map(certFields), r.dropped, registeredNs(boardJson), today()) : { drop: [], pending: [] };
+          if (loose.drop.length) {
+            hist = dropTail(hist, loose.drop);
             await saveHistory(hist);
-            said.push({ kind: "warn", title: "Unused certificate removed.", text: `Certificate${r.dropped.length > 1 ? "s" : ""} #${r.dropped.join(", #")} never reached the board (the financier did not register), so the number is free again.` });
+            said.push({ kind: "warn", title: "Unused certificate removed.", text: `Certificate${loose.drop.length > 1 ? "s" : ""} #${loose.drop.join(", #")} never reached the board and ${loose.drop.length > 1 ? "their deals are" : "its deal is"} over (the invoice went to the board without it, or is past due), so the number is free again.` });
+          }
+          if (loose.pending.length) {
+            const many = loose.pending.length > 1;
+            said.push({ kind: "warn", title: `Certificate${many ? "s" : ""} not on the board yet.`, text: `Certificate${many ? "s" : ""} #${loose.pending.join(", #")} ${many ? "are" : "is"} not on the board, but ${many ? "their invoices are" : "its invoice is"} not registered and not due: the financier may still register ${many ? "them" : "it"}. ${many ? "They are" : "It is"} kept, so your next key comes after ${many ? "them" : "it"}. Reusing the number could anchor two invoices at one place in your history, which no financier accepts afterwards.` });
           }
           // restored certificates passed historyNext (signatures, links, anchors): keep them
-          if (restored && !r.dropped.length) await saveHistory(hist);
+          if (restored && !loose.drop.length) await saveHistory(hist);
           if (restored) said.push({ kind: "ok", title: "History restored from the relay.", text: `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.` });
           successorOnBoard = r.successor_on_board;
           if (relayUnread !== null && (hist.certs.length > 0 || r.next_index > 0 || successorOnBoard)) said.unshift(unreadNote());
           setBlocked(successorOnBoard);
-          k = r.next_index;
+          // the anchored certificates, then the kept ones whose deals may still register
+          k = r.next_index + loose.pending.length;
           setAnchored(r.next_index);
           said.push(
             successorOnBoard
-              ? { kind: "bad", title: "Your history is ahead of this device.", text: `The board already holds a certificate after #${k - 1 < 0 ? "start" : k - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Open this page on the device that issued it; its copy reaches the relay and comes back here.` }
+              ? { kind: "bad", title: "Your history is ahead of this device.", text: `The board already holds a certificate after #${r.next_index - 1 < 0 ? "start" : r.next_index - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Open this page on the device that issued it; its copy reaches the relay and comes back here.` }
               : { kind: "ok", title: "History checked against the board.", text: `${plural(r.next_index, "certificate")} anchored.` },
           );
         } else {

@@ -1,6 +1,7 @@
 // The fund's shielded pool in section (HNK-34.T5): the member page draws what the fund holds as
 // levels in a basin, to scale. Cash floats on top, the advances out sit under it, what is overdue
-// (after write-off) is silt at the bottom; what the fund owes its members at par is a line, from
+// (after write-off; since 2026-10-25 the write-off is 100 %, so it counts 0 until repaid) is silt
+// at the bottom; what the fund owes its members at par is a line, from
 // the solvency report, and the member's share is part of that line. A unit is owed at par, one
 // zatoshi (the root total is the liabilities in zat, fund-report.ts). Pure: tests run it under Node.
 

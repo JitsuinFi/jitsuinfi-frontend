@@ -45,6 +45,33 @@ export function dropTail(h: HistoryDoc, dropped: number[]): HistoryDoc {
 }
 
 /**
+ * Which of the trailing certificates that wasm `historyNext` found unanchored are free to drop
+ * (E2E audit 2026-10-25). A certificate's board tag depends only on the certificate before it, so
+ * a dropped certificate and the next one issued at its index carry the same tag: if both deals
+ * register, the board anchors two invoices at one place in the history (`Equivocation`), and no
+ * financier accepts that history again. So only a certificate whose deal is over is dropped:
+ *
+ * - its invoice N is already registered on the board (by an entry without its tag: otherwise it
+ *   would be anchored), so the board's first entry for N has decided the deal; or
+ * - its invoice is past its due date: there is nothing left to finance.
+ *
+ * Everything after a dropped certificate links to it, so it goes too. The ones before stay
+ * `pending`: their financier may still register them, and the next index comes after them.
+ * `registered` holds the N (hex) of the board's register entries as decoded, signatures unchecked:
+ * an invalid entry carrying N can only make the page drop a certificate early, which needs N,
+ * known only to the invoice's parties.
+ */
+export function freeable(certs: CertFields[], unanchored: number[], registered: ReadonlySet<string>, today: number): { drop: number[]; pending: number[] } {
+  const loose = [...unanchored].sort((a, b) => a - b);
+  const over = loose.findIndex((i) => {
+    const c = certs[i];
+    return !c || registered.has(c.nullifier) || today > c.due_date;
+  });
+  if (over < 0) return { drop: [], pending: loose };
+  return { drop: loose.slice(over), pending: loose.slice(0, over) };
+}
+
+/**
  * The relay copy of the chain (HNK-25.T2, BL-D26-03), sealed to the buyer's own mailbox key, so
  * another device signed in with the same passkey gets the certificates back. Its head is the last
  * certificate, signed by the identity key and linked to the previous one: the relay cannot forge

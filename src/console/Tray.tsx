@@ -4,7 +4,7 @@
 // button that queues it for the period's end.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Act, say, Stamp, Status, type Load } from "./bits";
-import { dueDay, refusal, short, totals, zec } from "./model";
+import { acceptedLine, dueDay, refusal, short, totals, zec } from "./model";
 import { del, post } from "./node";
 import type { Mail, Offer } from "./types";
 
@@ -77,7 +77,7 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
     return (
       <>
         {facts}
-        <p className="cs-o-done">{`Accepted: ${zec(o.accepted.advance_zat)} ZEC after ${o.accepted.min_confirmations} confirmation${o.accepted.min_confirmations === 1 ? "" : "s"}. The supplier has your commitment opening.`}</p>
+        <p className="cs-o-done">{acceptedLine(o.accepted, o.opening)}</p>
         <span className="cs-o-stamp" lang="ja" aria-hidden="true">
           受
         </span>

@@ -1,7 +1,7 @@
 // HNK-25.T2: the buyer's history chain on this device, run with `npm test`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, head, localNextIndex, reconcile } from "../src/lib/buyer-history.ts";
+import { append, certFields, decodeBackup, dropTail, emptyHistory, encodeBackup, freeable, head, localNextIndex, reconcile, type CertFields } from "../src/lib/buyer-history.ts";
 
 test("certificates are added in order and the next index follows the chain", () => {
   let h = emptyHistory();
@@ -64,4 +64,22 @@ test("the relay copy restores newer certificates and shows a copy that fell behi
   assert.equal(reconcile(emptyHistory(), { certs: [cert(0, 0xdd)] }, id).kind, "diverged");
   assert.equal(reconcile(emptyHistory(), { certs: [cert(1)] }, id).kind, "diverged");
   assert.equal(reconcile(emptyHistory(), { certs: ["AAAA"] }, id).kind, "diverged");
+});
+
+// E2E audit 2026-10-25: a certificate not on the board yet may still be registered by its
+// financier. Freeing its index would let a second certificate carry the same board tag, and two
+// registered deals would anchor two invoices at one place in the history.
+test("only a certificate whose deal is over frees its index", () => {
+  const cert = (index: number, n: string, due: number): CertFields => ({ index, nullifier: n.repeat(64), amount_zat: 1, due_date: due, financier_pk: "f", identity_pk: "i" });
+  const certs = [cert(0, "a", 900), cert(1, "b", 900), cert(2, "c", 900)];
+  const none = new Set<string>();
+  // #1 and #2 are not on the board and not due: their deals may still register, both are kept
+  assert.deepEqual(freeable(certs, [2, 1], none, 100), { drop: [], pending: [1, 2] });
+  // #1's invoice was registered without its tag (another financier, or no history asked): over
+  assert.deepEqual(freeable(certs, [1, 2], new Set(["b".repeat(64)]), 100), { drop: [1, 2], pending: [] });
+  // #2's invoice registered elsewhere: only #2 goes, #1 stays pending
+  assert.deepEqual(freeable(certs, [1, 2], new Set(["c".repeat(64)]), 100), { drop: [2], pending: [1] });
+  // past the due date there is nothing left to finance
+  assert.deepEqual(freeable(certs, [1, 2], none, 901), { drop: [1, 2], pending: [] });
+  assert.deepEqual(freeable(certs, [], none, 100), { drop: [], pending: [] });
 });

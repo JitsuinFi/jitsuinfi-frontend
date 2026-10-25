@@ -135,6 +135,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
 
   // a press on a seal in the figure: only the next one in the order seals; another one shakes
   const pressAt = (i: number) => {
+    takeOver();
     const c = chain.current;
     if (busyRef.current || c.broken || c.seals.length >= 3 || i < c.seals.length) return;
     if (i !== c.seals.length) {
@@ -148,6 +149,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
   onPress.current = pressAt;
 
   const breakSeals = async () => {
+    takeOver();
     const c = chain.current;
     if (!c.seals.length || c.broken) return;
     const { w } = await setup();
@@ -167,19 +169,18 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     desk.current?.breakSeals();
   };
 
-  // the chain plays by itself once the chapter is in view (user, 2026-10-25: nobody has to click);
-  // each step is still a real seal from jitsuin-wasm, in order
-  const played = useRef(false);
-  const autoplay = async () => {
-    if (played.current) return;
-    played.current = true;
-    for (let i = 0; i < 3 && !chain.current.broken; i++) {
-      await pressNext();
-      if (!reduced) await new Promise((r) => setTimeout(r, 450));
-    }
+  // The chain plays by itself and loops while the chapter is in view (user, 2026-10-25: nobody has
+  // to click); each round is still three real seals from jitsuin-wasm, in order. The first press, key
+  // or control from the visitor stops the loop for good and hands the desk over. Reduced motion
+  // plays one round, straight to the end state.
+  const user = useRef(false);
+  const visible = useRef(false);
+  const looping = useRef(false);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const takeOver = () => {
+    user.current = true;
   };
-
-  const startOver = () => {
+  const resetChain = () => {
     const c = chain.current;
     c.seals.length = 0;
     c.broken = false;
@@ -190,8 +191,43 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
     desk.current?.reset();
     setStatus({ key: "sc.wait.supplier" });
     setCanTamper(false);
-    played.current = false;
-    setTimeout(() => void autoplay(), reduced ? 0 : 600);
+  };
+  const playRound = async (stop: () => boolean) => {
+    for (let i = chain.current.seals.length; i < 3 && !chain.current.broken && !stop(); i++) {
+      await pressNext();
+      if (!reduced) await wait(450);
+    }
+  };
+  const loop = async () => {
+    if (looping.current) return;
+    looping.current = true;
+    try {
+      if (reduced) {
+        await playRound(() => user.current);
+        return;
+      }
+      while (!user.current) {
+        if (!visible.current) {
+          await wait(400);
+          continue;
+        }
+        if (chain.current.seals.length >= 3 || chain.current.broken) {
+          await wait(3200); // hold the paid state, then the next round
+          if (user.current) break;
+          resetChain();
+          await wait(700);
+        }
+        await playRound(() => user.current);
+      }
+    } finally {
+      looping.current = false;
+    }
+  };
+
+  const startOver = () => {
+    takeOver();
+    resetChain();
+    setTimeout(() => void playRound(() => false), reduced ? 0 : 600); // one round, no loop
   };
 
   // the figure: inserted once, moved by its controller
@@ -220,11 +256,14 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
           void setup();
           io.disconnect();
         }
-        if (reduced && e.isIntersecting) void autoplay();
+        if (reduced && e.isIntersecting) void loop();
       },
       { rootMargin: "600px 0px" },
     );
     io.observe(sec.current!);
+    // the loop pauses while the chapter is off screen
+    const seen = new IntersectionObserver(([e]) => void (visible.current = e.isIntersecting), { threshold: 0.15 });
+    seen.observe(sec.current!);
     const stop = reduced
       ? () => undefined
       : inView(
@@ -236,12 +275,13 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
             );
             animate(deskHost.current!, { y: { from: 24, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter + 200, delay: 120, ease: fn(ease.softLand) });
             animate(readout.current!, { y: { from: 16, to: 0 }, opacity: { from: 0, to: 1 }, duration: dur.enter, delay: 400, ease: fn(ease.softLand) });
-            setTimeout(() => void autoplay(), dur.enter + 700);
+            setTimeout(() => void loop(), dur.enter + 700);
           },
           { amount: 0.25 },
         );
     return () => {
       io.disconnect();
+      seen.disconnect();
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

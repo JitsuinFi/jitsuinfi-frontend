@@ -3,7 +3,7 @@
 // number, issue date, buyer key (the addressee, 御中), amount due, due date, terms hash, supplier
 // key; N is computed from them. The buyer's seal 買 sits in the 受領印 box and cracks the moment
 // the bytes differ from the ones the buyer signed.
-import type { ReactNode, RefObject } from "react";
+import type { ReactNode, Ref, RefObject } from "react";
 
 const short = (x: string) => `${x.slice(0, 10)}…${x.slice(-6)}`;
 
@@ -47,11 +47,28 @@ export interface BlankSheet {
 }
 
 /**
+ * The sheet on /try's case desk (HNK-34.T2): the paper clip, N in four lines of sixteen, the
+ * buyer's 買 drawn as an inked SVG seal that cracks (and a reading ring B turns over it), and
+ * whatever the page lays on the sheet (the hanko's mark). `sealed` is the real check of the
+ * buyer's signature on these bytes (jitsuin-wasm), not a field comparison.
+ */
+export interface CaseSheet {
+  sealed: boolean;
+  nCode: Ref<HTMLElement>;
+  ring: Ref<SVGCircleElement>;
+  crack: Ref<SVGPathElement>;
+  art: Ref<SVGGElement>;
+  inside: ReactNode;
+}
+
+const lines = (n: string) => [0, 1, 2, 3].map((i) => n.slice(i * 16, i * 16 + 16));
+
+/**
  * The sheet. Its inputs are uncontrolled (the page reads and resets them through `fields`);
  * `changed` marks edited fields and cracks the seal (null: not compared, as on a blank sheet),
  * `n` is the fingerprint of these bytes.
  */
-export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet }): ReactNode {
+export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet }): ReactNode {
   const isChanged = (k: keyof SheetFields) => {
     if (changed === null) return undefined;
     const f = KEYS.find(([key]) => key === k)![1];
@@ -90,8 +107,17 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank }: { o:
       ? "This is no longer a valid invoice: no seal can hold."
       : `You changed the ${changed.map((c) => WORD[c]).join(", ")}. The buyer's seal no longer holds.`;
 
+  const seal = blank ? blank.seal : kase ? (kase.sealed ? "whole" : "broken") : changed?.length ? "broken" : "whole";
+
   return (
-    <article className="sk" aria-label="The invoice (請求書)" data-seal={blank ? blank.seal : changed?.length ? "broken" : "whole"} ref={sheet}>
+    <article className={kase ? "sk is-case" : "sk"} aria-label="The invoice (請求書)" data-seal={seal} ref={sheet}>
+      {kase ? (
+        <span className="sk-clip" aria-hidden="true">
+          <svg viewBox="0 0 24 64">
+            <path d="M8 54V14a6 6 0 0 1 12 0v40a9 9 0 0 1-18 0V20" />
+          </svg>
+        </span>
+      ) : null}
       <header className="sk-head">
         <h2 className="sk-title">
           <span lang="ja">請 求 書</span>
@@ -143,22 +169,44 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank }: { o:
         <div className="sk-n">
           <span className="sk-n-k">N</span>
           <div>
-            <code>{blank ? blank.n : (n ?? "none: the fields do not make an invoice")}</code>
+            {kase ? (
+              <code className={n ? undefined : "is-none"} ref={kase.nCode}>
+                {n ? lines(n).map((l, i) => <span key={i}>{l}</span>) : <span>none: the fields do not make an invoice</span>}
+              </code>
+            ) : (
+              <code>{blank ? blank.n : (n ?? "none: the fields do not make an invoice")}</code>
+            )}
             <small>Fingerprint of these exact bytes, computed in your browser</small>
           </div>
         </div>
         <div className="sk-box">
           <span lang="ja">受領印</span>
-          <span className="sk-seal" aria-hidden="true">
-            <span className="sk-seal-ink">買</span>
-            <span className="sk-seal-crack" />
-          </span>
+          {kase ? (
+            <span className="sk-seal" aria-hidden="true">
+              <svg viewBox="0 0 68 68">
+                <g className="seal-art" filter="url(#tc-ink)" ref={kase.art}>
+                  <circle className="seal-ink" cx="34" cy="34" r="29" />
+                  <text className="seal-glyph" x="34" y="46" textAnchor="middle">
+                    買
+                  </text>
+                </g>
+                <path className="seal-crack" d="M18 6 L28 22 L22 31 L36 40 L31 50 L44 63" ref={kase.crack} />
+                <circle className="seal-ring" cx="34" cy="34" r="36" ref={kase.ring} />
+              </svg>
+            </span>
+          ) : (
+            <span className="sk-seal" aria-hidden="true">
+              <span className="sk-seal-ink">買</span>
+              <span className="sk-seal-crack" />
+            </span>
+          )}
           <small>Buyer's seal</small>
         </div>
       </footer>
       <p className="sk-note" aria-live="polite">
         {note}
       </p>
+      {kase?.inside}
     </article>
   );
 }

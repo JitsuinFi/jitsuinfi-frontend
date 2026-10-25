@@ -1,12 +1,13 @@
-// Exhibit A as the slip B's receipt printer prints (M-03, D-44, reference PIN-06): the double
+// Exhibit A as the tag B hangs on a red string (M-03, D-44; HNK-34.T2 case desk): the double
 // signature without the deal. Every line comes from `verifyExhibitOnBoard` (the same rule as
-// `jitsuin verify --exhibit`); the bars at the foot are N's own 32 bytes, so each exhibit prints
-// its own barcode. The paper feeds out line by line over 1.2s (linear).
+// `jitsuin verify --exhibit`); the bars at the foot are N's own 32 bytes, so each exhibit carries
+// its own barcode. The tag drops onto its pin (the page's one popOver), then its lines are written
+// one after another over 1.2s.
 import { cloneElement, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type RefObject } from "react";
 import { inView } from "motion";
 import { json, wasm } from "../../lib/core";
 import { download } from "../../lib/download";
-import { run, wait } from "./anim";
+import { dur, ease, run, still, wait } from "./anim";
 
 interface At {
   txid: string;
@@ -27,7 +28,7 @@ const where = (a: At | null) => (a ? `block ${a.height} · tx ${a.tx_index ?? "?
 const mark = (ok: boolean | null) => (ok === null ? "?" : ok ? "✓" : "✗");
 
 /** N's bytes as bars: each nibble sets a bar's width, so the code is the fingerprint itself. */
-function Bars({ n }: { n: string }): ReactNode {
+export function Bars({ n, className }: { n: string; className?: string }): ReactNode {
   let x = 0;
   const rects = [...n].map((c, i) => {
     const w = 1 + (parseInt(c, 16) % 4);
@@ -36,61 +37,61 @@ function Bars({ n }: { n: string }): ReactNode {
     return r;
   });
   return (
-    <svg viewBox={`0 0 ${x} 40`} aria-hidden="true" preserveAspectRatio="none">
+    <svg className={className} viewBox={`0 0 ${Math.max(1, x)} 40`} aria-hidden="true" preserveAspectRatio="none">
       {rects}
     </svg>
   );
 }
 
-/** The slip's lines, in print order. */
-function slipLines(r: ExhibitOnBoard, line: string): ReactElement[] {
+/** The tag's lines, in writing order. */
+function tagLines(r: ExhibitOnBoard, line: string): ReactElement[] {
   const n = r.signatures.nullifier ?? "";
   return [
-    <p className="rc-title">EXHIBIT A</p>,
-    <p className="rc-sub">{r.holds ? "Double signature, on the board" : "Does not hold on this board data"}</p>,
-    <p className="rc-rule" />,
-    <p>
+    <p className="ex-line ex-title">Exhibit A</p>,
+    <p className="ex-line ex-sub">{r.holds ? "Double signature, on the board" : "Does not hold on this board data"}</p>,
+    <p className="ex-line ex-rule" />,
+    <p className="ex-line ex-kv">
       <span>Fingerprint N</span>
       <code>{n}</code>
     </p>,
-    <p>
+    <p className="ex-line ex-kv">
       <span>Supplier key</span>
       <code>{r.signatures.supplier_pk ?? ""}</code>
     </p>,
-    <p className="rc-rule" />,
-    <p className="rc-check">
+    <p className="ex-line ex-rule" />,
+    <p className="ex-line ex-check">
       <b>{mark(r.signatures.ok)}</b>one key signed N for two financiers
     </p>,
-    <p className="rc-check">
+    <p className="ex-line ex-check">
       <b>{mark(r.first.on_board)}</b>
       {`entry ① ${where(r.first.claimed_at)}`}
     </p>,
-    <p className="rc-check">
+    <p className="ex-line ex-check">
       <b>{mark(r.second.on_board)}</b>
       {`entry ② ${where(r.second.claimed_at)}`}
     </p>,
-    <p className="rc-check">
+    <p className="ex-line ex-check">
       <b>{mark(r.ordered)}</b>① came before ②
     </p>,
-    <p className="rc-rule" />,
-    <p className="rc-small">Names no invoice, amount, buyer or financier. Whoever holds the invoice can check it is this one.</p>,
-    <div className="rc-bars">
-      <Bars n={n} />
-    </div>,
-    <p className="rc-small">{`Checked in this browser by the rule of jitsuin verify --exhibit. ${line}`}</p>,
+    <p className="ex-line ex-rule" />,
+    <p className="ex-line ex-small">Names no invoice, amount, buyer or financier. Whoever holds the invoice can check it is this one.</p>,
+    <p className="ex-line">
+      <Bars n={n} className="ex-bars" />
+    </p>,
+    <p className="ex-line ex-small">{`Checked in this browser by the rule of jitsuin verify --exhibit. ${line}`}</p>,
   ];
 }
 
-export function Printer({ load, button, out }: { load: () => Promise<{ exhibit: string; board: string; line: string }>; button: RefObject<HTMLButtonElement | null>; out: RefObject<HTMLDivElement | null> }): ReactNode {
+export function Exhibit({ load, button, out }: { load: () => Promise<{ exhibit: string; board: string; line: string }>; button: RefObject<HTMLButtonElement | null>; out: RefObject<HTMLDivElement | null> }): ReactNode {
   const [lines, setLines] = useState<ReactElement[]>([]);
   const [shown, setShown] = useState(0);
   const [printed, setPrinted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [keep, setKeep] = useState(false);
   const [failed, setFailed] = useState("");
-  const el = useRef<HTMLDivElement>(null);
+  const hang = useRef<HTMLDivElement>(null);
   const text = useRef("");
-  const slip = useRef<HTMLDivElement>(null);
+  const tag = useRef<HTMLDivElement>(null);
 
   const print = async () => {
     setBusy(true);
@@ -98,15 +99,18 @@ export function Printer({ load, button, out }: { load: () => Promise<{ exhibit: 
       const { exhibit, board, line } = await load();
       text.current = exhibit;
       const r = json<ExhibitOnBoard>(wasm.verifyExhibitOnBoard(exhibit, board, null));
-      const all = slipLines(r, line);
+      const all = tagLines(r, line);
       setFailed("");
       setLines(all);
       setShown(0);
       setPrinted(true);
+      // the tag drops onto its pin: the page's one popOver
+      await run(hang.current!, { y: [-40, 0], rotate: [-6.2, 0], duration: dur.proof + 300 }, ease.popOver);
       for (let i = 0; i < all.length; i++) {
         setShown(i + 1);
-        await wait(1200 / all.length);
+        await wait(dur.bleed / all.length);
       }
+      setShown(all.length);
       setKeep(true);
     } catch (e) {
       setLines([]);
@@ -115,19 +119,23 @@ export function Printer({ load, button, out }: { load: () => Promise<{ exhibit: 
       setBusy(false);
     }
   };
-  // each new line feeds out of the printer
+  // each new line is written onto the tag; a check mark lands like a small stamp
   useLayoutEffect(() => {
-    const l = shown ? slip.current?.children[shown - 1] : null;
-    if (l instanceof HTMLElement) void run(l, { opacity: [0, 1], y: [-6, 0], duration: 160 });
+    if (still()) return;
+    const l = shown ? tag.current?.querySelectorAll(".ex-line")[shown - 1] : null;
+    if (!(l instanceof HTMLElement)) return;
+    void run(l, { opacity: [0, 1], y: [-6, 0], duration: 160 });
+    const b = l.querySelector("b");
+    if (b) void run(b, { scale: [1.6, 1], duration: dur.seal }, ease.snapSettle);
   }, [shown]);
   const printRef = useRef(print);
   printRef.current = print;
 
-  // B prints the slip as soon as the printer comes into view; the button prints it again.
+  // B hangs the tag as soon as it comes into view; the button writes it again.
   useEffect(
     () =>
       inView(
-        el.current!,
+        hang.current!,
         () => {
           if (out.current?.dataset.printed !== "true" && !button.current?.disabled) void printRef.current();
         },
@@ -137,20 +145,22 @@ export function Printer({ load, button, out }: { load: () => Promise<{ exhibit: 
   );
 
   return (
-    <div className="rc" ref={el}>
-      <div className="rc-machine" aria-hidden="true">
-        <span className="rc-brand" lang="ja">
-          証拠
-        </span>
-        <span className="rc-light" />
-        <span className="rc-mouth" />
-      </div>
-      <div className="rc-out" data-printed={printed ? "true" : undefined} ref={out}>
-        <div className="rc-slip" aria-live="polite" ref={slip}>
-          {failed ? <p className="rc-small">{failed}</p> : lines.slice(0, shown).map((l, i) => cloneElement(l, { key: i }))}
+    <div className="ex-visual">
+      <div className="ex-hang" ref={hang}>
+        <span className="ex-pin" aria-hidden="true" />
+        <span className="ex-string" aria-hidden="true" />
+        <div className="ex-tag" aria-live="polite" ref={tag}>
+          <span className="tag-hole" aria-hidden="true" />
+          {failed ? (
+            <p className="ex-small">{failed}</p>
+          ) : lines.length ? (
+            lines.slice(0, shown).map((l, i) => cloneElement(l, { key: i }))
+          ) : (
+            <p className="ex-small">B writes Exhibit A when this tag comes into view.</p>
+          )}
         </div>
       </div>
-      <div className="rc-actions">
+      <div className="ex-actions" data-printed={printed ? "true" : undefined} ref={out}>
         <button type="button" className="seal-btn" disabled={busy} ref={button} onClick={() => void print()}>
           <span>Print it again</span>
         </button>

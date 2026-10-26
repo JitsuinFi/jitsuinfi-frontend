@@ -154,10 +154,10 @@ test("a request for another invoice or from another financier does not fit the d
 test("the route marks the steps that wait on someone else, then 済 (HNK-34.T5)", () => {
   const states = (d: SupplierDeal, settled = false) => route(d, settled).map((s) => s.state);
   assert.deepEqual(states(deal()), ["next", "later", "later", "later", "later", "later"]);
-  assert.deepEqual(nextMove(deal()), { text: "check the buyer's signature", wait: false });
+  assert.deepEqual(nextMove(deal()), { text: "send it to the buyer to sign", wait: false });
   const asked = deal({ sign_request: { to: "aa", at: 1 } });
   assert.deepEqual(states(asked), ["wait", "later", "later", "later", "later", "later"]);
-  assert.equal(nextMove(asked)!.text, "wait for the buyer's signature (or paste it)");
+  assert.equal(nextMove(asked)!.text, "wait for the buyer to sign in their inbox");
   const offered = deal({ buyer_signature: "00", offer });
   assert.deepEqual(states(offered), ["done", "done", "wait", "later", "later", "later"]);
   assert.deepEqual(states(deal({ buyer_signature: "00", offer, entry_request: request })), ["done", "done", "next", "later", "later", "later"]);

@@ -582,3 +582,170 @@
 @media (prefers-reduced-motion: reduce) {
   .sp *, .sp *::before, .sp *::after { animation: none !important; transition: none !important; }
 }
+
+/* ==================== IA port 2026-10-26: the supplier's sections ====================
+   Invoices (the 台帳 as the page's visual), Write an invoice (the sheet is the form), Deal (route
+   over the sheet beside the station's work; on a phone a deal screen and a station screen), and the
+   folded by-hand fallbacks. Approved prototype design-samples/ia/prototype.html. */
+.sp .ia-dot { font-style: normal; margin: 0 8px; color: var(--fold); }
+.sp .ia-sec { color: var(--ink-2); }
+.sp .ia-vis { min-width: 0; }
+.sp .ia-goline { display: flex; align-items: center; gap: 10px; margin-top: 22px; font: 400 13.5px/1.45 var(--f-body); color: var(--ink); }
+.sp a.sp-pill, .sp a.sp-ln, .sp a.ia-sw { text-decoration: none; }
+.sp .sp-pill { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------- Invoices: the ledger as a bound book ---------- */
+.sp .ia-book { position: relative; padding: 26px 30px 30px; background: var(--sheet); box-shadow: var(--lift); }
+.sp .ia-book::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: linear-gradient(90deg, rgba(186, 113, 162, .22), transparent); }
+.sp .ia-book .sp-ledger { margin: 0; }
+.sp .ia-book .sp-ledger-h { padding-bottom: 12px; margin-bottom: 14px; }
+.sp .ia-book .sp-ledger-h h2 b { font-size: 24px; }
+.sp .ia-book .ia-ll-g ol li { border-bottom: 1px solid var(--rule); }
+.sp .ia-book .sp-ln { grid-template-columns: 40px minmax(0, 1fr) auto minmax(0, 1.25fr); column-gap: 18px; padding: 14px 12px 14px 8px; }
+.sp .ia-book .sp-ln-g { grid-row: 1 / span 2; width: 36px; height: 36px; font-size: 16px; }
+.sp .ia-book .sp-ln-id { grid-column: 2; font-size: 15px; }
+.sp .ia-book .sp-ln-meta { grid-column: 2; }
+.sp .ia-book .sp-ln-amt { grid-column: 4; grid-row: 1; font-size: 15px; text-align: right; }
+.sp .ia-book .ia-kticks { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+.sp .ia-book .sp-ln-next { grid-column: 4; grid-row: 2; justify-self: end; text-align: right; }
+.sp .ia-book .sp-ln-board { grid-column: 2 / -1; }
+.sp .ia-book .sp-ln .ia-open { grid-column: 4; grid-row: 3; justify-self: end; font: 500 12.5px/1.2 var(--f-body); color: var(--seal); opacity: 0; transition: opacity var(--dur-fade) var(--ease-land); }
+.sp .ia-book .sp-ln:hover .ia-open, .sp .ia-book .sp-ln:focus-visible .ia-open { opacity: 1; }
+.ia-kticks { display: inline-flex; gap: 4px; }
+.ia-kticks i {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font: 800 11.5px/1 var(--f-seal); font-style: normal;
+  color: var(--ink-2); box-shadow: inset 0 0 0 1.25px var(--mist); opacity: .7;
+}
+.ia-kticks i.is-done { background: var(--seal); color: var(--sheet); box-shadow: none; opacity: 1; }
+.ia-kticks i.is-next { color: var(--seal); box-shadow: inset 0 0 0 2px var(--seal); opacity: 1; }
+.ia-kticks i.is-wait { color: var(--ink-2); box-shadow: none; border: 1.25px dashed var(--ink-2); opacity: 1; }
+.sp .ia-book-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 14px !important; font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+.sp .ia-ll-h { margin-top: 10px; }
+
+/* ---------- Write an invoice: one form, the sheet is the form ---------- */
+.sp .ia-new-form { display: grid; gap: 18px; max-width: 720px; }
+.sp .sk-to.is-slot { align-items: center; }
+.sp .sk-buyer { flex: 1 1 auto; display: grid; gap: 6px; min-width: 0; }
+.sp .sk-buyer select, .sp .sk-buyer input, .sp .sp-sendto select {
+  width: 100%; min-width: 0; min-height: 0; padding: 6px 8px; border: 0; border-bottom: 1px dashed var(--fold); border-radius: 0; background: transparent;
+  color: var(--head); font: 500 13px/1.4 var(--f-body);
+}
+.sp .sk-buyer input { font: 400 12.5px/1.4 var(--f-mono); }
+.sp .sk-buyer select:hover, .sp .sk-buyer input:hover { border-bottom-color: var(--seal); }
+.sp .sk-buyer select:focus, .sp .sk-buyer input:focus, .sp .sp-sendto select:focus { outline: 2px solid var(--seal); outline-offset: 2px; }
+.sp .sk-buyer [aria-invalid="true"] { border-bottom: 2px solid var(--seal); background: rgba(236, 208, 236, .72); }
+.sp .sk-buyer-hand { display: grid; gap: 6px; }
+.sp .sk-buyer small, .sp .sk-buyer-none { font: 400 11.5px/1.35 var(--f-body); color: var(--ink-2); }
+.sp .sk-buyer.is-read { display: grid; gap: 2px; }
+.sp .sk-buyer.is-read strong { font: 500 14px/1.3 var(--f-body); color: var(--head); }
+.sp .sk-buyer.is-read code { font: 400 12.5px/1.3 var(--f-mono); letter-spacing: .04em; color: var(--head); }
+.sp .sk-file { position: relative; display: grid; justify-items: end; gap: 3px; cursor: pointer; }
+.sp .sk-file input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.sp .sk-file-b { display: inline-block; padding: 5px 12px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--fold); color: var(--seal); font: 500 12.5px/1.2 var(--f-body); }
+.sp .sk-file:hover .sk-file-b, .sp .sk-file:focus-within .sk-file-b { box-shadow: inset 0 0 0 1.5px var(--seal); }
+.sp .sk-file:focus-within { outline: 2px solid var(--seal); outline-offset: 3px; }
+.sp .sk-file.is-bad .sk-file-b { background: rgba(236, 208, 236, .72); box-shadow: inset 0 0 0 2px var(--seal); }
+.sp .sk-file-n { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); overflow-wrap: anywhere; }
+.sp .sk-file code { font: 400 11.5px/1.3 var(--f-mono); color: var(--head); }
+.sp .sk-by { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); }
+.sp .ia-new-go { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; padding-left: 18px; }
+.sp .ia-new-go p { max-width: 44ch; font: 400 13px/1.45 var(--f-body); color: var(--ink-2); }
+.sp .ia-new .out { padding-left: 18px; }
+
+/* ---------- Deal: route on top, the sheet beside the station's work ---------- */
+.sp .ia-deal { display: grid; gap: 26px; min-width: 0; }
+.sp .ia-deal .sp-rail-area { padding: 0; }
+.sp .ia-deal-row { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 34px; align-items: start; }
+.sp .ia-deal-row .sp-work { padding-top: 0; }
+.sp .ia-facts { display: grid; margin: 26px 0 0; }
+.sp .ia-facts > div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.sp .ia-facts dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
+.sp .ia-facts dd { margin: 0; min-width: 0; display: grid; gap: 1px; font: 500 14px/1.35 var(--f-body); color: var(--head); overflow-wrap: anywhere; }
+.sp .ia-facts dd code { font: 400 12.5px/1.45 var(--f-mono); }
+.sp .sp-cap h1.ia-deal-id, .sp .ia-deal-phone h1.ia-deal-id { font: 800 clamp(34px, 3.2vw, 50px)/1.02 var(--f-display); overflow-wrap: anywhere; }
+.sp .ia-deal-id span { display: block; margin-top: 8px; font: 500 clamp(22px, 1.8vw, 28px)/1 var(--f-mono); letter-spacing: -.01em; color: var(--seal); }
+.sp .ia-switch { margin: 30px 0 0; }
+.sp .ia-switch-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 2px solid var(--head); }
+.sp .ia-switch-h h2 { display: flex; align-items: baseline; gap: 10px; font: 500 15px/1.2 var(--f-body); color: var(--head); }
+.sp .ia-switch-h h2 b { font: 700 18px/1 var(--f-seal); letter-spacing: .12em; }
+.sp .ia-switch-h a { font: 500 13px/1 var(--f-body); }
+.sp .ia-switch .ia-ll-g ol li { border-bottom: 1px solid var(--rule); }
+.sp .ia-switch a.ia-sw {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 1px 10px; align-items: center; padding: 9px 8px 9px 2px; border-radius: 10px;
+  color: var(--ink); transition: background-color var(--dur-fade) var(--ease-land);
+}
+.sp .ia-switch a.ia-sw:hover { background: rgba(196, 199, 242, .22); }
+.sp .ia-switch a.ia-sw[aria-current="page"] { background: var(--sheet); box-shadow: 0 1px 2px rgba(70, 29, 58, .08), 0 6px 18px rgba(70, 29, 58, .07); }
+.sp .ia-switch .sp-ln-g { grid-row: 1 / span 2; width: 28px; height: 28px; font-size: 13px; }
+.sp .ia-sw-id { font: 500 13px/1.3 var(--f-mono); color: var(--head); overflow-wrap: anywhere; }
+.sp .ia-sw-amt { font: 500 13px/1.3 var(--f-mono); color: var(--head); text-align: right; white-space: nowrap; }
+.sp .ia-sw-next { grid-column: 2 / -1; font: 400 12.5px/1.35 var(--f-body); color: var(--ink-2); }
+.sp .ia-sw-next b { font-weight: 500; color: var(--seal); }
+.sp .ia-sw-next.is-wait b { color: var(--ink-2); }
+.sp .ia-empty { display: grid; gap: 14px; max-width: 640px; padding: 20px 0; }
+.sp .ia-empty h1 { font: var(--cap-h1); color: var(--head); }
+
+/* a line on the paper with a small kanji, and the "send it to" facts */
+.sp .sp-line { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: center; font: 400 13.5px/1.45 var(--f-body); color: var(--ink); }
+.sp .sp-line b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--seal); font: 800 13px/1 var(--f-seal); }
+.sp .sp-line.is-wait b { box-shadow: none; border: 1.25px dashed var(--ink-2); color: var(--ink-2); }
+.sp .sp-sendto { display: grid; margin: 0; }
+.sp .sp-sendto > div { display: grid; grid-template-columns: 4em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.sp .sp-sendto > div:first-child { border-top: 0; padding-top: 0; }
+.sp .sp-sendto dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
+.sp .sp-sendto dd { margin: 0; display: grid; gap: 2px; min-width: 0; font: 400 13.5px/1.4 var(--f-body); color: var(--head); }
+.sp .sp-sendto dd strong { font-weight: 500; }
+.sp .sp-sendto dd code { font: 400 12.5px/1.35 var(--f-mono); letter-spacing: .04em; }
+.sp .sp-sendto dd small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
+/* a folded fallback: by hand, without the relay */
+.sp details.sp-fold { min-width: 0; padding-top: 10px; border-top: 1px dashed var(--mist); }
+.sp details.sp-fold > summary { display: flex; align-items: baseline; gap: 8px; cursor: pointer; list-style: none; font: 500 13px/1.3 var(--f-body); color: var(--ink-2); }
+.sp details.sp-fold > summary::-webkit-details-marker { display: none; }
+.sp details.sp-fold > summary::after { content: "open ▾"; margin-left: auto; font: 400 12px/1 var(--f-body); color: var(--seal); }
+.sp details.sp-fold[open] > summary::after { content: "fold ▴"; }
+.sp details.sp-fold > summary b { font: 700 15px/1 var(--f-seal); color: var(--head); }
+.sp .sp-fold-body { display: grid; gap: 12px; margin-top: 12px; min-width: 0; }
+.sp .sp-fold-body .sp-or { margin: 0; padding: 0; border: 0; }
+
+/* ---------- a phone: the deal screen and the station screen ---------- */
+.sp .ia-deal-phone { display: grid; gap: 18px; min-width: 0; }
+.sp .ia-deal-phone .ia-did { margin: 0; }
+.sp .ia-deal-phone .sp-rail-area { padding: 0; }
+.sp .ia-deal-go button { width: 100%; }
+.sp .ia-deal-phone .ia-facts { margin: 0; }
+.sp .ia-sheet-fold .sp-sheet { margin-top: 12px; }
+.sp .ia-station { display: grid; gap: 14px; min-width: 0; }
+.sp .ia-back {
+  justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: 8px 14px 8px 8px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); text-align: left;
+}
+.sp .ia-back:hover { box-shadow: inset 0 0 0 1.5px var(--seal); }
+.sp .ia-back svg { width: 18px; height: 18px; fill: none; stroke: var(--seal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sp .ia-back span { display: grid; gap: 1px; }
+.sp .ia-back b { font: 500 13.5px/1.2 var(--f-mono); }
+.sp .ia-back small { font: 400 11.5px/1.2 var(--f-body); color: var(--ink-2); }
+.sp .ia-station .sp-work { padding-top: 0; }
+
+@media (max-width: 1359px) {
+  .sp .ia-deal-row { grid-template-columns: minmax(0, 1fr); }
+  .sp .ia-deal-desk > .sp-cap > .ia-facts, .sp .ia-deal-desk > .sp-cap > .ia-switch { grid-column: 2; }
+  .sp .ia-deal-desk > .sp-cap > .ia-facts { grid-row: 1 / span 3; margin-top: 0; }
+  .sp .ia-deal-desk > .sp-cap > .ia-switch { grid-row: 4 / span 3; margin-top: 18px; }
+}
+@media (max-width: 860px) {
+  .sp .ia-book { padding: 18px 14px 20px; }
+  .sp .ia-book .sp-ln { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  .sp .ia-book .ia-kticks { grid-column: 2 / -1; grid-row: 3; justify-self: start; margin-top: 6px; }
+  .sp .ia-book .sp-ln-next { grid-column: 2 / -1; grid-row: 4; justify-self: start; text-align: left; }
+  .sp .ia-book .sp-ln-amt { grid-column: 3; }
+  .sp .ia-book .sp-ln-board { grid-row: 5; }
+  .sp .ia-book .sp-ln .ia-open { display: none; }
+  .ia-kticks i { width: 22px; height: 22px; font-size: 10.5px; }
+  .sp .ia-deal-desk > .sp-cap { display: block; }
+  .sp .ia-new-go { padding-left: 8px; }
+  .sp .ia-new-go button { width: 100%; }
+  .sp .ia-new .out { padding-left: 8px; }
+  .sp .ia-facts > div { grid-template-columns: 7em minmax(0, 1fr); }
+}
+/* the desk of the old single page named its grid areas (sheet, rail, work, tray); the sections place their parts themselves */
+.sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > * { grid-area: auto; }

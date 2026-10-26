@@ -1,0 +1,257 @@
+/* The app shell of the new information architecture (IA port 2026-10-26, approved prototype
+   design-samples/ia/prototype.html): the nav with the role's sections, the inbox bell and the
+   Account button, the account menu, the inbox panel (a slide-over; a full-height sheet on a
+   phone), the phone's bottom tab bar, the outcome line every page shows and the long lists.
+   Palette DS-PAL only (tokens from landing/tokens.css); motion tokens as CSS eases; reduced
+   motion shows the end states. No inline styles: every state is a class or an attribute. */
+
+.ia-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- top bar: brand · nav · bell · account · Testnet ---------- */
+header.top { flex-wrap: nowrap; gap: 12px; }
+header.top .brand { flex: none; }
+header.top nav.ia-nav { flex: none; }
+header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; background: var(--rule); }
+.ia-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; }
+.ia-right .net { margin-left: 0; }
+
+.ia-bell {
+  position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; min-height: 0; padding: 0; border: 0;
+  border-radius: 50%; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule); cursor: pointer;
+  transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
+}
+.ia-bell:hover { background: var(--seal-wash); }
+.ia-bell[aria-expanded="true"] { background: var(--head); color: var(--sheet); box-shadow: none; }
+.ia-bell svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ia-bell:active { transform: scale(.94); }
+.ia-count {
+  position: absolute; top: -4px; right: -6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--seal); color: var(--sheet); font: 500 11.5px/20px var(--f-mono); text-align: center; box-shadow: 0 0 0 2px var(--paper);
+}
+.ia-count[data-n="0"] { display: none; }
+.ia-count.is-pop { animation: ia-pop var(--dur-seal) cubic-bezier(.34, 1.56, .64, 1); } /* popOver, the one bounce */
+@keyframes ia-pop { from { transform: scale(.4); } }
+
+.ia-acct {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 0; padding: 5px 12px 5px 5px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule); font: 500 14px/1 var(--f-body);
+  transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land);
+}
+.ia-acct:hover { background: var(--seal-wash); }
+.ia-acct[aria-expanded="true"] { box-shadow: inset 0 0 0 1.5px var(--seal); }
+.ia-acct-seal { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--seal); color: var(--seal); font: 800 16px/1 var(--f-seal); transform: rotate(-6deg); }
+.ia-acct svg { width: 12px; height: 12px; fill: none; stroke: var(--ink-2); stroke-width: 1.6; }
+.ia-acct.is-current .ia-acct-seal { background: var(--seal); color: var(--sheet); }
+
+/* ---------- the account menu ---------- */
+.ia-menu {
+  position: fixed; z-index: 60; top: 64px; right: max(var(--gutter), calc((100vw - 1440px) / 2 + var(--gutter))); width: 340px; padding: 18px; border-radius: var(--r-sheet);
+  background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule), var(--sheet-shadow); display: grid; gap: 12px;
+  transform-origin: top right; animation: ia-menu-in var(--dur-enter) var(--ease-land);
+}
+.ia-menu[hidden] { display: none; }
+@keyframes ia-menu-in { from { transform: translateY(-8px) scale(.98); opacity: 0; } }
+.ia-menu-who { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.ia-menu-who .ia-acct-seal { width: 46px; height: 46px; font-size: 23px; box-shadow: inset 0 0 0 3px var(--seal); }
+.ia-menu-who b { display: block; font: 600 15px/1.3 var(--f-body); color: var(--head); overflow-wrap: anywhere; }
+.ia-menu-who code { display: block; font: 500 13.5px/1.4 var(--f-mono); letter-spacing: .03em; color: var(--head); }
+.ia-menu-who small { display: block; font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
+.ia-menu-k { margin: 0; font: 500 12.5px/1.2 var(--f-body); color: var(--ink-2); }
+.ia-roles { display: grid; gap: 2px; margin: -4px -8px 0; }
+.ia-role {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 0; padding: 8px; border: 0; border-radius: var(--r-row);
+  background: none; color: var(--ink); text-align: left; font: 400 13px/1.3 var(--f-body); cursor: pointer;
+}
+.ia-role:hover { background: var(--seal-wash); }
+.ia-role:disabled { opacity: .6; cursor: progress; }
+.ia-role .room-k { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--seal); font: 800 18px/1 var(--f-seal); }
+.ia-role strong { display: block; font: 500 15px/1.3 var(--f-body); color: var(--head); }
+.ia-role small { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); }
+.ia-role > em { font: 500 12px/1 var(--f-body); font-style: normal; color: var(--seal); }
+.ia-role[aria-current="true"] { background: var(--seal-wash); }
+.ia-role[aria-current="true"] .room-k { background: var(--seal); color: var(--sheet); }
+.ia-menu-say { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; margin: 0; font: 400 13px/1.45 var(--f-body); color: var(--ink); }
+.ia-menu-say b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--seal); font: 800 13px/1 var(--f-seal); }
+.ia-menu-say.is-bad b { background: var(--seal); color: var(--sheet); }
+.ia-menu-links { display: grid; gap: 4px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.ia-menu-links a, .ia-menu-links button {
+  display: flex; align-items: center; gap: 10px; min-height: 0; padding: 8px; border: 0; border-radius: var(--r-row); background: none; color: var(--head);
+  font: 500 14px/1.3 var(--f-body); text-decoration: none; text-align: left; cursor: pointer;
+}
+.ia-menu-links a:hover, .ia-menu-links button:hover { background: var(--seal-wash); }
+.ia-menu-links b { font: 700 14px/1 var(--f-seal); color: var(--seal); letter-spacing: .1em; }
+.ia-menu-links .ia-out { color: var(--seal); }
+.ia-menu > small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
+
+/* ---------- the inbox panel ---------- */
+.ia-scrim { position: fixed; inset: 0; z-index: 50; background: rgba(2, 13, 47, .26); opacity: 0; pointer-events: none; transition: opacity var(--dur-enter) var(--ease-land); }
+.ia-scrim.is-on { opacity: 1; pointer-events: auto; }
+.ia-scrim.is-menu { background: rgba(2, 13, 47, .12); z-index: 45; }
+.ia-inbox {
+  position: fixed; z-index: 55; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); display: flex; flex-direction: column;
+  background: var(--paper); box-shadow: -1px 0 0 var(--rule), -24px 0 60px rgba(2, 13, 47, .16);
+  transform: translateX(104%); visibility: hidden;
+  transition: transform var(--dur-exit) var(--ease-exit), visibility 0s linear var(--dur-exit);
+}
+.ia-inbox.is-open { transform: none; visibility: visible; transition: transform var(--dur-enter) var(--ease-land), visibility 0s; }
+.ia-ib-grab { display: none; }
+.ia-ib-head { display: grid; gap: 12px; padding: 22px 22px 16px; border-bottom: 1px solid var(--rule); background: var(--paper); }
+.ia-ib-title { display: flex; align-items: center; gap: 12px; }
+.ia-ib-title > b { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 18px/1 var(--f-seal); rotate: -4deg; }
+.ia-ib-title h2 { margin: 0; font: 800 26px/1 var(--f-display); color: var(--head); letter-spacing: -.01em; }
+.ia-ib-title h2 small { margin-left: 6px; font: 700 14px/1 var(--f-seal); letter-spacing: .2em; color: var(--ink-2); }
+.ia-ib-n { padding: 4px 10px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 12px/1.2 var(--f-body); white-space: nowrap; }
+.ia-ib-n.is-none { background: var(--wash); color: var(--ink-2); }
+.ia-x {
+  margin-left: auto; flex: none; display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule);
+}
+.ia-x:hover { background: var(--seal-wash); }
+.ia-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.ia-ib-state { position: relative; margin: 0; padding-left: 15px; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
+.ia-ib-state::before { content: ""; position: absolute; left: 0; top: .45em; width: 7px; height: 7px; border-radius: 50%; background: var(--pool-2); }
+.ia-ib-state.is-off::before { background: none; box-shadow: inset 0 0 0 1.5px var(--seal); }
+.ia-ib-state.is-wait::before { background: var(--mist); }
+.ia-ib-state b { color: var(--head); font-weight: 500; }
+.ia-ib-state.is-off b { color: var(--seal); }
+.ia-ib-check { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.ia-ib-check button.secondary {
+  min-height: 0; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--sheet); color: var(--head); cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--rule-strong); font: 500 13px/1 var(--f-body);
+}
+.ia-ib-check button.secondary:hover { box-shadow: inset 0 0 0 1.5px var(--seal); background: var(--sheet); }
+.ia-ib-check button:disabled { opacity: .6; cursor: progress; }
+.ia-ib-check small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
+.ia-ib-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 22px 22px; }
+.ia-ib-empty, .ia-ib-refused { margin: 8px 0; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); }
+.ia-ib-foot { padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--rule); background: var(--paper); }
+.ia-ib-foot a { display: flex; align-items: baseline; gap: 10px; font: 500 14px/1.3 var(--f-body); color: var(--head); text-decoration: none; }
+.ia-ib-foot a b { font: 700 15px/1 var(--f-seal); color: var(--seal); }
+.ia-ib-foot a span { margin-left: auto; color: var(--seal); }
+.ia-ib-foot a:hover { color: var(--seal); }
+
+/* each letter: an envelope with its flap and its kind's glyph */
+.ia-letters ol { display: grid; gap: 12px; }
+.ia-letter {
+  position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 12px; padding: 20px 14px 14px; border-radius: 12px;
+  background: var(--sheet); color: var(--ink); box-shadow: 0 1px 2px rgba(70, 29, 58, .1), 0 6px 14px rgba(70, 29, 58, .06); overflow: hidden;
+  animation: ia-drop var(--dur-enter) var(--ease-land) both;
+}
+@keyframes ia-drop { from { transform: translateY(-26px) rotate(-3deg); opacity: 0; } }
+.ia-letter::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--fiber); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.ia-env { grid-row: 1 / span 3; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--seal); color: var(--seal); font: 800 14px/1 var(--f-seal); }
+.ia-letter > div { display: grid; gap: 3px; min-width: 0; }
+.ia-letter strong { font: 500 14.5px/1.3 var(--f-body); color: var(--head); }
+.ia-letter .ia-from { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); }
+.ia-letter p { margin: 4px 0 0; font: 400 13px/1.5 var(--f-body); color: var(--ink); overflow-wrap: anywhere; }
+.ia-letter .ia-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+.ia-letter .ia-acts button {
+  min-height: 0; padding: 9px 15px; border: 0; border-radius: 999px; background: var(--seal); color: var(--sheet); cursor: pointer;
+  font: 500 13px/1 var(--f-body); box-shadow: 0 4px 10px rgba(126, 42, 83, .2);
+  transition: transform var(--dur-press) linear, background-color var(--dur-fade) var(--ease-land);
+}
+.ia-letter .ia-acts button:hover { background: var(--seal-hi); }
+.ia-letter .ia-acts button:active { transform: scale(.97); }
+.ia-letter .ia-acts button:disabled { opacity: .7; cursor: progress; }
+.ia-letter .ia-goes, .ia-letter .ia-idle { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); }
+.ia-letter .ia-idle { margin-top: 6px; }
+.ia-letter.is-new { box-shadow: inset 0 0 0 1.5px var(--seal), 0 6px 14px rgba(70, 29, 58, .06); }
+.ia-letter.is-idle .ia-env { border-style: dashed; border-color: var(--ink-2); color: var(--ink-2); }
+.ia-letter.is-forged::before { background: var(--seal); clip-path: polygon(0 0, 30% 0, 36% 60%, 42% 10%, 100% 0, 50% 100%); }
+.ia-letter.is-forged .ia-env { background: var(--seal); color: var(--sheet); border-color: var(--seal); }
+/* acted on: the 済 lands on the envelope and the letter says what happened, then it leaves */
+.ia-letter.is-done .ia-env { background: var(--seal); color: var(--sheet); animation: ia-stamp var(--dur-seal) var(--ease-snap) both; }
+@keyframes ia-stamp { from { transform: rotate(-6deg) scale(1.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.ia-letter.is-done p { color: var(--head); }
+.ia-letter.is-leaving { animation: ia-leave var(--dur-exit) var(--ease-exit) forwards; }
+@keyframes ia-leave { to { opacity: 0; transform: translateX(60px); } }
+.ia-refused { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; }
+.ia-refused b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--seal); color: var(--sheet); font: 800 11px/1 var(--f-seal); }
+.ia-refused span { color: var(--seal); }
+
+/* ---------- long lists (LongList.tsx): groups, search, Show more, the folded done lines ---------- */
+.ia-ll { display: grid; gap: 14px; min-width: 0; }
+.ia-ll ol { list-style: none; margin: 0; padding: 0; }
+.ia-ll-q {
+  display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 999px; background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--rule-strong); transition: box-shadow var(--dur-fade) var(--ease-land);
+}
+.ia-ll-q:focus-within { box-shadow: inset 0 0 0 1.5px var(--seal); }
+.ia-ll-q svg { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; }
+.ia-ll-q input { flex: 1 1 auto; min-width: 0; min-height: 0; height: 40px; padding: 0; border: 0; background: none; box-shadow: none; font: 400 14px/1 var(--f-body); color: var(--head); }
+.ia-ll-q input:focus { outline: none; }
+.ia-ll-q input::placeholder { color: rgba(80, 42, 80, .6); }
+.ia-ll-q small { flex: none; font: 400 12px/1 var(--f-body); color: var(--ink-2); }
+.ia-ll-g { display: grid; gap: 6px; min-width: 0; }
+.ia-ll-h { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 0; font: 500 12.5px/1.2 var(--f-body); color: var(--ink-2); letter-spacing: 0; }
+.ia-ll-h b { font: 500 12px/1 var(--f-mono); color: var(--head); }
+.ia-ll-g[data-stage="move"] .ia-ll-h { color: var(--seal); }
+.ia-ll-more, .ia-ll-fold {
+  justify-self: start; display: inline-flex; align-items: baseline; gap: 8px; min-height: 0; padding: 8px 14px; border: 0; border-radius: 999px; cursor: pointer;
+  background: none; color: var(--seal); box-shadow: inset 0 0 0 1px var(--rule-strong); font: 500 13px/1 var(--f-body);
+  transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land);
+}
+.ia-ll-more:hover, .ia-ll-fold:hover { background: var(--seal-wash); box-shadow: inset 0 0 0 1.5px var(--seal); }
+.ia-ll-fold { color: var(--head); }
+.ia-ll-fold b { font: 500 12.5px/1 var(--f-mono); color: var(--seal); }
+.ia-ll-fold i { font-style: normal; font: 400 12px/1 var(--f-body); color: var(--seal); }
+.ia-ll-none { margin: 4px 0; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); }
+
+/* ---------- the outcome of an action, on the page it led to (every role) ---------- */
+.ia-did { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 0 14px; align-items: start; margin: 0 0 22px; padding: 0 0 18px; border-bottom: 1px dashed var(--mist); }
+.ia-did-seal {
+  display: grid; place-items: center; width: 44px; height: 44px; margin-top: 2px; border-radius: 9px; border: 2px solid var(--seal); background: var(--sheet);
+  color: var(--seal); font: 800 21px/1 var(--f-seal); transform: rotate(-6deg); box-shadow: inset 0 0 0 3px var(--sheet), inset 0 0 0 4.4px var(--seal);
+  animation: ia-did-press var(--dur-seal) var(--ease-snap) both;
+}
+.ia-did.is-warn .ia-did-seal { border: 1.5px dashed var(--ink-2); color: var(--ink-2); box-shadow: none; background: none; }
+@keyframes ia-did-press { from { transform: rotate(-6deg) scale(1.6); opacity: 0; } to { transform: rotate(-6deg); opacity: 1; } }
+.ia-did p { display: grid; gap: 3px; margin: 0; min-width: 0; }
+.ia-did small { font: 500 12.5px/1.2 var(--f-body); color: var(--seal); }
+.ia-did.is-warn small { color: var(--ink-2); }
+.ia-did .ia-from-inbox { color: var(--ink-2); font: 400 12px/1.3 var(--f-body); }
+.ia-did strong { font: 700 clamp(18px, 1.4vw, 21px)/1.25 var(--f-display); color: var(--head); text-wrap: balance; }
+.ia-did span { max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
+
+/* ---------- the phone's bottom tab bar ---------- */
+.ia-tabs { display: none; }
+@media (max-width: 720px) {
+  header.top nav.ia-nav { display: none; }
+  header.top { padding: 10px var(--gutter); }
+  .ia-right .ia-bell { display: none; } /* the inbox is a tab on a phone */
+  .ia-acct > .ia-acct-name, .ia-acct svg { display: none; }
+  .ia-acct { padding: 4px; }
+  .ia-tabs {
+    position: fixed; z-index: 40; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: var(--sheet); max-width: calc(100vw - 20px);
+    box-shadow: inset 0 0 0 1px var(--rule), 0 14px 32px rgba(70, 29, 58, .18), 0 2px 6px rgba(70, 29, 58, .08);
+  }
+  .ia-tabs a, .ia-tabs button {
+    position: relative; flex: none; display: grid; justify-items: center; gap: 3px; width: 66px; min-height: 0; padding: 7px 0 6px; border: 0; border-radius: 999px;
+    background: none; color: var(--ink-2); text-decoration: none; font: 500 11px/1 var(--f-body); cursor: pointer;
+    transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land);
+  }
+  .ia-tabs a > b, .ia-tabs button > b:first-child { font: 800 17px/1 var(--f-seal); }
+  .ia-tabs .active { background: var(--seal); color: var(--sheet); }
+  .ia-tabs .ia-count { top: 0; right: 6px; box-shadow: 0 0 0 2px var(--sheet); }
+  .ia-tabs .active .ia-count { background: var(--sheet); color: var(--seal); box-shadow: 0 0 0 2px var(--seal); }
+  /* the inbox as a full-height sheet with a grab handle */
+  .ia-inbox {
+    top: 10px; left: 0; right: 0; width: 100%; border-radius: 24px 24px 0 0;
+    box-shadow: 0 -1px 0 var(--rule), 0 -24px 60px rgba(2, 13, 47, .2); transform: translateY(104%);
+  }
+  .ia-ib-grab { display: block; flex: none; width: 40px; height: 5px; margin: 10px auto 0; border-radius: 3px; background: var(--rule-strong); }
+  .ia-ib-head { padding: 12px 16px 14px; gap: 10px; }
+  .ia-ib-title h2 { font-size: 23px; }
+  .ia-ib-body { padding: 14px 16px 18px; }
+  .ia-ib-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .ia-menu {
+    top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0;
+    padding: 16px 16px calc(18px + env(safe-area-inset-bottom, 0px)); transform-origin: bottom; animation-name: ia-sheet-in;
+  }
+  @keyframes ia-sheet-in { from { transform: translateY(40px); opacity: 0; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ia-inbox, .ia-scrim, .ia-letter, .ia-did-seal, .ia-count, .ia-menu, .ia-env { animation: none !important; transition: none !important; }
+}

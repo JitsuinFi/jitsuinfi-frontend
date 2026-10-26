@@ -19,6 +19,14 @@ export interface SupplierDeal {
   invoice: string;
   /** Creation time (ms since epoch), for the newest-first order. */
   created_at: number;
+  /** IA port: the deal's address in the app (deal-ref.ts), made on this device; never N or the number. */
+  ref?: string;
+  /**
+   * IA port (user feedback 2026-10-26 B): the buyer's mailbox, known when the buyer's key came
+   * through the relay (the key's letter names its sender's mailbox and is signed by that key) or
+   * when the supplier picked the buyer from contacts. "Send to the buyer" uses it: no card to paste.
+   */
+  buyer_mailbox?: string;
   /** HNK-23.T7: the sign request went to the buyer's mailbox (its `mailbox_pk`), at this time (ms). */
   sign_request?: { to: string; at: number };
   /** T4: the buyer's signature, checked with `bundleBuild`. */
@@ -109,7 +117,8 @@ export type StationState = "done" | "next" | "wait" | "later";
 /** What the supplier does next, and whether it waits on someone else; `null` when complete. */
 export function nextMove(d: SupplierDeal): { text: string; wait: boolean } | null {
   const step = nextStep(d);
-  if (step === "signature" && d.sign_request) return { text: "wait for the buyer's signature (or paste it)", wait: true };
+  if (step === "signature" && d.sign_request) return { text: "wait for the buyer to sign in their inbox", wait: true };
+  if (step === "signature") return { text: "send it to the buyer to sign", wait: false };
   if (step === "entry" && !d.entry_request) return { text: "wait for the financier's entry request", wait: true };
   if (step === "advance" && !d.advance_notice && !d.advance) return { text: "wait for the advance, then check it", wait: true };
   return step ? { text: actionOf(step), wait: false } : null;
@@ -131,6 +140,16 @@ export function route(d: SupplierDeal, settled: boolean): Array<{ key: StationKe
 export function standing(d: SupplierDeal, settled: boolean): "repayment" | "settled" | null {
   if (settled) return "settled";
   return nextStep(d) === null ? "repayment" : null;
+}
+
+/**
+ * The deal's place in a long ledger (long-list.ts): "move" when the supplier acts next, "wait"
+ * while someone else does (the buyer's signature, the financier, the repayment), "done" once settled.
+ */
+export function dealStage(d: SupplierDeal, settled: boolean): "move" | "wait" | "done" {
+  if (settled) return "done";
+  const m = nextMove(d);
+  return m && !m.wait ? "move" : "wait";
 }
 
 /** Deals newest first. */

@@ -4,9 +4,10 @@
 //
 // Look (HNK-34.T5, approved sample design-samples/internal/apply.html): the 申請書 is a letter on
 // paper. Sending folds it into an envelope sealed 〆 that slides into the relay's letter slot 中継,
-// and the applicant's copy gets the 受付 date stamp. The invite comes back to the reply tray as a
-// 招待状, with the provider's signature checked before the link is shown; a letter the provider
-// did not sign lands stamped 偽, without a link. The caption follows the four-step path.
+// and the applicant's copy gets the 受付 date stamp. The invite comes back under the slot, at 返信,
+// as a 招待状 lying on the paper, with the provider's signature checked before the link is shown;
+// a letter the provider did not sign lands stamped 偽, without a link. Until then 返信 is one quiet
+// ink line with the check beside it. The caption follows the four-step path.
 // React since HNK-31.T10.
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
@@ -52,7 +53,7 @@ const PATH: Array<[string, string, string]> = [
   ["記", "Fill in the 申請書", "Your name, how to reach you and, if you like, what you finance."],
   ["〆", "Sealed and posted", "Sealed to the node provider before it leaves this page. The relay stores ciphertext only."],
   ["審", "The provider sets up your node", "Its wallet, its keys, its console. The provider reviews each application."],
-  ["招", "The invite comes back here", "To this tray, in this browser, signed by the node provider. It works once."],
+  ["招", "The invite comes back here", "Here, in this browser, signed by the node provider. It works once."],
 ];
 
 type Say = { mk: string; text: string; bad?: boolean };
@@ -62,7 +63,7 @@ export function ApplyPage(): ReactNode {
   const [sentAt, setSentAt] = useState<string | null>(() => store()?.getItem(SENT) ?? null);
   const [said, setSaid] = useState<Say>(() =>
     sentAt
-      ? { mk: "待", text: `Your application went in on ${sentAt.slice(0, 10)}. The provider reviews it and sets up your node; the invite comes back to this tray, in this browser.` }
+      ? { mk: "待", text: `Your application went in on ${sentAt.slice(0, 10)}. The provider reviews it and sets up your node; the invite comes back here, in this browser.` }
       : { mk: "申", text: "A financier runs its own node: its wallet, its keys, its console. Apply here; the provider sets up your node and sends you a one-time invite." },
   );
   const [posting, setPosting] = useState(false);
@@ -131,7 +132,7 @@ export function ApplyPage(): ReactNode {
       flushSync(() => setSentAt(at));
       if (!still() && count.current) void run(count.current, { scale: [1.3, 1], duration: dur.seal }, ease.snapSettle);
       if (!still() && uke.current) void run(uke.current, { rotate: [-12, -12], y: [-40, 0], scale: [1.25, 1], opacity: [0, 0.92], duration: dur.seal }, ease.snapSettle);
-      speak("済", "Posted. Sealed to the node provider: the relay only holds ciphertext. Your invite will come back to this tray, in this browser.");
+      speak("済", "Posted. Sealed to the node provider: the relay only holds ciphertext. Your invite will come back here, in this browser.");
     } catch (e) {
       speak("拒", e instanceof Error ? e.message : String(e), true);
     } finally {
@@ -143,7 +144,7 @@ export function ApplyPage(): ReactNode {
     setChecking(true);
     try {
       if (!store()?.getItem(SEED)) throw new Error("Send an application from this browser first.");
-      flushSync(() => speak("待", "Opening the reply tray with this browser's key…"));
+      flushSync(() => speak("待", "Opening your replies with this browser's key…"));
       const r = await receive(replySeed(), relayDeps);
       const found = r.messages.map((m) => m.message.header).find((x) => x.type === "financier.invite");
       if (!found) {
@@ -155,7 +156,7 @@ export function ApplyPage(): ReactNode {
       flushSync(() => setInvite(ok ? { ok: true, link } : { ok: false }));
       if (inv.current) await run(inv.current, { y: [-60, 0], rotate: [-6, -1], opacity: [0, 1], duration: dur.proof }, ease.snapSettle);
       if (!ok) speak("偽", "A letter arrived, but it is not signed by the node provider. Do not open it.", true);
-      else speak("認", "Signed by the node provider. The invite is in the tray.");
+      else speak("認", "Signed by the node provider. Your invite is here.");
     } catch (e) {
       speak("拒", e instanceof Error ? e.message : String(e), true);
     } finally {
@@ -292,9 +293,6 @@ export function ApplyPage(): ReactNode {
                   </b>
                   Seal it and post it
                 </button>
-                <button type="button" className={`ap-link${checking ? " is-busy" : ""}`} disabled={checking} onClick={() => void check()}>
-                  Check for my invite
-                </button>
               </div>
             </div>
 
@@ -330,35 +328,46 @@ export function ApplyPage(): ReactNode {
               </div>
               <p className="ap-box-note">The relay passes your sealed letter to one mailbox, the node provider's. It cannot read it.</p>
 
-              <div className="ap-tray">
-                <p className="ap-tray-k">
+              {/* 返信: no tray drawn (user feedback 2026-10-26: the reply tray read as a laptop, too much
+                  for one status). Empty, it is one ink line with the check beside it; the 招待状
+                  lands on the paper itself, or a letter stamped 偽 without a link. */}
+              <section className={`ap-reply${invite ? " has-letter" : ""}`} aria-labelledby="ap-reply-k">
+                <p className="ap-reply-k" id="ap-reply-k">
                   <b lang="ja">返信</b>
-                  Reply tray
+                  Reply
                 </p>
-                <div className="ap-bed">
-                  {invite ? (
-                    <article className={`ap-inv${invite.ok ? "" : " is-forged"}`} ref={inv} aria-label={invite.ok ? "Invite from the node provider" : "A letter not signed by the node provider"}>
-                      <p className="ap-inv-t" lang="ja">
-                        招待状
-                      </p>
-                      <p>Your node is ready. Open the invite to create the passkey for your financier console. It works once: open it on the device you will use.</p>
-                      {invite.ok ? (
-                        <a className="ap-btn" href={invite.link} onClick={() => store()?.setItem(APPLY_OPENED, new Date().toISOString())}>
-                          Open your invite
-                        </a>
-                      ) : null}
-                      <span className="ap-from" lang="ja" aria-hidden="true">
-                        提供者
-                      </span>
-                      <span className="ap-gi" lang="ja" aria-hidden="true">
-                        偽
-                      </span>
-                    </article>
-                  ) : (
-                    <p className="ap-empty">Nothing here yet. The invite comes back to this tray, in this browser.</p>
-                  )}
-                </div>
-              </div>
+                {invite ? (
+                  <article className={`ap-inv${invite.ok ? "" : " is-forged"}`} ref={inv} aria-label={invite.ok ? "Invite from the node provider" : "A letter not signed by the node provider"}>
+                    <p className="ap-inv-t" lang="ja">
+                      招待状
+                    </p>
+                    <p>Your node is ready. Open the invite to create the passkey for your financier console. It works once: open it on the device you will use.</p>
+                    {invite.ok ? (
+                      <a className="ap-btn" href={invite.link} onClick={() => store()?.setItem(APPLY_OPENED, new Date().toISOString())}>
+                        Open your invite
+                      </a>
+                    ) : null}
+                    <span className="ap-from" lang="ja" aria-hidden="true">
+                      提供者
+                    </span>
+                    <span className="ap-gi" lang="ja" aria-hidden="true">
+                      偽
+                    </span>
+                  </article>
+                ) : (
+                  <p className="ap-empty">
+                    <span className="ap-reply-mk" lang="ja" aria-hidden="true">
+                      招
+                    </span>
+                    <span>No invite yet: it arrives here, in this browser, once the provider has set up your node.</span>
+                  </p>
+                )}
+                {invite?.ok ? null : (
+                  <button type="button" className={`ap-link${checking ? " is-busy" : ""}`} disabled={checking} onClick={() => void check()}>
+                    {invite ? "Check again" : "Check for my invite"}
+                  </button>
+                )}
+              </section>
               <p className={`ap-say${said.bad ? " is-bad" : ""}`} role="status" aria-live="polite">
                 <span className="ap-mk" lang="ja" aria-hidden="true">
                   {said.mk}

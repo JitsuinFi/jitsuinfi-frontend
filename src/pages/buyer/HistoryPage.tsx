@@ -163,7 +163,7 @@ export function HistoryPage(): ReactNode {
 
   const anchored = key?.anchored ?? null;
   const nextCert = key?.k ?? certs.length;
-  const anchorLine = (i: number) => (anchored === null ? (outcomes && outcomes[i] ? "on the board" : "not checked yet") : i < anchored ? "anchored" : "not anchored yet");
+  const anchorLine = (i: number) => (anchored === null ? (outcomes && outcomes[i] ? "on the board" : "not checked yet") : i < anchored ? "on the board" : "not on the board yet");
   // the signed invoices a certificate can be issued for, newest first
   const signed = list.filter((r) => r.signature && !r.history_cert);
 
@@ -182,7 +182,7 @@ export function HistoryPage(): ReactNode {
           <div className="rp-cap">
             <Tag k="歴" section="History" />
             <h1 id="by-th">History</h1>
-            <p className="rp-lede">What a financier sees when you send your history: each invoice you financed, anchored on the board, and whether you paid it on time.</p>
+            <p className="rp-lede">What a financier sees when you send your history: each invoice you financed, recorded on the public board, and whether you paid it on time.</p>
             {phone ? null : checkButton}
             {mineOut.el}
             <details className="by-fold">
@@ -190,7 +190,7 @@ export function HistoryPage(): ReactNode {
                 <b lang="ja">証</b>Issue a certificate by hand
               </summary>
               <div>
-                <p className="hint">Financiers check your full payment history before financing. Each certificate links to the previous one, which this device keeps for you, and is anchored on the board, so a history cannot be trimmed. A financier's request in your inbox issues it for you.</p>
+                <p className="hint">Financiers check your full payment history before financing. A certificate is the record of one financed invoice in your history. Each one links to the previous one, which this device keeps for you, and is recorded on the board, so a history cannot be trimmed. A financier's request in your inbox issues it for you.</p>
                 <div className="rp-panel">
                   {signed.length ? (
                     <label className="field">
@@ -268,13 +268,13 @@ export function HistoryPage(): ReactNode {
                   <b lang="ja">公開台帳</b>
                   <p>
                     {board ? `${boardLine(board)}. ` : "Public board: not read yet. "}
-                    Each certificate's anchor, nothing about who.
+                    Where each certificate sits on the board, nothing about who.
                   </p>
                 </div>
                 <div className="by-board-rows" aria-hidden="true">
                   {certs.map((c) => (
-                    <span key={c.index} className={anchorLine(c.index) === "anchored" || anchorLine(c.index) === "on the board" ? undefined : "is-next"}>
-                      <b>{`anchor #${c.index}`}</b>
+                    <span key={c.index} className={anchorLine(c.index) === "on the board" ? undefined : "is-next"}>
+                      <b>{`record #${c.index}`}</b>
                       {anchorLine(c.index)}
                     </span>
                   ))}

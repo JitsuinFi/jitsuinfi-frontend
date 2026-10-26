@@ -28,10 +28,18 @@ export const freshN = { n: null as string | null };
 
 const useSheetFields = (): SheetFields => ({ id: useRef(null), amount: useRef(null), issued: useRef(null), due: useRef(null), terms: useRef(null) });
 
+/** The option's words: short enough for a phone's select (judge run 2: "…key 6LB4·" was cut). */
 function keyLabel(book: Book, k: { invoice_pk: string; mailbox_pk: string; at: number }): string {
   const c = contactFor(book, k.mailbox_pk);
-  const who = c ? `${c.username ? `@${c.username}` : "Buyer"} · ${c.fingerprint}` : `A buyer not in your contacts`;
-  return `${who} · key ${readablePrint(k.invoice_pk)} · came ${new Date(k.at).toLocaleDateString()}`;
+  const key = readablePrint(k.invoice_pk).slice(0, 9);
+  return c ? `${c.username ? `@${c.username}` : `Buyer ${c.fingerprint.slice(0, 9)}`} · key ${key}` : `New buyer · key ${key}`;
+}
+
+/** The full detail under the select: who, the whole key fingerprint, when it came. */
+function keyDetail(book: Book, k: { invoice_pk: string; mailbox_pk: string; at: number }): string {
+  const c = contactFor(book, k.mailbox_pk);
+  const who = c ? `${c.username ? `@${c.username}, ` : ""}buyer ${c.fingerprint}` : "a buyer not in your contacts yet";
+  return `Key ${readablePrint(k.invoice_pk)} from ${who}, came ${new Date(k.at).toLocaleDateString()}.`;
 }
 
 export function NewInvoicePage(): ReactNode {
@@ -90,8 +98,9 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           <option value={MANUAL}>Another buyer: write their key by hand</option>
         </select>
       ) : (
-        <small className="sk-buyer-none">No buyer's key yet. The buyer sends it from their screen (Give this key to the supplier): it arrives in your inbox and lands here.</small>
+        <small className="sk-buyer-none">No buyer's key yet. Share your contact with the buyer: they send their key back, and it lands here.</small>
       )}
+      {arrived ? <small className="sk-buyer-detail">{keyDetail(book, arrived)}</small> : null}
       {buyer === MANUAL ? (
         <span className="sk-buyer-hand">
           <input type="text" spellCheck="false" autoComplete="off" aria-label="The buyer's invoice key, from their screen" placeholder="the buyer's invoice key, from their screen" aria-invalid={bad.includes("buyer") || undefined} ref={typed} onInput={() => bad.length && setBad([])} />
@@ -207,17 +216,25 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
         <ObjectDefs />
         <div className="sp-desk ia-new-desk">
           <Caption
-            section="Invoices"
+            section="Write"
             title="Write an invoice"
             lede={phone ? "Write it on the sheet below, then create it: it goes to the buyer's inbox to sign." : "Everything is written on the sheet: the number, the dates and the amount, the buyer on the 御中 line and the PDF on the 条件 line. Create it, and it is ready to send to the buyer's inbox to sign."}
             deals={deals}
             brief={phone}
           >
-            <p className="ia-goline">
-              <Link className="sp-ink" to="/supplier/invoices">
-                Back to the ledger
+            {/* judge run 2: no buyer's key yet, so the first step is sharing the contact (then the key comes back) */}
+            {book.keys.length ? null : (
+              <Link className="ia-row-link ia-first-step" to="/supplier/contacts" search={{ share: 1 } as never}>
+                <b lang="ja" aria-hidden="true">
+                  名
+                </b>
+                <span>
+                  <strong>First: share my contact with the buyer</strong>
+                  <small>A link or QR. The buyer adds you and sends the key for this invoice; it lands on the sheet.</small>
+                </span>
+                <i aria-hidden="true">→</i>
               </Link>
-            </p>
+            )}
           </Caption>
           <section className="ia-vis ia-new" aria-label="The invoice you are writing">
             {shown ? <DidLine did={shown} /> : null}

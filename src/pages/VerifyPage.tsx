@@ -567,7 +567,7 @@ export function VerifyPage(): ReactNode {
             </label>
             <label className="vf-env">
               <span className="vf-slot-k">
-                <b lang="ja">登記簿</b>Board data (optional)
+                <b lang="ja">登記簿</b>A board file (optional: without one, the live board is read)
               </span>
               <span className="vf-env-row">
                 <input type="file" accept=".json,application/json" ref={file} onChange={(e) => setFileName(e.currentTarget.files?.[0]?.name ?? NO_FILE)} />

@@ -351,7 +351,7 @@ export function RatesPage(): ReactNode {
             <div className="ri-fields">
               <div className="ri-field">
                 <span className="ri-lab" id="ri-f-board">
-                  Board data (optional)
+                  A board file (optional)
                 </span>
                 <div className="ri-file">
                   <input type="file" id="ri-board" accept=".json,application/json" aria-labelledby="ri-f-board" ref={file} onChange={(e) => setFileName(e.currentTarget.files?.[0]?.name ?? null)} />

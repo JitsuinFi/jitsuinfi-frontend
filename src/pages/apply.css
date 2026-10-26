@@ -1,6 +1,6 @@
 /* Apply as financier (HNK-34.T5, approved sample design-samples/internal/apply.html): the 申請書
    is a sheet of letter paper on the page; sending folds it into an envelope sealed 〆 that drops
-   into the relay's post box 中継, and the applicant's copy gets the 受付 stamp. The invite comes
+   into the relay's letter slot 中継, and the applicant's copy gets the 受付 stamp. The invite comes
    back to the reply tray as a 招待状 (or a letter stamped 偽 when the provider did not sign it).
    Caption ≤ 35% with the four-step path; palette DS-PAL, tokens from landing/tokens.css; no style
    attributes (motion goes through anime.js on the CSSOM). */
@@ -42,7 +42,7 @@
 .ap-path div span { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); }
 .ap-path li.is-now strong { color: var(--seal); }
 
-/* ---------- the visual: the letter, the post box, the reply tray ---------- */
+/* ---------- the visual: the letter, the letter slot, the reply tray ---------- */
 .ap-vis { position: relative; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: start; min-width: 0; }
 .ap-left { display: grid; gap: 22px; min-width: 0; }
 
@@ -110,26 +110,26 @@
 .ap .ap-link:hover { background: none; text-decoration-thickness: 3px; }
 .ap .ap-link:disabled { opacity: .45; cursor: default; }
 
-/* the window: the relay's post box and the reply tray (drawn flat, ink on paper) */
+/* the window: the relay's letter slot and the reply tray (drawn flat, ink on paper) */
 .ap-right { display: grid; gap: 26px; justify-items: center; min-width: 0; padding-top: 4px; }
 .ap-plaque { display: grid; justify-items: center; gap: 2px; }
 .ap-plaque b { font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .4em; margin-right: -.4em; }
 .ap-plaque small { font: 400 12.5px/1.2 var(--f-body); color: var(--ink-2); }
-.ap-box { position: relative; width: min(260px, 100%); }
-.ap-box svg { display: block; width: 100%; height: auto; }
-.ap-box .body { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .lid { fill: var(--paper); stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .mouth { fill: var(--ink); }
-.ap-box .lip { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 1.6; }
-.ap-box .rule { stroke: var(--rule-2); stroke-width: 1; }
-.ap-box .kj { font: 800 30px/1 var(--f-seal); fill: var(--head); letter-spacing: .2em; text-anchor: middle; }
-.ap-box .en { font: 400 12px/1 var(--f-body); fill: var(--ink-2); text-anchor: middle; }
-.ap-box .ct { font: 500 12.5px/1 var(--f-mono); fill: var(--seal); text-anchor: middle; }
-.ap-box .ctp { fill: var(--seal-wash); }
-.ap-box .post { stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .door { fill: none; stroke: var(--rule-2); stroke-width: 1.4; }
-.ap-box .keyhole { fill: var(--ink-2); }
-.ap .ap-box-note { margin: -14px 0 0; text-align: center; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 30ch; }
+/* 中継: a letter slot set into the paper, the sealed count a small mark beside it (feedback
+   2026-10-26: the earlier post box read as a laptop) */
+.ap-slot { position: relative; display: grid; grid-template-columns: minmax(0, 240px) auto; align-items: center; justify-content: center; gap: 16px; width: 100%; }
+.ap-slot-plate { display: block; width: 100%; height: auto; }
+.ap-slot .plate { fill: var(--sheet); stroke: var(--rule-2); stroke-width: 1.4; }
+.ap-slot .kj { font: 800 20px/1 var(--f-seal); fill: var(--head); letter-spacing: .3em; text-anchor: middle; }
+.ap-slot .en { font: 400 11.5px/1 var(--f-body); fill: var(--ink-2); text-anchor: middle; }
+.ap-slot .flap { fill: var(--paper); stroke: var(--ink-2); stroke-width: 1.2; }
+.ap-slot .mouth { fill: var(--ink); }
+.ap-slot .pin { fill: none; stroke: var(--ink-2); stroke-width: 1.2; }
+.ap-slot-ct { display: grid; justify-items: center; gap: 4px; font: 500 12.5px/1 var(--f-mono); color: var(--ink-2); white-space: nowrap; }
+.ap-slot-mk { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px dashed var(--rule-2); color: transparent; font: 800 15px/1 var(--f-seal); transform: rotate(-6deg); transition: color var(--dur-seal) var(--ease-snap), border-color var(--dur-seal) var(--ease-snap); }
+.ap-slot-ct.is-in { color: var(--seal); }
+.ap-slot-ct.is-in .ap-slot-mk { border: 2px solid var(--seal); color: var(--seal); background: var(--seal-wash); }
+.ap .ap-box-note { margin: -12px 0 0; text-align: center; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 36ch; }
 
 .ap-tray { position: relative; width: 100%; max-width: 360px; display: grid; gap: 8px; }
 .ap-tray-k { display: flex; align-items: baseline; gap: 10px; font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }
@@ -186,7 +186,6 @@
   .ap-act .ap-btn { flex: 1 1 100%; justify-content: center; }
   .ap-act .ap-link { flex: 1 1 100%; text-align: center; }
   .ap-right { grid-template-columns: minmax(0, 1fr); }
-  .ap-box { width: 200px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ap *, .ap *::before, .ap *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }

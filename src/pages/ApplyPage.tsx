@@ -3,7 +3,7 @@
 // signed invite comes back sealed to a mailbox key this browser keeps for the reply.
 //
 // Look (HNK-34.T5, approved sample design-samples/internal/apply.html): the 申請書 is a letter on
-// paper. Sending folds it into an envelope sealed 〆 that drops into the relay's post box 中継,
+// paper. Sending folds it into an envelope sealed 〆 that slides into the relay's letter slot 中継,
 // and the applicant's copy gets the 受付 date stamp. The invite comes back to the reply tray as a
 // 招待状, with the provider's signature checked before the link is shown; a letter the provider
 // did not sign lands stamped 偽, without a link. The caption follows the four-step path.
@@ -77,13 +77,14 @@ export function ApplyPage(): ReactNode {
   const letter = useRef<HTMLFormElement>(null);
   const vis = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  const count = useRef<HTMLParagraphElement>(null);
   const mouth = useRef<SVGRectElement>(null);
   const env = useRef<HTMLSpanElement>(null);
   const uke = useRef<HTMLDivElement>(null);
   const inv = useRef<HTMLElement>(null);
   const speak = (mk: string, text: string, isBad = false) => setSaid({ mk, text, bad: isBad });
 
-  /** The letter folds in three into an envelope sealed 〆, which drops into the relay's slot. */
+  /** The letter folds in three into an envelope sealed 〆, which slides into the relay's slot. */
   const fold = async () => {
     if (still()) return;
     const host = vis.current!;
@@ -94,12 +95,15 @@ export function ApplyPage(): ReactNode {
     const x0 = l.x + l.w / 2 - 75;
     const y0 = l.y + l.h / 2 - 48;
     const x1 = m.x + m.w / 2 - 75;
-    const y1 = m.y + m.h / 2 - 48;
     e.classList.add("is-on");
-    await run(e, { x: [x0, x0 + (x1 - x0) * 0.6, x1], y: [y0, Math.min(y0, y1) - 120, y1 - 30], rotate: [-4, 8, 0], duration: 900 }, ease.softInOut);
-    await run(e, { y: [y1 - 30, y1 + 40], scale: [1, 0.6], opacity: [1, 0], duration: dur.exit }, ease.accelExit);
+    // the envelope (96 px tall) comes to rest with its bottom edge on the slit, then slides in:
+    // what has gone below the slit is clipped away, so it disappears into the paper, not over it
+    const rest = m.y - 96 + 2;
+    await run(e, { x: [x0, x0 + (x1 - x0) * 0.6, x1], y: [y0, Math.min(y0, rest) - 120, rest], rotate: [-4, 8, 0], duration: 900 }, ease.softInOut);
+    await run(e, { y: [rest, rest + 96], clipPath: ["inset(0px 0px 0px 0px)", "inset(0px 0px 96px 0px)"], duration: dur.exit }, ease.accelExit);
     e.classList.remove("is-on");
-    void run(box.current!, { y: [0, 3, 0], duration: dur.fade });
+    e.style.clipPath = "";
+    void run(box.current!, { y: [0, 2, 0], duration: dur.fade });
     await run(letter.current!, { scaleY: [0.33, 1], opacity: [0.25, 1], duration: dur.enter }, ease.softLand);
   };
 
@@ -125,6 +129,7 @@ export function ApplyPage(): ReactNode {
       flushSync(() => setSealed(true));
       await fold();
       flushSync(() => setSentAt(at));
+      if (!still() && count.current) void run(count.current, { scale: [1.3, 1], duration: dur.seal }, ease.snapSettle);
       if (!still() && uke.current) void run(uke.current, { rotate: [-12, -12], y: [-40, 0], scale: [1.25, 1], opacity: [0, 0.92], duration: dur.seal }, ease.snapSettle);
       speak("済", "Posted. Sealed to the node provider: the relay only holds ciphertext. Your invite will come back to this tray, in this browser.");
     } catch (e) {
@@ -298,28 +303,30 @@ export function ApplyPage(): ReactNode {
                 <b lang="ja">申請窓口</b>
                 <small>Applications</small>
               </p>
-              <div className="ap-box" ref={box}>
-                <svg viewBox="0 0 260 300" aria-hidden="true">
-                  <rect className="lid" x={18} y={10} width={224} height={34} rx={17} />
-                  <rect className="body" x={30} y={40} width={200} height={214} rx={10} />
-                  <rect className="lip" x={56} y={70} width={148} height={22} rx={11} />
-                  <rect className="mouth" x={66} y={77} width={128} height={8} rx={4} ref={mouth} />
-                  <line className="rule" x1={30} y1={110} x2={230} y2={110} />
-                  <text className="kj" x={132} y={152}>
+              {/* 中継: a letter slot set into the paper (user feedback 2026-10-26: the post box read as a
+                  laptop, too much for what it shows); the sealed count is a small mark beside it */}
+              <div className="ap-slot" ref={box}>
+                <svg className="ap-slot-plate" viewBox="0 0 240 100" aria-hidden="true">
+                  <rect className="plate" x={1.5} y={1.5} width={237} height={97} rx={14} />
+                  <text className="kj" x={123} y={32}>
                     中継
                   </text>
-                  <text className="en" x={130} y={172}>
+                  <rect className="flap" x={40} y={43} width={160} height={11} rx={3} />
+                  <rect className="mouth" x={44} y={54} width={152} height={8} rx={4} ref={mouth} />
+                  <text className="en" x={120} y={84}>
                     relay · ciphertext only
                   </text>
-                  <rect className="ctp" x={80} y={188} width={100} height={26} rx={13} />
-                  <text className="ct" x={130} y={205}>
-                    {sentAt ? "1 sealed" : "empty"}
-                  </text>
-                  <rect className="door" x={46} y={224} width={168} height={20} rx={4} />
-                  <circle className="keyhole" cx={130} cy={234} r={3} />
-                  <line className="post" x1={130} y1={254} x2={130} y2={296} />
-                  <line className="post" x1={96} y1={296} x2={164} y2={296} />
+                  <circle className="pin" cx={14} cy={14} r={2.2} />
+                  <circle className="pin" cx={226} cy={14} r={2.2} />
+                  <circle className="pin" cx={14} cy={86} r={2.2} />
+                  <circle className="pin" cx={226} cy={86} r={2.2} />
                 </svg>
+                <p className={`ap-slot-ct${sentAt ? " is-in" : ""}`} ref={count}>
+                  <span className="ap-slot-mk" lang="ja" aria-hidden="true">
+                    〆
+                  </span>
+                  <span>{sentAt ? "1 sealed" : "empty"}</span>
+                </p>
               </div>
               <p className="ap-box-note">The relay passes your sealed letter to one mailbox, the node provider's. It cannot read it.</p>
 

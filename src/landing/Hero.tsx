@@ -448,7 +448,11 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
           {/* plain links: the app is another world, its stylesheets load with a new document */}
           {/* the account door: sign in, or create an account, as supplier, buyer or fund member */}
           {navLink("nav.signin", "/account", "nav-link nav-signin")}
-          {navLink("nav.demo", "/app", "nav-cta")}
+          {/* on phones the call shortens to "Demo" so Sign in fits beside it; its name stays whole */}
+          <a className="nav-cta" href="/app" aria-label={t("nav.demo")}>
+            <span className="nav-cta-long" aria-hidden="true">{t("nav.demo")}</span>
+            <span className="nav-cta-short" aria-hidden="true">{t("nav.demoShort")}</span>
+          </a>
         </div>
       </nav>
       {/* one column for the copy and the episode subtitle: they stack, so they can never overlap */}

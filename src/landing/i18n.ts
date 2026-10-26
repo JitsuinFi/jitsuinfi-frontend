@@ -12,6 +12,7 @@ const D: Record<string, Entry> = {
   "nav.how": { en: "How it works", zh: "运作方式" },
   "nav.spec": { en: "Read the spec", zh: "阅读规范" },
   "nav.demo": { en: "Open the demo", zh: "打开演示" },
+  "nav.demoShort": { en: "Demo", zh: "演示" },
   "nav.signin": { en: "Sign in", zh: "登录" },
   "nav.lang": { en: "Language", zh: "语言" },
   "nav.main": { en: "Main", zh: "主导航" },

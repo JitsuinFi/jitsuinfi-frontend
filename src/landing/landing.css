@@ -617,21 +617,37 @@ button {
   }
 }
 
+.nav-cta-short {
+  display: none;
+}
+
 @media (max-width: 559px) {
-  /* judge run 2026-10-26: on phones the nav keeps the language and "Open the demo"; the text
-     links (sign-in included) step out, since the demo's own tab bar has Sign in one tap away.
-     To fit 360-390 px the brand is the wordmark alone (its i tittle is the seal) and the
-     language pair loses its divider. */
+  /* phones: the nav keeps the language, Sign in and the demo call (shortened to "Demo"); the
+     other text links step out. To fit 360-390 px the brand is the wordmark alone (its i tittle
+     is the seal) and the language pair loses its divider. */
   .nav {
     gap: 12px;
   }
 
-  .nav-pill .nav-link {
+  .nav-pill .nav-link:not(.nav-signin) {
     display: none;
+  }
+
+  .nav-pill .nav-signin {
+    padding-inline: 8px;
+    white-space: nowrap;
   }
 
   .nav-pill .nav-cta {
     padding: 8px 14px;
+  }
+
+  .nav-cta-long {
+    display: none;
+  }
+
+  .nav-cta-short {
+    display: inline;
   }
 
   .lang-switch {

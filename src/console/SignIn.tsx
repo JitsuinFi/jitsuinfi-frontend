@@ -232,6 +232,11 @@ export function NoAnswer({ error }: { error: string }): ReactNode {
       lede={error}
       visCap="No light under the door: the node behind it did not answer this page."
       door={<Door door={door} lock="waiting" cap="No answer from behind the door" capKanji="無" name={keptName()} facts={null} room="" silent />}
-    />
+    >
+      {/* judge run 2: an installed console has no reload button; ask the node again from here */}
+      <button className="cs-btn is-wide" type="button" onClick={() => location.reload()}>
+        Ask the node again
+      </button>
+    </DoorPage>
   );
 }

@@ -281,3 +281,8 @@
 @media (prefers-reduced-motion: reduce) {
   .os-paper.is-in { animation: none; }
 }
+
+/* a phone: the pasted codes at 16 px, so iOS does not zoom into the field (DS-MOB F2) */
+@media (max-width: 599px) {
+  .os .os-field textarea { font-size: 16px; }
+}

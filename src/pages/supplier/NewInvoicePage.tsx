@@ -6,7 +6,7 @@
 // ready to send to the buyer's inbox.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Page } from "../../app/AppShell";
+import { Page, usePhone } from "../../app/AppShell";
 import { Button, useOut } from "../../app/ui";
 import { DidLine, setDid, useDid } from "../../app/outcome";
 import { account } from "../../lib/app-session";
@@ -43,6 +43,7 @@ export function NewInvoicePage(): ReactNode {
 
 function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useDeals>>; book: Book }): ReactNode {
   const navigate = useNavigate();
+  const phone = usePhone();
   const today = useRef(new Date().toISOString().slice(0, 10)).current;
   // No. starts with a number the supplier can keep or change (an empty No. was refused, 2026-10-26)
   const [suggested] = useState(() => suggestInvoiceNumber(deals, new Date()));
@@ -205,7 +206,13 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
       <div className="sp" data-wide="true">
         <ObjectDefs />
         <div className="sp-desk ia-new-desk">
-          <Caption section="Invoices" title="Write an invoice" lede="Everything is written on the sheet: the number, the dates and the amount, the buyer on the 御中 line and the PDF on the 条件 line. Create it, and it is ready to send to the buyer's inbox to sign." deals={deals}>
+          <Caption
+            section="Invoices"
+            title="Write an invoice"
+            lede={phone ? "Write it on the sheet below, then create it: it goes to the buyer's inbox to sign." : "Everything is written on the sheet: the number, the dates and the amount, the buyer on the 御中 line and the PDF on the 条件 line. Create it, and it is ready to send to the buyer's inbox to sign."}
+            deals={deals}
+            brief={phone}
+          >
             <p className="ia-goline">
               <Link className="sp-ink" to="/supplier/invoices">
                 Back to the ledger

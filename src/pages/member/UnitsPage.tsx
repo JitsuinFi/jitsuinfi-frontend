@@ -211,7 +211,7 @@ export function UnitsPage(): ReactNode {
         <h2 id="fm-td">Pay into the fund</h2>
       </div>
       <p className="hint">
-        Paste the fund card the manager gave you, then pay its address from a shielded wallet. Send the manager the transaction id and <Link to="/member/contacts">your contact card</Link>: the receipt with your withdraw token comes back to your inbox.
+        Paste the fund card the manager gave you, then pay its address from a shielded wallet. Send the manager the transaction id and <Link className="ia-inlink" to="/member/contacts">your contact card</Link>: the receipt with your withdraw token comes back to your inbox.
       </p>
     </div>
   );
@@ -276,7 +276,9 @@ export function UnitsPage(): ReactNode {
                 <Banner kind="bad" title="Your units could not be read" text={failed} />
               ) : !w ? null : !holdings.length ? (
                 <p className="rp-empty">
-                  Give the fund manager <Link to="/member/contacts">your contact card</Link>, then deposit below. Their receipt lands in your inbox and becomes a slip here.
+                  {/* a phone: the first screen says what to do; where the receipt goes is in the deposit below (DS-MOB P4) */}
+                  Give the fund manager <Link className="ia-inlink" to="/member/contacts">your contact card</Link>
+                  {phone ? ", then deposit below: the receipt becomes a slip here." : ", then deposit below. Their receipt lands in your inbox and becomes a slip here."}
                 </p>
               ) : (
                 holdings.map((x, i) => <Slip key={`${x.leaf_id}-${x.pending ? "p" : ""}-${x.path?.period ?? ""}`} x={x} i={i} />)

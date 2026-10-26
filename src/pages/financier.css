@@ -248,3 +248,9 @@
   .fi-slip.is-in, .fi-hanko.is-slam, .fi-cert.is-in i, .fi-cert.is-in::before, .fi-cert.is-in::after, .fi-board.is-scan::before, .fi-obi.is-wrap { animation: none; }
   .fi-doc, .fi-link { transition: none; }
 }
+
+/* a phone: every field at 16 px, so iOS does not zoom into it (DS-MOB F2), and 44 px tall (T1) */
+@media (max-width: 599px) {
+  .fi .fi-field input[type=text], .fi .fi-field textarea, .fi .fi-blank input[type=text], .fi .fi-blank textarea { font-size: 16px; }
+  .fi .fi-field input[type=text], .fi .fi-blank input[type=text] { min-height: 44px; }
+}

@@ -6,7 +6,7 @@
 // "Send my history" (the same answer as the inbox's). A certificate is issued by hand under
 // "Issue a certificate" (folded).
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Page } from "../../app/AppShell";
+import { Page, usePhone } from "../../app/AppShell";
 import { act, lettersOf, letGo, type Letter } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { DidLine, useDid } from "../../app/outcome";
@@ -67,6 +67,7 @@ function Branch({ l, said, onSent }: { l?: Letter; said?: string; onSent?: (said
 }
 
 export function HistoryPage(): ReactNode {
+  const phone = usePhone();
   const root = useRef<HTMLDivElement>(null);
   const chain = useRef<HTMLDivElement>(null);
   const chainScroll = useRef<HTMLDivElement>(null);
@@ -166,6 +167,14 @@ export function HistoryPage(): ReactNode {
   // the signed invoices a certificate can be issued for, newest first
   const signed = list.filter((r) => r.signature && !r.history_cert);
 
+  const checkButton = (
+    <div className={phone ? "actions ia-dock" : "actions"}>
+      <button type="button" disabled={checking} onClick={() => void checkMine()}>
+        {checking ? "Checking…" : "Check my history"}
+      </button>
+    </div>
+  );
+
   return (
     <Page wide>
       <div className="rp by" ref={root}>
@@ -174,11 +183,7 @@ export function HistoryPage(): ReactNode {
             <Tag k="歴" section="History" />
             <h1 id="by-th">History</h1>
             <p className="rp-lede">What a financier sees when you send your history: each invoice you financed, anchored on the board, and whether you paid it on time.</p>
-            <div className="actions">
-              <button type="button" disabled={checking} onClick={() => void checkMine()}>
-                {checking ? "Checking…" : "Check my history"}
-              </button>
-            </div>
+            {phone ? null : checkButton}
             {mineOut.el}
             <details className="by-fold">
               <summary>
@@ -281,6 +286,8 @@ export function HistoryPage(): ReactNode {
               </div>
             </div>
           </div>
+          {/* a phone: the screen's one action docks at the bottom, in the thumb's reach, above the tab bar (DS-MOB P2) */}
+          {phone ? checkButton : null}
         </section>
       </div>
     </Page>

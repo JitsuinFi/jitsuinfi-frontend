@@ -147,7 +147,7 @@ export function DueLine({ list, slipHref }: { list: BuyerInvoice[]; slipHref?: (
       </span>
       <span>
         <b>{due.some((d) => d.state.kind === "overdue") ? "Past due." : due.length === 1 ? "Due soon." : `${due.length} invoices due soon.`}</b> {due.map((d) => reminderText(d, `${zatToZec(d.amount_zat)} ZEC`)).join(" ")}{" "}
-        {href ? <Link to={href}>Pay on the slip</Link> : "Pay each on its slip."}
+        {href ? <Link className="ia-inlink" to={href}>Pay on the slip</Link> : "Pay each on its slip."}
       </span>
     </p>
   );

@@ -109,7 +109,7 @@ export function InvoicesPage(): ReactNode {
                 ) : (
                   <div className="sp-ledger-empty">
                     <p>
-                      No deal yet. <Link to="/supplier/invoices/new">Write your first invoice</Link>: it goes to the buyer's inbox to sign.
+                      No deal yet. <Link className="ia-inlink" to="/supplier/invoices/new">Write your first invoice</Link>: it goes to the buyer's inbox to sign.
                     </p>
                     <span className="sp-rules" aria-hidden="true" />
                   </div>

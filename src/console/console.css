@@ -632,3 +632,9 @@
 @media (prefers-reduced-motion: reduce) {
   #console *, #console *::before, #console *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }
+
+/* a phone: every field at 16 px, so iOS does not zoom into it (DS-MOB F2), and 44 px tall (T1) */
+@media (max-width: 599px) {
+  .cs-field input, .cs-field input.is-mono, .cs-field textarea, .cs-rline.is-wide textarea { font-size: 16px; }
+  .cs-field input, .cs-rline > input { min-height: 44px; }
+}

@@ -6,7 +6,7 @@
 // Every role mounts it (`counter`, the role's root class for its stylesheet): the supplier's
 // .sp, the buyer's and the fund member's .rp (IA port part 2). Styles: src/pages/contacts.css.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Page } from "../app/AppShell";
+import { Page, usePhone } from "../app/AppShell";
 import { useInbox } from "../app/InboxPanel";
 import { Banner, Button, TrustedSvg, useOut } from "../app/ui";
 import { roleLabel, type Role } from "../lib/account";
@@ -32,6 +32,7 @@ const WHO: Record<Role, string> = {
 };
 
 export function ContactsPage({ rootClass, counter }: { rootClass: string; counter: string }): ReactNode {
+  const phone = usePhone();
   const s = account.current;
   const store = s?.store;
   const inbox = useInbox();
@@ -80,7 +81,8 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
               <span className="ia-sec">Contacts</span>
             </p>
             <h1 id="ct-h1">Contacts</h1>
-            <p className="ia-ct-lede">Give your contact card to the people you deal with; compare the key fingerprint with them by phone or in person. Documents they send arrive sealed to you.</p>
+            {/* a phone: the first screen says what to do; the rest is the 名刺 and the list below (DS-MOB P4) */}
+            <p className="ia-ct-lede">{phone ? "Give your card to the people you deal with, and compare its fingerprint with them." : "Give your contact card to the people you deal with; compare the key fingerprint with them by phone or in person. Documents they send arrive sealed to you."}</p>
             <p className="ia-ct-who">{WHO[s.role]}</p>
             <dl className="ia-ct-nums">
               <div>

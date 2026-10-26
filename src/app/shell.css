@@ -215,6 +215,13 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-did .ia-from-inbox { color: var(--ink-2); font: 400 12px/1.3 var(--f-body); }
 .ia-did strong { font: 700 clamp(18px, 1.4vw, 21px)/1.25 var(--f-display); color: var(--head); text-wrap: balance; }
 .ia-did span { max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
+.ia-did-t { min-width: 0; }
+/* a phone: the long sentence under a fold (DS-MOB P4), its door a full-height row */
+.ia-did-more > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; font: 500 13px/1.2 var(--f-body); color: var(--seal); }
+.ia-did-more > summary::-webkit-details-marker { display: none; }
+.ia-did-more > summary::after { content: "▾"; font-size: 11px; }
+.ia-did-more[open] > summary::after { content: "▴"; }
+.ia-did-more > p { display: block; max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
 
 /* ---------- medium (600–839 px, DS-MOB L1): the top nav with the sections' short labels ---------- */
 @media (min-width: 600px) and (max-width: 839px) {
@@ -243,9 +250,26 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
   .by-share summary, .sp details.sp-fold > summary, .by-foot a, .sp a.sp-ink, .ia-switch-h a { display: inline-flex; align-items: center; }
   .by-share summary, .sp details.sp-fold > summary { display: flex; }
 }
-/* fields at 16 px on a phone, so iOS does not zoom into them (DS-MOB F2) */
+/* fields at 16 px on a phone, so iOS does not zoom into them (DS-MOB F2), and 44 px tall (T1).
+   `main` lifts the selectors over the pages' own field rules (buyer.css .rp select) loaded later. */
 @media (max-width: 599px) {
-  .rp textarea, .rp input[type=text], .rp input[type=number], .rp select, .ia-ct textarea, .ia-ct .ia-ct-add textarea, .sp .sp-panel input:not([type=file]), .sp .sp-panel textarea, .sp .sp-work input:not([type=file]):not([type=checkbox]), .sp .sp-work textarea { font-size: 16px; }
+  main textarea, main input[type=text], main input[type=number], main input[type=date], main input[type=search], main select,
+  .rp textarea, .rp input[type=text], .rp input[type=number], main .rp select, .ia-ct textarea, .ia-ct .ia-ct-add textarea, .sp .sp-panel input:not([type=file]), .sp .sp-panel textarea, .sp .sp-work input:not([type=file]):not([type=checkbox]), .sp .sp-work textarea, .ia-ll-q input { font-size: 16px; }
+  main .rp select, .sp .sp-panel input:not([type=file]), .sp .sp-work input:not([type=file]):not([type=checkbox]), .sp .sp-work select { min-height: 44px; }
+}
+
+/* a phone: a screen's one action docked at the bottom of its section, above the tab bar, while the
+   section scrolls (DS-MOB P2: the primary in the lower half, in the thumb's reach) */
+@media (max-width: 599px) {
+  .ia-dock { position: sticky; z-index: 30; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); margin: 0; }
+  .ia-dock button { width: 100%; box-shadow: 0 10px 24px rgba(70, 29, 58, .22); } /* --ink 22% */
+}
+
+/* a link inside a sentence on a phone: a 44 px hit area around its words, the line itself
+   unchanged (the padding is given back by a negative margin; DS-MOB T1) */
+@media (max-width: 599px) {
+  .ia-inlink { display: inline-block; padding: 13px 8px; margin: -13px -8px; }
+  footer .foot-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; }
 }
 
 /* ---------- the phone's bottom tab bar ---------- */

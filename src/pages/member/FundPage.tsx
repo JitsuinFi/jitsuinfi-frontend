@@ -288,7 +288,7 @@ export function FundPage(): ReactNode {
                 受
               </span>
               <span>
-                Your slips, withdrawals and deposits are under <Link to="/member/units">Units</Link>.
+                Your slips, withdrawals and deposits are under <Link className="ia-inlink" to="/member/units">Units</Link>.
               </span>
             </p>
           </div>

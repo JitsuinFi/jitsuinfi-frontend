@@ -235,7 +235,7 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
           {waiting.map((r, i) => (
             <span key={r.n}>
               {i ? ", " : ""}
-              <Link to={invoicePath(r.ref)}>{r.invoice_id}</Link>
+              <Link className="ia-inlink" to={invoicePath(r.ref)}>{r.invoice_id}</Link>
             </span>
           ))}
           {": the financier seals the letter when it pays the advance, and the slip opens then."}

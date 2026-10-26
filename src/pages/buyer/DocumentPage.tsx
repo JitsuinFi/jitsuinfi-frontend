@@ -360,7 +360,8 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
           請求書<small>No invoice open yet</small>
         </p>
       </div>
-      <p className="by-blank">Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices addressed to your keys through the relay arrive in your inbox instead.</p>
+      {/* a phone: what to do, in one sentence (DS-MOB P4); the codes are right below */}
+      <p className="by-blank">{phone ? "Paste the code a supplier gave you by hand below, with its terms PDF." : "Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices addressed to your keys through the relay arrive in your inbox instead."}</p>
     </article>
   );
 

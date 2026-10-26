@@ -33,7 +33,9 @@ export function nowStation(stations: Stations): Stations[number] {
 }
 
 /** The caption column of every supplier section: the tag, the title, the lede, who you are, the numbers. */
-export function Caption({ section, title, lede, deals, children, titleClass }: { section?: string; title: ReactNode; lede: ReactNode; deals: SupplierDeal[]; children?: ReactNode; titleClass?: string }): ReactNode {
+/** The supplier's caption. `brief`: only the tag, the title and the lede (a phone's form screen,
+ * where the form is the first screen's job; who you are and the counts stay on Invoices). */
+export function Caption({ section, title, lede, deals, children, titleClass, brief }: { section?: string; title: ReactNode; lede: ReactNode; deals: SupplierDeal[]; children?: ReactNode; titleClass?: string; brief?: boolean }): ReactNode {
   const s = account.current;
   const store = s?.store;
   const financed = deals.filter((d) => d.advance?.matches).length;
@@ -55,20 +57,22 @@ export function Caption({ section, title, lede, deals, children, titleClass }: {
         {title}
       </h1>
       <p className="sp-lede">{lede}</p>
-      <div className="sp-who">
-        <svg className="sp-who-seal" viewBox="0 0 68 68" aria-hidden="true" focusable="false">
-          <circle className="sp-ws-o" cx="34" cy="34" r="30" />
-          <circle className="sp-ws-i" cx="34" cy="34" r="25" />
-          <text className="sp-ws-g" x="34" y="46" textAnchor="middle">
-            売
-          </text>
-        </svg>
-        <dl>
-          <dt>Your key fingerprint</dt>
-          <dd className="sp-print">{s?.fingerprint ?? ""}</dd>
-          <dd className="sp-from">{s?.demo ? "Signed in as supplier · keys from a test secret, for test data only" : "Signed in as supplier · keys from your passkey, one touch per signature"}</dd>
-        </dl>
-      </div>
+      {brief ? null : (
+        <div className="sp-who">
+          <svg className="sp-who-seal" viewBox="0 0 68 68" aria-hidden="true" focusable="false">
+            <circle className="sp-ws-o" cx="34" cy="34" r="30" />
+            <circle className="sp-ws-i" cx="34" cy="34" r="25" />
+            <text className="sp-ws-g" x="34" y="46" textAnchor="middle">
+              売
+            </text>
+          </svg>
+          <dl>
+            <dt>Your key fingerprint</dt>
+            <dd className="sp-print">{s?.fingerprint ?? ""}</dd>
+            <dd className="sp-from">{s?.demo ? "Signed in as supplier · keys from a test secret, for test data only" : "Signed in as supplier · keys from your passkey, one touch per signature"}</dd>
+          </dl>
+        </div>
+      )}
       {store && !store.persistent ? (
         <p className="sp-unsaved" role="status">
           <b lang="ja" aria-hidden="true">
@@ -79,20 +83,22 @@ export function Caption({ section, title, lede, deals, children, titleClass }: {
           </span>
         </p>
       ) : null}
-      <dl className="sp-nums" aria-label="Your invoices">
-        <div>
-          <dt>invoices issued</dt>
-          <dd>{deals.length}</dd>
-        </div>
-        <div className="is-seal">
-          <dt>financed, advance in</dt>
-          <dd>{financed}</dd>
-        </div>
-        <div>
-          <dt>on the route</dt>
-          <dd>{onRoute}</dd>
-        </div>
-      </dl>
+      {brief ? null : (
+        <dl className="sp-nums" aria-label="Your invoices">
+          <div>
+            <dt>invoices issued</dt>
+            <dd>{deals.length}</dd>
+          </div>
+          <div className="is-seal">
+            <dt>financed, advance in</dt>
+            <dd>{financed}</dd>
+          </div>
+          <div>
+            <dt>on the route</dt>
+            <dd>{onRoute}</dd>
+          </div>
+        </dl>
+      )}
       {children}
     </section>
   );
@@ -183,11 +189,15 @@ function StationArt({ obj }: { obj: string }): ReactNode {
   }
 }
 
-/** The deal's route: six stations on one rail; done ones carry a small 済. */
+/**
+ * The deal's route: six stations on one rail; done ones carry a small 済. With `onPick` the
+ * stations open their work: navigation, so the rail is a <nav> and its station marks are not
+ * action buttons (DS-MOB P2 counts one primary action per screen, and these are not it).
+ */
 export function Rail({ stations, selected, onPick, stamp }: { stations: Stations; selected: StationKey | null; onPick?: (k: StationKey) => void; stamp?: Set<StationKey> }): ReactNode {
   const reach = Math.min(5, stations.filter((s) => s.state === "done").length);
-  return (
-    <ol className="sp-rail" data-reach={reach} aria-label="The deal route">
+  const rail = (
+    <ol className="sp-rail" data-reach={reach} aria-label={onPick ? undefined : "The deal route"}>
       <li className="sp-rail-fill" aria-hidden="true" />
       {stations.map((s) => {
         const st = STATION[s.key];
@@ -223,6 +233,13 @@ export function Rail({ stations, selected, onPick, stamp }: { stations: Stations
         );
       })}
     </ol>
+  );
+  return onPick ? (
+    <nav className="sp-rail-nav" aria-label="The deal route">
+      {rail}
+    </nav>
+  ) : (
+    rail
   );
 }
 

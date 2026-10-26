@@ -1,9 +1,14 @@
 // What the person just did (HNK-34 E2E finding 1; IA port 2026-10-26): a hanko and a sentence at
 // the top of the page the action led to, until they move on. An action taken in the inbox panel
 // leaves its outcome on the page the panel opened, marked "Done · from your inbox". Every role's
-// pages use it.
+// pages use it. On a phone the first screen shows what happened (the hanko and the title); a long
+// sentence about it folds under "Details" (DS-MOB P4: no text block over 3 lines above the fold).
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { reducedMotion } from "../landing/motion";
+import { usePhone } from "./phone";
+
+/** About one line of the outcome's sentence at 390 px: a longer one folds on a phone. */
+const ONE_LINE = 44;
 
 export interface Did {
   /** The page (path) it belongs to; another page draws nothing. */
@@ -46,6 +51,7 @@ export function useDid(path: string): Did | null {
 /** The outcome as a hanko pressed and a sentence; one from the inbox is brought into view once. */
 export function DidLine({ did: x }: { did: Did }): ReactNode {
   const el = useRef<HTMLDivElement>(null);
+  const fold = usePhone() && x.text.length > ONE_LINE;
   useEffect(() => {
     if (!x.inbox || !el.current) return;
     const r = el.current.getBoundingClientRect();
@@ -56,14 +62,22 @@ export function DidLine({ did: x }: { did: Did }): ReactNode {
       <span className="ia-did-seal" lang="ja" aria-hidden="true">
         {x.glyph}
       </span>
-      <p>
-        <small>
-          {x.warn ? "Came back" : "Done"}
-          {x.inbox ? <span className="ia-from-inbox"> · from your inbox</span> : null}
-        </small>
-        <strong>{x.title}</strong>
-        <span>{x.text}</span>
-      </p>
+      <div className="ia-did-t">
+        <p>
+          <small>
+            {x.warn ? "Came back" : "Done"}
+            {x.inbox ? <span className="ia-from-inbox"> · from your inbox</span> : null}
+          </small>
+          <strong>{x.title}</strong>
+          {fold ? null : <span>{x.text}</span>}
+        </p>
+        {fold ? (
+          <details className="ia-did-more">
+            <summary>Details</summary>
+            <p>{x.text}</p>
+          </details>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -226,3 +226,8 @@
 @media (prefers-reduced-motion: reduce) {
   .ac *, .ac *::before, .ac *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }
+
+/* a phone: the test-secret field at 16 px, so iOS does not zoom into it (DS-MOB F2) */
+@media (max-width: 599px) {
+  .ac-demo-body input[type=text] { font-size: 16px; min-height: 44px; }
+}

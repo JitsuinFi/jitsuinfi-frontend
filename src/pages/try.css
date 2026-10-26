@@ -482,3 +482,19 @@
 @media (prefers-reduced-motion: reduce) {
   .tcase *, .tcase *::before, .tcase *::after { transition: none !important; animation: none !important; }
 }
+
+/* /try on a phone (DS-MOB F2, T1; 2026-10-26): the fields written on the sheet are 16 px, so iOS
+   does not zoom into them, and each sits on its own ruled line, 44 px tall. */
+@media (max-width: 599px) {
+  .tcase .sk-meta { width: 100%; }
+  .tcase .sk-meta div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .tcase .sk input:not([readonly]) { width: 100%; min-height: 44px; padding: 10px 2px; border-bottom-color: var(--fold); text-align: left; font-size: 16px; }
+  .tcase .sk-meta input.is-mono, .tcase .sk-meta input[type="date"], .tcase .sk input[type="date"] { width: 100%; }
+  .tcase .sk .sk-total-v input:not([readonly]) { width: auto; flex: 1 1 auto; min-height: 48px; text-align: left; font-size: 26px; }
+  .tcase .sk-table, .tcase .sk-table tbody, .tcase .sk-table tr { display: block; width: 100%; }
+  .tcase .sk-table th, .tcase .sk-table td { display: block; width: auto; padding: 0; text-align: left; }
+  .tcase .sk-table tr { padding: 8px 0; }
+  /* one ruled line between the rows, none between a label and its field */
+  .tcase .sk-table tr + tr { border-top: 1px solid var(--fiber); }
+  .tcase .sk-table tr + tr th, .tcase .sk-table tr + tr td { border-top: 0; }
+}

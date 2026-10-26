@@ -20,8 +20,9 @@ import { startInbox } from "./inbox";
 import { InboxPanel, useInbox } from "./InboxPanel";
 import { Mark, Wordmark } from "./Mark";
 import { dismissSheet, onSheetEntry, useBackCloses } from "./sheet";
+import { usePhone } from "./phone";
 import { SkipLink } from "./SkipLink";
-import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
+import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { SPEC_URL } from "../lib/hosts";
@@ -32,18 +33,7 @@ import { activeItem, hasInbox, navItems, phoneTabs } from "../lib/sections";
 import { unread } from "./inbox";
 import "./app-styles";
 
-/** The phone layout of the shell (DS-MOB L1, compact: style.css and shell.css, the tab bar below 600 px). */
-const PHONE = "(max-width: 599px)";
-export function usePhone(): boolean {
-  return useSyncExternalStore(
-    (f) => {
-      const mq = matchMedia(PHONE);
-      mq.addEventListener("change", f);
-      return () => mq.removeEventListener("change", f);
-    },
-    () => matchMedia(PHONE).matches,
-  );
-}
+export { usePhone } from "./phone";
 
 const MainSlot = createContext<{ main: HTMLElement | null; setWide: (w: boolean) => void }>({ main: null, setWide: () => undefined });
 

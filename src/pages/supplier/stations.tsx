@@ -23,15 +23,15 @@ import { readablePrint } from "../../lib/print";
 import { PROVIDER } from "../../lib/provider";
 import { draft, send, signInWasm } from "../../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../../lib/relay-message";
-import { decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
+import { advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
 import { handToVerify } from "../../lib/verify-handoff";
 import { takeContact } from "../MailboxCard";
 import { buyerName, STATION, Work, type Stations } from "./parts";
-import { boardLine, pdfOf, save, type Book, type Deal } from "./data";
+import { boardLine, lastAddress, pdfOf, rememberAddress, save, type Book, type Deal } from "./data";
+import { addressProblem } from "../../lib/zaddr";
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const value = (r: { current: { value: string } | null }) => r.current!.value.trim();
-const short = (x: string) => `${x.slice(0, 10)}…${x.slice(-6)}`;
 const when = (t: number) => new Date(t).toLocaleString();
 const b64ToBytes = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
@@ -97,10 +97,17 @@ export function StationWork(p: WorkProps & { station: StationKey; stations: Stat
           <Kv
             rows={[
               ["On the board", board ? board.replace(/^On the board: /, "") : "not read yet"],
-              ...(d.advance ? [["Advance", `${zatToZec(d.advance.received_zat)} ZEC in ${short(d.advance.txid)}`] as [string, string]] : []),
+              ...(d.advance ? [["Advance", `${zatToZec(d.advance.received_zat)} ZEC${d.advance.matches ? ", as agreed" : ""}`] as [string, string]] : []),
             ]}
           />
-          {d.bundle ? <CodeBlock label="Settlement bundle" value={d.bundle} filename={`${d.invoice_id}.bundle.txt`} /> : null}
+          {d.bundle ? (
+            <details className="sp-fold">
+              <summary>Details: the settlement bundle</summary>
+              <div className="sp-fold-body">
+                <CodeBlock label="Settlement bundle" value={d.bundle} filename={`${d.invoice_id}.bundle.txt`} />
+              </div>
+            </details>
+          ) : null}
           <Actions>
             {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
             <a className="sp-ink" href="/verify" onClick={() => d.bundle && handToVerify(d.bundle)}>
@@ -185,7 +192,7 @@ function SignatureWork(p: WorkProps): ReactNode {
 
   const handFold = (
     <ByHand>
-      <p className="sp-or">Give the buyer the invoice code (on the slip under the sheet) and its PDF. They sign it on their screen and give you back their signature.</p>
+      <p className="sp-or">Give the buyer the invoice as code (under "Details: the invoice as code", below the sheet) and its PDF. They sign it on their screen and give you back their signature.</p>
       <Field label="The buyer's signature, from their screen" placeholder="paste it whole" inputRef={sig} />
       <Actions>
         <Button
@@ -294,9 +301,9 @@ function SignatureWork(p: WorkProps): ReactNode {
       </dl>
       {!d.buyer_mailbox ? (
         <details className="sp-fold" open={!buyers.length}>
-          <summary>Paste the buyer's contact card</summary>
+          <summary>Paste the buyer's contact link or card</summary>
           <div className="sp-fold-body">
-            <Field label="The buyer's contact card" area placeholder="jitsuin-contact-v1:…" help="Compare its fingerprint with the buyer before you send. It is kept in your contacts." inputRef={card} />
+            <Field label="The buyer's contact link or card" area placeholder="https://…/app/contact#… or jitsuin-contact-v1:…" help="Compare its fingerprint with the buyer before you send. It is kept in your contacts." inputRef={card} />
           </div>
         </details>
       ) : null}
@@ -333,11 +340,19 @@ function OfferWork(p: WorkProps): ReactNode {
   // the browser. Picking one fills its contact card and key; nothing about the invoice is sent.
   const [fits, setFits] = useState<Fit[] | string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  // judge run 2, finding 7: the address is checked as it is pasted; the last one used here is offered
+  const [addrSay, setAddrSay] = useState<string | null>(null);
+  const [suggest, setSuggest] = useState<string | null>(null);
   useEffect(() => {
     if (d.offer) return;
     void findFinanciers(d).then(setFits, (e) => setFits(e instanceof Error ? e.message : String(e)));
+    void lastAddress().then(setSuggest, () => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const checkAddr = () => {
+    const a = value(addr);
+    setAddrSay(a ? addressProblem(a) : null);
+  };
 
   if (d.offer) {
     const facts = (
@@ -432,7 +447,25 @@ function OfferWork(p: WorkProps): ReactNode {
       </details>
       <div className="sp-row2">
         <Field label="Advance you ask (ZEC)" type="number" placeholder={zatToZec(Math.round(d.amount_zat * 0.95))} inputRef={adv} />
-        <Field label="Your shielded address for this deal" placeholder={NET.addressHint} help="Use a new address for every deal, so deals cannot be linked by address." inputRef={addr} />
+        <label className="field sp-addr">
+          <span>Where you want the advance paid</span>
+          <input type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={() => addrSay && setAddrSay(null)} />
+          <small id="sp-addr-say" className={addrSay ? "is-bad" : undefined} role={addrSay ? "alert" : undefined}>
+            {addrSay ?? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.`}
+          </small>
+          {suggest ? (
+            <button
+              type="button"
+              className="sp-pill sp-addr-last"
+              onClick={() => {
+                addr.current!.value = suggest;
+                setAddrSay(addressProblem(suggest));
+              }}
+            >
+              {`Use the last one from this device (${suggest.slice(0, 12)}…${suggest.slice(-6)})`}
+            </button>
+          ) : null}
+        </label>
       </div>
       <Actions>
         <Button
@@ -440,6 +473,12 @@ function OfferWork(p: WorkProps): ReactNode {
             try {
               const advanceZat = zecToZat(value(adv));
               if (advanceZat > d.amount_zat) throw new Error("the advance cannot be more than the invoice amount");
+              const addrProblem = addressProblem(value(addr));
+              if (addrProblem) {
+                setAddrSay(addrProblem);
+                addr.current?.focus();
+                throw new Error(addrProblem);
+              }
               if (!looksShielded(value(addr))) throw new Error(`use a shielded ${NET.noun} address (${NET.addressHint})`);
               if (!value(contact)) {
                 if (manual.current) manual.current.open = true;
@@ -463,6 +502,7 @@ function OfferWork(p: WorkProps): ReactNode {
               await send(c.mailbox_pk, await encodeMessage(header, []), relayDeps);
               const at = Date.now();
               await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
+              await rememberAddress(offer.supplier_address).catch(() => undefined);
               did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you for the board entry.`);
             } catch (e) {
               out.error(e);
@@ -701,56 +741,90 @@ function SealWork(p: WorkProps): ReactNode {
   );
 }
 
-/** T8: compare the advance received with the advance agreed in the offer. */
+/**
+ * T8: compare the advance received with the advance agreed in the offer. Judge run 2, finding 6:
+ * the financier's notice names the amount and the transaction, so the supplier only confirms what
+ * the wallet shows; "Different amount" (folded) records another amount, and the deal says so.
+ */
 function AdvanceWork(p: WorkProps): ReactNode {
   const { d } = p;
   const txid = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const got = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const out = useOut();
   const agreed = d.offer!.advance_zat;
+  const pre = advancePrefill(d);
   if (d.advance?.matches) {
     return (
       <Work glyph="金" step="Step 5" title="Advance received" hint="Matches the advance you asked for.">
-        <Kv
-          rows={[
-            ["Transaction", d.advance.txid, true],
-            ["Received", `${zatToZec(d.advance.received_zat)} ZEC`],
-          ]}
-        />
+        <Kv rows={[["Received", `${zatToZec(d.advance.received_zat)} ZEC`]]} />
+        <details className="sp-fold">
+          <summary>Details</summary>
+          <div className="sp-fold-body">
+            <Kv rows={[["Transaction", d.advance.txid, true]]} />
+          </div>
+        </details>
       </Work>
     );
   }
-  return (
-    <Work glyph="金" step="Step 5" title="Check the advance" hint={`You asked for ${zatToZec(agreed)} ZEC. Compare with what your wallet received in that transaction. The full check (receipt and the financier's seal in the same memo) runs with jitsuin on your own wallet.`}>
-      {d.advance_notice ? (
-        <p className="sp-line">
-          <b lang="ja" aria-hidden="true">
-            金
-          </b>
-          <span>{`The financier says it paid ${zatToZec(d.advance_notice.advance_zat)} ZEC on ${when(d.advance_notice.at)}.`}</span>
-        </p>
-      ) : null}
-      <Field label="Advance transaction id" placeholder="from the financier's letter or your wallet" value={d.advance_notice?.txid} inputRef={txid} />
-      <Field label="Amount your wallet received (ZEC)" type="number" placeholder={zatToZec(agreed)} inputRef={got} />
-      {d.advance && !d.advance.matches ? <Banner kind="bad" title="Advance differs" text={`Received ${zatToZec(d.advance.received_zat)} ZEC instead of ${zatToZec(agreed)} ZEC.`} /> : null}
+  const record = async (receivedZat: number, tx: string) => {
+    const a = advanceRecord(d, receivedZat, id64(tx, "the transaction id"));
+    await save({ ...d, advance: a });
+    if (a.matches) did(p, "金", "Advance received as agreed", `${zatToZec(a.received_zat)} ZEC arrived in your wallet. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the settlement bundle arrives in your inbox then.`);
+    else out.show(<Banner kind="bad" title="Advance differs" text={`Your wallet received ${zatToZec(a.received_zat)} ZEC instead of the ${zatToZec(agreed)} ZEC you asked for. Tell the financier before anything else.`} />);
+  };
+  const byHand = (
+    <>
+      <Field label="Amount your wallet received (ZEC)" type="number" placeholder={zatToZec(pre?.zat ?? agreed)} inputRef={got} />
+      <Field label="The transaction it came in" placeholder="from the financier's letter or your wallet" value={pre?.txid} help="Your wallet app shows it with the payment." inputRef={txid} />
       <Actions>
         <Button
+          secondary={!!pre}
           onClick={async () => {
             try {
-              const receivedZat = zecToZat(value(got));
-              const tx = id64(value(txid), "the transaction id");
-              await save({ ...d, advance: { txid: tx, received_zat: receivedZat, matches: receivedZat === agreed } });
-              if (receivedZat === agreed) did(p, "金", "Advance received as agreed", `${zatToZec(receivedZat)} ZEC in ${short(tx)}. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the settlement bundle arrives in your inbox then.`);
+              await record(zecToZat(value(got)), value(txid));
             } catch (e) {
               out.error(e);
             }
           }}
         >
-          Record advance
+          Record what my wallet received
         </Button>
       </Actions>
+    </>
+  );
+  return (
+    <Work glyph="金" step="Step 5" title="Check the advance" hint={pre ? `The financier says it paid the advance on ${when(pre.at)}. Open your wallet app and compare.` : `You asked for ${zatToZec(agreed)} ZEC. The financier's notice arrives in your inbox when it pays; or record what your wallet received by hand.`}>
+      {d.advance && !d.advance.matches ? <Banner kind="bad" title="Advance differs" text={`Received ${zatToZec(d.advance.received_zat)} ZEC instead of ${zatToZec(agreed)} ZEC.`} /> : null}
+      {pre ? (
+        <>
+          <p className="sp-ask">
+            <span>{"Your wallet received "}</span>
+            <b>{`${zatToZec(pre.zat)} ZEC`}</b>
+            <span>?</span>
+          </p>
+          {pre.asAgreed ? null : <Banner kind="warn" title="Not the amount you asked for" text={`The financier names ${zatToZec(pre.zat)} ZEC; your offer asked ${zatToZec(agreed)} ZEC. Confirm only what your wallet shows.`} />}
+          <Actions>
+            <Button
+              onClick={async () => {
+                try {
+                  await record(pre.zat, pre.txid);
+                } catch (e) {
+                  out.error(e);
+                }
+              }}
+            >
+              {`Confirm: ${zatToZec(pre.zat)} ZEC received`}
+            </Button>
+          </Actions>
+          <details className="sp-fold">
+            <summary>Different amount</summary>
+            <div className="sp-fold-body">{byHand}</div>
+          </details>
+        </>
+      ) : (
+        byHand
+      )}
       {out.el}
     </Work>
   );
 }
-

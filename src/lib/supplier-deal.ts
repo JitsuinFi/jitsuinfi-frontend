@@ -330,3 +330,33 @@ const STATION_LABEL: Record<StationState, Record<StationKey, string>> = {
 export function stationLabel(k: StationKey, state: StationState): string {
   return STATION_LABEL[state][k];
 }
+
+// ---------- the advance at 金 (judge run 2, finding 6) ----------
+// The financier's advance notice (its letter, kept from the inbox) names the amount and the
+// transaction; the supplier is asked only to confirm that the wallet received it. A different
+// amount is still recorded as it is ("Advance differs").
+
+export interface AdvancePrefill {
+  /** What the notice says was paid, and in which transaction. */
+  zat: number;
+  txid: string;
+  at: number;
+  /** The advance the offer asked for. */
+  agreedZat: number;
+  /** The notice names the amount that was asked for. */
+  asAgreed: boolean;
+}
+
+/** The amount and transaction to confirm, from the financier's notice; null without a notice. */
+export function advancePrefill(d: Pick<SupplierDeal, "advance_notice" | "offer">): AdvancePrefill | null {
+  const n = d.advance_notice;
+  if (!n || !d.offer) return null;
+  return { zat: n.advance_zat, txid: n.txid, at: n.at, agreedZat: d.offer.advance_zat, asAgreed: n.advance_zat === d.offer.advance_zat };
+}
+
+/** What is recorded when the wallet received `receivedZat` in `txid`, against the offer. */
+export function advanceRecord(d: Pick<SupplierDeal, "offer">, receivedZat: number, txid: string): NonNullable<SupplierDeal["advance"]> {
+  if (!d.offer) throw new Error("no offer on this deal");
+  if (!Number.isSafeInteger(receivedZat) || receivedZat <= 0) throw new Error("write the amount your wallet received, in ZEC (more than 0)");
+  return { txid, received_zat: receivedZat, matches: receivedZat === d.offer.advance_zat };
+}

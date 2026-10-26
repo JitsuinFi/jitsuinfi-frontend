@@ -20,13 +20,13 @@
 /* ---------- page grid: caption ≤ 35%, visual ≥ 65% ---------- */
 .ap-sec { display: grid; gap: 32px; padding: 0 0 clamp(32px, 4vw, 56px); }
 @media (min-width: 1360px) {
-  .ap-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+  .ap-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: var(--cap-gap); align-items: start; }
 }
 .ap-cap { display: grid; gap: 18px; align-content: start; max-width: 52ch; min-width: 0; }
-.ap-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+/* the caption stamp: one shared rule in src/style.css */
 .ap-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
-.ap h1 { margin: 0; color: var(--head); font: 800 clamp(38px, 4vw, 60px)/1.02 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
-.ap-lede { font: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.ap h1 { margin: 0; color: var(--head); font: var(--cap-h1); letter-spacing: -.02em; text-wrap: balance; }
+.ap-lede { font: var(--cap-lede); color: var(--ink); }
 
 /* the application's path: a checked timeline (DS-06), no boxes */
 .ap-path { position: relative; display: grid; margin: 6px 0 0; padding: 0; list-style: none; }
@@ -99,7 +99,7 @@
 .ap-letter.is-received .ap-uke { opacity: .92; }
 
 .ap-act { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
-.ap .ap-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px 26px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 16px/1 var(--f-body); white-space: nowrap; text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
+.ap .ap-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); white-space: nowrap; text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
 .ap .ap-btn:hover { background: var(--seal-hi); }
 .ap .ap-btn:active { transform: scale(.97); }
 .ap .ap-btn:disabled { opacity: .45; cursor: default; transform: none; }

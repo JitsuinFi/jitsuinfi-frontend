@@ -245,7 +245,6 @@ p.by-late b { color: var(--head); font-weight: 600; }
 /* the public board: the only dark element, a band the anchors reach into */
 .by-board { position: relative; padding: 14px 18px 16px; width: max-content; min-width: 100%; background: var(--pool); color: var(--mist); }
 .by-board-in { position: sticky; left: 18px; max-width: min(760px, 80vw); display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
-.by-board-in b { font: 800 15px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet); }
 .by-board-in p { font: 400 13.5px/1.45 var(--f-body); }
 .by-board-rows { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 28px; margin-top: 10px; width: max-content; }
 .by-board-rows span { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid rgba(196, 199, 242, .22); font: 400 11.5px/1.35 var(--f-mono); color: rgba(196, 199, 242, .8); }

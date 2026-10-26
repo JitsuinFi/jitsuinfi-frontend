@@ -137,21 +137,19 @@
 /* ---------- the 65 / 35 frame ---------- */
 .tcase .scene { display: grid; gap: 40px; padding: 8px 0 72px; }
 @media (min-width: 1360px) {
-  .tcase .scene { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 48px; align-items: start; }
+  .tcase .scene { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: var(--cap-gap); align-items: start; }
   .tcase .scene.is-hero { min-height: calc(100svh - 120px); }
 }
 .tcase .chapter { padding-top: 96px; }
 .tcase .cap { max-width: 52ch; }
 .tcase .cap h2 { font-size: clamp(28px, 2.8vw, 44px); line-height: 1.06; letter-spacing: -.015em; margin: 18px 0 16px; }
 .tcase .cap > p { color: var(--ink); }
-.tcase .kanji-tag { display: inline-flex; align-items: center; gap: 12px; font: 500 14px/1 var(--f-body); color: var(--ink-2); }
-.tcase .kanji-tag .hk { width: 34px; height: 34px; font-size: 19px; background: var(--seal); color: var(--sheet); border-color: var(--seal); }
+.tcase .kanji-tag { display: inline-flex; align-items: center; } /* the stamp and its label: src/style.css */
 
 /* ---------- the caption (hero) ---------- */
-.tcase .cap-hero { padding-top: 20px; }
-.tcase .cap-hero h1 { font-size: clamp(36px, 3.6vw, 54px); line-height: .98; letter-spacing: -.02em; margin: 22px 0 18px; }
+.tcase .cap-hero h1 { font: var(--cap-h1); letter-spacing: -.02em; margin: 18px 0 16px; }
 .tcase .cap-hero h1 .w { display: inline-block; }
-.tcase .lede { font-size: clamp(17px, 1.3vw, 20px); line-height: 1.5; color: var(--ink); max-width: 40ch; }
+.tcase .lede { font: var(--cap-lede); color: var(--ink); max-width: 40ch; }
 .tcase .rules { list-style: none; margin: 30px 0 0; padding: 0; display: grid; gap: 10px; }
 .tcase .rules li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: baseline; font-size: 15.5px; line-height: 1.45; }
 .tcase .rules .rn { font: 800 15px/1 var(--f-seal); color: var(--head); }
@@ -296,7 +294,6 @@
 .tcase .bd-screw.c { left: 9px; bottom: 9px; }
 .tcase .bd-screw.d { right: 9px; bottom: 9px; }
 .tcase .bd-head { display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 4px; padding: 0 20px; }
-.tcase .bd-k { font: 800 22px/1 var(--f-seal); color: var(--mist); letter-spacing: .12em; }
 .tcase .bd-t { grid-column: 1; font: 500 12px/1.2 var(--f-body); color: var(--mist); opacity: .75; }
 .tcase .bd-led { grid-row: 1 / 3; grid-column: 2; width: 9px; height: 9px; border-radius: 50%; background: var(--glint); box-shadow: 0 0 0 3px rgba(29, 151, 241, .18); }
 .tcase .bd-led.is-busy { animation: tc-led .5s steps(2) infinite; }
@@ -448,9 +445,7 @@
 }
 @media (max-width: 640px) {
   .tcase .scene { gap: 28px; padding-top: 0; }
-  .tcase .cap-hero { padding-top: 0; }
-  .tcase .cap-hero h1 { font-size: 36px; margin: 14px 0 10px; }
-  .tcase .lede { font-size: 16px; }
+  .tcase .cap-hero h1 { margin: 14px 0 10px; }
   .tcase .rules { margin-top: 18px; gap: 6px; }
   .tcase .rules li { font-size: 14px; }
   .tcase .count { margin-top: 18px; }

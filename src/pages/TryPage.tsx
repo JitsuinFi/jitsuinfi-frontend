@@ -13,6 +13,7 @@
 // N resolves, B's ring reads the seal, a red thread runs from N to the board, the lookup scans
 // the rows, the hanko comes down on the sheet with 偽 or 重, and a 重 on a double hangs Exhibit A
 // off the slab on a red string. The stamped copy peels into the pile at the next edit.
+import { NextRoom } from "../app/NextRoom";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { Mounted, Page } from "../app/AppShell";
@@ -793,6 +794,7 @@ export function TryPage({ autoplay = false }: { autoplay?: boolean }): ReactNode
         </div>
         <Mounted then={ready} />
       </div>
+      <NextRoom from="try" />
     </Page>
   );
 }

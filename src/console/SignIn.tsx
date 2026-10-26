@@ -81,7 +81,7 @@ export function DoorPage({ net, eyebrow, title, lede, children, door, visCap }: 
           </span>
         }
       />
-      <main className="cs-sec is-door" aria-labelledby="cs-door-t">
+      <main className="cs-sec is-door" id="cs-main" tabIndex={-1} aria-labelledby="cs-door-t">
         <div className="cs-cap">
           <p className="cs-eyebrow">
             <Stamp k="融" />
@@ -179,7 +179,7 @@ export function SignIn({ session, info, rerender }: { session: { console: boolea
           <p className="cs-switch">
             New device?{" "}
             <button type="button" className="cs-link" disabled={busy !== null} onClick={() => void (location.href = "/console/pair")}>
-              Open an invite link
+              I have an invite code
             </button>
           </p>
         </div>
@@ -205,6 +205,14 @@ export function SignIn({ session, info, rerender }: { session: { console: boolea
             />
             <DoorRow lead={<KeyLead />} label="I tried it before" line="Continue with the passkey you made here" busy={busy === "back"} disabled={busy !== null} run={run("back", login)} />
           </div>
+        </div>
+      ) : mode === "unpaired" ? (
+        <div className="cs-form">
+          <p className="cs-switch">
+            <button type="button" className="cs-link" onClick={() => void (location.href = "/console/pair")}>
+              I have an invite code
+            </button>
+          </p>
         </div>
       ) : null}
       <Message msg={msg} />

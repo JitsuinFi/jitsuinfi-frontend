@@ -21,3 +21,9 @@ export const account = new Account({
 for (const ev of ["pointerdown", "keydown"]) {
   window.addEventListener(ev, () => account.touch(), { passive: true });
 }
+
+/**
+ * Set by the nav's Sign in: the account page then opens afresh, on log-in when this device knows
+ * an account and on sign-up when it does not (the landing's Sign in loads a new document, the same).
+ */
+export const accountDoor = { fresh: false };

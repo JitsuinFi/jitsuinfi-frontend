@@ -20,6 +20,8 @@ import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
 import { KIT } from "../lib/kit";
 import { NET } from "../lib/network";
 import { download } from "../lib/download";
+import { takeForVerify } from "../lib/verify-handoff";
+import { NextRoom } from "../app/NextRoom";
 import { dur, ease, run, still, wait } from "./try/anim";
 import { BoardStrip, boardRows, type BoardApi } from "./verify/BoardStrip";
 import { Loupe } from "./verify/loupe";
@@ -304,6 +306,13 @@ export function VerifyPage(): ReactNode {
   const ready = () => {
     loupe.current = new Loupe(scene.current!, "The clerk's loupe over the sheet you handed in");
     loupe.current.build(null, matchMedia(NARROW).matches);
+    // a settled deal's bundle, carried here by "Check it on Verify" (src/lib/verify-handoff.ts)
+    const handed = takeForVerify();
+    if (handed) {
+      code.current!.value = handed;
+      trayUpdate(true);
+      speak({ ...IDLE, text: "The settlement bundle is in the in-tray. Hand it to the registry to check it." });
+    }
     // The board is on the bench from the start: the live board (or the kept or bundled copy).
     void loadBoard((u, i) => fetch(u, i)).then(
       (b) => {
@@ -604,6 +613,7 @@ export function VerifyPage(): ReactNode {
         </section>
         <Mounted then={ready} />
       </div>
+      <NextRoom from="verify" />
     </Page>
   );
 }

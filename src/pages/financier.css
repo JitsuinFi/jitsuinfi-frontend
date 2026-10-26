@@ -23,16 +23,16 @@
 .fi-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 0 0 56px; scroll-margin-top: 84px; }
 .fi-sec + .fi-sec { padding-top: 40px; border-top: 1px solid var(--rule); }
 @media (min-width: 1360px) {
-  .fi-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+  .fi-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: var(--cap-gap); align-items: start; }
   .fi-sec > .fi-cap { position: sticky; top: 92px; }
 }
 .fi-cap { display: grid; gap: 18px; align-content: start; max-width: 54ch; min-width: 0; }
-.fi-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal); }
+/* the caption stamp: one shared rule in src/style.css */
 .fi-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.35 var(--f-body); color: var(--ink-2); }
 .fi h1, .fi h2, .fi h3 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
-.fi h1 { font-size: clamp(40px, 4.4vw, 68px); line-height: 1; letter-spacing: -.02em; }
+.fi h1 { font: var(--cap-h1); letter-spacing: -.02em; }
 .fi h2 { font-size: clamp(27px, 2.5vw, 38px); line-height: 1.06; letter-spacing: -.015em; }
-.fi-lede { font: 400 clamp(16.5px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.fi-lede { font: var(--cap-lede); color: var(--ink); }
 .fi-hint { font: 400 14px/1.55 var(--f-body); color: var(--ink-2); }
 .fi-note { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
 .fi-link { color: var(--seal); font: 500 15px/1.3 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
@@ -51,7 +51,7 @@
 .fi-toc a small { font: 400 12.5px/1.3 var(--f-body); color: var(--ink-2); }
 
 /* ---------- controls (over the shared button and field rules) ---------- */
-.fi .fi-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: 14px 24px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 15px/1 var(--f-body); }
+.fi .fi-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); }
 .fi .fi-btn:hover { background: var(--seal-hi); }
 .fi .fi-btn-q { display: inline-flex; align-items: center; gap: 8px; min-height: 0; padding: 10px 15px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 13.5px/1 var(--f-body); }
 .fi .fi-btn-q:hover { background: var(--wash-b); }
@@ -67,7 +67,7 @@
 .fi-file label { flex: none; order: 2; margin-left: auto; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 13px/1 var(--f-body); }
 .fi-file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 13px/1.3 var(--f-body); color: var(--ink-2); }
 .fi-file:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
-.fi-file:focus-within label { outline: 2px solid var(--glint); outline-offset: 2px; }
+.fi-file:focus-within label { outline: 2px solid var(--seal); outline-offset: 2px; }
 .fi-check { display: flex; align-items: center; gap: 10px; font: 500 14px/1.35 var(--f-body); color: var(--head); cursor: pointer; }
 .fi-check input { appearance: none; width: 20px; height: 20px; margin: 0; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--ink-2); background: var(--sheet); display: grid; place-items: center; cursor: pointer; }
 .fi-check input:checked { background: var(--seal); box-shadow: none; }
@@ -79,7 +79,7 @@
 .fi .fi-stepper input::-webkit-inner-spin-button, .fi .fi-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .fi-stepper:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
 .fi .fi-stepper input:focus-visible { outline: none; }
-.fi-panel { display: grid; gap: 16px; padding: 22px; background: var(--sheet); border-radius: 22px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.fi-panel { display: grid; gap: 16px; padding: 22px; background: var(--sheet); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
 .fi-code { padding: 12px 14px; border-radius: 12px; background: var(--paper); font: 400 12.5px/1.55 var(--f-mono); color: var(--head); overflow-wrap: anywhere; max-height: 120px; overflow: auto; user-select: all; }
 
 /* a refusal is written on the paper with a 拒 mark */
@@ -169,8 +169,8 @@
 @keyframes fi-link-in { from { transform: scaleX(0); } }
 @keyframes fi-anchor { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 /* the public board under the chain: dark, because it is Zcash */
-.fi-board { position: relative; display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 10px; background: var(--pool); color: var(--mist); font: 400 12.5px/1.35 var(--f-body); overflow: hidden; }
-.fi-board b { font: 800 14px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet); white-space: nowrap; }
+.fi-board { position: relative; display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 0; background: var(--pool); color: var(--mist); font: 400 12.5px/1.35 var(--f-body); overflow: hidden; }
+.fi-board b { white-space: nowrap; }
 .fi-board .fi-mono { color: var(--glint); }
 .fi-board::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(29, 151, 241, .16), transparent) no-repeat; background-size: 30% 100%; background-position: -40% 0; pointer-events: none; }
 .fi-board.is-scan::before { animation: fi-scan 1400ms var(--ease-inout) 1 both; }

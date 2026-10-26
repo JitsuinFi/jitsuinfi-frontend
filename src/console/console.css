@@ -20,7 +20,10 @@
   --ease-land: cubic-bezier(.22, .78, .51, .94); --ease-snap: cubic-bezier(.13, 1.06, .31, .94);
   --ease-exit: cubic-bezier(.29, 0, .63, .04); --ease-io: cubic-bezier(.34, .07, .66, .93);
   --dur-fade: 200ms; --dur-seal: 367ms; --dur-enter: 400ms; --dur-exit: 433ms;
-  --gutter: clamp(16px, 4.4vw, 64px); --tabbar-h: 0px;
+  --gutter: max(16px, clamp(16px, 5vw, 96px), env(safe-area-inset-left, 0px)); --tabbar-h: 0px; /* the app's gutter (tokens.css) */
+  /* the app's caption, button and panel (src/style.css :root, visual review 2026-10-26) */
+  --cap-h1: 800 clamp(38px, 4vw, 60px)/1.02 var(--f-display); --cap-lede: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); --cap-gap: 56px;
+  --btn-font: 500 15px/1.2 var(--f-body); --btn-pad: 14px 24px; --r-panel: 22px;
   color-scheme: light;
   background: var(--paper);
   -webkit-text-size-adjust: 100%;
@@ -29,13 +32,18 @@
 :root:has(#console) body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 #console *, #console *::before, #console *::after { box-sizing: border-box; }
 #console [hidden] { display: none !important; }
-#console button { font: inherit; }
-#console :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+/* zero specificity: a button's own class (.cs-btn, .cs-link) sets its type; this only fills the rest */
+:where(#console) button { font: inherit; }
+#console :focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; }
+/* Button Blue only inside the dark: the node, the room behind the door */
+#console .cs-node :focus-visible, #console .cs-opening :focus-visible { outline-color: var(--glint); }
+/* fields draw their own inset seal ring: no second ring round them */
+#console .cs-field input:focus-visible, #console .cs-field textarea:focus-visible, #console .cs-code-in:focus-visible, #console .cs-rline > input:focus-visible, #console .cs-rline.is-wide textarea:focus-visible { outline: none; }
 .cs { min-height: 100dvh; display: flex; flex-direction: column; }
 .cs main { flex: 1 0 auto; overflow-x: clip; }
 .cs .is-mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 .cs h1, .cs h2, .cs h3 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
-.cs h1 { font-size: clamp(34px, 3.4vw, 52px); line-height: 1.04; letter-spacing: -.02em; }
+.cs h1 { font: var(--cap-h1); letter-spacing: -.02em; }
 .cs h2 { font-size: clamp(28px, 2.6vw, 40px); line-height: 1.06; letter-spacing: -.015em; }
 .cs h3 { font-size: clamp(19px, 1.5vw, 23px); line-height: 1.15; font-weight: 700; }
 /* line icons from the sign-in sheet (src/app/auth.tsx) */
@@ -45,7 +53,8 @@
 /* ---------- top bar: the console's own, no app shell ---------- */
 .cs-top {
   position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px;
-  padding: 12px var(--gutter); background: rgba(246, 245, 252, .92); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  /* solid paper and the app bar's height (visual review 2026-10-26): text no longer ghosts under it */
+  min-height: 65px; padding: 12px var(--gutter); background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
 .cs-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--head); font: 800 20px/1 var(--f-display); letter-spacing: -.01em; }
@@ -60,26 +69,30 @@
 .cs-nav { display: flex; gap: 2px; padding: 4px; margin-left: 8px; background: var(--sheet); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule); }
 .cs-nav a { text-decoration: none; color: var(--ink-2); font: 500 14px/1 var(--f-body); padding: 9px 14px; border-radius: 999px; white-space: nowrap; transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land); }
 .cs-nav a:hover { color: var(--head); background: var(--wash); }
-.cs-nav a[aria-current="true"] { color: var(--sheet); background: var(--head); }
+.cs-nav a[aria-current="true"] { color: var(--sheet); background: var(--seal); } /* as the app: the screen you are on in seal red */
 .cs-n-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 11px/1 var(--f-body); vertical-align: 1px; }
 .cs-top-end { margin-left: auto; display: flex; align-items: center; gap: 14px; min-width: 0; }
 .cs-net { font: 500 12px/1 var(--f-body); color: var(--seal); background: var(--seal-wash); padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
 .cs-net::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--seal); margin-right: 6px; vertical-align: 1px; }
 .cs-who { display: flex; align-items: center; gap: 10px; min-width: 0; font: 500 13px/1.2 var(--f-body); color: var(--head); white-space: nowrap; }
 .cs-who > span { overflow: hidden; text-overflow: ellipsis; }
-.cs-foot { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; padding: 28px var(--gutter) calc(32px + var(--tabbar-h)); color: var(--ink-2); font: 400 13px/1.5 var(--f-body); border-top: 1px solid var(--rule); }
+/* the app's footer line (style.css footer): centred, small, the links on a line of their own */
+.cs-foot { padding: 24px var(--gutter) calc(24px + var(--tabbar-h)); color: var(--ink-2); font: 400 12px/1.55 var(--f-body); text-align: center; }
 .cs-foot p { margin: 0; }
+.cs-foot .cs-foot-links { margin-top: 6px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 6px; align-items: baseline; }
+.cs-foot .cs-foot-links a { color: var(--seal); font-weight: 500; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.cs-foot .cs-foot-links a:hover { text-decoration-thickness: 3px; }
 
 /* ---------- controls ---------- */
 .cs-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--seal); font: 500 14px/1.3 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
 .cs-link:hover { text-decoration-thickness: 3px; }
 .cs-link:disabled { opacity: .45; cursor: default; }
-.cs-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; cursor: pointer; padding: 14px 22px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 15px/1.15 var(--f-body); text-align: left; transition: background-color var(--dur-fade) var(--ease-land), transform 67ms linear; }
+.cs-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; cursor: pointer; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); text-align: left; transition: background-color var(--dur-fade) var(--ease-land), transform 67ms linear; }
 .cs-btn:hover { background: var(--seal-hi); }
 .cs-btn:active { transform: scale(.97); }
 .cs-btn:disabled { opacity: .45; cursor: default; }
 .cs-btn .cs-ico, .cs-btn .auth-ico { width: 18px; height: 18px; }
-.cs-btn.is-wide { justify-self: start; padding: 15px 28px; font-size: 16px; }
+.cs-btn.is-wide { justify-self: start; }
 .cs-btn-q { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; padding: 11px 16px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 14px/1.15 var(--f-body); text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land); }
 .cs-btn-q:hover { background: var(--wash); }
 .cs-btn-q:disabled { opacity: .45; cursor: default; }
@@ -110,7 +123,7 @@
 .cs-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 40px var(--gutter) 56px; }
 .cs-sec + .cs-sec { border-top: 1px solid var(--rule); }
 @media (min-width: 1360px) {
-  .cs-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+  .cs-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: var(--cap-gap); align-items: start; }
   .cs-sec > .cs-cap { position: sticky; top: 92px; }
   .cs-sec.is-desk { padding-top: 26px; padding-bottom: 40px; }
   .cs-sec.is-desk .cs-cap { gap: 14px; }
@@ -120,8 +133,8 @@
 .cs-cap p { margin: 0; }
 .cs-stamp { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-display); flex: none; }
 .cs-eyebrow { display: flex; align-items: center; gap: 14px; margin: 0; font: 500 14px/1.35 var(--f-body); color: var(--ink-2); }
-.cs-lede { font: 400 clamp(16.5px, 1.25vw, 19px)/1.5 var(--f-body); color: var(--ink); }
-.is-desk h1 { font-size: clamp(30px, 2.7vw, 40px); }
+.cs-lede { font: var(--cap-lede); color: var(--ink); }
+/* the desk title takes the shared --cap-h1 as every page title (visual review 2026-10-26) */
 
 /* big numbers without boxes */
 .cs-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; margin: 4px 0 0; }
@@ -136,7 +149,6 @@
 /* ======================================================================
    THE DOOR (sign-in and pairing)
    ====================================================================== */
-.is-door h1 { font-size: clamp(34px, 3.4vw, 54px); }
 .cs-form { display: grid; gap: 14px; margin: 4px 0 0; }
 .cs-list { display: grid; border-radius: 18px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); overflow: hidden; }
 .cs-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 20px; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 0; background: transparent; cursor: pointer; text-align: left; transition: background-color var(--dur-fade) var(--ease-land); }
@@ -269,7 +281,7 @@
 }
 .cs-node::before { content: ""; position: absolute; right: 22px; top: 22px; width: 54px; height: 22px; border-radius: 3px; background: repeating-linear-gradient(90deg, rgba(196, 199, 242, .18) 0 2px, transparent 2px 7px); }
 .cs-node-h { display: flex; align-items: center; gap: 10px; padding-right: 70px; min-width: 0; }
-.cs-node-h b { font: 800 15px/1 var(--f-display); letter-spacing: .3em; color: var(--sheet); flex: none; }
+.cs-node-h b { font: 800 15px/1 var(--f-display); letter-spacing: .2em; color: var(--sheet); flex: none; } /* the nameplate of every dark band (style.css) */
 .cs-node-h span:last-child { font: 500 12.5px/1.3 var(--f-body); color: var(--mist-dim); min-width: 0; }
 .cs-led { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--glint); flex: none; box-shadow: 0 0 0 3px rgba(29, 151, 241, .18); }
 .cs-led.is-blink { animation: cs-blink 600ms var(--ease-io) 1; }
@@ -555,17 +567,17 @@
   .cs-nav a { padding: 9px 11px; }
   .cs-brand-sub { display: none; }
 }
-@media (max-width: 760px) {
-  .cs { --tabbar-h: 84px; }
-  .cs-top { gap: 12px; padding: 10px var(--gutter); backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(246, 245, 252, .97); }
+@media (max-width: 720px) /* the app's phone width (style.css) */ {
+  .cs { --tabbar-h: 84px; --gutter: max(16px, env(safe-area-inset-left, 0px)); } /* 16 px gutters on phones, as the app */
+  .cs-top { gap: 12px; min-height: 0; padding: 10px var(--gutter); }
   .cs-where code, .cs-where .cs-long { display: none; }
   .cs-where { padding-left: 12px; }
   .cs-who > span { display: none; }
-  .cs-nav { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); margin: 0; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none; background: var(--pool); box-shadow: 0 14px 30px rgba(2, 13, 47, .35), inset 0 0 0 1px rgba(196, 199, 242, .12); }
+  .cs-nav { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); margin: 0; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule), 0 14px 32px rgba(70, 29, 58, .18), 0 2px 6px rgba(70, 29, 58, .08); }
+  /* the app's floating paper pill (style.css), the screen you are on in seal red: a tab bar is not
+     where Zcash is, so it is not dark (visual review 2026-10-26) */
   .cs-nav::-webkit-scrollbar { display: none; }
-  .cs-nav a { color: var(--mist); padding: 12px 13px; font-size: 13px; }
-  .cs-nav a:hover { background: rgba(196, 199, 242, .1); color: var(--sheet); }
-  .cs-nav a[aria-current="true"] { background: var(--sheet); color: var(--head); }
+  .cs-nav a { padding: 12px 12px; font-size: 13px; }
   .cs-sec { padding: 24px var(--gutter) 40px; gap: 24px; }
   .is-door .cs-btn.is-wide { justify-self: stretch; }
   .cs-door { width: min(420px, 100%); }

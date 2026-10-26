@@ -13,7 +13,8 @@ import { BOARD_COPY } from "../src/lib/board.ts";
 
 const svg = readFileSync(new URL("../src/app/figures/lobby-office.svg", import.meta.url), "utf8");
 const pins = readFileSync(new URL("../src/app/figures/lobby-office-pins.css", import.meta.url), "utf8");
-const lobby = readFileSync(new URL("../src/app/Lobby.tsx", import.meta.url), "utf8");
+// the lobby and its rooms' copy (src/app/lobby-data.ts ROOMS since the nav audit of 2026-10-25)
+const lobby = readFileSync(new URL("../src/app/Lobby.tsx", import.meta.url), "utf8") + readFileSync(new URL("../src/app/lobby-data.ts", import.meta.url), "utf8");
 const ROOMS = ["supplier", "buyer", "financier", "outsider", "member", "verify", "try", "rates"];
 
 test("the office has no script, no <style>, no inline style, no pure black or white", () => {
@@ -56,10 +57,13 @@ test("every room has a floor spot, a hit area, a pin and a directory line; the b
   for (const r of ["outsider", "verify", "rates"]) assert.match(svg, new RegExp(`class="pane-lit" data-room="${r}"`), r);
 });
 
-test("the directory leads to every room; the financier's line opens the console and offers to apply", () => {
-  for (const to of ["/try", "/verify", "/outsider", "/rates", "/supplier", "/buyer", "/member", "/console", "/apply"]) assert.match(lobby, new RegExp(`to: "${to}"`), to);
-  assert.match(lobby, /label: "Apply as a financier", to: "\/apply"/);
-  assert.match(lobby, /kanji: "融",\s+title: "Financier"/);
+test("the directory leads to every room; the financier's line opens the demo console and offers to apply", () => {
+  for (const to of ["/try", "/verify", "/outsider", "/rates", "/supplier", "/buyer", "/member"]) assert.match(lobby, new RegExp(`to: "${to}"`), to);
+  assert.match(lobby, /financier: \{ to: CONSOLE_DEMO_URL, ext: true, kanji: "融", title: "Financier"/);
+  assert.match(lobby, /<Link to="\/apply">Apply as a financier<\/Link>/);
+  assert.match(lobby, /<Link to="\/apply">Check for your invite<\/Link>/);
+  assert.match(lobby, /<Link to="\/financier">Write an assignment letter<\/Link>/);
+  assert.match(lobby, /target="_blank" rel="noopener"/);
 });
 
 test("the invoice is real; N and the blocks are left to the runtime", () => {

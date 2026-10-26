@@ -20,19 +20,33 @@
   --warn: #502A50;                      /* Japanese Violet on paper: 10.84 */
   --bad: #7E2A53;                       /* Dark Raspberry on paper: 8.27 */
   --tabbar-h: 0px;
+  /* one caption, one button, one panel for every internal page (visual review 2026-10-26): the
+     console (console.css) repeats these values in its own world */
+  --cap-h1: 800 clamp(38px, 4vw, 60px)/1.02 var(--f-display); /* page title in the caption column */
+  --cap-lede: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body);  /* the lede under it */
+  --cap-gap: 56px;                      /* caption ≤ 35% | visual ≥ 65%, from 1360 px */
+  --btn-font: 500 15px/1.2 var(--f-body); /* the seal pill (primary) */
+  --btn-pad: 14px 24px;
+  --r-panel: 22px;                      /* a light panel that groups fields (20px on phones) */
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
 a { color: var(--seal); text-underline-offset: 3px; }
-:focus-visible { outline: 2px solid var(--glint); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; } /* MASTER §6: 2px, 3px out */
+/* the focus ring: Dark Raspberry on paper; Button Blue only inside the dark pool, where Zcash is
+   (a verdict, the selected deal, the boards; nav audit 2026-10-25) */
+.banner.ok :focus-visible, .deal.open :focus-visible, .by-board :focus-visible, .fi-board :focus-visible, .os-board :focus-visible,
+.ri-src :focus-visible, .vf-board :focus-visible, .tcase .bd-face :focus-visible, .tcase .ln-slab :focus-visible { outline-color: var(--glint); }
 
 /* ---------- shell: brand, segmented nav, network pill ---------- */
 header.top {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
-  padding: 12px var(--gutter); background: rgba(246, 245, 252, .86); /* --paper 86% */
-  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  /* solid paper (visual review 2026-10-26): the translucent bar let the page's text ghost through
+     under it; its blur never shipped (the minifier kept only -webkit-backdrop-filter, which Chrome
+     ignores), so 86% paper alone sat over the dark boards */
+  padding: 12px var(--gutter); background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
 header.top .brand {
@@ -56,6 +70,15 @@ header.top nav a.active { color: var(--sheet); background: var(--seal); }
   margin-left: auto; font: 500 12px/1 var(--f-body); color: var(--seal);
   background: var(--seal-wash); padding: 7px 12px; border-radius: 999px;
 }
+/* a screen's code is loading: a thin seal line runs under the bar (it waits a micro beat, so a
+   quick change shows nothing; dur.bleed 1200 ms to most of the width, then it holds) */
+.route-load {
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--seal);
+  transform-origin: left center; transform: scaleX(0); pointer-events: none;
+  animation: route-load 1200ms var(--ease-land) var(--dur-micro) forwards;
+}
+@keyframes route-load { from { transform: scaleX(0); } to { transform: scaleX(.86); } }
+@media (prefers-reduced-motion: reduce) { .route-load { animation: none; transform: scaleX(.6); } }
 .net::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--seal); margin-right: 6px; vertical-align: 1px; }
 
 /* a buyer's due-date reminder under the top bar (buyer-late): a hanko and one line, no panel */
@@ -67,10 +90,35 @@ header.top nav a.active { color: var(--sheet); background: var(--seal); }
 .due-note b { color: var(--seal); font-weight: 600; }
 .due-note a { font-weight: 500; white-space: nowrap; }
 .due-note-hk {
-  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
-  box-shadow: inset 0 0 0 2px currentColor; color: var(--seal); font: 800 13px/1 var(--f-seal); transform: rotate(-8deg);
+  /* the verdict hanko of the role pages (.rp-hanko): 30 px, a 2 px ring, turned 8° */
+  display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  box-shadow: inset 0 0 0 2px currentColor; color: var(--seal); font: 800 15px/1 var(--f-seal); transform: rotate(-8deg);
 }
-main { max-width: 880px; margin: 0 auto; padding: var(--s-6) var(--gutter) calc(var(--s-12) + var(--tabbar-h)); }
+/* an applicant's line (ApplyReminder.tsx): the 待 hanko in the plum ink, not the due red */
+.due-note.is-apply .due-note-hk { color: var(--ink-2); }
+.due-note.is-apply b { color: var(--head); }
+main:focus { outline: none; }
+
+/* ---------- the caption column of every internal page (visual review 2026-10-26) ----------
+   One kanji stamp: a 46 px seal-red ring stamp turned 4°, beside a small ink label; a section's
+   own caption takes the 38 px one. Title and lede: --cap-h1 and --cap-lede (:root above). The
+   console's .cs-stamp draws the same stamp in its own world. */
+.lobby .stamp, .tcase .kanji-tag .hk, .vf-tag b, .sp-tag b,
+.rp-stamp, .ac-stamp, .ap-stamp, .ri-stamp, .os-stamp, .fi-stamp {
+  display: inline-grid; place-items: center; flex: none; width: 46px; height: 46px; border: 0; border-radius: 9px;
+  background: none; color: var(--seal); box-shadow: inset 0 0 0 3px var(--seal);
+  font: 800 25px/1 var(--f-seal); rotate: -4deg; /* rotate, not transform: try.css turns its .hk with rotate */
+}
+.tcase .chapter .kanji-tag .hk, .rp-h .rp-stamp { width: 38px; height: 38px; font-size: 21px; border-radius: 8px; }
+.lobby .tag, .tcase .kanji-tag, .vf-tag, .sp-tag { gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
+
+/* the public board's nameplate on every dark band (visual review 2026-10-26): try's registry book,
+   verify's strip, the outsider board, the rate band, the buyer's and the financier's strips */
+.tcase .bd-k, .vf-board-k b, .os-bd-head b, .ri-src b, .by-board-in b, .fi-board b {
+  font: 800 15px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet);
+}
+/* the footer below main clears the phone tab bar (footer: + --tabbar-h), so main does not again */
+main { max-width: 880px; margin: 0 auto; padding: var(--s-6) var(--gutter) var(--s-12); }
 main.wide { max-width: 1440px; }
 
 /* large title, as iOS */
@@ -109,7 +157,7 @@ input[type=text], input[type=number], input[type=date], textarea, select {
   transition: border-color var(--dur-fade) var(--ease-land), background-color var(--dur-fade) var(--ease-land);
 }
 input:hover, textarea:hover { border-color: var(--rule-strong); }
-input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--glint); outline-offset: 1px; background: var(--sheet); }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--seal); outline-offset: 1px; background: var(--sheet); }
 textarea { font: 400 13px/1.5 var(--f-mono); min-height: 96px; resize: vertical; }
 input[type=file] { font: 400 13px var(--f-body); color: var(--ink-2); max-width: 100%; }
 input[type=file]::file-selector-button {
@@ -178,6 +226,35 @@ table.kv td.mono { font: 400 12.5px/1.5 var(--f-mono); word-break: break-all; }
 .qr svg { width: 260px; height: 260px; display: block; }
 
 footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(--s-3) var(--gutter) calc(var(--s-3) + var(--tabbar-h)); }
+footer p { margin: 0; }
+footer .foot-links { margin-top: 6px; }
+footer .foot-links a { font-weight: 500; text-decoration-thickness: 1px; }
+footer .foot-links a:hover { text-decoration-thickness: 2px; }
+
+/* the end of a public page (NextRoom.tsx): one row to the next room, drawn as the lobby's
+   directory draws a room (kanji seal, title, one line, arrow); no tile */
+.next-room { max-width: 1440px; margin: var(--s-8) auto 0; padding: var(--s-3) 0 0; border-top: 1px solid var(--rule); }
+.next-room-k { margin: 0 0 6px; font: 500 13px/1.3 var(--f-body); color: var(--ink-2); }
+/* one row rule for both (visual review 2026-10-26): the lobby's directory room and the Next room */
+.next-room-row, .lobby .room {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) 18px; gap: 14px; align-items: center;
+  padding: 4px 12px; border-radius: var(--r-row); text-decoration: none; color: var(--ink);
+  transition: background-color var(--dur-fade) var(--ease-land);
+}
+.next-room-row { max-width: 520px; margin-left: -12px; padding-block: 8px; }
+.next-room-row .room-k, .lobby .room-k {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--seal); font: 800 18px/1 var(--f-seal); color: var(--seal);
+  transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land), rotate var(--dur-seal) var(--ease-snap);
+}
+.next-room-row .room-t, .lobby .room-t { display: grid; gap: 1px; min-width: 0; }
+.next-room-row .room-t strong, .lobby .room-t strong { font: 500 16px/1.3 var(--f-body); color: var(--head); }
+.next-room-row .room-t span, .lobby .room-t span { font: 400 14px/1.4 var(--f-body); color: var(--ink-2); }
+.next-room-row .room-go { width: 18px; height: 18px; color: var(--seal); translate: -4px 0; transition: translate var(--dur-enter) var(--ease-land); }
+.next-room-row:hover, .next-room-row:focus-visible { background: var(--seal-wash); }
+.next-room-row:hover .room-k, .next-room-row:focus-visible .room-k { background: var(--seal); color: var(--sheet); rotate: -8deg; }
+.next-room-row:hover .room-go, .next-room-row:focus-visible .room-go { translate: 0 0; }
+.next-room-row:focus-visible { outline-offset: 0; }
 
 /* ---------- supplier deals (HNK-24.T9): master list; the open deal is selected in the pool ---------- */
 .deals { display: flex; flex-direction: column; gap: 6px; }
@@ -194,10 +271,10 @@ footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(
 
 /* ---------- phones: the navigation becomes a floating tab bar (DS-02, DS-08) ---------- */
 @media (max-width: 720px) {
-  :root { --tabbar-h: 84px; }
-  /* no backdrop filter here: it would make the header the containing block of the fixed tab bar,
-     which then sits under the header instead of at the bottom of the screen (HNK-34.T1) */
-  header.top { padding: 10px var(--gutter); background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  :root { --tabbar-h: 84px; --gutter: max(16px, env(safe-area-inset-left, 0px)); } /* SPEC: 16 px gutters on phones */
+  /* never a backdrop filter on the bar: it would make the header the containing block of the fixed
+     tab bar, which then sits under the header instead of at the bottom of the screen (HNK-34.T1) */
+  header.top { padding: 10px var(--gutter); }
   /* a floating paper pill, the screen you are on in seal red */
   header.top nav {
     position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
@@ -206,7 +283,16 @@ footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(
     box-shadow: inset 0 0 0 1px var(--rule), 0 14px 32px rgba(70, 29, 58, .18), 0 2px 6px rgba(70, 29, 58, .08);
   }
   header.top nav::-webkit-scrollbar { display: none; }
-  header.top nav a { padding: 12px 14px; font-size: 13px; }
+  /* five tabs (src/lib/screens.ts phoneTabs) fit a 390 px screen; if a narrower one still scrolls,
+     the edge that hides a tab fades (the classes follow the scroll: AppShell.tsx) */
+  header.top nav a { padding: 12px 12px; font-size: 13px; flex: none; }
+  header.top nav.is-more-r { -webkit-mask-image: linear-gradient(90deg, var(--paper) calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, var(--paper) calc(100% - 28px), transparent); }
+  header.top nav.is-more-l { -webkit-mask-image: linear-gradient(90deg, transparent, var(--paper) 28px); mask-image: linear-gradient(90deg, transparent, var(--paper) 28px); }
+  header.top nav.is-more-l.is-more-r { -webkit-mask-image: linear-gradient(90deg, transparent, var(--paper) 28px, var(--paper) calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, var(--paper) 28px, var(--paper) calc(100% - 28px), transparent); }
+  .next-room { margin-top: var(--s-6); }
+  .next-room-row, .lobby .room { grid-template-columns: 34px minmax(0, 1fr) 16px; gap: 12px; padding: 9px 12px; }
+  .next-room-row .room-k, .lobby .room-k { width: 34px; height: 34px; font-size: 17px; }
+  .next-room-row .room-t strong, .lobby .room-t strong { font-size: 15px; }
   main { padding-top: var(--s-3); }
   section.card { padding: 20px 16px; border-radius: 20px; }
   .banner { padding: 16px; grid-template-columns: 48px minmax(0, 1fr); }

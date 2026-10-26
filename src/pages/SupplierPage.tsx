@@ -15,6 +15,7 @@
 // deal's route as six physical stations (照 署 登 印 金 済; the supplier's move in seal red, a
 // station that waits on someone else dashed), the chosen station's work under it, and the mailbox
 // as an in-tray of letters beside it. Styles: pages/supplier.css.
+import { handToVerify } from "../lib/verify-handoff";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Page } from "../app/AppShell";
 import { Actions, Banner, Button, CodeBlock, Field, FileField, Kv, useOut } from "../app/ui";
@@ -856,7 +857,8 @@ function StationWork({ d, station, stations, board, refresh }: { d: SupplierDeal
           />
           {d.bundle ? <CodeBlock label="Settlement bundle" value={d.bundle} filename={`${d.invoice_id}.bundle.txt`} /> : null}
           <Actions>
-            <a className="sp-ink" href="/verify">
+            {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
+            <a className="sp-ink" href="/verify" onClick={() => d.bundle && handToVerify(d.bundle)}>
               Check it on Verify
             </a>
           </Actions>

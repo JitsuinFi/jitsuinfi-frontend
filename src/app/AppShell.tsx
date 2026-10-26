@@ -1,24 +1,36 @@
 // The app world's shell (HNK-31.T2): top bar, screens nav and footer around one <main>, as the
 // hash router in app.html drew them. Pages draw into <main> through `Page`; the shell repaints
 // when the session changes, as before.
+// Nav audit 2026-10-25: a skip link first; the brand is a plain link (only the screen you are on
+// carries aria-current); on a phone the tab bar holds five screens (src/lib/screens.ts) and keeps
+// the one you are on in view; a thin seal line under the bar while a screen's code loads; the
+// footer leads back to the landing and the spec; an applicant's line until the invite is opened.
+import { ApplyReminder } from "./ApplyReminder";
 import { DueReminder } from "./DueReminder";
 import { Mark, Wordmark } from "./Mark";
-import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { SkipLink } from "./SkipLink";
+import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
-import { roleLabel } from "../lib/account";
-import { account } from "../lib/app-session";
+import { SPEC_URL } from "../lib/hosts";
+import { account, accountDoor } from "../lib/app-session";
 import { legacyTarget } from "../lib/legacy-url";
 import { NET } from "../lib/network";
+import { phoneTabs, screens } from "../lib/screens";
 import "./app-styles";
 
-// Public pages need no account (BL-PG-01).
-const PUBLIC: Array<[string, string]> = [
-  ["/try", "Try it"],
-  ["/verify", "Verify"],
-  ["/outsider", "What outsiders see"],
-  ["/rates", "Rate index"],
-];
+/** The phone layout of the shell (style.css: the tab bar from 720 px down). */
+const PHONE = "(max-width: 720px)";
+function usePhone(): boolean {
+  return useSyncExternalStore(
+    (f) => {
+      const mq = matchMedia(PHONE);
+      mq.addEventListener("change", f);
+      return () => mq.removeEventListener("change", f);
+    },
+    () => matchMedia(PHONE).matches,
+  );
+}
 
 const MainSlot = createContext<{ main: HTMLElement | null; setWide: (w: boolean) => void }>({ main: null, setWide: () => undefined });
 
@@ -38,6 +50,10 @@ export function AppShell(): ReactNode {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const [main, setMain] = useState<HTMLElement | null>(null);
   const [wide, setWide] = useState(false);
+  const phone = usePhone();
+  const nav = useRef<HTMLElement>(null);
+  // a screen's code is loading (the router waits for its chunk): the seal line under the bar
+  const loading = useRouterState({ select: (r) => r.status === "pending" || r.isLoading });
 
   useLayoutEffect(() => {
     document.title = "JitsuinFi App";
@@ -56,30 +72,68 @@ export function AppShell(): ReactNode {
     void router.navigate({ to });
   };
 
-  const link = (to: string, label: string) => (
-    <Link key={to} to={to} className={to === path ? "active" : undefined} activeProps={{}}>
-      {label}
-    </Link>
-  );
+  // the phone tab bar: the screen you are on scrolls into view, and an edge fades where more scrolls
+  useLayoutEffect(() => {
+    const n = nav.current;
+    if (!n || !phone) return;
+    const edges = () => {
+      const more = n.scrollWidth - n.clientWidth > 1;
+      n.classList.toggle("is-more-l", more && n.scrollLeft > 1);
+      n.classList.toggle("is-more-r", more && n.scrollLeft < n.scrollWidth - n.clientWidth - 1);
+    };
+    const on = n.querySelector<HTMLElement>("a.active");
+    if (on && n.scrollWidth > n.clientWidth) n.scrollTo({ left: on.offsetLeft - (n.clientWidth - on.offsetWidth) / 2 });
+    edges();
+    n.addEventListener("scroll", edges, { passive: true });
+    addEventListener("resize", edges);
+    return () => {
+      n.removeEventListener("scroll", edges);
+      removeEventListener("resize", edges);
+      n.classList.remove("is-more-l", "is-more-r");
+    };
+  }, [path, phone, s?.role]);
+
+  const items = phone ? phoneTabs(s?.role ?? null) : screens(s?.role ?? null);
   return (
     <div id="app" onClick={onClick}>
+      <SkipLink target="main" />
       <header className="top">
-        <Link className="brand" to="/app">
+        {/* a plain link (the shell moves it inside the app): the brand never says "you are here" */}
+        <a className="brand" href="/app" aria-label="JitsuinFi app, home">
           <Mark className="brand-img" small />
           <Wordmark />
-        </Link>
-        <nav aria-label="Screens">
-          {link("/app", "Home")}
-          {s ? link(`/${s.role}`, roleLabel(s.role)) : null}
-          {PUBLIC.map(([to, label]) => link(to, label))}
-          {link("/account", s ? "Account" : "Sign in")}
+        </a>
+        <nav aria-label="Screens" ref={nav}>
+          {items.map((it) => (
+            <Link
+              key={it.to}
+              to={it.to}
+              className={it.to === path ? "active" : undefined}
+              activeProps={{}}
+              onClick={it.to === "/account" ? () => void (accountDoor.fresh = true) : undefined}
+            >
+              {phone ? it.short : it.label}
+            </Link>
+          ))}
         </nav>
         <span className="net">{NET.short}</span>
+        {loading ? <span className="route-load" aria-hidden="true" /> : null}
       </header>
       <DueReminder session={s} path={path} />
+      <ApplyReminder path={path} />
       {/* A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3). */}
-      <main ref={setMain} className={wide ? "wide" : undefined} />
-      <footer>Runs entirely in your browser. No trackers, no third-party requests.</footer>
+      <main ref={setMain} id="main" tabIndex={-1} className={wide ? "wide" : undefined} />
+      <footer>
+        <p>Runs entirely in your browser. No trackers, no third-party requests.</p>
+        {/* plain links: the landing is another world, the spec another site */}
+        <p className="foot-links">
+          <a href="/">About JitsuinFi</a>
+          <span aria-hidden="true"> · </span>
+          <a href={SPEC_URL} target="_blank" rel="noopener noreferrer">
+            Read the spec
+          </a>
+        </p>
+      </footer>
       <MainSlot.Provider value={{ main, setWide }}>
         <Outlet />
       </MainSlot.Provider>

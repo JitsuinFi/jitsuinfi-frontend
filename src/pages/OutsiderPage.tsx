@@ -7,6 +7,7 @@
 // board key" sweeps a numbered Cetacean bar over everything that stays with the parties; the
 // numbers are the lines of the 見えない legend, and N, the only thing about this invoice that
 // reaches the board, travels to its two entries there.
+import { NextRoom } from "../app/NextRoom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Page } from "../app/AppShell";
 import { Button, useOut } from "../app/ui";
@@ -919,6 +920,7 @@ export function OutsiderPage(): ReactNode {
             </div>
           </section>
         </div>
+        <NextRoom from="outsider" />
       </Focus.Provider>
     </Page>
   );

@@ -17,19 +17,16 @@
 /* ---------- page grid: caption ≤ 35%, visual ≥ 65% ---------- */
 .os-sec { display: grid; gap: 32px; padding: 0 0 clamp(48px, 5vw, 72px); }
 @media (min-width: 1360px) {
-  .os-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: 56px; align-items: start; }
+  .os-sec { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); column-gap: var(--cap-gap); align-items: start; }
   .os-sec > .os-cap { position: sticky; top: 96px; }
 }
 .os-cap { display: grid; gap: 16px; align-content: start; max-width: 52ch; min-width: 0; }
-.os-stamp {
-  display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 9px; transform: rotate(-4deg);
-  box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 25px/1 var(--f-seal);
-}
+/* the caption stamp: one shared rule in src/style.css */
 .os-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 14px/1.2 var(--f-body); color: var(--ink-2); }
 .os h1, .os h2 { margin: 0; color: var(--head); font-family: var(--f-display); font-weight: 800; text-wrap: balance; }
-.os h1 { font-size: clamp(38px, 4vw, 60px); line-height: 1.02; letter-spacing: -.02em; }
+.os h1 { font: var(--cap-h1); letter-spacing: -.02em; }
 .os h2 { font-size: clamp(26px, 2.4vw, 38px); line-height: 1.08; letter-spacing: -.015em; }
-.os-lede { font: 400 clamp(17px, 1.3vw, 20px)/1.5 var(--f-body); color: var(--ink); }
+.os-lede { font: var(--cap-lede); color: var(--ink); }
 .os-lede code { font-size: .85em; }
 .os-hint { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); }
 
@@ -165,7 +162,6 @@
 .os-board > * { position: relative; }
 @media (min-width: 1100px) { .os-board { grid-template-columns: minmax(0, 1fr) 330px; } }
 .os-bd-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; grid-column: 1 / -1; }
-.os-bd-head b { font: 800 16px/1 var(--f-seal); letter-spacing: .2em; color: var(--sheet); }
 .os-bd-head > span { font: 400 12.5px/1.3 var(--f-body); color: var(--mist); }
 .os-bd-head code { color: var(--glint); font-size: 12px; }
 .os-tape { min-width: 0; }
@@ -234,13 +230,13 @@
 .os-slip .os-bar em { font-size: 11.5px; }
 
 /* ---------- chapter three: read an entry yourself (a panel groups the input) ---------- */
-.os-panel { display: grid; gap: 14px; padding: 24px; background: var(--sheet); border-radius: 22px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.os-panel { display: grid; gap: 14px; padding: 24px; background: var(--sheet); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
 .os-field { display: grid; gap: 6px; }
 .os-field > span { font: 500 14px/1.3 var(--f-body); color: var(--head); }
-.os .os-field textarea { width: 100%; min-height: 96px; resize: vertical; padding: 12px 14px; border: 0; border-radius: 14px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 12.5px/1.45 var(--f-mono); word-break: break-all; }
+.os .os-field textarea { width: 100%; min-height: 96px; resize: vertical; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 12.5px/1.45 var(--f-mono); word-break: break-all; }
 .os .os-field textarea:focus { outline: none; box-shadow: inset 0 0 0 2px var(--seal); }
 .os-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
-.os .os-actions > button:not(.os-inklink) { min-height: 0; padding: 13px 22px; border-radius: 999px; font: 500 15px/1 var(--f-body); }
+.os .os-actions > button:not(.os-inklink) { min-height: 0; padding: var(--btn-pad); border-radius: 999px; font: var(--btn-font); }
 .os .os-inklink {
   min-height: 0; border: 0; background: none; padding: 0; border-radius: 0; cursor: pointer; color: var(--seal);
   font: 500 14px/1.3 var(--f-body); text-align: left; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;

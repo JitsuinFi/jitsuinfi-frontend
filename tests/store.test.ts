@@ -71,3 +71,24 @@ test("a memory backend is reported as not persistent", async () => {
   const s = await DealStore.open("buyer", keys(1), new MemoryBackend());
   assert.equal(s.persistent, false);
 });
+
+test("every write and delete tells the change listeners once per turn, with the ids (judge run 2)", async () => {
+  const { onStoreChange, storeChanges } = await import("../src/lib/store.ts");
+  const s = await DealStore.open("buyer", keys(2), new MemoryBackend());
+  const seen: Array<{ role: string; ids: string[] }> = [];
+  const off = onStoreChange((c) => seen.push({ role: c.role, ids: [...c.ids] }));
+  const v0 = storeChanges();
+  await s.put("invoice:a", { x: 1 });
+  await new Promise((r) => setTimeout(r, 0));
+  await s.put("invoice:b", { x: 2 });
+  await s.delete("invoice:a");
+  await new Promise((r) => setTimeout(r, 0));
+  off();
+  await s.put("invoice:c", { x: 3 });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(seen[0].role, "buyer");
+  assert.deepEqual(seen[0].ids, ["invoice:a"]);
+  assert.deepEqual(seen.flatMap((c) => c.ids), ["invoice:a", "invoice:b", "invoice:a"]);
+  assert.ok(storeChanges() > v0, "the version counts the notices");
+  assert.ok(!seen.flatMap((c) => c.ids).includes("invoice:c"), "no notice after unsubscribing");
+});

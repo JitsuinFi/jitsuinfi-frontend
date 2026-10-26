@@ -19,8 +19,8 @@ import { daysToDate, json, today, wasm, zatToZec } from "../../lib/core";
 import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
 import { handToVerify } from "../../lib/verify-handoff";
 import { LatePanel } from "../BuyerLate";
-import { statusesOf, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
-import { Back, Check, DueLine, dueWords, LedgerLine, ledgerWords, Tag, Totals, useVars } from "./parts";
+import { statusesOf, awaitsBoard, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
+import { Check, DueLine, dueWords, LedgerLine, ledgerWords, Tag, Totals, useVars } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
 
@@ -195,7 +195,7 @@ function WherePays({ r }: { r: Inv }): ReactNode {
 
 export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
   const recs = useInvoices();
-  const board = useBoard();
+  const board = useBoard(awaitsBoard(Array.isArray(recs) ? recs : []));
   const phone = usePhone();
   const root = useRef<HTMLDivElement>(null);
   useVars(root);
@@ -250,7 +250,6 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
       <Page wide>
         <div className="rp by" ref={root}>
           <section className="by-doc-phone" aria-label={`Slip for ${sel.invoice_id}`}>
-            <Back to="/buyer/pay" title="Pay" sub="back to your slips" />
             <Tag k="払" section="Pay" />
             <h1 className="ia-doc-id">
               {sel.invoice_id}

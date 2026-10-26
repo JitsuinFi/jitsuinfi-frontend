@@ -9,6 +9,7 @@ import { isInvoiceId, type BuyerInvoice } from "../lib/buyer-invoices";
 import { reminders, type Reminder } from "../lib/buyer-late";
 import { today } from "../lib/core";
 import type { Session } from "../lib/session";
+import { useStoreVersion } from "./store-change";
 
 export const BUYER_CHANGED = "jitsuin:buyer";
 
@@ -16,6 +17,7 @@ export function useDue(session: Session | null, path: string): Reminder[] {
   const [due, setDue] = useState<Reminder[]>([]);
   const [tick, setTick] = useState(0);
   const store = session?.role === "buyer" ? session.store : null;
+  const written = useStoreVersion("buyer");
   useEffect(() => {
     const f = () => setTick((x) => x + 1);
     addEventListener(BUYER_CHANGED, f);
@@ -36,6 +38,6 @@ export function useDue(session: Session | null, path: string): Reminder[] {
     return () => {
       live = false;
     };
-  }, [store, path, tick]);
+  }, [store, path, tick, written]);
   return due;
 }

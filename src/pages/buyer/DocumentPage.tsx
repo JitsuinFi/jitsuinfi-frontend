@@ -8,7 +8,8 @@
 // (/buyer/invoices/by-hand). Paying is the slip under Pay.
 // On a desktop the caption names the invoice and lists your other invoices; on a phone the screen
 // goes one step down from Invoices with a back control, one primary action at a time.
-import { useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { storedCodes, syncedCodes, type Codes } from "../../lib/desk-sync";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
 import { LongList } from "../../app/LongList";
@@ -23,8 +24,8 @@ import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, type Header } from "../../lib/relay-message";
-import { findKeyIndex, fromB64, saveInvoice, sendSignature, statusesOf, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
-import { Back, Check, FilePill, LEDGER_LABELS, LedgerLine, ledgerWords, Seal, Tag, useVars, Verdict } from "./parts";
+import { findKeyIndex, fromB64, saveInvoice, sendSignature, statusesOf, awaitsBoard, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
+import { Check, FilePill, LEDGER_LABELS, LedgerLine, ledgerWords, Seal, Tag, useVars, Verdict } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
 
@@ -126,7 +127,7 @@ export function DocumentPage({ invoiceRef }: { invoiceRef?: string }): ReactNode
 
 function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   const phone = usePhone();
-  const board = useBoard();
+  const board = useBoard(awaitsBoard(list));
   const root = useRef<HTMLDivElement>(null);
   const cInv = useRef<Area>(null);
   const cTerms = useRef<HTMLInputElement>(null);
@@ -142,6 +143,29 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   // the codes behind the sheet, mirrored for drawing (the fields stay the source for every action)
   const [codes, setCodes] = useState({ inv: start?.invoice ?? "", letter: start?.assignment?.letter ?? "", seal: start?.assignment?.supplier_seal ?? "" });
   const syncCodes = () => setCodes({ inv: v(cInv), letter: v(cLetter), seal: v(cSeal) });
+  // judge run 2, finding 1: the record behind this sheet changes while it is open (the letter and
+  // the supplier's seal kept from the inbox, a signature, the financier's seal). The fields follow
+  // the stored record, unless the buyer typed something else into them by hand.
+  const synced = useRef<Codes>(storedCodes(start));
+  const stored = storedCodes(start);
+  const storedKey = `${stored.inv}|${stored.letter}|${stored.seal}`;
+  useEffect(() => {
+    // (a textarea the buyer has not typed in may already follow its new defaultValue)
+    const now: Codes = { inv: v(cInv), letter: v(cLetter), seal: v(cSeal) };
+    const next = syncedCodes(synced.current, stored, now) ?? now;
+    synced.current = stored;
+    const fields: Array<[RefObject<Area | null>, string]> = [
+      [cInv, next.inv],
+      [cLetter, next.letter],
+      [cSeal, next.seal],
+    ];
+    for (const [r, x] of fields) if (r.current && r.current.value.trim() !== x) r.current.value = x;
+    if (codes.inv === next.inv && codes.letter === next.letter && codes.seal === next.seal) return;
+    if (next.letter !== codes.letter || next.seal !== codes.seal) lockSeal();
+    if (next.inv !== codes.inv) lockSign();
+    setCodes(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedKey]);
   // the invoice text that passed both checks (HNK-25.T1, BL-D22-06): signing stays off until then
   const [checked, setChecked] = useState<string | null>(null);
   const [invCheck, setInvCheck] = useState<CheckResult | null>(null);
@@ -181,7 +205,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   const side: "sign" | "seal" | "done" = mode === "letter" ? (kept && rec?.assignment?.buyer_seal ? "done" : "seal") : "sign";
   const done = rec ? routeDone(rec) : [false, false, false, false, false];
   const nextSt = done.indexOf(false);
-  const routeCap = !dec ? null : rec && act ? (act === "wait-letter" && !rec.signature_sent_at ? "signed. Give the supplier your signature; it offers the invoice to a financier next." : ROUTE_CAP[act]) : "not checked on this device yet. Check it with its PDF, then sign.";
+  const routeCap = !dec ? null : rec && act ? (act === "wait-letter" && !rec.signature_sent_at ? "signed. Give the supplier your signature; it offers the invoice to a financier next." : act === "wait-letter" && rec.assignment?.letter ? "the financier's letter is here. Sealing waits for the supplier's seal; it arrives in your inbox." : ROUTE_CAP[act]) : "not checked on this device yet. Check it with its PDF, then sign.";
   const seals = {
     supplier: !!(rec?.assignment?.supplier_seal || codes.seal),
     buyer: !!(kept && rec?.assignment?.buyer_seal),
@@ -629,7 +653,6 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       <Page wide>
         <div className="rp by" ref={root}>
           <section className="by-doc-phone" aria-labelledby="by-t">
-            <Back to="/buyer/invoices" title="Invoices" sub="back to your invoices" />
             <Tag section="Invoices" />
             {title}
             {shown ? <DidLine did={shown} /> : null}

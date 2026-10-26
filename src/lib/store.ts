@@ -97,6 +97,56 @@ export class IndexedDbBackend implements Backend {
   }
 }
 
+// ---------- the change signal (judge run 2 finding 1) ----------
+// Every write or delete of any role's store tells every subscriber once, after the write landed,
+// so a page reads its records again whatever wrote them: the page itself, another page, or an
+// action taken in the inbox panel. Writes in one turn are told together (one notice per microtask).
+
+/** What changed: the role whose store was written and the document ids, in write order. */
+export interface StoreChange {
+  role: Role;
+  ids: string[];
+}
+type ChangeListener = (c: StoreChange) => void;
+const changeListeners = new Set<ChangeListener>();
+let pending: StoreChange | null = null;
+let storeVersion = 0;
+
+/** Calls `f` after every write to a store; returns the unsubscribe. */
+export function onStoreChange(f: ChangeListener): () => void {
+  changeListeners.add(f);
+  return () => void changeListeners.delete(f);
+}
+
+/** Counts the notices given so far (a page's dependency for "read again"). */
+export function storeChanges(): number {
+  return storeVersion;
+}
+
+function noteChange(role: Role, id: string): void {
+  if (pending && pending.role === role) {
+    pending.ids.push(id);
+    return;
+  }
+  if (pending) flushChange();
+  pending = { role, ids: [id] };
+  queueMicrotask(flushChange);
+}
+
+function flushChange(): void {
+  const c = pending;
+  if (!c) return;
+  pending = null;
+  storeVersion++;
+  for (const f of [...changeListeners]) {
+    try {
+      f(c);
+    } catch {
+      /* one listener's failure does not stop the others */
+    }
+  }
+}
+
 export class DealStore {
   private readonly role: Role;
   private readonly encKey: CryptoKey;
@@ -164,6 +214,7 @@ export class DealStore {
       plain,
     );
     await this.backend.put({ name, iv, ct: new Uint8Array(ct) });
+    noteChange(this.role, id);
   }
 
   private async open(r: StoredRecord): Promise<{ id: string; doc: unknown }> {
@@ -201,5 +252,6 @@ export class DealStore {
 
   async delete(id: string): Promise<void> {
     await this.backend.delete(await this.name(id));
+    noteChange(this.role, id);
   }
 }

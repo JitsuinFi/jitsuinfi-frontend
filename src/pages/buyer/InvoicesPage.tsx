@@ -13,7 +13,7 @@ import { DidLine, useDid } from "../../app/outcome";
 import { buyerStage, hasSlip } from "../../lib/buyer-invoices";
 import { invoicePath, slipPath } from "../../lib/deal-ref";
 import { readablePrint } from "../../lib/print";
-import { statusesOf, useBoard, useInvoices, useKeyInfo } from "./data";
+import { statusesOf, awaitsBoard, useBoard, useInvoices, useKeyInfo } from "./data";
 import { KeyBlock } from "./NextKey";
 import { DueLine, LEDE, LEDGER_LABELS, LedgerLine, ledgerWords, Tag, Totals } from "./parts";
 import "../role-paper.css";
@@ -21,7 +21,7 @@ import "../buyer.css";
 
 export function InvoicesPage(): ReactNode {
   const recs = useInvoices();
-  const board = useBoard();
+  const board = useBoard(awaitsBoard(Array.isArray(recs) ? recs : []));
   const phone = usePhone();
   const key = useKeyInfo();
   const shown = useDid("/buyer/invoices");

@@ -157,7 +157,9 @@
 .sp .sk input[readonly]:focus { outline: none; }
 .sp .sk input[readonly]:focus-visible { outline: 2px solid var(--seal); }
 .sp .sk input.is-mono { font: 400 12.5px/1.4 var(--f-mono); color: var(--head); }
-.sp .sk-meta input.is-mono { width: 15ch; text-align: right; }
+.sp .sk-meta input.is-mono { width: 20ch; text-align: right; }
+/* a field Create invoice refused: the seal-red underline and a light wash until the supplier writes in it */
+.sp .sk input[aria-invalid="true"] { border-bottom: 2px solid var(--seal); background: rgba(236, 208, 236, .72); }
 .sp .sk input[type="date"] { width: 132px; text-align: right; }
 .sp .sk-table td input.is-mono { width: 100%; text-align: right; text-overflow: ellipsis; }
 .sp .sk-to { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--head); }
@@ -536,7 +538,7 @@
   .sp .sk { padding: 24px 18px 18px; }
   .sp .sk-title span { font-size: 23px; letter-spacing: .26em; }
   .sp .sk-meta { font-size: 11px; }
-  .sp .sk-meta input.is-mono { width: 14ch; }
+  .sp .sk-meta input.is-mono { width: 19ch; }
   .sp .sk input[type="date"] { width: 118px; }
   .sp .sk .sk-total-v input { font-size: 24px; width: 7.6ch; }
   .sp .sk-table th { width: 34%; }
@@ -573,7 +575,7 @@
 @media (max-width: 420px) {
   .sp .sk-head { gap: 10px; }
   .sp .sk-title span { font-size: 21px; letter-spacing: .2em; }
-  .sp .sk-meta input.is-mono { width: 13.5ch; }
+  .sp .sk-meta input.is-mono { width: 19ch; }
   .sp .sk input[type="date"] { width: 108px; }
   .sp-done { right: 120px; }
 }

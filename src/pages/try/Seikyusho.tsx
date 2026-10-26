@@ -68,9 +68,10 @@ const lines = (n: string) => [0, 1, 2, 3].map((i) => n.slice(i * 16, i * 16 + 16
  * The sheet. Its inputs are uncontrolled (the page reads and resets them through `fields`);
  * `changed` marks edited fields and cracks the seal (null: not compared, as on a blank sheet),
  * `n` is the fingerprint of these bytes. `readOnly`: a sheet to read, not to write on (the
- * supplier's open deal), and `note` the line under it.
+ * supplier's open deal), and `note` the line under it. `bad`: fields marked as refused (the
+ * supplier's Create invoice names the field to fix).
  */
-export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, readOnly, note: said }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet; readOnly?: boolean; note?: string }): ReactNode {
+export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, readOnly, note: said, bad }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet; readOnly?: boolean; note?: string; bad?: Array<keyof SheetFields> }): ReactNode {
   const isChanged = (k: keyof SheetFields) => {
     if (changed === null) return undefined;
     const f = KEYS.find(([key]) => key === k)![1];
@@ -88,6 +89,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
       placeholder={blank?.placeholders[k]}
       readOnly={readOnly || (blank && k === "terms" ? blank.termsReadOnly : undefined)}
       data-changed={isChanged(k)}
+      aria-invalid={bad?.includes(k) || undefined}
       ref={fields[k]}
       onInput={onInput}
     />

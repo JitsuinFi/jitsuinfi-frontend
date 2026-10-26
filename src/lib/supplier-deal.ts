@@ -144,6 +144,32 @@ export function invoiceIdTaken(deals: SupplierDeal[], invoiceId: string): boolea
   return deals.some((d) => d.invoice_id === id);
 }
 
+/** The invoice number rule of jitsuin-core (`Invoice::validate`): 1 – 32 bytes, each printable ASCII without the space (0x21 – 0x7e). */
+const INVOICE_ID = /^[\x21-\x7e]{1,32}$/;
+
+/**
+ * Why the number written in No. on the blank 請求書 cannot be used, as a sentence that says where
+ * and what (user feedback 2026-10-26: a bare "invoice number: 1–32 characters" did not say where);
+ * null when it is a good number for a new invoice on this device.
+ */
+export function invoiceNumberProblem(deals: SupplierDeal[], written: string): string | null {
+  const id = written.trim();
+  if (!id) return "Write the invoice number in No. on the sheet (1–32 characters).";
+  if (id.length > 32) return `The invoice number in No. on the sheet has ${id.length} characters: shorten it to 32 or fewer.`;
+  if (!INVOICE_ID.test(id)) return "The invoice number in No. on the sheet takes plain letters, digits and signs such as - / _ only: no spaces or accented letters.";
+  if (invoiceIdTaken(deals, id)) return `Invoice number ${id} is already used on this device: write another one in No. on the sheet.`;
+  return null;
+}
+
+/** A number to prefill No. on the blank sheet: TES-INV-<yyyymmdd>-<n>, the first n not yet used on this device. */
+export function suggestInvoiceNumber(deals: SupplierDeal[], day: Date): string {
+  const ymd = `${day.getFullYear()}${String(day.getMonth() + 1).padStart(2, "0")}${String(day.getDate()).padStart(2, "0")}`;
+  for (let n = 1; ; n++) {
+    const id = `TES-INV-${ymd}-${n}`;
+    if (!invoiceIdTaken(deals, id)) return id;
+  }
+}
+
 /** A shielded receiving address for the advance on this build's network (HNK-26.T19): unified or Sapling. */
 export function looksShielded(address: string, net: Network = NETWORK): boolean {
   const a = address.trim();

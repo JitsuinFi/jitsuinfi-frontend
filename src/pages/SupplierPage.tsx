@@ -31,7 +31,7 @@ import { NET } from "../lib/network";
 import { PROVIDER } from "../lib/provider";
 import { draft, send, signInWasm, type Received } from "../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../lib/relay-message";
-import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceIdTaken, looksShielded, nextMove, nextStep, outcomeOn, route, sortDeals, standing, STEPS, type Outcome, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
+import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceNumberProblem, looksShielded, nextMove, nextStep, outcomeOn, route, sortDeals, standing, STEPS, suggestInvoiceNumber, type Outcome, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
 import { reducedMotion } from "../landing/motion";
 import { MailboxCard, takeContact, type InboxAction } from "./MailboxCard";
 import { Seikyusho, type SheetFields } from "./try/Seikyusho";
@@ -310,6 +310,8 @@ function Ledger({ deals, open, refresh }: { deals: SupplierDeal[]; open: Supplie
           className="sp-pill"
           aria-pressed={!open}
           onClick={() => {
+            // already on the blank sheet: redrawing it would wipe what is written on it
+            if (!open) return;
             writing = true;
             did = null;
             refresh();
@@ -557,7 +559,11 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
   // HNK-21.T2: the invoice is written on the 請求書 itself (the same sheet as /try); only the buyer's
   // key and the PDF sit below it. The buyer's seal box stays empty until the buyer signs.
   const today = useRef(new Date().toISOString().slice(0, 10)).current;
+  // No. starts with a number the supplier can keep or change (an empty No. was refused, 2026-10-26)
+  const [suggested] = useState(() => suggestInvoiceNumber(deals, new Date()));
   const fields = useSheetFields();
+  // the sheet's fields the last Create invoice refused, marked until the supplier writes in one
+  const [bad, setBad] = useState<Array<keyof SheetFields>>([]);
   const nCode = useRef<HTMLElement>(null);
   const ring = useRef<SVGCircleElement>(null);
   const crack = useRef<SVGPathElement>(null);
@@ -593,17 +599,19 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
       <div className="sp-sheet is-new">
         <span className="sp-under" aria-hidden="true" />
         <Seikyusho
-          o={{ id: "", amount: "", issued: today, due: "", terms: "", buyer: "", supplier: "", issuer: "You" }}
+          o={{ id: suggested, amount: "", issued: today, due: "", terms: "", buyer: "", supplier: "", issuer: "You" }}
           fields={fields}
           changed={null}
           n={null}
+          bad={bad}
+          onInput={() => bad.length && setBad([])}
           blank={{
             seal: "pending",
             to,
             by: "your key for this invoice, from your passkey",
             note: "The buyer's seal 買 goes in the box once the buyer signs these exact bytes.",
             n: "made when you create it: it needs your key for this invoice",
-            placeholders: { id: "TES-INV-0007", amount: "0.0004", terms: "the PDF's SHA-256 appears here" },
+            placeholders: { id: "write a number", amount: "0.0004", terms: "the PDF's SHA-256 appears here" },
             termsReadOnly: true,
           }}
           kase={{ sealed: "pending", nCode, ring, crack, art, inside: null }}
@@ -623,14 +631,30 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
               onClick={async () => {
                 try {
                   const invoiceId = value(fields.id);
-                  if (invoiceId.length < 1 || invoiceId.length > 32) throw new Error("invoice number: 1–32 characters");
-                  if (invoiceIdTaken(deals, invoiceId)) throw new Error(`invoice number ${invoiceId} is already used on this device`);
+                  const problem = invoiceNumberProblem(deals, invoiceId);
+                  if (problem) {
+                    setBad(["id"]);
+                    fields.id.current!.focus();
+                    throw new Error(problem);
+                  }
                   const buyerPk = hex64(value(buyer), "buyer key");
                   const file = terms.current!.files?.[0];
                   if (!file) throw new Error("choose the invoice document");
-                  if (!fields.due.current!.value) throw new Error("give the due date");
+                  if (!fields.due.current!.value) {
+                    setBad(["due"]);
+                    fields.due.current!.focus();
+                    throw new Error("Write the due date in 支払期日 Due on the sheet.");
+                  }
+                  // checked before the passkey is asked for the invoice key
+                  let amountZat: number;
+                  try {
+                    amountZat = zecToZat(value(fields.amount));
+                  } catch {
+                    setBad(["amount"]);
+                    fields.amount.current!.focus();
+                    throw new Error("Write the amount due in ご請求金額 on the sheet, in ZEC (more than 0).");
+                  }
                   const supplierPk = wasm.supplierInvoicePublicKeyBytes(await account.stamp(), invoiceId, buyerPk);
-                  const amountZat = zecToZat(value(fields.amount));
                   const dueDay = dateToDays(fields.due.current!.value);
                   const code = wasm.invoiceEncode(
                     JSON.stringify({

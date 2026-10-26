@@ -6,7 +6,7 @@
 // page completes here. A letter whose seal does not hold, or that this role has nothing to do
 // with, is shown and left alone, as the mailbox did. Styles: src/app/shell.css (.ia-inbox).
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import type { Role } from "../lib/account";
 import { explain } from "../lib/explain";
 import { letterAction, letterGlyph, letterLabel } from "../lib/inbox-routes";
@@ -35,7 +35,7 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
         {done ? "済" : !l.r.signatureOk ? "偽" : letterGlyph(t)}
       </span>
       <div>
-        <strong>{letterLabel(t)}</strong>
+        <strong>{letterLabel(t, role, l.r.message.header.body)}</strong>
         <span className="ia-from">{`from a ${l.r.message.header.from.role} · ${when(l.r.receivedAt)}`}</span>
         {!l.r.signatureOk ? (
           <p>The seal on this letter does not hold: it was changed on the way or forged. It is ignored.</p>
@@ -70,9 +70,8 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
   );
 }
 
-export function InboxPanel({ open, onClose }: { open: boolean; onClose: () => void }): ReactNode {
+export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose: () => void; onLeave: (href: string) => void }): ReactNode {
   const s = useInbox();
-  const router = useRouter();
   const panel = useRef<HTMLElement>(null);
   const closer = useRef<HTMLButtonElement>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
@@ -116,9 +115,8 @@ export function InboxPanel({ open, onClose }: { open: boolean; onClose: () => vo
     const go = () => {
       setLeaving(null);
       letGo(l);
-      onClose();
       if (done.did) setDid({ ...done.did, at: to.path, inbox: true });
-      void router.navigate({ href: to.at ? `${to.path}?at=${to.at}` : to.path });
+      onLeave(to.at ? `${to.path}?at=${to.at}` : to.path);
     };
     if (reducedMotion()) return go();
     setTimeout(() => setLeaving(l.r.relayId), 650);
@@ -174,7 +172,7 @@ export function InboxPanel({ open, onClose }: { open: boolean; onClose: () => vo
               items={s.letters}
               keyOf={(l) => l.r.relayId}
               stage={(l) => (l.state === "done" || actionable(l, s.handlers) ? "move" : "done")}
-              words={(l) => `${letterLabel(l.r.message.header.type)} ${l.about ?? ""} ${l.r.message.header.from.role}`}
+              words={(l) => `${letterLabel(l.r.message.header.type, role, l.r.message.header.body)} ${l.about ?? ""} ${l.r.message.header.from.role}`}
               labels={{ move: "To act on", wait: "Waiting", done: "Nothing to do here" }}
               searchLabel="Search letters by invoice number"
               limit={6}
@@ -187,7 +185,7 @@ export function InboxPanel({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
         {contacts ? (
           <footer className="ia-ib-foot">
-            <Link to={contacts.to} onClick={onClose}>
+            <Link to={contacts.to} onClick={(e) => (e.preventDefault(), onLeave(contacts.to))}>
               <b lang="ja">名刺</b>Your contact card and contacts<span aria-hidden="true">→</span>
             </Link>
           </footer>

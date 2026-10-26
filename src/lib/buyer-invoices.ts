@@ -42,6 +42,13 @@ export interface BuyerInvoice {
   bundle?: string;
   /** HNK-26.T8: the history certificate issued for this invoice (its index) and to which financier. */
   history_cert?: { index: number; financier_pk: string };
+  /**
+   * IA port 2026-10-26: the invoice's address in the app (/buyer/invoices/<ref>, /buyer/pay/<ref>),
+   * a random id made on this device (lib/deal-ref.ts), never the number or N.
+   */
+  ref?: string;
+  /** IA port: the terms PDF that came with the sign request (base64), kept so the check needs no file. */
+  terms_pdf?: { name: string; b64: string };
 }
 
 const PREFIX = "invoice:";
@@ -79,6 +86,8 @@ export function invoiceRecord(
     ...(previous?.assignment ? { assignment: previous.assignment } : {}),
     ...(previous?.bundle ? { bundle: previous.bundle } : {}),
     ...(previous?.history_cert ? { history_cert: previous.history_cert } : {}),
+    ...(previous?.ref ? { ref: previous.ref } : {}),
+    ...(previous?.terms_pdf ? { terms_pdf: previous.terms_pdf } : {}),
   };
 }
 
@@ -130,6 +139,28 @@ export function nextAction(rec: BuyerInvoice): BuyerAction {
   if (!rec.signature) return "sign";
   if (!rec.signature_sent_at && rec.reply_to) return "send";
   return "wait-letter";
+}
+
+/**
+ * The invoice's place in a long list (long-list.ts, IA port): "move" when the buyer acts next
+ * (sign, send, seal, pay), "wait" while the supplier or the financier does, "done" once settled.
+ */
+export function buyerStage(rec: BuyerInvoice): "move" | "wait" | "done" {
+  const a = nextAction(rec);
+  if (a === "settled") return "done";
+  return a === "wait-letter" || a === "wait-financier" ? "wait" : "move";
+}
+
+/** A 払込票 payment slip exists for the invoice: all three seals hold on this device, or it is settled. */
+export function hasSlip(rec: BuyerInvoice): boolean {
+  return !!rec.assignment?.financier_seal || !!rec.bundle;
+}
+
+/** The slips in Pay's order: the ones to pay, soonest due first, then the paid ones, newest due first. */
+export function slipOrder(list: BuyerInvoice[]): BuyerInvoice[] {
+  const open = list.filter((r) => hasSlip(r) && !r.bundle).sort((a, b) => a.due_date - b.due_date);
+  const paid = list.filter((r) => !!r.bundle).sort((a, b) => b.due_date - a.due_date);
+  return [...open, ...paid];
 }
 
 /** How many of the letter's three seals (supplier, buyer, financier) this device holds. */

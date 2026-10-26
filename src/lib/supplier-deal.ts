@@ -314,3 +314,19 @@ export function outcomeOn(o: Outcome | null, open: string | null): { outcome: Ou
   if (!o || o.n !== (open ?? "")) return null;
   return { outcome: o, reveal: o.inbox === true };
 }
+
+/**
+ * A station's label under the route by its state (IA port part 2, 2026-10-26, from part 1's phone
+ * screenshots): the past tense only once done; the next station is named as the move ("Offer
+ * next"), a waiting one by what it waits for, a later one as a plain noun, so the label under the
+ * next station never reads as done.
+ */
+const STATION_LABEL: Record<StationState, Record<StationKey, string>> = {
+  done: { signature: "Buyer signed", offer: "Offered", entry: "Board entry signed", seal: "Letter sealed", advance: "Advance received", settled: "Settled" },
+  next: { signature: "Check signature", offer: "Offer next", entry: "Sign entry next", seal: "Seal next", advance: "Check advance", settled: "Settle" },
+  wait: { signature: "Buyer signs", offer: "Offer waits", entry: "Entry request waits", seal: "Letter waits", advance: "Advance waits", settled: "Repayment waits" },
+  later: { signature: "Buyer's signature", offer: "Offer", entry: "Board entry", seal: "Letter seal", advance: "Advance", settled: "Settlement" },
+};
+export function stationLabel(k: StationKey, state: StationState): string {
+  return STATION_LABEL[state][k];
+}

@@ -28,7 +28,7 @@
   background: var(--seal); color: var(--sheet); font: var(--btn-font);
   transition: transform var(--dur-press) linear, background-color var(--dur-fade) var(--ease-land);
 }
-.sp button:where(:not(.secondary, .sp-pill, .sp-ink, .sp-ln, .sp-st-btn)):hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { .sp button:where(:not(.secondary, .sp-pill, .sp-ink, .sp-ln, .sp-st-btn)):hover { background: var(--seal-hi); } }
 /* secondary (Copy, Download, Check inbox …) and the page's own pills */
 .sp button.secondary, .sp .sp-pill {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 0; border-radius: 999px;
@@ -36,7 +36,7 @@
   font: 500 13px/1 var(--f-body); white-space: nowrap; cursor: pointer;
   transition: box-shadow var(--dur-fade) var(--ease-land);
 }
-.sp button.secondary:hover, .sp .sp-pill:hover { background: var(--sheet); box-shadow: inset 0 0 0 1.5px var(--seal); }
+@media (hover: hover) and (pointer: fine) { .sp button.secondary:hover, .sp .sp-pill:hover { background: var(--sheet); box-shadow: inset 0 0 0 1.5px var(--seal); } }
 .sp .sp-pill b { font: 700 14px/1 var(--f-seal); }
 .sp .sp-pill[aria-pressed="true"] { background: var(--seal); color: var(--sheet); box-shadow: none; }
 .sp .sp-ink {
@@ -44,7 +44,7 @@
   font: 500 14px/1.4 var(--f-body); cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
   transition: text-decoration-thickness var(--dur-fade) var(--ease-land);
 }
-.sp .sp-ink:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .sp .sp-ink:hover { background: none; text-decoration-thickness: 3px; } }
 .sp .sp-ink:active { transform: none; }
 .sp .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0; }
 
@@ -91,7 +91,7 @@
   border: 0; border-radius: 12px; background: none; color: var(--ink); text-align: left; cursor: pointer;
   transition: background-color var(--dur-fade) var(--ease-land);
 }
-.sp .sp-ln:hover { background: rgba(196, 199, 242, .22); }
+@media (hover: hover) and (pointer: fine) { .sp .sp-ln:hover { background: rgba(196, 199, 242, .22); } }
 .sp .sp-ln:active { transform: none; }
 .sp .sp-ln[aria-current="true"] { background: var(--sheet); box-shadow: 0 1px 2px rgba(70, 29, 58, .08), 0 6px 18px rgba(70, 29, 58, .07); }
 .sp .sp-ln[aria-current="true"]::before { content: ""; position: absolute; left: -10px; top: 14px; bottom: 14px; width: 3px; border-radius: 2px; background: var(--seal); }
@@ -131,7 +131,7 @@
   box-shadow: var(--lift); transform: none; rotate: none; transition: none; animation: sp-sheet-in var(--dur-enter) var(--ease-land);
 }
 @keyframes sp-sheet-in { from { transform: translateY(24px) rotate(-2deg); opacity: .2; } }
-.sp .sk:hover { transform: none; }
+@media (hover: hover) and (pointer: fine) { .sp .sk:hover { transform: none; } }
 .sp .sk-clip { position: absolute; right: 44px; top: -22px; width: 20px; height: 56px; }
 .sp .sk-clip svg { width: 100%; height: 100%; fill: none; stroke: var(--ink-2); stroke-width: 2.2; stroke-linecap: round; }
 .sp .sk-head { display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 16px; }
@@ -151,7 +151,7 @@
 }
 .sp .sk input::placeholder { color: rgba(80, 42, 80, .55); }
 .sp .sk input:not([readonly]) { border-bottom-color: var(--fold); }
-.sp .sk input:not([readonly]):hover { border-bottom-color: var(--seal); }
+@media (hover: hover) and (pointer: fine) { .sp .sk input:not([readonly]):hover { border-bottom-color: var(--seal); } }
 .sp .sk input:focus { outline: 2px solid var(--seal); outline-offset: 2px; border-bottom-color: transparent; background: transparent; }
 .sp .sk input[readonly] { cursor: default; }
 .sp .sk input[readonly]:focus { outline: none; }
@@ -240,7 +240,7 @@
   background: none; box-shadow: none; color: var(--ink); text-align: center; cursor: pointer;
 }
 .sp-st-b { cursor: default; }
-.sp .sp-st-btn:hover { background: none; }
+@media (hover: hover) and (pointer: fine) { .sp .sp-st-btn:hover { background: none; } }
 .sp .sp-st-btn:active { transform: none; }
 .sp-obj { position: relative; z-index: 1; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land); }
 .sp-obj svg { width: 54px; height: 48px; overflow: visible; }
@@ -265,8 +265,8 @@
 .sp-st.is-stamp .sp-st-mark { animation: sp-mark var(--dur-seal) var(--ease-snap); }
 @keyframes sp-mark { 0% { transform: rotate(-10deg) scale(2); opacity: 0; } 70% { transform: rotate(-10deg) scale(.9); opacity: 1; } 100% { transform: rotate(-10deg); } }
 .sp-st[aria-current="step"] .sp-st-btn::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 22px; height: 3px; margin-left: -11px; border-radius: 2px; background: var(--head); }
-.sp .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 1.5px var(--fold); }
-.sp .sp-st[data-s="next"] .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 2px var(--seal), 0 10px 22px rgba(126, 42, 83, .24); }
+@media (hover: hover) and (pointer: fine) { .sp .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 1.5px var(--fold); } }
+@media (hover: hover) and (pointer: fine) { .sp .sp-st[data-s="next"] .sp-st-btn:hover .sp-obj { box-shadow: 0 0 0 2px var(--seal), 0 10px 22px rgba(126, 42, 83, .24); } }
 .sp .sp-st-btn:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
 /* object parts */
 .sp .o-ink { fill: none; stroke: var(--head); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -520,11 +520,11 @@
   .sp-cap > .sp-nums { grid-row: 1 / span 3; margin-top: 0; align-self: start; }
   .sp-cap > .sp-ledger { grid-row: 4 / span 3; margin-top: 18px; }
 }
-@media (max-width: 1100px) {
+@media (max-width: 839px) {
   .sp-bench { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sheet" "rail" "work" "tray"; }
   .sp-tray { position: static; margin-top: 36px; }
 }
-@media (max-width: 860px) {
+@media (max-width: 839px) {
   .sp-desk { gap: 26px; }
   .sp-cap { display: block; }
   .sp .sp-cap h1 { margin: 14px 0 10px; }
@@ -610,7 +610,8 @@
 .sp .ia-book .sp-ln-next { grid-column: 4; grid-row: 2; justify-self: end; text-align: right; }
 .sp .ia-book .sp-ln-board { grid-column: 2 / -1; }
 .sp .ia-book .sp-ln .ia-open { grid-column: 4; grid-row: 3; justify-self: end; font: 500 12.5px/1.2 var(--f-body); color: var(--seal); opacity: 0; transition: opacity var(--dur-fade) var(--ease-land); }
-.sp .ia-book .sp-ln:hover .ia-open, .sp .ia-book .sp-ln:focus-visible .ia-open { opacity: 1; }
+.sp .ia-book .sp-ln:focus-visible .ia-open { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .sp .ia-book .sp-ln:hover .ia-open { opacity: 1; } }
 .ia-kticks { display: inline-flex; gap: 4px; }
 .ia-kticks i {
   display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font: 800 11.5px/1 var(--f-seal); font-style: normal;
@@ -631,7 +632,7 @@
   color: var(--head); font: 500 13px/1.4 var(--f-body);
 }
 .sp .sk-buyer input { font: 400 12.5px/1.4 var(--f-mono); }
-.sp .sk-buyer select:hover, .sp .sk-buyer input:hover { border-bottom-color: var(--seal); }
+@media (hover: hover) and (pointer: fine) { .sp .sk-buyer select:hover, .sp .sk-buyer input:hover { border-bottom-color: var(--seal); } }
 .sp .sk-buyer select:focus, .sp .sk-buyer input:focus, .sp .sp-sendto select:focus { outline: 2px solid var(--seal); outline-offset: 2px; }
 .sp .sk-buyer [aria-invalid="true"] { border-bottom: 2px solid var(--seal); background: rgba(236, 208, 236, .72); }
 .sp .sk-buyer-hand { display: grid; gap: 6px; }
@@ -642,7 +643,8 @@
 .sp .sk-file { position: relative; display: grid; justify-items: end; gap: 3px; cursor: pointer; }
 .sp .sk-file input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .sp .sk-file-b { display: inline-block; padding: 5px 12px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--fold); color: var(--seal); font: 500 12.5px/1.2 var(--f-body); }
-.sp .sk-file:hover .sk-file-b, .sp .sk-file:focus-within .sk-file-b { box-shadow: inset 0 0 0 1.5px var(--seal); }
+.sp .sk-file:focus-within .sk-file-b { box-shadow: inset 0 0 0 1.5px var(--seal); }
+@media (hover: hover) and (pointer: fine) { .sp .sk-file:hover .sk-file-b { box-shadow: inset 0 0 0 1.5px var(--seal); } }
 .sp .sk-file:focus-within { outline: 2px solid var(--seal); outline-offset: 3px; }
 .sp .sk-file.is-bad .sk-file-b { background: rgba(236, 208, 236, .72); box-shadow: inset 0 0 0 2px var(--seal); }
 .sp .sk-file-n { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); overflow-wrap: anywhere; }
@@ -674,7 +676,7 @@
   display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 1px 10px; align-items: center; padding: 9px 8px 9px 2px; border-radius: 10px;
   color: var(--ink); transition: background-color var(--dur-fade) var(--ease-land);
 }
-.sp .ia-switch a.ia-sw:hover { background: rgba(196, 199, 242, .22); }
+@media (hover: hover) and (pointer: fine) { .sp .ia-switch a.ia-sw:hover { background: rgba(196, 199, 242, .22); } }
 .sp .ia-switch a.ia-sw[aria-current="page"] { background: var(--sheet); box-shadow: 0 1px 2px rgba(70, 29, 58, .08), 0 6px 18px rgba(70, 29, 58, .07); }
 .sp .ia-switch .sp-ln-g { grid-row: 1 / span 2; width: 28px; height: 28px; font-size: 13px; }
 .sp .ia-sw-id { font: 500 13px/1.3 var(--f-mono); color: var(--head); overflow-wrap: anywhere; }
@@ -719,7 +721,7 @@
   justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: 8px 14px 8px 8px; border: 0; border-radius: 999px; cursor: pointer;
   background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); text-align: left;
 }
-.sp .ia-back:hover { box-shadow: inset 0 0 0 1.5px var(--seal); }
+@media (hover: hover) and (pointer: fine) { .sp .ia-back:hover { box-shadow: inset 0 0 0 1.5px var(--seal); } }
 .sp .ia-back svg { width: 18px; height: 18px; fill: none; stroke: var(--seal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sp .ia-back span { display: grid; gap: 1px; }
 .sp .ia-back b { font: 500 13.5px/1.2 var(--f-mono); }
@@ -732,7 +734,7 @@
   .sp .ia-deal-desk > .sp-cap > .ia-facts { grid-row: 1 / span 3; margin-top: 0; }
   .sp .ia-deal-desk > .sp-cap > .ia-switch { grid-row: 4 / span 3; margin-top: 18px; }
 }
-@media (max-width: 860px) {
+@media (max-width: 839px) {
   .sp .ia-book { padding: 18px 14px 20px; }
   .sp .ia-book .sp-ln { grid-template-columns: 36px minmax(0, 1fr) auto; }
   .sp .ia-book .ia-kticks { grid-column: 2 / -1; grid-row: 3; justify-self: start; margin-top: 6px; }
@@ -749,3 +751,10 @@
 }
 /* the desk of the old single page named its grid areas (sheet, rail, work, tray); the sections place their parts themselves */
 .sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > * { grid-area: auto; }
+
+/* ---------- part 2 fixes for the phone (2026-10-26, part 1's screenshots) ---------- */
+@media (max-width: 599px) {
+  /* the deal's title is its invoice number: a smaller mono line, never broken over two lines of display type */
+  .sp .ia-deal-phone h1.ia-deal-id { font: 500 20px/1.2 var(--f-mono); letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .sp .ia-deal-phone .ia-deal-id span { margin-top: 6px; font: 500 16px/1.2 var(--f-mono); }
+}

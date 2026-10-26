@@ -5,7 +5,7 @@
 import type { ReactNode } from "react";
 import { account } from "../../lib/app-session";
 import { readablePrint } from "../../lib/print";
-import { nextStep, route, STEPS, type StationKey, type StationState, type SupplierDeal } from "../../lib/supplier-deal";
+import { nextStep, route, stationLabel, STEPS, type StationKey, type StationState, type SupplierDeal } from "../../lib/supplier-deal";
 import { contactFor, type Book } from "./data";
 
 export const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
@@ -204,18 +204,18 @@ export function Rail({ stations, selected, onPick, stamp }: { stations: Stations
             <b className="sp-st-k" lang="ja" aria-hidden="true">
               {st.glyph}
             </b>
-            <span className="sp-st-l">{st.label}</span>
+            <span className="sp-st-l">{stationLabel(s.key, s.state)}</span>
             {s.state === "next" || s.state === "wait" ? <span className="sp-st-now">{STATE_WORD[s.state]}</span> : null}
           </>
         );
         return (
           <li key={s.key} className={stamp?.has(s.key) ? "sp-st is-stamp" : "sp-st"} data-k={s.key} data-s={s.state} aria-current={selected === s.key ? "step" : undefined}>
             {onPick ? (
-              <button type="button" className="sp-st-btn" aria-label={`${st.label}: ${STATE_WORD[s.state]}`} onClick={() => onPick(s.key)}>
+              <button type="button" className="sp-st-btn" aria-label={`${stationLabel(s.key, s.state)}: ${STATE_WORD[s.state]}`} onClick={() => onPick(s.key)}>
                 {body}
               </button>
             ) : (
-              <span className="sp-st-b" aria-label={`${st.label}: ${STATE_WORD[s.state]}`}>
+              <span className="sp-st-b" aria-label={`${stationLabel(s.key, s.state)}: ${STATE_WORD[s.state]}`}>
                 {body}
               </span>
             )}

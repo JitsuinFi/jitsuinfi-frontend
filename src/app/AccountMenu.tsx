@@ -3,7 +3,7 @@
 // (one passkey, separate keys for each; another role asks the passkey once), leads to the seal
 // card on /account, and logs out. A popover on a desktop, a bottom sheet on a phone.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { ROLES, roleLabel, type Role } from "../lib/account";
 import { account } from "../lib/app-session";
 import { firstSection } from "../lib/sections";
@@ -16,8 +16,7 @@ const LINE: Record<Role, string> = {
   member: "See what the fund holds for you",
 };
 
-export function AccountButton({ s, open, onOpen, onClose, current }: { s: Session; open: boolean; onOpen: () => void; onClose: () => void; current: boolean }): ReactNode {
-  const navigate = useNavigate();
+export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, current }: { s: Session; open: boolean; onOpen: () => void; onClose: () => void; onAway: () => void; onLeave: (href: string) => void; current: boolean }): ReactNode {
   const menu = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const [say, setSay] = useState<{ k: string; text: string; bad?: boolean } | null>(null);
@@ -36,7 +35,7 @@ export function AccountButton({ s, open, onOpen, onClose, current }: { s: Sessio
       }
     };
     const away = (e: PointerEvent) => {
-      if (!menu.current?.contains(e.target as Node) && !btn.current?.contains(e.target as Node)) onClose();
+      if (!menu.current?.contains(e.target as Node) && !btn.current?.contains(e.target as Node)) onAway(); // no Back: the tap may be a link
     };
     document.addEventListener("keydown", key);
     document.addEventListener("pointerdown", away);
@@ -44,20 +43,18 @@ export function AccountButton({ s, open, onOpen, onClose, current }: { s: Sessio
       document.removeEventListener("keydown", key);
       document.removeEventListener("pointerdown", away);
     };
-  }, [open, onClose]);
+  }, [open, onClose, onAway]);
 
   const switchTo = async (r: Role) => {
     if (r === s.role) {
-      onClose();
-      void navigate({ to: firstSection(r) });
+      onLeave(firstSection(r));
       return;
     }
     setBusy(true);
     setSay({ k: KANJI[r], text: `Your passkey opens the ${roleLabel(r)} keys once, then the ${roleLabel(r)} counter.` });
     try {
       await account.switchRole(r);
-      onClose();
-      void navigate({ to: firstSection(r) });
+      onLeave(firstSection(r));
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
       setSay({ k: "拒", text: m.charAt(0).toUpperCase() + m.slice(1), bad: true });
@@ -113,7 +110,7 @@ export function AccountButton({ s, open, onOpen, onClose, current }: { s: Sessio
           </p>
         ) : null}
         <div className="ia-menu-links">
-          <Link to="/account" role="menuitem" onClick={onClose}>
+          <Link to="/account" role="menuitem" onClick={(e) => (e.preventDefault(), onLeave("/account"))}>
             <b lang="ja">印鑑登録証</b>Account and seal card
           </Link>
           <button
@@ -121,9 +118,8 @@ export function AccountButton({ s, open, onOpen, onClose, current }: { s: Sessio
             role="menuitem"
             className="ia-out"
             onClick={() => {
-              onClose();
               account.lock();
-              void navigate({ to: "/app" });
+              onLeave("/app");
             }}
           >
             Log out

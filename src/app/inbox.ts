@@ -3,7 +3,7 @@
 // while the app is open and visible; the shell's bell and the phone's Inbox tab show how many
 // letters carry an action, and the panel (InboxPanel.tsx) lists them. The relay only ever sees
 // sealed bytes: opening and checking happen here, the actions in the role's handlers
-// (pages/supplier/inbox.ts; part 2 adds the buyer's and the fund member's).
+// (pages/supplier/inbox.ts, pages/buyer/inbox.ts, pages/member/inbox.ts).
 import type { Role } from "../lib/account";
 import { myMailbox, relayDeps } from "../lib/app-relay";
 import { account } from "../lib/app-session";
@@ -32,6 +32,8 @@ export type Handlers = Partial<Record<MessageType, Handler>>;
 // each role's handlers load with that role's pages
 const LOADERS: Partial<Record<Role, () => Promise<Handlers>>> = {
   supplier: () => import("../pages/supplier/inbox").then((m) => m.supplierInbox),
+  buyer: () => import("../pages/buyer/inbox").then((m) => m.buyerInbox),
+  member: () => import("../pages/member/inbox").then((m) => m.memberInbox),
 };
 
 export interface Letter {
@@ -145,6 +147,11 @@ export async function act(l: Letter): Promise<Done | null> {
 /** A letter acted on leaves the list. */
 export function letGo(l: Letter): void {
   set({ letters: state.letters.filter((x) => x.r.relayId !== l.r.relayId) });
+}
+
+/** The letters of one kind not acted on yet (History's requests hang off the chain). */
+export function lettersOf(s: InboxState, type: MessageType): Letter[] {
+  return s.letters.filter((l) => l.r.message.header.type === type && l.r.signatureOk && l.state !== "done");
 }
 
 /** The letters about one deal (N), for the page that shows it. */

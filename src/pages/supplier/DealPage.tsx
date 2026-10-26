@@ -17,6 +17,7 @@ import { Button } from "../../app/ui";
 import { daysToDate, zatToZec } from "../../lib/core";
 import { byRef, dealPath } from "../../lib/deal-ref";
 import { download } from "../../lib/download";
+import { readablePrint } from "../../lib/print";
 import { dealStage, nextMove, route, standing, type StationKey } from "../../lib/supplier-deal";
 import { reducedMotion } from "../../landing/motion";
 import { Seikyusho, type SheetFields } from "../try/Seikyusho";
@@ -191,7 +192,7 @@ function Desk({ d, deals, book, at }: { d: Deal; deals: Deal[]; book: Book | nul
       <div>
         <dt>Fingerprint N</dt>
         <dd>
-          <code>{`${d.n.slice(0, 16)}…${d.n.slice(-8)}`}</code>
+          <code>{readablePrint(d.n)}</code>
         </dd>
       </div>
       {waiting ? (

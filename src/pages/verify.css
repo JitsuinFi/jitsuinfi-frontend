@@ -50,7 +50,7 @@
   font: 400 11px/1.55 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; word-break: break-all;
   transition: transform var(--dur-exit) var(--ease-exit), opacity var(--dur-exit) var(--ease-exit), background-color var(--dur-fade) ease, box-shadow var(--dur-fade) ease;
 }
-.vf-well textarea:hover { border: 0; }
+@media (hover: hover) and (pointer: fine) { .vf-well textarea:hover { border: 0; } }
 .vf-well textarea:focus-visible { outline-offset: 1px; background: transparent; }
 .vf-well textarea::placeholder { font: 400 13px/1.45 var(--f-body); color: var(--ink-2); opacity: .8; word-break: normal; }
 .vf-slot.is-main textarea { height: 176px; }
@@ -79,15 +79,15 @@
   transition: transform var(--dur-press) linear, background-color var(--dur-fade) var(--ease-land), opacity var(--dur-fade) ease;
 }
 .vf-go span { transition: transform var(--dur-fade) var(--ease-glide); }
-.vf-go:hover { background: var(--seal-hi); }
-.vf-go:hover span { transform: translateX(2px); }
+@media (hover: hover) and (pointer: fine) { .vf-go:hover { background: var(--seal-hi); } }
+@media (hover: hover) and (pointer: fine) { .vf-go:hover span { transform: translateX(2px); } }
 .vf-go:active { transform: scale(.97); }
 .vf-go:disabled { opacity: .45; cursor: default; transform: none; }
 .vf-link {
   min-height: 0; padding: 2px 0; border: 0; border-radius: 0; background: none; color: var(--seal); font: 500 14px/1.4 var(--f-body); cursor: pointer;
   text-align: left; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; transition: text-decoration-thickness var(--dur-fade) ease;
 }
-.vf-link:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .vf-link:hover { background: none; text-decoration-thickness: 3px; } }
 .vf-link:active { transform: none; }
 
 /* ---------- the bench: the sheet under the loupe, the verdict, the board ---------- */

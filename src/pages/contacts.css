@@ -71,7 +71,7 @@
   .ia-ct-desk { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .ia-meishi-row { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 860px) {
+@media (max-width: 839px) {
   .ia-ct-cap h1 { margin: 14px 0 10px; }
   .ia-meishi { padding: 16px 16px 14px; gap: 0 14px; }
   .ia-meishi-seal { width: 64px; height: 64px; }

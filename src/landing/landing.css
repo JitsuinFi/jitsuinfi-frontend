@@ -30,7 +30,9 @@ body.landing {
   line-height: 1.5;
 }
 
-a {
+/* the element resets hold on the landing only: the app's lobby loads this sheet for its figure
+   (chapter 6), and the app's own buttons and links must keep their seal (IA port part 2) */
+:where(body.landing) a {
   color: inherit;
 }
 
@@ -38,7 +40,7 @@ a {
   display: none !important;
 }
 
-button {
+:where(body.landing) button {
   font: inherit;
   color: inherit;
   background: none;

@@ -101,14 +101,14 @@
 
 .ap-act { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 .ap .ap-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); white-space: nowrap; text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
-.ap .ap-btn:hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { .ap .ap-btn:hover { background: var(--seal-hi); } }
 .ap .ap-btn:active { transform: scale(.97); }
 .ap .ap-btn:disabled { opacity: .45; cursor: default; transform: none; }
 .ap-btn b { font: 800 16px/1 var(--f-seal); }
 .ap-btn.is-busy::after, .ap-link.is-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%; border: 2px solid rgba(126, 42, 83, .3); border-top-color: currentColor; animation: ap-spin 800ms linear infinite; }
 @keyframes ap-spin { to { transform: rotate(360deg); } }
 .ap .ap-link { cursor: pointer; color: var(--seal); font: 500 15px/1.4 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
-.ap .ap-link:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .ap .ap-link:hover { background: none; text-decoration-thickness: 3px; } }
 .ap .ap-link:disabled { opacity: .45; cursor: default; }
 
 /* the window: the relay's letter slot and the reply under it (drawn flat, ink on paper) */

@@ -1,0 +1,16 @@
+{
+  "name": "JitsuinFi",
+  "short_name": "JitsuinFi",
+  "description": "Private invoice financing on Zcash: sign, finance and pay invoices with keys only you hold.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#F6F5FC",
+  "background_color": "#F6F5FC",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

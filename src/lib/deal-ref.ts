@@ -53,3 +53,13 @@ export function dealPath(ref: string): string {
   if (!isRef(ref)) throw new Error("not a deal ref");
   return `/supplier/deal/${ref}`;
 }
+
+/** The buyer's open invoice (the 請求書 or the letter on the desk) and its 払込票 slip under Pay. */
+export function invoicePath(ref: string): string {
+  if (!isRef(ref)) throw new Error("not an invoice ref");
+  return `/buyer/invoices/${ref}`;
+}
+export function slipPath(ref: string): string {
+  if (!isRef(ref)) throw new Error("not an invoice ref");
+  return `/buyer/pay/${ref}`;
+}

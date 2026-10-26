@@ -6,9 +6,10 @@
 // On a phone the bottom tab bar holds the role's sections and the Inbox (at most five tabs); Home
 // is the logo. Pure: tests run it under Node.
 //
-// Part 1 of the port moves the supplier into sections; the buyer and the fund member keep their
-// one page until part 2 gives them their sections (Invoices · Pay · History · Contacts and
-// Fund · Units · Contacts) and their inbox in the panel: add them to SECTIONS and INBOX_ROLES.
+// Part 1 of the port moved the supplier into sections; part 2 gives the buyer (Invoices · Pay ·
+// History · Contacts) and the fund member (Fund · Units · Contacts) theirs, and every role's inbox
+// lives in the shell's panel. The buyer's Pay carries a count when an invoice is due within a
+// week or past due (buyer-late.ts payBadge).
 import type { Role } from "./account.ts";
 
 export interface Section {
@@ -19,6 +20,8 @@ export interface Section {
   short: string;
   /** The tab's kanji. */
   k: string;
+  /** The section carries a count: "due", the buyer's invoices due within a week or past due. */
+  badge?: "due";
 }
 
 export const SECTIONS: Record<Role, readonly Section[]> = {
@@ -28,14 +31,21 @@ export const SECTIONS: Record<Role, readonly Section[]> = {
     { to: "/supplier/deal", label: "Deal", short: "Deal", k: "請" },
     { to: "/supplier/contacts", label: "Contacts", short: "Contacts", k: "名" },
   ],
-  // part 2: Invoices · Pay · History · Contacts
-  buyer: [{ to: "/buyer", label: "Buyer's counter", short: "Buyer", k: "買" }],
-  // part 2: Fund · Units · Contacts
-  member: [{ to: "/member", label: "Fund member", short: "Fund", k: "資" }],
+  buyer: [
+    { to: "/buyer/invoices", label: "Invoices", short: "Invoices", k: "帳" },
+    { to: "/buyer/pay", label: "Pay", short: "Pay", k: "払", badge: "due" },
+    { to: "/buyer/history", label: "History", short: "History", k: "歴" },
+    { to: "/buyer/contacts", label: "Contacts", short: "Contacts", k: "名" },
+  ],
+  member: [
+    { to: "/member/fund", label: "Fund", short: "Fund", k: "資" },
+    { to: "/member/units", label: "Units", short: "Units", k: "受" },
+    { to: "/member/contacts", label: "Contacts", short: "Contacts", k: "名" },
+  ],
 };
 
-/** The roles whose inbox lives in the shell's panel (the others keep the mailbox on their page). */
-export const INBOX_ROLES: readonly Role[] = ["supplier"];
+/** The roles whose inbox lives in the shell's panel: every role since part 2. */
+export const INBOX_ROLES: readonly Role[] = ["supplier", "buyer", "member"];
 
 export function hasInbox(role: Role | null): boolean {
   return role !== null && INBOX_ROLES.includes(role);
@@ -51,6 +61,7 @@ export interface NavItem {
   label: string;
   short: string;
   k: string;
+  badge?: "due";
 }
 
 const HOME: NavItem = { to: "/app", label: "Home", short: "Home", k: "登" };

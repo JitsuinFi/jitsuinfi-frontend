@@ -128,7 +128,8 @@ export async function addPayout(w: Wallet, h: Header): Promise<Wallet> {
   if (b.next_token) {
     holdings[i] = { ...old, token: b.next_token, leaf_id: await leafId(b.next_token), units: old.units - b.units, period: b.period + 1, nav: b.nav, path: undefined, pending: undefined };
   } else holdings.splice(i, 1);
-  return { holdings, payouts: [...w.payouts, { fund_pk: old.fund_pk, period: b.period, units: b.units, amount_zat: b.amount_zat, txid: b.txid }] };
+  // the fund card stays (IA port 2026-10-26: a payout used to drop it)
+  return { ...w, holdings, payouts: [...w.payouts, { fund_pk: old.fund_pk, period: b.period, units: b.units, amount_zat: b.amount_zat, txid: b.txid }] };
 }
 
 /** The period a request made now belongs to: the one after the last close this holding saw. */

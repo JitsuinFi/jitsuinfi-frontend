@@ -3,8 +3,8 @@
 // fingerprint, the mailbox), to copy, download or show as a QR across the table; and the contacts
 // book, kept encrypted on this device. A card counts as compared only after the fingerprint was
 // read with the person by phone or in person: the relay cannot vouch for whose card it is.
-// The supplier mounts it now; the buyer and the fund member in part 2 (`counter`, `kanji`, the
-// role's root class for its stylesheet). Styles: src/pages/contacts.css.
+// Every role mounts it (`counter`, the role's root class for its stylesheet): the supplier's
+// .sp, the buyer's and the fund member's .rp (IA port part 2). Styles: src/pages/contacts.css.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Page } from "../app/AppShell";
 import { useInbox } from "../app/InboxPanel";
@@ -195,7 +195,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                   ))}
                 </ul>
               ) : (
-                <p className="ia-ct-none">No contact yet. Paste a card you were given below. A buyer who sends you their key through the relay needs no card: their mailbox comes with the key.</p>
+                <p className="ia-ct-none">{`No contact yet. Paste a card you were given below.${s.role === "supplier" ? " A buyer who sends you their key through the relay needs no card: their mailbox comes with the key." : ""}`}</p>
               )}
               <div className="ia-ct-add">
                 <label className="field">

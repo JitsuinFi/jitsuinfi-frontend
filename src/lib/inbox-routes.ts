@@ -3,6 +3,8 @@
 // Acting on a letter that needs a page (a deal's station, the blank invoice) stamps 済 on the
 // envelope, closes the panel and opens that page with the outcome on it ("Done · from your
 // inbox"); a small action that needs no page (keep a settlement bundle) completes in the panel.
+// Part 2: the buyer's letters lead to the open invoice, its slip under Pay or History; the fund
+// member's to Units. A kind can read differently per role (the buyer's "Letter to seal").
 // Pure: tests run it under Node.
 import type { Role } from "./account.ts";
 import type { MessageType } from "./relay-message.ts";
@@ -48,17 +50,48 @@ export const LETTER_GLYPH: Partial<Record<MessageType, string>> = {
   "fund.payout": "払",
 };
 
-/** A letter's name: its plain label, or "A letter" for a kind this app does not name. */
-export function letterLabel(type: string): string {
-  return LETTER_LABEL[type as MessageType] ?? "A letter";
+/** What the same kind is called in the buyer's and the fund member's inbox. */
+const ROLE_LABEL: Partial<Record<Role, Partial<Record<MessageType, string>>>> = {
+  buyer: {
+    "invoice.sign_request": "Invoice to sign",
+    "deal.letter": "Letter to seal",
+    "deal.seal": "Seal on the letter",
+    "deal.reminder": "Due-date reminder",
+    "history.request": "History request",
+    "deal.bundle": "Repaid and settled",
+  },
+  member: {
+    "fund.receipt": "Deposit receipt",
+    "fund.merkle_path": "Path for your units",
+    "fund.payout": "Payout",
+  },
+};
+
+/**
+ * A letter's name: its plain label (for `role`, when given), or "A letter" for a kind this app
+ * does not name. A fund path names its period: "Path for period 3".
+ */
+export function letterLabel(type: string, role?: Role | null, body?: Record<string, unknown>): string {
+  if (role === "member" && type === "fund.merkle_path" && typeof body?.period === "number") return `Path for period ${body.period}`;
+  return (role ? ROLE_LABEL[role]?.[type as MessageType] : undefined) ?? LETTER_LABEL[type as MessageType] ?? "A letter";
 }
 
 export function letterGlyph(type: string): string {
   return LETTER_GLYPH[type as MessageType] ?? "信";
 }
 
-/** Where an action leads: a page (a deal at one of its stations, or the blank invoice), or nowhere. */
-export type Lead = { kind: "deal"; station: StationKey } | { kind: "new-invoice" } | { kind: "panel" };
+/**
+ * Where an action leads: a page (a deal at one of its stations, the blank invoice; the buyer's open
+ * invoice, its slip, History; the member's Units), or nowhere (it completes in the panel).
+ */
+export type Lead =
+  | { kind: "deal"; station: StationKey }
+  | { kind: "new-invoice" }
+  | { kind: "invoice" }
+  | { kind: "slip" }
+  | { kind: "history" }
+  | { kind: "units" }
+  | { kind: "panel" };
 
 export interface LetterAction {
   /** The button's words. */
@@ -80,16 +113,48 @@ const SUPPLIER: Partial<Record<MessageType, LetterAction>> = {
   "deal.bundle": { label: "Keep it", lead: { kind: "panel" }, goes: "done here; the deal shows 済" },
 };
 
+const BUYER: Partial<Record<MessageType, LetterAction>> = {
+  "invoice.sign_request": { label: "Open the invoice", lead: { kind: "invoice" }, goes: "lays it on Invoices" },
+  "deal.letter": { label: "Keep the letter", lead: { kind: "invoice" }, goes: "opens it on Invoices" },
+  // the supplier's seal opens the letter to seal; the financier's opens the slip (the handler says which)
+  "deal.seal": { label: "Keep the seal", lead: { kind: "invoice" }, goes: "opens the letter, or its slip on Pay" },
+  "history.request": { label: "Send my history", lead: { kind: "history" }, goes: "updates History" },
+  "deal.reminder": { label: "Open the slip", lead: { kind: "slip" }, goes: "opens its slip on Pay" },
+  "deal.bundle": { label: "Keep it", lead: { kind: "panel" }, goes: "done here; the slip shows 済" },
+};
+
+const MEMBER: Partial<Record<MessageType, LetterAction>> = {
+  "fund.receipt": { label: "Keep it", lead: { kind: "units" }, goes: "adds a slip on Units" },
+  "fund.merkle_path": { label: "Keep it", lead: { kind: "units" }, goes: "checks the slip on Units" },
+  "fund.payout": { label: "Keep it", lead: { kind: "units" }, goes: "records it on Units" },
+};
+
+const ACTIONS: Record<Role, Partial<Record<MessageType, LetterAction>>> = { supplier: SUPPLIER, buyer: BUYER, member: MEMBER };
+
 /** The action a role's panel offers for a letter kind, or null (the letter is shown, not acted on). */
 export function letterAction(role: Role, type: string): LetterAction | null {
-  if (role === "supplier") return SUPPLIER[type as MessageType] ?? null;
-  return null; // part 2: the buyer's and the fund member's letters
+  return ACTIONS[role][type as MessageType] ?? null;
 }
 
-/** The path an action leads to, given the deal's ref (for a deal lead), or null for the panel. */
+/**
+ * The path an action leads to, given the record's ref (a deal, or a buyer's invoice), or null for
+ * the panel. Without a ref a deal lead opens the Deal tab, an invoice or slip lead its section.
+ */
 export function leadPath(lead: Lead, ref?: string): { to: string; at?: StationKey } | null {
-  if (lead.kind === "panel") return null;
-  if (lead.kind === "new-invoice") return { to: "/supplier/invoices/new" };
-  if (!ref) return { to: "/supplier/deal" };
-  return { to: `/supplier/deal/${ref}`, at: lead.station };
+  switch (lead.kind) {
+    case "panel":
+      return null;
+    case "new-invoice":
+      return { to: "/supplier/invoices/new" };
+    case "invoice":
+      return { to: ref ? `/buyer/invoices/${ref}` : "/buyer/invoices" };
+    case "slip":
+      return { to: ref ? `/buyer/pay/${ref}` : "/buyer/pay" };
+    case "history":
+      return { to: "/buyer/history" };
+    case "units":
+      return { to: "/member/units" };
+    case "deal":
+      return ref ? { to: `/supplier/deal/${ref}`, at: lead.station } : { to: "/supplier/deal" };
+  }
 }

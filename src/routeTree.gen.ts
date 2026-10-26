@@ -24,9 +24,22 @@ import { Route as AppSupplierRouteImport } from './routes/_app/supplier'
 import { Route as AppTryRouteImport } from './routes/_app/try'
 import { Route as AppVerifyRouteImport } from './routes/_app/verify'
 import { Route as ConsolePairRouteImport } from './routes/console_.pair'
+import { Route as AppBuyerIndexRouteImport } from './routes/_app/buyer.index'
+import { Route as AppBuyerContactsRouteImport } from './routes/_app/buyer.contacts'
+import { Route as AppBuyerHistoryRouteImport } from './routes/_app/buyer.history'
+import { Route as AppMemberIndexRouteImport } from './routes/_app/member.index'
+import { Route as AppMemberContactsRouteImport } from './routes/_app/member.contacts'
+import { Route as AppMemberFundRouteImport } from './routes/_app/member.fund'
+import { Route as AppMemberUnitsRouteImport } from './routes/_app/member.units'
 import { Route as AppSupplierIndexRouteImport } from './routes/_app/supplier.index'
 import { Route as AppSupplierContactsRouteImport } from './routes/_app/supplier.contacts'
 import { Route as AppTryPlayRouteImport } from './routes/_app/try_.play'
+import { Route as AppBuyerInvoicesIndexRouteImport } from './routes/_app/buyer.invoices.index'
+import { Route as AppBuyerInvoicesRefRouteImport } from './routes/_app/buyer.invoices.$ref'
+import { Route as AppBuyerInvoicesByHandRouteImport } from './routes/_app/buyer.invoices.by-hand'
+import { Route as AppBuyerInvoicesKeyRouteImport } from './routes/_app/buyer.invoices.key'
+import { Route as AppBuyerPayIndexRouteImport } from './routes/_app/buyer.pay.index'
+import { Route as AppBuyerPayRefRouteImport } from './routes/_app/buyer.pay.$ref'
 import { Route as AppSupplierDealIndexRouteImport } from './routes/_app/supplier.deal.index'
 import { Route as AppSupplierDealRefRouteImport } from './routes/_app/supplier.deal.$ref'
 import { Route as AppSupplierInvoicesIndexRouteImport } from './routes/_app/supplier.invoices.index'
@@ -106,6 +119,41 @@ const ConsolePairRoute = ConsolePairRouteImport.update({
   path: '/console/pair',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppBuyerIndexRoute = AppBuyerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerContactsRoute = AppBuyerContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerHistoryRoute = AppBuyerHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppMemberIndexRoute = AppMemberIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppMemberRoute,
+} as any)
+const AppMemberContactsRoute = AppMemberContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => AppMemberRoute,
+} as any)
+const AppMemberFundRoute = AppMemberFundRouteImport.update({
+  id: '/fund',
+  path: '/fund',
+  getParentRoute: () => AppMemberRoute,
+} as any)
+const AppMemberUnitsRoute = AppMemberUnitsRouteImport.update({
+  id: '/units',
+  path: '/units',
+  getParentRoute: () => AppMemberRoute,
+} as any)
 const AppSupplierIndexRoute = AppSupplierIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -120,6 +168,36 @@ const AppTryPlayRoute = AppTryPlayRouteImport.update({
   id: '/try_/play',
   path: '/try/play',
   getParentRoute: () => AppRoute,
+} as any)
+const AppBuyerInvoicesIndexRoute = AppBuyerInvoicesIndexRouteImport.update({
+  id: '/invoices/',
+  path: '/invoices/',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerInvoicesRefRoute = AppBuyerInvoicesRefRouteImport.update({
+  id: '/invoices/$ref',
+  path: '/invoices/$ref',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerInvoicesByHandRoute = AppBuyerInvoicesByHandRouteImport.update({
+  id: '/invoices/by-hand',
+  path: '/invoices/by-hand',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerInvoicesKeyRoute = AppBuyerInvoicesKeyRouteImport.update({
+  id: '/invoices/key',
+  path: '/invoices/key',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerPayIndexRoute = AppBuyerPayIndexRouteImport.update({
+  id: '/pay/',
+  path: '/pay/',
+  getParentRoute: () => AppBuyerRoute,
+} as any)
+const AppBuyerPayRefRoute = AppBuyerPayRefRouteImport.update({
+  id: '/pay/$ref',
+  path: '/pay/$ref',
+  getParentRoute: () => AppBuyerRoute,
 } as any)
 const AppSupplierDealIndexRoute = AppSupplierDealIndexRouteImport.update({
   id: '/deal/',
@@ -149,20 +227,33 @@ export interface FileRoutesByFullPath {
   '/account': typeof AppAccountRoute
   '/app': typeof AppAppRoute
   '/apply': typeof AppApplyRoute
-  '/buyer': typeof AppBuyerRoute
+  '/buyer': typeof AppBuyerRouteWithChildren
   '/financier': typeof AppFinancierRoute
-  '/member': typeof AppMemberRoute
+  '/member': typeof AppMemberRouteWithChildren
   '/outsider': typeof AppOutsiderRoute
   '/rates': typeof AppRatesRoute
   '/supplier': typeof AppSupplierRouteWithChildren
   '/try': typeof AppTryRoute
   '/verify': typeof AppVerifyRoute
   '/console/pair': typeof ConsolePairRoute
+  '/buyer/contacts': typeof AppBuyerContactsRoute
+  '/buyer/history': typeof AppBuyerHistoryRoute
+  '/member/contacts': typeof AppMemberContactsRoute
+  '/member/fund': typeof AppMemberFundRoute
+  '/member/units': typeof AppMemberUnitsRoute
   '/supplier/contacts': typeof AppSupplierContactsRoute
   '/try/play': typeof AppTryPlayRoute
+  '/buyer/': typeof AppBuyerIndexRoute
+  '/member/': typeof AppMemberIndexRoute
   '/supplier/': typeof AppSupplierIndexRoute
+  '/buyer/invoices/$ref': typeof AppBuyerInvoicesRefRoute
+  '/buyer/invoices/by-hand': typeof AppBuyerInvoicesByHandRoute
+  '/buyer/invoices/key': typeof AppBuyerInvoicesKeyRoute
+  '/buyer/pay/$ref': typeof AppBuyerPayRefRoute
   '/supplier/deal/$ref': typeof AppSupplierDealRefRoute
   '/supplier/invoices/new': typeof AppSupplierInvoicesNewRoute
+  '/buyer/invoices/': typeof AppBuyerInvoicesIndexRoute
+  '/buyer/pay/': typeof AppBuyerPayIndexRoute
   '/supplier/deal/': typeof AppSupplierDealIndexRoute
   '/supplier/invoices/': typeof AppSupplierInvoicesIndexRoute
 }
@@ -172,19 +263,30 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountRoute
   '/app': typeof AppAppRoute
   '/apply': typeof AppApplyRoute
-  '/buyer': typeof AppBuyerRoute
   '/financier': typeof AppFinancierRoute
-  '/member': typeof AppMemberRoute
   '/outsider': typeof AppOutsiderRoute
   '/rates': typeof AppRatesRoute
   '/try': typeof AppTryRoute
   '/verify': typeof AppVerifyRoute
   '/console/pair': typeof ConsolePairRoute
+  '/buyer/contacts': typeof AppBuyerContactsRoute
+  '/buyer/history': typeof AppBuyerHistoryRoute
+  '/member/contacts': typeof AppMemberContactsRoute
+  '/member/fund': typeof AppMemberFundRoute
+  '/member/units': typeof AppMemberUnitsRoute
   '/supplier/contacts': typeof AppSupplierContactsRoute
   '/try/play': typeof AppTryPlayRoute
+  '/buyer': typeof AppBuyerIndexRoute
+  '/member': typeof AppMemberIndexRoute
   '/supplier': typeof AppSupplierIndexRoute
+  '/buyer/invoices/$ref': typeof AppBuyerInvoicesRefRoute
+  '/buyer/invoices/by-hand': typeof AppBuyerInvoicesByHandRoute
+  '/buyer/invoices/key': typeof AppBuyerInvoicesKeyRoute
+  '/buyer/pay/$ref': typeof AppBuyerPayRefRoute
   '/supplier/deal/$ref': typeof AppSupplierDealRefRoute
   '/supplier/invoices/new': typeof AppSupplierInvoicesNewRoute
+  '/buyer/invoices': typeof AppBuyerInvoicesIndexRoute
+  '/buyer/pay': typeof AppBuyerPayIndexRoute
   '/supplier/deal': typeof AppSupplierDealIndexRoute
   '/supplier/invoices': typeof AppSupplierInvoicesIndexRoute
 }
@@ -196,20 +298,33 @@ export interface FileRoutesById {
   '/_app/account': typeof AppAccountRoute
   '/_app/app': typeof AppAppRoute
   '/_app/apply': typeof AppApplyRoute
-  '/_app/buyer': typeof AppBuyerRoute
+  '/_app/buyer': typeof AppBuyerRouteWithChildren
   '/_app/financier': typeof AppFinancierRoute
-  '/_app/member': typeof AppMemberRoute
+  '/_app/member': typeof AppMemberRouteWithChildren
   '/_app/outsider': typeof AppOutsiderRoute
   '/_app/rates': typeof AppRatesRoute
   '/_app/supplier': typeof AppSupplierRouteWithChildren
   '/_app/try': typeof AppTryRoute
   '/_app/verify': typeof AppVerifyRoute
   '/console_/pair': typeof ConsolePairRoute
+  '/_app/buyer/contacts': typeof AppBuyerContactsRoute
+  '/_app/buyer/history': typeof AppBuyerHistoryRoute
+  '/_app/member/contacts': typeof AppMemberContactsRoute
+  '/_app/member/fund': typeof AppMemberFundRoute
+  '/_app/member/units': typeof AppMemberUnitsRoute
   '/_app/supplier/contacts': typeof AppSupplierContactsRoute
   '/_app/try_/play': typeof AppTryPlayRoute
+  '/_app/buyer/': typeof AppBuyerIndexRoute
+  '/_app/member/': typeof AppMemberIndexRoute
   '/_app/supplier/': typeof AppSupplierIndexRoute
+  '/_app/buyer/invoices/$ref': typeof AppBuyerInvoicesRefRoute
+  '/_app/buyer/invoices/by-hand': typeof AppBuyerInvoicesByHandRoute
+  '/_app/buyer/invoices/key': typeof AppBuyerInvoicesKeyRoute
+  '/_app/buyer/pay/$ref': typeof AppBuyerPayRefRoute
   '/_app/supplier/deal/$ref': typeof AppSupplierDealRefRoute
   '/_app/supplier/invoices/new': typeof AppSupplierInvoicesNewRoute
+  '/_app/buyer/invoices/': typeof AppBuyerInvoicesIndexRoute
+  '/_app/buyer/pay/': typeof AppBuyerPayIndexRoute
   '/_app/supplier/deal/': typeof AppSupplierDealIndexRoute
   '/_app/supplier/invoices/': typeof AppSupplierInvoicesIndexRoute
 }
@@ -230,11 +345,24 @@ export interface FileRouteTypes {
     | '/try'
     | '/verify'
     | '/console/pair'
+    | '/buyer/contacts'
+    | '/buyer/history'
+    | '/member/contacts'
+    | '/member/fund'
+    | '/member/units'
     | '/supplier/contacts'
     | '/try/play'
+    | '/buyer/'
+    | '/member/'
     | '/supplier/'
+    | '/buyer/invoices/$ref'
+    | '/buyer/invoices/by-hand'
+    | '/buyer/invoices/key'
+    | '/buyer/pay/$ref'
     | '/supplier/deal/$ref'
     | '/supplier/invoices/new'
+    | '/buyer/invoices/'
+    | '/buyer/pay/'
     | '/supplier/deal/'
     | '/supplier/invoices/'
   fileRoutesByTo: FileRoutesByTo
@@ -244,19 +372,30 @@ export interface FileRouteTypes {
     | '/account'
     | '/app'
     | '/apply'
-    | '/buyer'
     | '/financier'
-    | '/member'
     | '/outsider'
     | '/rates'
     | '/try'
     | '/verify'
     | '/console/pair'
+    | '/buyer/contacts'
+    | '/buyer/history'
+    | '/member/contacts'
+    | '/member/fund'
+    | '/member/units'
     | '/supplier/contacts'
     | '/try/play'
+    | '/buyer'
+    | '/member'
     | '/supplier'
+    | '/buyer/invoices/$ref'
+    | '/buyer/invoices/by-hand'
+    | '/buyer/invoices/key'
+    | '/buyer/pay/$ref'
     | '/supplier/deal/$ref'
     | '/supplier/invoices/new'
+    | '/buyer/invoices'
+    | '/buyer/pay'
     | '/supplier/deal'
     | '/supplier/invoices'
   id:
@@ -276,11 +415,24 @@ export interface FileRouteTypes {
     | '/_app/try'
     | '/_app/verify'
     | '/console_/pair'
+    | '/_app/buyer/contacts'
+    | '/_app/buyer/history'
+    | '/_app/member/contacts'
+    | '/_app/member/fund'
+    | '/_app/member/units'
     | '/_app/supplier/contacts'
     | '/_app/try_/play'
+    | '/_app/buyer/'
+    | '/_app/member/'
     | '/_app/supplier/'
+    | '/_app/buyer/invoices/$ref'
+    | '/_app/buyer/invoices/by-hand'
+    | '/_app/buyer/invoices/key'
+    | '/_app/buyer/pay/$ref'
     | '/_app/supplier/deal/$ref'
     | '/_app/supplier/invoices/new'
+    | '/_app/buyer/invoices/'
+    | '/_app/buyer/pay/'
     | '/_app/supplier/deal/'
     | '/_app/supplier/invoices/'
   fileRoutesById: FileRoutesById
@@ -399,6 +551,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsolePairRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/buyer/': {
+      id: '/_app/buyer/'
+      path: '/'
+      fullPath: '/buyer/'
+      preLoaderRoute: typeof AppBuyerIndexRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/contacts': {
+      id: '/_app/buyer/contacts'
+      path: '/contacts'
+      fullPath: '/buyer/contacts'
+      preLoaderRoute: typeof AppBuyerContactsRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/history': {
+      id: '/_app/buyer/history'
+      path: '/history'
+      fullPath: '/buyer/history'
+      preLoaderRoute: typeof AppBuyerHistoryRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/member/': {
+      id: '/_app/member/'
+      path: '/'
+      fullPath: '/member/'
+      preLoaderRoute: typeof AppMemberIndexRouteImport
+      parentRoute: typeof AppMemberRoute
+    }
+    '/_app/member/contacts': {
+      id: '/_app/member/contacts'
+      path: '/contacts'
+      fullPath: '/member/contacts'
+      preLoaderRoute: typeof AppMemberContactsRouteImport
+      parentRoute: typeof AppMemberRoute
+    }
+    '/_app/member/fund': {
+      id: '/_app/member/fund'
+      path: '/fund'
+      fullPath: '/member/fund'
+      preLoaderRoute: typeof AppMemberFundRouteImport
+      parentRoute: typeof AppMemberRoute
+    }
+    '/_app/member/units': {
+      id: '/_app/member/units'
+      path: '/units'
+      fullPath: '/member/units'
+      preLoaderRoute: typeof AppMemberUnitsRouteImport
+      parentRoute: typeof AppMemberRoute
+    }
     '/_app/supplier/': {
       id: '/_app/supplier/'
       path: '/'
@@ -419,6 +620,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/try/play'
       preLoaderRoute: typeof AppTryPlayRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/buyer/invoices/': {
+      id: '/_app/buyer/invoices/'
+      path: '/invoices'
+      fullPath: '/buyer/invoices/'
+      preLoaderRoute: typeof AppBuyerInvoicesIndexRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/invoices/$ref': {
+      id: '/_app/buyer/invoices/$ref'
+      path: '/invoices/$ref'
+      fullPath: '/buyer/invoices/$ref'
+      preLoaderRoute: typeof AppBuyerInvoicesRefRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/invoices/by-hand': {
+      id: '/_app/buyer/invoices/by-hand'
+      path: '/invoices/by-hand'
+      fullPath: '/buyer/invoices/by-hand'
+      preLoaderRoute: typeof AppBuyerInvoicesByHandRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/invoices/key': {
+      id: '/_app/buyer/invoices/key'
+      path: '/invoices/key'
+      fullPath: '/buyer/invoices/key'
+      preLoaderRoute: typeof AppBuyerInvoicesKeyRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/pay/': {
+      id: '/_app/buyer/pay/'
+      path: '/pay'
+      fullPath: '/buyer/pay/'
+      preLoaderRoute: typeof AppBuyerPayIndexRouteImport
+      parentRoute: typeof AppBuyerRoute
+    }
+    '/_app/buyer/pay/$ref': {
+      id: '/_app/buyer/pay/$ref'
+      path: '/pay/$ref'
+      fullPath: '/buyer/pay/$ref'
+      preLoaderRoute: typeof AppBuyerPayRefRouteImport
+      parentRoute: typeof AppBuyerRoute
     }
     '/_app/supplier/deal/': {
       id: '/_app/supplier/deal/'
@@ -451,6 +694,52 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppBuyerRouteChildren {
+  AppBuyerContactsRoute: typeof AppBuyerContactsRoute
+  AppBuyerHistoryRoute: typeof AppBuyerHistoryRoute
+  AppBuyerIndexRoute: typeof AppBuyerIndexRoute
+  AppBuyerInvoicesRefRoute: typeof AppBuyerInvoicesRefRoute
+  AppBuyerInvoicesByHandRoute: typeof AppBuyerInvoicesByHandRoute
+  AppBuyerInvoicesKeyRoute: typeof AppBuyerInvoicesKeyRoute
+  AppBuyerPayRefRoute: typeof AppBuyerPayRefRoute
+  AppBuyerInvoicesIndexRoute: typeof AppBuyerInvoicesIndexRoute
+  AppBuyerPayIndexRoute: typeof AppBuyerPayIndexRoute
+}
+
+const AppBuyerRouteChildren: AppBuyerRouteChildren = {
+  AppBuyerContactsRoute: AppBuyerContactsRoute,
+  AppBuyerHistoryRoute: AppBuyerHistoryRoute,
+  AppBuyerIndexRoute: AppBuyerIndexRoute,
+  AppBuyerInvoicesRefRoute: AppBuyerInvoicesRefRoute,
+  AppBuyerInvoicesByHandRoute: AppBuyerInvoicesByHandRoute,
+  AppBuyerInvoicesKeyRoute: AppBuyerInvoicesKeyRoute,
+  AppBuyerPayRefRoute: AppBuyerPayRefRoute,
+  AppBuyerInvoicesIndexRoute: AppBuyerInvoicesIndexRoute,
+  AppBuyerPayIndexRoute: AppBuyerPayIndexRoute,
+}
+
+const AppBuyerRouteWithChildren = AppBuyerRoute._addFileChildren(
+  AppBuyerRouteChildren,
+)
+
+interface AppMemberRouteChildren {
+  AppMemberContactsRoute: typeof AppMemberContactsRoute
+  AppMemberFundRoute: typeof AppMemberFundRoute
+  AppMemberUnitsRoute: typeof AppMemberUnitsRoute
+  AppMemberIndexRoute: typeof AppMemberIndexRoute
+}
+
+const AppMemberRouteChildren: AppMemberRouteChildren = {
+  AppMemberContactsRoute: AppMemberContactsRoute,
+  AppMemberFundRoute: AppMemberFundRoute,
+  AppMemberUnitsRoute: AppMemberUnitsRoute,
+  AppMemberIndexRoute: AppMemberIndexRoute,
+}
+
+const AppMemberRouteWithChildren = AppMemberRoute._addFileChildren(
+  AppMemberRouteChildren,
+)
+
 interface AppSupplierRouteChildren {
   AppSupplierContactsRoute: typeof AppSupplierContactsRoute
   AppSupplierIndexRoute: typeof AppSupplierIndexRoute
@@ -477,9 +766,9 @@ interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppAppRoute: typeof AppAppRoute
   AppApplyRoute: typeof AppApplyRoute
-  AppBuyerRoute: typeof AppBuyerRoute
+  AppBuyerRoute: typeof AppBuyerRouteWithChildren
   AppFinancierRoute: typeof AppFinancierRoute
-  AppMemberRoute: typeof AppMemberRoute
+  AppMemberRoute: typeof AppMemberRouteWithChildren
   AppOutsiderRoute: typeof AppOutsiderRoute
   AppRatesRoute: typeof AppRatesRoute
   AppSupplierRoute: typeof AppSupplierRouteWithChildren
@@ -492,9 +781,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppAppRoute: AppAppRoute,
   AppApplyRoute: AppApplyRoute,
-  AppBuyerRoute: AppBuyerRoute,
+  AppBuyerRoute: AppBuyerRouteWithChildren,
   AppFinancierRoute: AppFinancierRoute,
-  AppMemberRoute: AppMemberRoute,
+  AppMemberRoute: AppMemberRouteWithChildren,
   AppOutsiderRoute: AppOutsiderRoute,
   AppRatesRoute: AppRatesRoute,
   AppSupplierRoute: AppSupplierRouteWithChildren,

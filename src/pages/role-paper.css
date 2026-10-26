@@ -1,9 +1,10 @@
 /* Role pages on the paper (HNK-34.T5, approved samples design-samples/internal/buyer.html and
    member.html): the shared parts of /buyer and /member. A caption column (≤ 35%) beside the page's
    working visual (≥ 65%) from 1360 px, stacked below; verdicts as a hanko and its words (no
-   panel); pill buttons; fields grouped in light rounded panels; the mailbox as a contact column
-   beside the inbox. Palette DS-PAL, tokens from landing/tokens.css. The app's shared parts
-   (Banner, CodeBlock, Kv, MailboxCard) keep their markup: this sheet restyles them under `.rp`. */
+   panel); pill buttons; fields grouped in light rounded panels. Palette DS-PAL, tokens from
+   landing/tokens.css. The app's shared parts (Banner, CodeBlock, Kv) keep their markup: this sheet
+   restyles them under `.rp`. Since the IA port the sections of /buyer/* and /member/* and their
+   Contacts use it; the inbox is the shell's sheet. */
 
 .rp {
   --rule: rgba(2, 13, 47, .12);
@@ -44,7 +45,7 @@
 /* ---------- buttons: pills, the seal for the action, paper for the rest ---------- */
 .rp button { min-height: 0; padding: var(--btn-pad); border-radius: 999px; font: var(--btn-font); transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear, opacity var(--dur-fade) linear; }
 .rp button.secondary { background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); }
-.rp button.secondary:hover:not(:disabled) { background: var(--wash); }
+@media (hover: hover) and (pointer: fine) { .rp button.secondary:hover:not(:disabled) { background: var(--wash); } }
 .rp button:disabled { opacity: .45; cursor: not-allowed; }
 .rp .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0; }
 .rp-small button, .rp button.rp-small { padding: 9px 14px; font-size: 13px; }
@@ -70,16 +71,16 @@
 .rp-fieldset > span { font: 500 13.5px/1.3 var(--f-body); color: var(--head); }
 .rp-fieldset > small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
 
-/* ---------- verdicts: a hanko and its words, never a panel ---------- */
+/* ---------- verdicts: a hanko and its words, never a panel (.rp.rp: wins over the app sheet's .banner.ok in any load order) ---------- */
 .rp .out { margin: 0; gap: 14px; }
-.rp .banner { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font-size: 13.5px; line-height: 1.5; }
-.rp .banner .hanko { grid-row: span 3; width: 30px; height: 30px; margin-top: 2px; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor; font: 800 15px/1 var(--f-seal); transform: rotate(-8deg); animation: rp-hk var(--dur-seal) var(--ease-snap) both; }
-.rp .banner strong { font: 600 15px/1.3 var(--f-body); color: var(--head); letter-spacing: 0; align-self: start; }
-.rp .banner > span:not(.hanko) { color: var(--ink); }
-.rp .banner.ok .hanko { color: var(--pool-2); }
-.rp .banner.warn .hanko { color: var(--ink-2); }
-.rp .banner.bad .hanko, .rp .banner.bad strong { color: var(--seal); }
-.rp .banner .banner-detail { color: var(--ink-2); }
+.rp.rp .banner { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font-size: 13.5px; line-height: 1.5; }
+.rp.rp .banner .hanko { grid-row: span 3; width: 30px; height: 30px; margin-top: 2px; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor; font: 800 15px/1 var(--f-seal); transform: rotate(-8deg); animation: rp-hk var(--dur-seal) var(--ease-snap) both; }
+.rp.rp .banner strong { font: 600 15px/1.3 var(--f-body); color: var(--head); letter-spacing: 0; align-self: start; }
+.rp.rp .banner > span:not(.hanko) { color: var(--ink); }
+.rp.rp .banner.ok .hanko { color: var(--pool-2); }
+.rp.rp .banner.warn .hanko { color: var(--ink-2); }
+.rp.rp .banner.bad .hanko, .rp.rp .banner.bad strong { color: var(--seal); }
+.rp.rp .banner .banner-detail { color: var(--ink-2); }
 .rp-verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; }
 .rp-verdict > .rp-hanko { grid-row: span 2; margin-top: 2px; }
 .rp-verdict > b { font: 600 15px/1.3 var(--f-body); color: var(--head); }
@@ -101,60 +102,9 @@
 .rp .qr { padding: 10px; border-radius: 8px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); }
 .rp .qr svg { width: 168px; height: 168px; }
 
-/* ---------- the mailbox: contact column beside the inbox ---------- */
-.rp-mail { display: grid; gap: 16px; padding-top: clamp(32px, 3.4vw, 48px); border-top: 1px solid var(--rule); }
-.rp-mail > section.card, .rp-mail > section.card > .part-body { display: contents; }
-.rp-mail > section.card > .part-head { order: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 12px; align-items: center; max-width: 52ch; }
-.rp-mail > section.card > .part-head::before { content: "便"; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; transform: rotate(-4deg); box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 21px/1 var(--f-seal); }
-.rp-mail > section.card > .part-head > .step { display: none; }
-.rp-mail > section.card > .part-head > h2 { margin: 0; }
-.rp-mail > section.card > .part-head > .hint { grid-column: 1 / -1; font-size: 14px; }
-.rp-mail .part-body > .out:first-child { order: 2; }
-.rp-mail .part-body > div:nth-child(2):not([class]) { order: 3; min-width: 0; max-width: 52ch; }
-.rp-mail .part-body > div:nth-child(3):not([class]) { order: 4; }
-.rp-mail .part-body > .contacts { order: 5; max-width: 52ch; }
-.rp-mail-h { order: 6; }
-.rp-mail .part-body > .out:last-child { order: 7; }
-.rp-mail .part-body > .actions { order: 8; }
-@media (min-width: 1360px) {
-  .rp-mail { grid-template-columns: minmax(0, 33fr) minmax(0, 67fr); grid-template-rows: auto auto auto auto auto 1fr; column-gap: var(--cap-gap); align-items: start; }
-  .rp-mail > section.card > .part-head { grid-column: 1; grid-row: 1; }
-  .rp-mail .part-body > .out:first-child { grid-column: 1; grid-row: 2; }
-  .rp-mail .part-body > div:nth-child(2):not([class]) { grid-column: 1; grid-row: 3; }
-  .rp-mail .part-body > div:nth-child(3):not([class]) { grid-column: 1; grid-row: 4; }
-  .rp-mail .part-body > .contacts { grid-column: 1; grid-row: 5; }
-  .rp-mail-h { grid-column: 2; grid-row: 1; align-self: end; }
-  .rp-mail .part-body > .actions { grid-column: 2; grid-row: 2; }
-  .rp-mail .part-body > .out:last-child { grid-column: 2; grid-row: 3 / 7; }
-}
-.rp-mail .contact-qr { background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); max-width: 220px; margin-top: 10px; }
-.rp-mail .contacts { display: grid; gap: 10px; margin: 0; }
-.rp-mail .contacts textarea { font-family: var(--f-mono); }
-/* the inbox and the contacts as ruled rows; each message an envelope */
-.rp-mail .deals { display: grid; gap: 0; border-top: 1px solid var(--rule-2); }
-.rp-mail .deal { position: relative; display: grid; gap: 6px; padding: 14px 4px 14px 60px; border-radius: 0; background: none; box-shadow: none; border-bottom: 1px solid var(--rule); }
-.rp-mail .part-body > .out .deal::before {
-  content: ""; position: absolute; left: 4px; top: 16px; width: 40px; height: 28px; border-radius: 4px; background: var(--sheet);
-  box-shadow: inset 0 0 0 1px var(--rule-2);
-  background-image: linear-gradient(155deg, transparent 49%, var(--rule-2) 50%, transparent 51%), linear-gradient(-155deg, transparent 49%, var(--rule-2) 50%, transparent 51%);
-  background-size: 50% 100%; background-position: left, right; background-repeat: no-repeat;
-}
-.rp-mail .contacts .deal { padding-left: 0; }
-.rp-mail .deal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
-.rp-mail .deal-head strong { font: 600 15px/1.3 var(--f-body); color: var(--head); }
-.rp-mail .deal-head span { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
-.rp-mail .deal-head span.is-mono { font: 400 12px/1.4 var(--f-mono); }
-.rp-mail .deal-head small { margin-left: auto; font: 400 12px/1.3 var(--f-body); color: var(--pool-2); }
-.rp-mail .deal-head button { margin-left: auto; padding: 9px 14px; font-size: 13px; }
-.rp-mail .deal small { margin: 0; font-size: 12.5px; color: var(--ink-2); }
-.rp-mail .deal .deal-about { max-width: 70ch; font: 400 13.5px/1.5 var(--f-body); color: var(--ink); }
-.rp-mail .deal .deal-about:empty { display: none; }
-
-@media (max-width: 720px) {
+@media (max-width: 599px) {
   .rp-sec { gap: 26px; }
   .rp-panel { padding: 16px; border-radius: 20px; }
-  .rp-mail .deal { padding-left: 52px; }
-  .rp-mail .part-body > .out .deal::before { width: 36px; height: 26px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rp *, .rp *::before, .rp *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }

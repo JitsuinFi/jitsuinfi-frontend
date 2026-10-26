@@ -12,15 +12,18 @@ header.top { flex-wrap: nowrap; gap: 12px; }
 header.top .brand { flex: none; }
 header.top nav.ia-nav { flex: none; }
 header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; background: var(--rule); }
+header.top nav.ia-nav a { position: relative; }
+header.top nav.ia-nav .ia-nav-s { display: none; }
+header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; }
 .ia-right .net { margin-left: 0; }
 
 .ia-bell {
-  position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; min-height: 0; padding: 0; border: 0;
+  position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; min-height: 0; padding: 0; border: 0;
   border-radius: 50%; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule); cursor: pointer;
   transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
 }
-.ia-bell:hover { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ia-bell:hover { background: var(--seal-wash); } }
 .ia-bell[aria-expanded="true"] { background: var(--head); color: var(--sheet); box-shadow: none; }
 .ia-bell svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .ia-bell:active { transform: scale(.94); }
@@ -37,7 +40,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule); font: 500 14px/1 var(--f-body);
   transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land);
 }
-.ia-acct:hover { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ia-acct:hover { background: var(--seal-wash); } }
 .ia-acct[aria-expanded="true"] { box-shadow: inset 0 0 0 1.5px var(--seal); }
 .ia-acct-seal { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--seal); color: var(--seal); font: 800 16px/1 var(--f-seal); transform: rotate(-6deg); }
 .ia-acct svg { width: 12px; height: 12px; fill: none; stroke: var(--ink-2); stroke-width: 1.6; }
@@ -62,7 +65,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 0; padding: 8px; border: 0; border-radius: var(--r-row);
   background: none; color: var(--ink); text-align: left; font: 400 13px/1.3 var(--f-body); cursor: pointer;
 }
-.ia-role:hover { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ia-role:hover { background: var(--seal-wash); } }
 .ia-role:disabled { opacity: .6; cursor: progress; }
 .ia-role .room-k { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--seal); font: 800 18px/1 var(--f-seal); }
 .ia-role strong { display: block; font: 500 15px/1.3 var(--f-body); color: var(--head); }
@@ -78,7 +81,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   display: flex; align-items: center; gap: 10px; min-height: 0; padding: 8px; border: 0; border-radius: var(--r-row); background: none; color: var(--head);
   font: 500 14px/1.3 var(--f-body); text-decoration: none; text-align: left; cursor: pointer;
 }
-.ia-menu-links a:hover, .ia-menu-links button:hover { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ia-menu-links a:hover, .ia-menu-links button:hover { background: var(--seal-wash); } }
 .ia-menu-links b { font: 700 14px/1 var(--f-seal); color: var(--seal); letter-spacing: .1em; }
 .ia-menu-links .ia-out { color: var(--seal); }
 .ia-menu > small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
@@ -103,10 +106,10 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
 .ia-ib-n { padding: 4px 10px; border-radius: 999px; background: var(--seal); color: var(--sheet); font: 500 12px/1.2 var(--f-body); white-space: nowrap; }
 .ia-ib-n.is-none { background: var(--wash); color: var(--ink-2); }
 .ia-x {
-  margin-left: auto; flex: none; display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  margin-left: auto; flex: none; display: grid; place-items: center; width: 44px; height: 44px; min-height: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
   background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule);
 }
-.ia-x:hover { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ia-x:hover { background: var(--seal-wash); } }
 .ia-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .ia-ib-state { position: relative; margin: 0; padding-left: 15px; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); }
 .ia-ib-state::before { content: ""; position: absolute; left: 0; top: .45em; width: 7px; height: 7px; border-radius: 50%; background: var(--pool-2); }
@@ -119,7 +122,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   min-height: 0; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--sheet); color: var(--head); cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--rule-strong); font: 500 13px/1 var(--f-body);
 }
-.ia-ib-check button.secondary:hover { box-shadow: inset 0 0 0 1.5px var(--seal); background: var(--sheet); }
+@media (hover: hover) and (pointer: fine) { .ia-ib-check button.secondary:hover { box-shadow: inset 0 0 0 1.5px var(--seal); background: var(--sheet); } }
 .ia-ib-check button:disabled { opacity: .6; cursor: progress; }
 .ia-ib-check small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
 .ia-ib-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 22px 22px; }
@@ -128,7 +131,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
 .ia-ib-foot a { display: flex; align-items: baseline; gap: 10px; font: 500 14px/1.3 var(--f-body); color: var(--head); text-decoration: none; }
 .ia-ib-foot a b { font: 700 15px/1 var(--f-seal); color: var(--seal); }
 .ia-ib-foot a span { margin-left: auto; color: var(--seal); }
-.ia-ib-foot a:hover { color: var(--seal); }
+@media (hover: hover) and (pointer: fine) { .ia-ib-foot a:hover { color: var(--seal); } }
 
 /* each letter: an envelope with its flap and its kind's glyph */
 .ia-letters ol { display: grid; gap: 12px; }
@@ -150,7 +153,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   font: 500 13px/1 var(--f-body); box-shadow: 0 4px 10px rgba(126, 42, 83, .2);
   transition: transform var(--dur-press) linear, background-color var(--dur-fade) var(--ease-land);
 }
-.ia-letter .ia-acts button:hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { .ia-letter .ia-acts button:hover { background: var(--seal-hi); } }
 .ia-letter .ia-acts button:active { transform: scale(.97); }
 .ia-letter .ia-acts button:disabled { opacity: .7; cursor: progress; }
 .ia-letter .ia-goes, .ia-letter .ia-idle { font: 400 12px/1.3 var(--f-body); color: var(--ink-2); }
@@ -191,7 +194,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   background: none; color: var(--seal); box-shadow: inset 0 0 0 1px var(--rule-strong); font: 500 13px/1 var(--f-body);
   transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land);
 }
-.ia-ll-more:hover, .ia-ll-fold:hover { background: var(--seal-wash); box-shadow: inset 0 0 0 1.5px var(--seal); }
+@media (hover: hover) and (pointer: fine) { .ia-ll-more:hover, .ia-ll-fold:hover { background: var(--seal-wash); box-shadow: inset 0 0 0 1.5px var(--seal); } }
 .ia-ll-fold { color: var(--head); }
 .ia-ll-fold b { font: 500 12.5px/1 var(--f-mono); color: var(--seal); }
 .ia-ll-fold i { font-style: normal; font: 400 12px/1 var(--f-body); color: var(--seal); }
@@ -213,9 +216,41 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
 .ia-did strong { font: 700 clamp(18px, 1.4vw, 21px)/1.25 var(--f-display); color: var(--head); text-wrap: balance; }
 .ia-did span { max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
 
+/* ---------- medium (600–839 px, DS-MOB L1): the top nav with the sections' short labels ---------- */
+@media (min-width: 600px) and (max-width: 839px) {
+  header.top { gap: 8px; }
+  header.top nav.ia-nav { margin-left: 4px; }
+  header.top nav.ia-nav a { padding: 12px 11px; }
+  header.top nav.ia-nav .ia-nav-l { display: none; }
+  header.top nav.ia-nav .ia-nav-s { display: inline; }
+  header.top .brand .brand-wm, .ia-right .net, .ia-acct > .ia-acct-name, .ia-acct svg { display: none; }
+  .ia-acct { padding: 4px; }
+}
+
+/* ---------- touch targets (DS-MOB T1): 44 px on a phone and under a coarse pointer ---------- */
+@media (max-width: 599px), (pointer: coarse) {
+  .ia-ll-more, .ia-ll-fold, .ia-ib-check button.secondary, .ia-letter .ia-acts button { min-height: 44px; }
+  .ia-ll-q input { height: 44px; }
+  .ia-acct { min-height: 44px; min-width: 44px; justify-content: center; }
+  .ia-acct-seal { width: 36px; height: 36px; }
+  .ia-ib-foot a { min-height: 44px; align-items: center; }
+  .ia-menu-links a, .ia-menu-links button, .ia-role { min-height: 44px; }
+  .rp .rp-small button, .rp button.rp-small, .rp .actions button, .sp .actions button, .sp .sp-panel button, .sp .sp-slip button, .sp .sp-pill, .ia-ct button { min-height: 44px; }
+  .rp .by-why button { min-height: 44px; }
+  .deal-head button { min-height: 44px; }
+  header.top .brand { min-height: 44px; }
+  .by-keyrow > button, .by .by-keyhex > button, .by-share summary, .by-codes > summary, .sp details.sp-fold > summary, .sp a.sp-ink, .by-foot a, .ia-switch-h a { min-height: 44px; }
+  .by-share summary, .sp details.sp-fold > summary, .by-foot a, .sp a.sp-ink, .ia-switch-h a { display: inline-flex; align-items: center; }
+  .by-share summary, .sp details.sp-fold > summary { display: flex; }
+}
+/* fields at 16 px on a phone, so iOS does not zoom into them (DS-MOB F2) */
+@media (max-width: 599px) {
+  .rp textarea, .rp input[type=text], .rp input[type=number], .rp select, .ia-ct textarea, .ia-ct .ia-ct-add textarea, .sp .sp-panel input:not([type=file]), .sp .sp-panel textarea, .sp .sp-work input:not([type=file]):not([type=checkbox]), .sp .sp-work textarea { font-size: 16px; }
+}
+
 /* ---------- the phone's bottom tab bar ---------- */
 .ia-tabs { display: none; }
-@media (max-width: 720px) {
+@media (max-width: 599px) {
   header.top nav.ia-nav { display: none; }
   header.top { padding: 10px var(--gutter); }
   .ia-right .ia-bell { display: none; } /* the inbox is a tab on a phone */
@@ -246,7 +281,7 @@ header.top nav.ia-nav .ia-sep { flex: none; width: 1px; margin: 7px 6px; backgro
   .ia-ib-body { padding: 14px 16px 18px; }
   .ia-ib-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
   .ia-menu {
-    top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0;
+    top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92vh; max-height: 92dvh; overflow-y: auto; border-radius: 24px 24px 0 0;
     padding: 16px 16px calc(18px + env(safe-area-inset-bottom, 0px)); transform-origin: bottom; animation-name: ia-sheet-in;
   }
   @keyframes ia-sheet-in { from { transform: translateY(40px); opacity: 0; } }

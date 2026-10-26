@@ -1,7 +1,7 @@
 // A long list on paper (IA port, user feedback 2026-10-26 C; src/lib/long-list.ts): your move
 // first, then what waits on someone else, then the done lines folded ("Settled · 12"); a search
 // once the list is longer than one screen, and "Show more" under each group. The supplier's 台帳
-// and the inbox use it; the buyer's and the fund member's lists take it in part 2.
+// and the inbox use it, and since part 2 the buyer's ledger, its slips and the member's payouts.
 import { useState, type ReactNode } from "react";
 import { arrange, type Stage } from "../lib/long-list";
 

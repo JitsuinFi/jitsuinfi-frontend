@@ -2,7 +2,7 @@
 // usable. What needs your move comes first, then what waits on someone else, then what is done,
 // folded ("Settled · 12", opened on demand). A search narrows every group by the line's own words
 // (invoice number, buyer); each group shows its first lines and then "Show more". The supplier's
-// 台帳 and the inbox use it; the buyer's and the fund member's lists take it in part 2.
+// 台帳 and the inbox use it, and since part 2 the buyer's ledger, its slips and the member's payouts.
 // Pure: tests run it under Node.
 
 export type Stage = "move" | "wait" | "done";

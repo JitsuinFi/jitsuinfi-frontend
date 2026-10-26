@@ -5,15 +5,21 @@
 // then the inbox bell with its count (the panel: InboxPanel.tsx) and the Account button with the
 // role's seal (AccountMenu.tsx). On a phone the bottom tab bar holds the role's sections and the
 // Inbox, Account stays in the top bar and Home is the logo.
+// Part 2 (DS-MOB, 2026-10-26): the width classes are compact < 600 px (the tab bar), medium
+// 600–839 px (the top nav with the short labels) and expanded ≥ 840 px; the inbox and the account
+// menu close with the phone's back button (sheet.ts); the buyer's Pay carries the count of
+// invoices due within a week or past due (DueReminder.tsx useDue), and the past-due line itself is
+// said only on the buyer's Invoices and Pay.
 // Nav audit 2026-10-25: a skip link first; the brand is a plain link (only the screen you are on
 // carries aria-current); a thin seal line under the bar while a screen's code loads; the footer
 // leads back to the landing and the spec; an applicant's line until the invite is opened.
 import { AccountButton } from "./AccountMenu";
 import { ApplyReminder } from "./ApplyReminder";
-import { DueReminder } from "./DueReminder";
+import { useDue } from "./DueReminder";
 import { startInbox } from "./inbox";
 import { InboxPanel, useInbox } from "./InboxPanel";
 import { Mark, Wordmark } from "./Mark";
+import { dismissSheet, onSheetEntry, useBackCloses } from "./sheet";
 import { SkipLink } from "./SkipLink";
 import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -26,8 +32,8 @@ import { activeItem, hasInbox, navItems, phoneTabs } from "../lib/sections";
 import { unread } from "./inbox";
 import "./app-styles";
 
-/** The phone layout of the shell (style.css and shell.css: the tab bar from 720 px down). */
-const PHONE = "(max-width: 720px)";
+/** The phone layout of the shell (DS-MOB L1, compact: style.css and shell.css, the tab bar below 600 px). */
+const PHONE = "(max-width: 599px)";
 export function usePhone(): boolean {
   return useSyncExternalStore(
     (f) => {
@@ -103,8 +109,24 @@ export function AppShell(): ReactNode {
       setMenu(false);
     }
   }, [s]);
-  const closeInbox = useCallback(() => setIb(false), []);
-  const closeMenu = useCallback(() => setMenu(false), []);
+  const shut = useCallback(() => {
+    setIb(false);
+    setMenu(false);
+  }, []);
+  // on a phone, Back closes the open sheet; × and Esc go back over its entry
+  useBackCloses((ib || menu) && phone, shut);
+  const closeInbox = useCallback(() => dismissSheet(shut), [shut]);
+  const closeMenu = useCallback(() => dismissSheet(shut), [shut]);
+  /** A move to another page from an open sheet: the page takes the sheet's history entry. */
+  const leave = useCallback(
+    (href: string) => {
+      const replace = onSheetEntry();
+      shut();
+      void router.navigate({ href, replace });
+    },
+    [router, shut],
+  );
+  const due = useDue(s, path);
 
   // Old in-app links (#/supplier) and plain links to app paths move inside the app.
   const onClick = (e: MouseEvent) => {
@@ -126,6 +148,15 @@ export function AppShell(): ReactNode {
   const withInbox = hasInbox(role);
   const n = withInbox ? unread(inbox) : 0;
   const bellLabel = `Inbox, ${n === 1 ? "1 letter" : `${n} letters`} to act on`;
+  const badge = (it: { badge?: "due" }) => (it.badge === "due" ? due.length : 0);
+  const badgeLabel = (it: { label: string; badge?: "due" }) => (badge(it) ? `${it.label}, ${badge(it) === 1 ? "1 invoice" : `${badge(it)} invoices`} due within a week or past due` : undefined);
+  /** A tab or nav link pressed while a sheet is open: the page replaces the sheet's entry. */
+  const fromSheet = (to: string) => (e: MouseEvent) => {
+    door(to)?.();
+    if (!ib && !menu) return;
+    e.preventDefault();
+    leave(to);
+  };
   const door = (to: string) => (to === "/account" ? () => void (accountDoor.fresh = true) : undefined);
   return (
     <div id="app" onClick={onClick}>
@@ -134,31 +165,34 @@ export function AppShell(): ReactNode {
         {/* a plain link (the shell moves it inside the app): the brand never says "you are here" */}
         <a className="brand" href="/app" aria-label="JitsuinFi app, home">
           <Mark className="brand-img" small />
-          <Wordmark />
+          <Wordmark className="brand-wm" />
         </a>
         <nav className="ia-nav" aria-label="Screens">
           {items.map((it, i) => (
             <Fragment key={it.to}>
               {role && i === 1 ? <span className="ia-sep" aria-hidden="true" /> : null}
-              <Link to={it.to} className={on === it.to ? "active" : undefined} aria-current={on === it.to ? "page" : undefined} activeProps={{}} activeOptions={{ exact: true }} onClick={door(it.to)}>
-                {it.label}
+              <Link to={it.to} className={on === it.to ? "active" : undefined} aria-current={on === it.to ? "page" : undefined} aria-label={badgeLabel(it)} activeProps={{}} activeOptions={{ exact: true }} onClick={fromSheet(it.to)}>
+                <span className="ia-nav-l">{it.label}</span>
+                <span className="ia-nav-s" aria-hidden="true">
+                  {it.short}
+                </span>
+                {badge(it) ? <Count n={badge(it)} /> : null}
               </Link>
             </Fragment>
           ))}
         </nav>
         <div className="ia-right">
           {withInbox ? (
-            <button type="button" className="ia-bell" aria-haspopup="dialog" aria-expanded={ib} aria-label={bellLabel} onClick={() => (setMenu(false), setIb(true))}>
+            <button type="button" className="ia-bell" aria-haspopup="dialog" aria-expanded={ib} aria-label={bellLabel} onClick={() => (ib ? closeInbox() : (setMenu(false), setIb(true)))}>
               <Bell />
               <Count n={n} />
             </button>
           ) : null}
-          {s ? <AccountButton s={s} open={menu} onOpen={() => (setIb(false), setMenu(true))} onClose={closeMenu} current={path === "/account"} /> : null}
+          {s ? <AccountButton s={s} open={menu} onOpen={() => (setIb(false), setMenu(true))} onClose={closeMenu} onAway={shut} onLeave={leave} current={path === "/account"} /> : null}
           <span className="net">{NET.short}</span>
         </div>
         {loading ? <span className="route-load" aria-hidden="true" /> : null}
       </header>
-      <DueReminder session={s} path={path} />
       <ApplyReminder path={path} />
       {/* A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3). */}
       <main ref={setMain} id="main" tabIndex={-1} className={wide ? "wide" : undefined} />
@@ -177,7 +211,7 @@ export function AppShell(): ReactNode {
         <nav className="ia-tabs" aria-label="Sections">
           {tabs.map((t) =>
             "inbox" in t ? (
-              <button key="inbox" type="button" className={ib ? "active" : undefined} aria-haspopup="dialog" aria-expanded={ib} aria-label={bellLabel} onClick={() => (setMenu(false), setIb((x) => !x))}>
+              <button key="inbox" type="button" className={ib ? "active" : undefined} aria-haspopup="dialog" aria-expanded={ib} aria-label={bellLabel} onClick={() => (ib ? closeInbox() : (setMenu(false), setIb(true)))}>
                 <b lang="ja" aria-hidden="true">
                   {t.k}
                 </b>
@@ -185,17 +219,18 @@ export function AppShell(): ReactNode {
                 <Count n={n} />
               </button>
             ) : (
-              <Link key={t.to} to={t.to} className={on === t.to && !ib ? "active" : undefined} aria-current={on === t.to ? "page" : undefined} activeProps={{}} activeOptions={{ exact: true }} onClick={() => (door(t.to)?.(), setIb(false))}>
+              <Link key={t.to} to={t.to} className={on === t.to && !ib ? "active" : undefined} aria-current={on === t.to ? "page" : undefined} aria-label={badgeLabel(t)} activeProps={{}} activeOptions={{ exact: true }} onClick={fromSheet(t.to)}>
                 <b lang="ja" aria-hidden="true">
                   {t.k}
                 </b>
                 {t.short}
+                {badge(t) ? <Count n={badge(t)} /> : null}
               </Link>
             ),
           )}
         </nav>
       ) : null}
-      {withInbox ? <InboxPanel open={ib} onClose={closeInbox} /> : null}
+      {withInbox ? <InboxPanel open={ib} onClose={closeInbox} onLeave={leave} /> : null}
       <MainSlot.Provider value={{ main, setWide }}>
         <Outlet />
       </MainSlot.Provider>

@@ -63,7 +63,7 @@ header.top nav a {
   padding: 9px 14px; border-radius: 999px; white-space: nowrap;
   transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land);
 }
-header.top nav a:hover { color: var(--head); background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { header.top nav a:hover { color: var(--head); background: var(--seal-wash); } }
 /* the screen you are on: a seal-red pill (HNK-34.T1) */
 header.top nav a.active { color: var(--sheet); background: var(--seal); }
 .net {
@@ -156,7 +156,7 @@ input[type=text], input[type=number], input[type=date], textarea, select {
   border: 1px solid var(--rule); border-radius: var(--r-control); padding: 12px 14px;
   transition: border-color var(--dur-fade) var(--ease-land), background-color var(--dur-fade) var(--ease-land);
 }
-input:hover, textarea:hover { border-color: var(--rule-strong); }
+@media (hover: hover) and (pointer: fine) { input:hover, textarea:hover { border-color: var(--rule-strong); } }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--seal); outline-offset: 1px; background: var(--sheet); }
 textarea { font: 400 13px/1.5 var(--f-mono); min-height: 96px; resize: vertical; }
 input[type=file] { font: 400 13px var(--f-body); color: var(--ink-2); max-width: 100%; }
@@ -171,10 +171,10 @@ button {
   min-height: 46px; padding: 0 20px; background: var(--seal); color: var(--sheet);
   transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear;
 }
-button:hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { button:hover { background: var(--seal-hi); } }
 button:active { transform: scale(.97); }
 button.secondary { background: var(--seal-wash); color: var(--seal); }
-button.secondary:hover { background: rgba(126, 42, 83, .14); }
+@media (hover: hover) and (pointer: fine) { button.secondary:hover { background: rgba(126, 42, 83, .14); } }
 button:disabled { opacity: .45; cursor: default; transform: none; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
 
@@ -225,11 +225,11 @@ table.kv td.mono { font: 400 12.5px/1.5 var(--f-mono); word-break: break-all; }
 .qr { background: var(--sheet); padding: 14px; display: inline-block; border-radius: var(--r-sheet); box-shadow: var(--sheet-shadow); }
 .qr svg { width: 260px; height: 260px; display: block; }
 
-footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(--s-3) var(--gutter) calc(var(--s-3) + var(--tabbar-h)); }
+footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(--s-3) var(--gutter) calc(var(--s-3) + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
 footer p { margin: 0; }
 footer .foot-links { margin-top: 6px; }
 footer .foot-links a { font-weight: 500; text-decoration-thickness: 1px; }
-footer .foot-links a:hover { text-decoration-thickness: 2px; }
+@media (hover: hover) and (pointer: fine) { footer .foot-links a:hover { text-decoration-thickness: 2px; } }
 
 /* the end of a public page (NextRoom.tsx): one row to the next room, drawn as the lobby's
    directory draws a room (kanji seal, title, one line, arrow); no tile */
@@ -251,9 +251,12 @@ footer .foot-links a:hover { text-decoration-thickness: 2px; }
 .next-room-row .room-t strong, .lobby .room-t strong { font: 500 16px/1.3 var(--f-body); color: var(--head); }
 .next-room-row .room-t span, .lobby .room-t span { font: 400 14px/1.4 var(--f-body); color: var(--ink-2); }
 .next-room-row .room-go { width: 18px; height: 18px; color: var(--seal); translate: -4px 0; transition: translate var(--dur-enter) var(--ease-land); }
-.next-room-row:hover, .next-room-row:focus-visible { background: var(--seal-wash); }
-.next-room-row:hover .room-k, .next-room-row:focus-visible .room-k { background: var(--seal); color: var(--sheet); rotate: -8deg; }
-.next-room-row:hover .room-go, .next-room-row:focus-visible .room-go { translate: 0 0; }
+.next-room-row:focus-visible { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .next-room-row:hover { background: var(--seal-wash); } }
+.next-room-row:focus-visible .room-k { background: var(--seal); color: var(--sheet); rotate: -8deg; }
+@media (hover: hover) and (pointer: fine) { .next-room-row:hover .room-k { background: var(--seal); color: var(--sheet); rotate: -8deg; } }
+.next-room-row:focus-visible .room-go { translate: 0 0; }
+@media (hover: hover) and (pointer: fine) { .next-room-row:hover .room-go { translate: 0 0; } }
 .next-room-row:focus-visible { outline-offset: 0; }
 
 /* ---------- supplier deals (HNK-24.T9): master list; the open deal is selected in the pool ---------- */
@@ -265,12 +268,12 @@ footer .foot-links a:hover { text-decoration-thickness: 2px; }
 .deal.open .deal-head strong { color: var(--sheet); }
 .deal-head span { color: var(--ink-2); font-size: 13px; }
 .deal.open .deal-head span, .deal.open small { color: var(--mist); }
-.deal-head button { margin-left: auto; min-height: 36px; padding: 0 14px; font-size: 13px; }
+.deal-head button { margin-left: auto; min-height: 44px; padding: 0 14px; font-size: 13px; }
 .deal.open .deal-head button.secondary { background: rgba(196, 199, 242, .14); color: var(--mist); } /* --mist 14% */
 .deal small { display: block; color: var(--ink-2); margin-top: 6px; font-size: 12px; }
 
 /* ---------- phones: the navigation becomes a floating tab bar (DS-02, DS-08) ---------- */
-@media (max-width: 720px) {
+@media (max-width: 599px) {
   :root { --tabbar-h: 84px; --gutter: max(16px, env(safe-area-inset-left, 0px)); } /* SPEC: 16 px gutters on phones */
   /* never a backdrop filter on the bar: it would make the header the containing block of the fixed
      tab bar, which then sits under the header instead of at the bottom of the screen (HNK-34.T1) */
@@ -293,7 +296,8 @@ footer .foot-links a:hover { text-decoration-thickness: 2px; }
   .next-room-row, .lobby .room { grid-template-columns: 34px minmax(0, 1fr) 16px; gap: 12px; padding: 9px 12px; }
   .next-room-row .room-k, .lobby .room-k { width: 34px; height: 34px; font-size: 17px; }
   .next-room-row .room-t strong, .lobby .room-t strong { font-size: 15px; }
-  main { padding-top: var(--s-3); }
+  /* the floating tab bar never covers the end of a page: main clears it and the safe area too */
+  main { padding-top: var(--s-3); padding-bottom: calc(var(--s-6) + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
   section.card { padding: 20px 16px; border-radius: 20px; }
   .banner { padding: 16px; grid-template-columns: 48px minmax(0, 1fr); }
   .banner .hanko { width: 48px; height: 48px; font-size: 21px; }

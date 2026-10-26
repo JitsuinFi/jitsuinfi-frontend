@@ -24,6 +24,7 @@ import { Route as AppSupplierRouteImport } from './routes/_app/supplier'
 import { Route as AppTryRouteImport } from './routes/_app/try'
 import { Route as AppVerifyRouteImport } from './routes/_app/verify'
 import { Route as ConsolePairRouteImport } from './routes/console_.pair'
+import { Route as AppAppContactRouteImport } from './routes/_app/app_.contact'
 import { Route as AppBuyerIndexRouteImport } from './routes/_app/buyer.index'
 import { Route as AppBuyerContactsRouteImport } from './routes/_app/buyer.contacts'
 import { Route as AppBuyerHistoryRouteImport } from './routes/_app/buyer.history'
@@ -118,6 +119,11 @@ const ConsolePairRoute = ConsolePairRouteImport.update({
   id: '/console_/pair',
   path: '/console/pair',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAppContactRoute = AppAppContactRouteImport.update({
+  id: '/app_/contact',
+  path: '/app/contact',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppBuyerIndexRoute = AppBuyerIndexRouteImport.update({
   id: '/',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/try': typeof AppTryRoute
   '/verify': typeof AppVerifyRoute
   '/console/pair': typeof ConsolePairRoute
+  '/app/contact': typeof AppAppContactRoute
   '/buyer/contacts': typeof AppBuyerContactsRoute
   '/buyer/history': typeof AppBuyerHistoryRoute
   '/member/contacts': typeof AppMemberContactsRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/try': typeof AppTryRoute
   '/verify': typeof AppVerifyRoute
   '/console/pair': typeof ConsolePairRoute
+  '/app/contact': typeof AppAppContactRoute
   '/buyer/contacts': typeof AppBuyerContactsRoute
   '/buyer/history': typeof AppBuyerHistoryRoute
   '/member/contacts': typeof AppMemberContactsRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/_app/try': typeof AppTryRoute
   '/_app/verify': typeof AppVerifyRoute
   '/console_/pair': typeof ConsolePairRoute
+  '/_app/app_/contact': typeof AppAppContactRoute
   '/_app/buyer/contacts': typeof AppBuyerContactsRoute
   '/_app/buyer/history': typeof AppBuyerHistoryRoute
   '/_app/member/contacts': typeof AppMemberContactsRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/try'
     | '/verify'
     | '/console/pair'
+    | '/app/contact'
     | '/buyer/contacts'
     | '/buyer/history'
     | '/member/contacts'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/try'
     | '/verify'
     | '/console/pair'
+    | '/app/contact'
     | '/buyer/contacts'
     | '/buyer/history'
     | '/member/contacts'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/_app/try'
     | '/_app/verify'
     | '/console_/pair'
+    | '/_app/app_/contact'
     | '/_app/buyer/contacts'
     | '/_app/buyer/history'
     | '/_app/member/contacts'
@@ -550,6 +562,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/console/pair'
       preLoaderRoute: typeof ConsolePairRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/app_/contact': {
+      id: '/_app/app_/contact'
+      path: '/app/contact'
+      fullPath: '/app/contact'
+      preLoaderRoute: typeof AppAppContactRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/buyer/': {
       id: '/_app/buyer/'
@@ -774,6 +793,7 @@ interface AppRouteChildren {
   AppSupplierRoute: typeof AppSupplierRouteWithChildren
   AppTryRoute: typeof AppTryRoute
   AppVerifyRoute: typeof AppVerifyRoute
+  AppAppContactRoute: typeof AppAppContactRoute
   AppTryPlayRoute: typeof AppTryPlayRoute
 }
 
@@ -789,6 +809,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSupplierRoute: AppSupplierRouteWithChildren,
   AppTryRoute: AppTryRoute,
   AppVerifyRoute: AppVerifyRoute,
+  AppAppContactRoute: AppAppContactRoute,
   AppTryPlayRoute: AppTryPlayRoute,
 }
 

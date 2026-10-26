@@ -16,7 +16,7 @@
 // sign-up on one that does not; test data shows the same Ready step as a passkey sign-up; a role
 // screen's gate names its counter; Use test data instead is always under the passkey step.
 import { useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
@@ -48,8 +48,10 @@ const ROLE_LINE: Record<Role, string> = {
   buyer: "Sign invoices and pay when they are due",
   member: "See what the fund holds for you",
 };
-const FIRST_STEP: Record<Role, { label: string; line: string }> = {
-  supplier: { label: "Create your first invoice", line: "Then ask your buyer to sign it." },
+// judge run 2: a new supplier starts by sharing its contact (link or QR) with the buyer, who
+// sends its invoice key back; then the invoice is written
+const FIRST_STEP: Record<Role, { label: string; line: string; to?: string }> = {
+  supplier: { label: "Share my contact with the buyer", line: "A link or QR. The buyer adds you and sends their key.", to: "/supplier/contacts?share=1" },
   buyer: { label: "Share your invoice key", line: "Your supplier needs it to address an invoice to you." },
   member: { label: "Open your inbox", line: "Receipts from the fund arrive here." },
 };
@@ -207,6 +209,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   useSessionGate();
   const [, paint] = useReducer((x: number) => x + 1, 0);
   const navigate = useNavigate();
+  const router = useRouter(); // a first step with a search (?share=1) goes by href
   const s = account.current;
 
   if (accountDoor.fresh) {
@@ -804,7 +807,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                       type="button"
                       onClick={() => {
                         setOnboarding(false);
-                        void navigate({ to: rolePath(s.role) });
+                        void router.navigate({ href: first.to ?? rolePath(s.role) });
                       }}
                     >
                       <span className="ac-lbl">

@@ -618,22 +618,35 @@ button {
 }
 
 @media (max-width: 559px) {
+  /* judge run 2026-10-26: on phones the nav keeps the language and "Open the demo"; the text
+     links (sign-in included) step out, since the demo's own tab bar has Sign in one tap away.
+     To fit 360-390 px the brand is the wordmark alone (its i tittle is the seal) and the
+     language pair loses its divider. */
+  .nav {
+    gap: 12px;
+  }
+
   .nav-pill .nav-link {
     display: none;
   }
 
-  /* the way into the app stays on phones; the other links live in the story below, and the
-     demo has its own button in the hero and in the finale */
-  .nav-pill .nav-signin {
-    display: inline-flex;
+  .nav-pill .nav-cta {
+    padding: 8px 14px;
   }
 
-  .nav-pill .nav-cta {
-    display: none;
+  .lang-switch {
+    margin-inline: 0 2px;
+    padding-inline: 2px 0;
+    border-left: 0;
   }
 
   .lang-opt {
+    padding-inline: 6px;
     white-space: nowrap;
+  }
+
+  .brand-seal {
+    display: none;
   }
 
   .brand-name {

@@ -43,7 +43,8 @@ function fakeRelay() {
     if (m === "POST" && path === "/api/mailbox") {
       const pk = check(body, "register");
       if (pk !== body.mailbox_pk) return json(403, { error: "the proof does not match" });
-      if (!boxes.has(id(pk))) boxes.set(id(pk), new Map());
+      if (boxes.has(id(pk))) return json(200, { mailbox_id: id(pk), created: false });
+      boxes.set(id(pk), new Map());
       return json(201, { mailbox_id: id(pk), created: true });
     }
     let r = /^\/api\/mailbox\/([0-9a-f]{64})\/read$/.exec(path);
@@ -83,6 +84,23 @@ function fakeRelay() {
   };
   return { fetch: fetch as typeof globalThis.fetch, boxes, states };
 }
+
+test("registration says whether it created the mailbox; a state that is not there reads as null, 404 or 204 (judge run 2026-10-26)", async () => {
+  const relay = fakeRelay();
+  let reads = 0;
+  const d: RelayDeps = { wasm: w, fetch: async (u, i) => (String(u).endsWith("/state") && (i?.method ?? "GET") === "GET" && reads++, relay.fetch(u, i)) };
+  const buyerInbox = new Uint8Array(32).fill(0x0b);
+  const first = await ensureMailbox(buyerInbox, d);
+  assert.equal(first.created, true, "a new mailbox: the screen knows no state can be there and skips the read");
+  const again = await ensureMailbox(buyerInbox, d);
+  assert.equal(again.created, false, "an existing mailbox: its state may have been saved by another device");
+  assert.equal(again.mailbox_id, first.mailbox_id);
+  assert.equal(await loadState(buyerInbox, d), null, "404: no state yet");
+  assert.equal(reads, 1);
+  // a relay that answers 204 for "nothing stored" reads the same
+  const empty: RelayDeps = { ...d, fetch: async (u, i) => (String(u).endsWith("/state") && (i?.method ?? "GET") === "GET" ? new Response(null, { status: 204 }) : relay.fetch(u, i)) };
+  assert.equal(await loadState(buyerInbox, empty), null, "204: no state yet");
+});
 
 test("a supplier's signed sign request with its PDF reaches only the buyer, intact", async () => {
   const relay = fakeRelay();

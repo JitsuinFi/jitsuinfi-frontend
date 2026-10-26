@@ -65,7 +65,8 @@
 .ri-row + .ri-row:not(.is-axis) .ri-track { border-top: 1px solid var(--rule); }
 .ri-row.is-axis + .ri-row .ri-track { border-top: 1px solid var(--rule-2); }
 .ri-row:last-child .ri-track { border-bottom: 1px solid var(--rule-2); }
-.ri-row:not(.is-axis):hover .ri-rl strong, .ri-row:focus-visible .ri-rl strong { color: var(--pool-2); }
+.ri-row:focus-visible .ri-rl strong { color: var(--pool-2); }
+@media (hover: hover) and (pointer: fine) { .ri-row:not(.is-axis):hover .ri-rl strong { color: var(--pool-2); } }
 .ri-chart.is-waiting .ri-track { opacity: .55; }
 
 /* each row resolves in turn: the k gate wipes over a thin tenor, a published median presses down */
@@ -148,7 +149,7 @@
 .ri-file:focus-within { box-shadow: inset 0 0 0 2px var(--seal); }
 .ri-stepper { display: flex; align-items: center; gap: 4px; width: max-content; padding: 4px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); }
 .ri .ri-stepper button { width: 36px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 999px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--head); font: 500 18px/1 var(--f-body); cursor: pointer; }
-.ri .ri-stepper button:hover { background: var(--paper); }
+@media (hover: hover) and (pointer: fine) { .ri .ri-stepper button:hover { background: var(--paper); } }
 .ri .ri-stepper button:disabled { opacity: .45; cursor: default; }
 .ri .ri-stepper input { width: 4ch; padding: 0; border: 0; border-radius: 0; background: none; text-align: center; color: var(--head); font: 500 18px/1 var(--f-mono); -moz-appearance: textfield; appearance: textfield; }
 .ri-stepper input::-webkit-inner-spin-button, .ri-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

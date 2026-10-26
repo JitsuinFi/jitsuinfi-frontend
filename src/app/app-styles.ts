@@ -6,3 +6,4 @@ import "../pages/account.css";
 import "../pages/try.css";
 import "../pages/apply.css";
 import "../pages/verify.css";
+import "./shell.css";

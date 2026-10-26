@@ -23,6 +23,9 @@ test("a receipt adds units, its path checks, a payout swaps the token", async ()
   assert.equal(paid.holdings[0].units, v.units - 500);
   assert.notEqual(paid.holdings[0].leaf_id, leaf);
   assert.equal(paid.payouts.length, 1);
+  // IA port 2026-10-26: the fund card stays after a payout
+  const card = { fund_pk: FUND, deposit_address: "utest1card" } as never;
+  assert.deepEqual((await addPayout({ ...p.wallet, fund: card }, hd("fund.payout", { period: 1, leaf_id: leaf, units: 500, amount_zat: 550, nav: { assets_zat: 11, units: 10 }, txid: "55".repeat(32), next_token: "66".repeat(32) }))).fund, card);
   assert.equal(valueOf(paid.holdings[0].units, paid.holdings[0].nav), Math.floor(((v.units - 500) * 11) / 10));
   assert.throws(() => withdrawBody(paid.holdings[0], v.units, "utest1aaaaaaaaaa", 2));
   assert.deepEqual(withdrawBody(paid.holdings[0], "all", " utest1aaaaaaaaaa ", 2), { withdraw_token: "66".repeat(32), units: "all", address: "utest1aaaaaaaaaa", period: 2 });

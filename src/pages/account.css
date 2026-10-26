@@ -87,7 +87,7 @@
   flex: 1 1 auto; min-width: 0; width: 100%; padding: 4px 0 2px; border: 0; border-radius: 0; background: transparent; outline: none;
   font: 700 clamp(22px, 2vw, 28px)/1.2 var(--f-display); color: var(--head); letter-spacing: .01em;
 }
-.ac-write input:hover { border: 0; }
+@media (hover: hover) and (pointer: fine) { .ac-write input:hover { border: 0; } }
 .ac-write input:focus-visible { outline: none; background: transparent; }
 .ac-write input.is-email, .ac-written.is-email { font: 500 clamp(17px, 1.4vw, 20px)/1.35 var(--f-body); letter-spacing: 0; }
 .ac-write input::placeholder { color: rgba(80, 42, 80, .34); }
@@ -101,25 +101,26 @@
 .ac-who { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 2px 0 4px; }
 .ac-chip { display: inline-flex; align-items: center; padding: 6px 13px; border-radius: 999px; background: var(--head); color: var(--sheet); font: 500 15px/1.1 var(--f-mono); }
 .ac .ac-link { cursor: pointer; color: var(--seal); font: 500 14.5px/1.4 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
-.ac .ac-link:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .ac .ac-link:hover { background: none; text-decoration-thickness: 3px; } }
 
 /* 資格: the role chooses the seal */
 .ac-ln.is-role { align-items: start; padding-bottom: 14px; }
 .ac-ln.is-role .ac-lab { align-self: start; padding: 10px 0 0; }
 .ac-seals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; }
 .ac .ac-sl { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 10px 6px; border-radius: 16px; cursor: pointer; text-align: center; transition: background-color var(--dur-fade) var(--ease-land), opacity var(--dur-enter) var(--ease-land); }
-.ac .ac-sl:hover { background: var(--wash); }
+@media (hover: hover) and (pointer: fine) { .ac .ac-sl:hover { background: var(--wash); } }
 .ac-face { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; box-shadow: inset 0 0 0 1.6px var(--ink-2); color: var(--ink-2); font: 800 27px/1 var(--f-seal); transition: box-shadow var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land), transform var(--dur-seal) var(--ease-snap); }
 .ac-sl strong { font: 500 14px/1.2 var(--f-body); color: var(--head); }
 .ac-sl small { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); max-width: 20ch; }
-.ac .ac-sl.is-on, .ac .ac-sl.is-on:hover { background: var(--seal-wash); }
+.ac .ac-sl.is-on { background: var(--seal-wash); }
+@media (hover: hover) and (pointer: fine) { .ac .ac-sl.is-on:hover { background: var(--seal-wash); } }
 .ac-sl.is-on .ac-face { box-shadow: inset 0 0 0 4px var(--seal); color: var(--seal); transform: rotate(-4deg); }
 .ac-tick { position: absolute; top: 8px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--seal); color: var(--sheet); display: none; place-items: center; }
 .ac-tick svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .ac-sl.is-on .ac-tick { display: grid; }
 .ac-card.is-fixed .ac-sl { cursor: default; }
 .ac-card.is-fixed .ac-sl:not(.is-on) { opacity: .32; }
-.ac-card.is-fixed .ac-sl:not(.is-on):hover { background: transparent; }
+@media (hover: hover) and (pointer: fine) { .ac-card.is-fixed .ac-sl:not(.is-on):hover { background: transparent; } }
 .ac-go { font: 500 12px/1.2 var(--f-body); color: var(--seal); }
 .ac-sl.is-busy .ac-go::after { content: ""; display: inline-block; width: 10px; height: 10px; margin-left: 6px; vertical-align: -1px; border-radius: 50%; border: 2px solid rgba(126, 42, 83, .3); border-top-color: var(--seal); animation: ac-spin 800ms linear infinite; }
 .ac .ac-sl:disabled { cursor: default; }
@@ -158,7 +159,7 @@
 .ac-say.is-bad { color: var(--seal); }
 .ac-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 18px; }
 .ac .ac-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); white-space: nowrap; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
-.ac .ac-btn:hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { .ac .ac-btn:hover { background: var(--seal-hi); } }
 .ac .ac-btn:active { transform: scale(.97); }
 .ac .ac-btn:disabled { opacity: .45; cursor: default; transform: none; }
 .ac-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -179,7 +180,7 @@
 .ac-demo-body input[type=text]:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--seal); }
 .ac-demo-body small { grid-column: 1 / -1; font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
 .ac .ac-btn2 { cursor: pointer; padding: 12px 18px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 14px/1 var(--f-body); white-space: nowrap; } /* the paper secondary pill, as .rp button.secondary: no navy fill on paper */
-.ac .ac-btn2:hover { background: var(--wash); }
+@media (hover: hover) and (pointer: fine) { .ac .ac-btn2:hover { background: var(--wash); } }
 .ac .ac-btn2:disabled { opacity: .45; cursor: default; }
 
 /* a written value lands like ink */
@@ -224,4 +225,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ac *, .ac *::before, .ac *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+
+/* a phone: the test-secret field at 16 px, so iOS does not zoom into it (DS-MOB F2) */
+@media (max-width: 599px) {
+  .ac-demo-body input[type=text] { font-size: 16px; min-height: 44px; }
 }

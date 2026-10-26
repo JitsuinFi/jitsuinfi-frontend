@@ -37,7 +37,7 @@
   font: 500 14px/1 var(--f-body); color: var(--ink-2);
   transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land);
 }
-.os .os-seg button:hover { color: var(--head); background: var(--wash); }
+@media (hover: hover) and (pointer: fine) { .os .os-seg button:hover { color: var(--head); background: var(--wash); } }
 .os .os-seg button[aria-checked="true"] { background: var(--head); color: var(--sheet); }
 .os-seg button span { font-family: var(--f-seal); font-weight: 800; margin-right: 6px; }
 
@@ -198,7 +198,8 @@
 .os-seen-k b { font: 800 19px/1 var(--f-seal); color: var(--sheet); letter-spacing: .04em; }
 .os-seen ol { list-style: none; margin: 0; padding: 0; display: grid; }
 .os-seen li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; padding: 4px 6px; border-radius: 8px; cursor: default; }
-.os-seen li:hover, .os-seen li:focus-visible { background: rgba(196, 199, 242, .1); }
+.os-seen li:focus-visible { background: rgba(196, 199, 242, .1); }
+@media (hover: hover) and (pointer: fine) { .os-seen li:hover { background: rgba(196, 199, 242, .1); } }
 .os-ic { width: 22px; height: 22px; fill: none; stroke: var(--mist); stroke-width: 2; stroke-linecap: round; }
 .os-ic.is-hist circle { stroke-width: 1.6; }
 .os-ic.is-set, .os-ic.is-twice { stroke: var(--glint); }
@@ -242,7 +243,7 @@
   font: 500 14px/1.3 var(--f-body); text-align: left; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
   transition: text-decoration-thickness var(--dur-fade) var(--ease-land);
 }
-.os .os-inklink:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .os .os-inklink:hover { background: none; text-decoration-thickness: 3px; } }
 .os .out { margin-top: 0; }
 .os-desc { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 16px; margin: 0; border-radius: 14px; background: var(--paper); padding: 6px 16px; }
 .os-desc div { display: contents; }
@@ -279,4 +280,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .os-paper.is-in { animation: none; }
+}
+
+/* a phone: the pasted codes at 16 px, so iOS does not zoom into the field (DS-MOB F2) */
+@media (max-width: 599px) {
+  .os .os-field textarea { font-size: 16px; }
 }

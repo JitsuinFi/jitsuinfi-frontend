@@ -19,6 +19,14 @@ export interface SupplierDeal {
   invoice: string;
   /** Creation time (ms since epoch), for the newest-first order. */
   created_at: number;
+  /** IA port: the deal's address in the app (deal-ref.ts), made on this device; never N or the number. */
+  ref?: string;
+  /**
+   * IA port (user feedback 2026-10-26 B): the buyer's mailbox, known when the buyer's key came
+   * through the relay (the key's letter names its sender's mailbox and is signed by that key) or
+   * when the supplier picked the buyer from contacts. "Send to the buyer" uses it: no card to paste.
+   */
+  buyer_mailbox?: string;
   /** HNK-23.T7: the sign request went to the buyer's mailbox (its `mailbox_pk`), at this time (ms). */
   sign_request?: { to: string; at: number };
   /** T4: the buyer's signature, checked with `bundleBuild`. */
@@ -109,7 +117,8 @@ export type StationState = "done" | "next" | "wait" | "later";
 /** What the supplier does next, and whether it waits on someone else; `null` when complete. */
 export function nextMove(d: SupplierDeal): { text: string; wait: boolean } | null {
   const step = nextStep(d);
-  if (step === "signature" && d.sign_request) return { text: "wait for the buyer's signature (or paste it)", wait: true };
+  if (step === "signature" && d.sign_request) return { text: "wait for the buyer to sign in their inbox", wait: true };
+  if (step === "signature") return { text: "send it to the buyer to sign", wait: false };
   if (step === "entry" && !d.entry_request) return { text: "wait for the financier's entry request", wait: true };
   if (step === "advance" && !d.advance_notice && !d.advance) return { text: "wait for the advance, then check it", wait: true };
   return step ? { text: actionOf(step), wait: false } : null;
@@ -133,6 +142,16 @@ export function standing(d: SupplierDeal, settled: boolean): "repayment" | "sett
   return nextStep(d) === null ? "repayment" : null;
 }
 
+/**
+ * The deal's place in a long ledger (long-list.ts): "move" when the supplier acts next, "wait"
+ * while someone else does (the buyer's signature, the financier, the repayment), "done" once settled.
+ */
+export function dealStage(d: SupplierDeal, settled: boolean): "move" | "wait" | "done" {
+  if (settled) return "done";
+  const m = nextMove(d);
+  return m && !m.wait ? "move" : "wait";
+}
+
 /** Deals newest first. */
 export function sortDeals(deals: SupplierDeal[]): SupplierDeal[] {
   return [...deals].sort((a, b) => b.created_at - a.created_at || a.invoice_id.localeCompare(b.invoice_id));
@@ -142,6 +161,32 @@ export function sortDeals(deals: SupplierDeal[]): SupplierDeal[] {
 export function invoiceIdTaken(deals: SupplierDeal[], invoiceId: string): boolean {
   const id = invoiceId.trim();
   return deals.some((d) => d.invoice_id === id);
+}
+
+/** The invoice number rule of jitsuin-core (`Invoice::validate`): 1 – 32 bytes, each printable ASCII without the space (0x21 – 0x7e). */
+const INVOICE_ID = /^[\x21-\x7e]{1,32}$/;
+
+/**
+ * Why the number written in No. on the blank 請求書 cannot be used, as a sentence that says where
+ * and what (user feedback 2026-10-26: a bare "invoice number: 1–32 characters" did not say where);
+ * null when it is a good number for a new invoice on this device.
+ */
+export function invoiceNumberProblem(deals: SupplierDeal[], written: string): string | null {
+  const id = written.trim();
+  if (!id) return "Write the invoice number in No. on the sheet (1–32 characters).";
+  if (id.length > 32) return `The invoice number in No. on the sheet has ${id.length} characters: shorten it to 32 or fewer.`;
+  if (!INVOICE_ID.test(id)) return "The invoice number in No. on the sheet takes plain letters, digits and signs such as - / _ only: no spaces or accented letters.";
+  if (invoiceIdTaken(deals, id)) return `Invoice number ${id} is already used on this device: write another one in No. on the sheet.`;
+  return null;
+}
+
+/** A number to prefill No. on the blank sheet: TES-INV-<yyyymmdd>-<n>, the first n not yet used on this device. */
+export function suggestInvoiceNumber(deals: SupplierDeal[], day: Date): string {
+  const ymd = `${day.getFullYear()}${String(day.getMonth() + 1).padStart(2, "0")}${String(day.getDate()).padStart(2, "0")}`;
+  for (let n = 1; ; n++) {
+    const id = `TES-INV-${ymd}-${n}`;
+    if (!invoiceIdTaken(deals, id)) return id;
+  }
 }
 
 /** A shielded receiving address for the advance on this build's network (HNK-26.T19): unified or Sapling. */
@@ -268,4 +313,20 @@ export interface Outcome {
 export function outcomeOn(o: Outcome | null, open: string | null): { outcome: Outcome; reveal: boolean } | null {
   if (!o || o.n !== (open ?? "")) return null;
   return { outcome: o, reveal: o.inbox === true };
+}
+
+/**
+ * A station's label under the route by its state (IA port part 2, 2026-10-26, from part 1's phone
+ * screenshots): the past tense only once done; the next station is named as the move ("Offer
+ * next"), a waiting one by what it waits for, a later one as a plain noun, so the label under the
+ * next station never reads as done.
+ */
+const STATION_LABEL: Record<StationState, Record<StationKey, string>> = {
+  done: { signature: "Buyer signed", offer: "Offered", entry: "Board entry signed", seal: "Letter sealed", advance: "Advance received", settled: "Settled" },
+  next: { signature: "Check signature", offer: "Offer next", entry: "Sign entry next", seal: "Seal next", advance: "Check advance", settled: "Settle" },
+  wait: { signature: "Buyer signs", offer: "Offer waits", entry: "Entry request waits", seal: "Letter waits", advance: "Advance waits", settled: "Repayment waits" },
+  later: { signature: "Buyer's signature", offer: "Offer", entry: "Board entry", seal: "Letter seal", advance: "Advance", settled: "Settlement" },
+};
+export function stationLabel(k: StationKey, state: StationState): string {
+  return STATION_LABEL[state][k];
 }

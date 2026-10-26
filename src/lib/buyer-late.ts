@@ -179,3 +179,11 @@ export function reminderText(r: Pick<Reminder, "invoice_id" | "state">, amount: 
   if (s.kind === "overdue") return `${r.invoice_id}: ${amount}, ${s.days_over} day${s.days_over === 1 ? "" : "s"} past its due date. It will be marked late when paid.`;
   return `${r.invoice_id}: ${amount} ${s.days_left === 0 ? "due today" : `due in ${s.days_left} day${s.days_left === 1 ? "" : "s"}`}.`;
 }
+
+/**
+ * The count on the buyer's Pay tab (IA port 2026-10-26): the invoices due within `WARN_DAYS` or
+ * past their due date and not settled on this device; 0 shows no badge.
+ */
+export function payBadge(list: Parameters<typeof reminders>[0], today: number): number {
+  return reminders(list, today).length;
+}

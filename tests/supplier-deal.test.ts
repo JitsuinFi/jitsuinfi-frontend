@@ -9,6 +9,7 @@ import {
   encodeOffer,
   entryRequestProblems,
   invoiceIdTaken,
+  invoiceNumberProblem,
   looksShielded,
   nextAction,
   nextMove,
@@ -17,6 +18,7 @@ import {
   route,
   sortDeals,
   standing,
+  suggestInvoiceNumber,
   timeline,
   type SupplierDeal,
 } from "../src/lib/supplier-deal.ts";
@@ -66,6 +68,31 @@ test("a reused invoice id is detected and deals sort newest first", () => {
   assert.ok(invoiceIdTaken(ds, " TES-INV-0001 "));
   assert.ok(!invoiceIdTaken(ds, "TES-INV-0003"));
   assert.deepEqual(sortDeals(ds).map((d) => d.invoice_id), ["TES-INV-0002", "TES-INV-0001"]);
+});
+
+test("the invoice number rule names No. on the sheet and follows jitsuin-core (1-32 printable ASCII, no space)", () => {
+  const ds = [deal({ invoice_id: "TES-INV-DUMMY-0001" })];
+  // the user's number (feedback 2026-10-26) is a good one
+  assert.equal(invoiceNumberProblem(ds, "TES-INV-DUMMY-0002"), null);
+  assert.equal(invoiceNumberProblem(ds, "  TES-INV-DUMMY-0002 "), null);
+  assert.equal(invoiceNumberProblem([], "x".repeat(32)), null);
+  assert.equal(invoiceNumberProblem([], "A/B_c.~!"), null);
+  // an empty No. says where and what
+  assert.equal(invoiceNumberProblem(ds, ""), "Write the invoice number in No. on the sheet (1–32 characters).");
+  assert.equal(invoiceNumberProblem(ds, "   "), "Write the invoice number in No. on the sheet (1–32 characters).");
+  assert.match(invoiceNumberProblem([], "x".repeat(33))!, /No\. on the sheet has 33 characters/);
+  for (const bad of ["TES INV 1", "TES-INVÉ-1", "請求-1", "TES\t1"]) assert.match(invoiceNumberProblem([], bad)!, /No\. on the sheet takes plain letters/, bad);
+  assert.match(invoiceNumberProblem(ds, "TES-INV-DUMMY-0001")!, /already used on this device: write another one in No\. on the sheet/);
+});
+
+test("the blank sheet's suggested number is dated, valid and not yet used on this device", () => {
+  const day = new Date(2026, 9, 26);
+  assert.equal(suggestInvoiceNumber([], day), "TES-INV-20261026-1");
+  const ds = [deal({ invoice_id: "TES-INV-20261026-1" }), deal({ invoice_id: "TES-INV-20261026-2" })];
+  const next = suggestInvoiceNumber(ds, day);
+  assert.equal(next, "TES-INV-20261026-3");
+  assert.equal(invoiceNumberProblem(ds, next), null);
+  assert.equal(suggestInvoiceNumber(ds, new Date(2026, 0, 5)), "TES-INV-20260105-1");
 });
 
 test("offer codes roundtrip and incomplete ones are refused", () => {
@@ -127,10 +154,10 @@ test("a request for another invoice or from another financier does not fit the d
 test("the route marks the steps that wait on someone else, then 済 (HNK-34.T5)", () => {
   const states = (d: SupplierDeal, settled = false) => route(d, settled).map((s) => s.state);
   assert.deepEqual(states(deal()), ["next", "later", "later", "later", "later", "later"]);
-  assert.deepEqual(nextMove(deal()), { text: "check the buyer's signature", wait: false });
+  assert.deepEqual(nextMove(deal()), { text: "send it to the buyer to sign", wait: false });
   const asked = deal({ sign_request: { to: "aa", at: 1 } });
   assert.deepEqual(states(asked), ["wait", "later", "later", "later", "later", "later"]);
-  assert.equal(nextMove(asked)!.text, "wait for the buyer's signature (or paste it)");
+  assert.equal(nextMove(asked)!.text, "wait for the buyer to sign in their inbox");
   const offered = deal({ buyer_signature: "00", offer });
   assert.deepEqual(states(offered), ["done", "done", "wait", "later", "later", "later"]);
   assert.deepEqual(states(deal({ buyer_signature: "00", offer, entry_request: request })), ["done", "done", "next", "later", "later", "later"]);

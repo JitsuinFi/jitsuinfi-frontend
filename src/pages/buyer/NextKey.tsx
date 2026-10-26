@@ -1,0 +1,301 @@
+// Your next invoice key (HNK-25.T2, BL-D22-01, BL-D26-03, P-09; IA port part 2, 2026-10-26): who
+// you are, the next invoice key from the history certificates on this device (checked against the
+// board when it is read, wasm `historyNext`; the chain's relay copy reconciled first), and the key
+// handed to a supplier: sent sealed to the supplier's mailbox, signed by that very key (one more
+// passkey touch), or copied whole. Keys read as fingerprints (lib/print.ts readablePrint), the same
+// format the supplier sees on its side, never as raw key text. On a desktop the block sits in the
+// Invoices caption; on a phone it is its own screen (/buyer/invoices/key) one tap from Invoices.
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Page, usePhone } from "../../app/AppShell";
+import { Banner, Button, useOut } from "../../app/ui";
+import { myIdentity, relayDeps } from "../../lib/app-relay";
+import { account } from "../../lib/app-session";
+import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../../lib/buyer-history";
+import { contactId, type Contact } from "../../lib/contact";
+import { json, today, wasm } from "../../lib/core";
+import { NET } from "../../lib/network";
+import { readablePrint } from "../../lib/print";
+import { draft, send } from "../../lib/relay";
+import { encodeMessage, signingBytes, type Header } from "../../lib/relay-message";
+import { takeContact } from "../MailboxCard";
+import { backupHistory, backupProblem, chainState, changed, loadHistory, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
+import { Back, FilePill, plural, Tag } from "./parts";
+import "../role-paper.css";
+import "../buyer.css";
+
+const NOTE_GLYPH = { ok: "認", warn: "待", bad: "拒" } as const;
+
+/**
+ * Reads the next invoice key: one passkey touch for the keys, the relay's copy of the chain, then
+ * the board (the chosen file, else the live board) to know which certificates are anchored.
+ */
+async function showKey(boardFile: File | undefined): Promise<void> {
+  let hist = await loadHistory();
+  let k = localNextIndex(hist);
+  const m = await account.stamp();
+  const said: Note[] = [];
+  try {
+    const id = json<{ identity_pk: string }>(wasm.buyerKeysBytes(m.slice(), 0)).identity_pk;
+    // the relay copy first: another device may have issued newer certificates
+    let restored = 0;
+    let relayUnread: unknown = null;
+    try {
+      const remote = await relayHistory();
+      if (remote) {
+        const r = reconcile(hist, remote, id);
+        if (r.kind === "restored") {
+          hist = r.doc;
+          k = localNextIndex(hist);
+          restored = r.added;
+        } else if (r.kind === "relay-behind") {
+          await backupHistory(hist);
+          said.push({ kind: "warn", title: "The relay's copy of your history was behind.", text: `It held ${plural(remote.certs.length, "certificate")}; this device has ${hist.certs.length}. The copy is updated now. If you did not remove anything yourself, the relay lost or held back your newest certificate.` });
+        } else if (r.kind === "diverged") {
+          said.push({ kind: "bad", title: "Your history on the relay differs from this device.", text: "The two copies disagree about an earlier certificate. This device keeps its own; do not issue a new certificate until you know which device holds your real history." });
+        }
+      } else if (hist.certs.length) {
+        await backupHistory(hist);
+      }
+    } catch (e) {
+      relayUnread = e; // said below, unless the board shows there is nothing it could hold
+    }
+    // HNK-34 E2E (finding 3): "no copy yet" (404) is normal and says nothing; a copy that could
+    // not be read is said calmly, and not at all for a first-time buyer whose board check shows
+    // no certificate anywhere (the copy could only hold what the board would show).
+    const unreadNote = (): Note => ({ kind: "warn", title: "Your history backup was not read this time.", text: `${backupProblem(relayUnread)} This device's own copy is used; nothing is lost, and the backup is read again the next time you show your key.` });
+    const boardJson = (await boardFile?.text()) ?? (await readBoard())?.json;
+    let anchored: number | null = null;
+    if (boardJson) {
+      const r = json<{ next_index: number; dropped: number[]; successor_on_board: boolean }>(wasm.historyNext(JSON.stringify(hist.certs), id, boardJson));
+      // E2E audit 2026-10-25: a certificate not on the board yet is dropped only when its deal
+      // is over; one that may still be registered keeps its index (freeable)
+      const loose = r.dropped.length ? freeable(hist.certs.map(certFields), r.dropped, registeredNs(boardJson), today()) : { drop: [], pending: [] };
+      if (loose.drop.length) {
+        hist = dropTail(hist, loose.drop);
+        await saveHistory(hist);
+        said.push({ kind: "warn", title: "Unused certificate removed.", text: `Certificate${loose.drop.length > 1 ? "s" : ""} #${loose.drop.join(", #")} never reached the board and ${loose.drop.length > 1 ? "their deals are" : "its deal is"} over (the invoice went to the board without it, or is past due), so the number is free again.` });
+      }
+      if (loose.pending.length) {
+        const many = loose.pending.length > 1;
+        said.push({ kind: "warn", title: `Certificate${many ? "s" : ""} not on the board yet.`, text: `Certificate${many ? "s" : ""} #${loose.pending.join(", #")} ${many ? "are" : "is"} not on the board, but ${many ? "their invoices are" : "its invoice is"} not registered and not due: the financier may still register ${many ? "them" : "it"}. ${many ? "They are" : "It is"} kept, so your next key comes after ${many ? "them" : "it"}. Reusing the number could anchor two invoices at one place in your history, which no financier accepts afterwards.` });
+      }
+      // restored certificates passed historyNext (signatures, links, anchors): keep them
+      if (restored && !loose.drop.length) await saveHistory(hist);
+      if (restored) said.push({ kind: "ok", title: "History restored from the relay.", text: `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.` });
+      chainState.successorOnBoard = r.successor_on_board;
+      if (relayUnread !== null && (hist.certs.length > 0 || r.next_index > 0 || chainState.successorOnBoard)) said.unshift(unreadNote());
+      // the anchored certificates, then the kept ones whose deals may still register
+      k = r.next_index + loose.pending.length;
+      anchored = r.next_index;
+      said.push(
+        chainState.successorOnBoard
+          ? { kind: "bad", title: "Your history is ahead of this device.", text: `The board already holds a certificate after #${r.next_index - 1 < 0 ? "start" : r.next_index - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Open this page on the device that issued it; its copy reaches the relay and comes back here.` }
+          : { kind: "ok", title: "History checked against the board.", text: `${plural(r.next_index, "certificate")} anchored.` },
+      );
+    } else {
+      if (relayUnread !== null) said.push(unreadNote());
+      if (restored) {
+        hist = await loadHistory(); // an unchecked relay copy is not used
+        k = localNextIndex(hist);
+        said.push({ kind: "warn", text: `The relay holds ${restored} newer certificate${restored === 1 ? "" : "s"}; add board data to check and restore them.` });
+      }
+      said.push({ kind: "warn", title: "Not checked against the board.", text: "Add board data to check which certificates are anchored." });
+    }
+    const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
+    setKeyInfo({ id, k, next, notes: said, anchored });
+    changed();
+  } finally {
+    m.fill(0);
+  }
+}
+
+/** Sends the next invoice key sealed to a supplier's mailbox, signed with that key (one passkey touch). */
+async function sendKey(c: Contact, k: number, invoicePk: string): Promise<void> {
+  const hd = draft("key.invoice_pk", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, c.mailbox_pk, relayDeps, { body: { invoice_pk: invoicePk } });
+  const withSigner = { ...hd, signer: invoicePk } as Header;
+  const m = await account.stamp();
+  const r = json<{ signer: string; sig: string }>(wasm.buyerMessageSignBytes(m, k, signingBytes(withSigner)));
+  if (r.signer !== invoicePk) throw new Error("this key is not your invoice key");
+  await send(c.mailbox_pk, await encodeMessage({ ...withSigner, sig: r.sig }), relayDeps);
+}
+
+/** The suppliers whose cards this device keeps: one tap sends them the key. */
+function useSuppliers(): Contact[] {
+  const [list, setList] = useState<Contact[]>([]);
+  const k = useKeyInfo();
+  useEffect(() => {
+    void account.current?.store
+      ?.list<Contact>()
+      .then((all) => setList(all.filter((x) => x.id.startsWith("contact:") && x.doc.role === "supplier").map((x) => x.doc)))
+      .catch(() => undefined);
+  }, [k]);
+  return list;
+}
+
+/**
+ * HNK-25.T2 (BL-D22-01): the next invoice key goes to a supplier through the relay, signed with
+ * that very key, so the supplier knows it comes from its holder; or it is copied whole and handed
+ * over by hand (the supplier's sheet takes the whole key).
+ */
+function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode {
+  const card = useRef<HTMLTextAreaElement>(null);
+  const out = useOut();
+  const [copied, setCopied] = useState(false);
+  const suppliers = useSuppliers();
+  const go = async (c: Contact) => {
+    try {
+      await sendKey(c, k, invoicePk);
+      out.show(<Banner kind="ok" title="Key sent" text={`Sealed to the supplier's mailbox: it fills the invoice's buyer line there. Key #${k}, ${readablePrint(invoicePk)}.`} />);
+    } catch (e) {
+      out.error(e);
+    }
+  };
+  return (
+    <details className="by-share" open>
+      <summary>Give this key to the supplier</summary>
+      <div>
+        <p className="hint">Each invoice uses a different key, so the public board cannot link your invoices. The supplier sees the same fingerprint on its side.</p>
+        <div className="by-keyhex">
+          <span className="by-keyhex-k">{`Your invoice key #${k}`}</span>
+          <code className="by-keyhex-v is-print">{readablePrint(invoicePk)}</code>
+          <Button
+            secondary
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(invoicePk);
+                setCopied(true);
+              } catch {
+                setCopied(false);
+              }
+            }}
+          >
+            {copied ? "Copied" : "Copy the whole key"}
+          </Button>
+        </div>
+        {suppliers.length ? (
+          <div className="by-send-to">
+            <p className="by-keyhex-or">Send it sealed to a supplier you keep a card for:</p>
+            <div className="actions rp-small">
+              {suppliers.map((c) => (
+                <Button key={contactId(c)} secondary onClick={() => go(c)}>
+                  {`Send to ${c.username ? `@${c.username}` : c.fingerprint}`}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <p className="by-keyhex-or">{suppliers.length ? "Or paste another supplier's contact card:" : "Copy it to the supplier yourself, or send it sealed to the supplier's mailbox:"}</p>
+        <label className="field">
+          <span>The supplier's contact card</span>
+          <textarea rows={2} spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="the supplier's jitsuin-contact-v1:…" ref={card} />
+        </label>
+        <div className="actions rp-small">
+          <Button
+            secondary
+            onClick={async () => {
+              try {
+                await go(await takeContact(card.current!.value, "supplier"));
+              } catch (e) {
+                out.error(e);
+              }
+            }}
+          >
+            Send this key to the supplier
+          </Button>
+        </div>
+        {out.el}
+      </div>
+    </details>
+  );
+}
+
+/** Who you are, the next invoice key, and how it reaches a supplier. */
+export function KeyBlock(): ReactNode {
+  const info = useKeyInfo();
+  const board = useRef<HTMLInputElement>(null);
+  const out = useOut();
+  const [busy, setBusy] = useState(false);
+  const s = account.current;
+  return (
+    <div className="by-keyblock">
+      <dl className="by-who" aria-label="Your keys">
+        <div>
+          <dt>{s?.demo ? "Your test key" : "Your passkey"}</dt>
+          <dd className="by-fp">{s?.fingerprint ?? ""}</dd>
+        </div>
+        <div>
+          <dt>Your identity key</dt>
+          <dd>{info ? <span className="by-fp is-sub">{readablePrint(info.id)}</span> : <span className="by-quiet">shown with your next invoice key</span>}</dd>
+        </div>
+        <div>
+          <dt>Next invoice</dt>
+          <dd>
+            {info ? (
+              <>
+                <b>{`#${info.k}`}</b>
+                {" in your history · key "}
+                <span className="by-fp is-sub">{readablePrint(info.next)}</span>
+              </>
+            ) : (
+              <span className="by-quiet">after the board check</span>
+            )}
+          </dd>
+        </div>
+      </dl>
+      {info?.notes.map((n, i) => (
+        <div className={`by-keynote is-${n.kind}`} key={i} role={n.kind === "bad" ? "alert" : "status"}>
+          <span className="rp-hanko" lang="ja" aria-hidden="true">
+            {NOTE_GLYPH[n.kind]}
+          </span>
+          <p>
+            {n.title ? <b>{n.title}</b> : null} {n.text}
+          </p>
+        </div>
+      ))}
+      <div className="by-keyrow">
+        <button
+          type="button"
+          className={info ? "secondary" : undefined}
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await showKey(board.current!.files?.[0]);
+              out.clear();
+            } catch (e) {
+              out.error(e);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Reading your keys…" : "Show my next invoice key"}
+        </button>
+        <FilePill label="Board data (optional)" empty={`Board data (optional): live ${NET.noun} board`} inputRef={board} />
+      </div>
+      <p className="by-help">{`Without a file the live ${NET.noun} board is read (the last one this browser saw, or a bundled copy, if the node does not answer). Your keys come from your passkey; nothing secret is stored.`}</p>
+      {out.el}
+      {info ? <ShareKey k={info.k} invoicePk={info.next} /> : null}
+    </div>
+  );
+}
+
+/** /buyer/invoices/key: the block as its own screen on a phone, back to Invoices. */
+export function KeyPage(): ReactNode {
+  const phone = usePhone();
+  return (
+    <Page wide>
+      <div className="rp by">
+        <section className="rp-sec by-keypage" aria-labelledby="by-tk">
+          <div className="rp-cap">
+            {phone ? <Back to="/buyer/invoices" title="Invoices" sub="back to your invoices" /> : null}
+            <Tag section="Invoices" />
+            <h1 id="by-tk">Your next invoice key</h1>
+            <p className="rp-lede">A supplier addresses your next invoice to this key. Give it to them sealed through the relay, or copy it whole.</p>
+            <KeyBlock />
+          </div>
+        </section>
+      </div>
+    </Page>
+  );
+}

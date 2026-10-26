@@ -20,6 +20,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
+import { firstSection } from "../lib/sections";
 import { NoPrfError, passkeysAvailable } from "../lib/passkey";
 import { dur, ease, run, still } from "./try/anim";
 // stylesheet: src/pages/account.css, loaded with the app shell (src/app/app-styles.ts)
@@ -74,8 +75,9 @@ export function useSessionGate(): void {
   }, []);
 }
 
+/** IA port 2026-10-26: sign-in, a role switch and onboarding land on the role's first section. */
 export function rolePath(role: Role): string {
-  return `/${role}`;
+  return firstSection(role);
 }
 
 function bytesFromHex(s: string): Uint8Array {

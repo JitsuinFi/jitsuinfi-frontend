@@ -47,6 +47,17 @@ export interface BlankSheet {
 }
 
 /**
+ * The supplier's sheet (IA port 2026-10-26): its own parts in place of the buyer key, the terms
+ * hash and the supplier key, so the blank invoice takes the buyer and the PDF as fields on the sheet
+ * and an issued one names the buyer and the PDF in words instead of hex.
+ */
+export interface SheetSlots {
+  to?: ReactNode;
+  terms?: ReactNode;
+  by?: ReactNode;
+}
+
+/**
  * The sheet on /try's case desk (HNK-34.T2): the paper clip, N in four lines of sixteen, the
  * buyer's 買 drawn as an inked SVG seal that cracks (and a reading ring B turns over it), and
  * whatever the page lays on the sheet (the hanko's mark). `sealed` is the real check of the
@@ -68,9 +79,10 @@ const lines = (n: string) => [0, 1, 2, 3].map((i) => n.slice(i * 16, i * 16 + 16
  * The sheet. Its inputs are uncontrolled (the page reads and resets them through `fields`);
  * `changed` marks edited fields and cracks the seal (null: not compared, as on a blank sheet),
  * `n` is the fingerprint of these bytes. `readOnly`: a sheet to read, not to write on (the
- * supplier's open deal), and `note` the line under it.
+ * supplier's open deal), and `note` the line under it. `bad`: fields marked as refused (the
+ * supplier's Create invoice names the field to fix).
  */
-export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, readOnly, note: said }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet; readOnly?: boolean; note?: string }): ReactNode {
+export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, readOnly, note: said, bad, slots }: { o: SheetValues; fields: SheetFields; changed: string[] | null; n: string | null; onInput?: () => void; sheet?: RefObject<HTMLElement | null>; blank?: BlankSheet; kase?: CaseSheet; readOnly?: boolean; note?: string; bad?: Array<keyof SheetFields>; slots?: SheetSlots }): ReactNode {
   const isChanged = (k: keyof SheetFields) => {
     if (changed === null) return undefined;
     const f = KEYS.find(([key]) => key === k)![1];
@@ -88,6 +100,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
       placeholder={blank?.placeholders[k]}
       readOnly={readOnly || (blank && k === "terms" ? blank.termsReadOnly : undefined)}
       data-changed={isChanged(k)}
+      aria-invalid={bad?.includes(k) || undefined}
       ref={fields[k]}
       onInput={onInput}
     />
@@ -141,11 +154,18 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
           </div>
         </dl>
       </header>
-      <p className="sk-to">
-        <code title={o.buyer}>{blank ? blank.to : short(o.buyer)}</code>
-        <span lang="ja">御中</span>
-        <small>to the buyer's invoice key</small>
-      </p>
+      {slots?.to ? (
+        <div className="sk-to is-slot">
+          {slots.to}
+          <span lang="ja">御中</span>
+        </div>
+      ) : (
+        <p className="sk-to">
+          <code title={o.buyer}>{blank ? blank.to : short(o.buyer)}</code>
+          <span lang="ja">御中</span>
+          <small>to the buyer's invoice key</small>
+        </p>
+      )}
       <label className="sk-total">
         <span className="sk-total-k">
           <span lang="ja">ご請求金額</span>
@@ -159,13 +179,13 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
       <table className="sk-table">
         <tbody>
           {row("支払期日", "Due", input("due", "Due date", o.due, { type: "date" }))}
-          {row("条件", "Terms, SHA-256 of the PDF", input("terms", "Terms: SHA-256 of the invoice PDF", o.terms, { mono: true }))}
+          {slots?.terms ? row("条件", "Terms: the invoice PDF", slots.terms) : row("条件", "Terms, SHA-256 of the PDF", input("terms", "Terms: SHA-256 of the invoice PDF", o.terms, { mono: true }))}
           {row(
             "発行者",
             "Issuer",
             <>
               <span className="sk-issuer">{o.issuer}</span>
-              <code title={o.supplier}>{blank ? blank.by : short(o.supplier)}</code>
+              {slots?.by ?? <code title={o.supplier}>{blank ? blank.by : short(o.supplier)}</code>}
             </>,
           )}
         </tbody>

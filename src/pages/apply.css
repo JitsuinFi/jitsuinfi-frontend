@@ -1,7 +1,8 @@
 /* Apply as financier (HNK-34.T5, approved sample design-samples/internal/apply.html): the 申請書
    is a sheet of letter paper on the page; sending folds it into an envelope sealed 〆 that drops
-   into the relay's post box 中継, and the applicant's copy gets the 受付 stamp. The invite comes
-   back to the reply tray as a 招待状 (or a letter stamped 偽 when the provider did not sign it).
+   into the relay's letter slot 中継, and the applicant's copy gets the 受付 stamp. The invite comes
+   back under the slot, at 返信, as a 招待状 on the paper (or a letter stamped 偽 when the provider
+   did not sign it).
    Caption ≤ 35% with the four-step path; palette DS-PAL, tokens from landing/tokens.css; no style
    attributes (motion goes through anime.js on the CSSOM). */
 
@@ -42,7 +43,7 @@
 .ap-path div span { font: 400 14px/1.5 var(--f-body); color: var(--ink-2); }
 .ap-path li.is-now strong { color: var(--seal); }
 
-/* ---------- the visual: the letter, the post box, the reply tray ---------- */
+/* ---------- the visual: the letter, the letter slot, the reply ---------- */
 .ap-vis { position: relative; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: start; min-width: 0; }
 .ap-left { display: grid; gap: 22px; min-width: 0; }
 
@@ -100,46 +101,52 @@
 
 .ap-act { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 .ap .ap-btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: var(--btn-pad); border-radius: 999px; background: var(--seal); color: var(--sheet); font: var(--btn-font); white-space: nowrap; text-decoration: none; transition: background-color var(--dur-fade) var(--ease-land), transform var(--dur-press) linear; }
-.ap .ap-btn:hover { background: var(--seal-hi); }
+@media (hover: hover) and (pointer: fine) { .ap .ap-btn:hover { background: var(--seal-hi); } }
 .ap .ap-btn:active { transform: scale(.97); }
 .ap .ap-btn:disabled { opacity: .45; cursor: default; transform: none; }
 .ap-btn b { font: 800 16px/1 var(--f-seal); }
 .ap-btn.is-busy::after, .ap-link.is-busy::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border-radius: 50%; border: 2px solid rgba(126, 42, 83, .3); border-top-color: currentColor; animation: ap-spin 800ms linear infinite; }
 @keyframes ap-spin { to { transform: rotate(360deg); } }
 .ap .ap-link { cursor: pointer; color: var(--seal); font: 500 15px/1.4 var(--f-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness var(--dur-fade) var(--ease-land); }
-.ap .ap-link:hover { background: none; text-decoration-thickness: 3px; }
+@media (hover: hover) and (pointer: fine) { .ap .ap-link:hover { background: none; text-decoration-thickness: 3px; } }
 .ap .ap-link:disabled { opacity: .45; cursor: default; }
 
-/* the window: the relay's post box and the reply tray (drawn flat, ink on paper) */
+/* the window: the relay's letter slot and the reply under it (drawn flat, ink on paper) */
 .ap-right { display: grid; gap: 26px; justify-items: center; min-width: 0; padding-top: 4px; }
 .ap-plaque { display: grid; justify-items: center; gap: 2px; }
 .ap-plaque b { font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .4em; margin-right: -.4em; }
 .ap-plaque small { font: 400 12.5px/1.2 var(--f-body); color: var(--ink-2); }
-.ap-box { position: relative; width: min(260px, 100%); }
-.ap-box svg { display: block; width: 100%; height: auto; }
-.ap-box .body { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .lid { fill: var(--paper); stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .mouth { fill: var(--ink); }
-.ap-box .lip { fill: var(--sheet); stroke: var(--ink-2); stroke-width: 1.6; }
-.ap-box .rule { stroke: var(--rule-2); stroke-width: 1; }
-.ap-box .kj { font: 800 30px/1 var(--f-seal); fill: var(--head); letter-spacing: .2em; text-anchor: middle; }
-.ap-box .en { font: 400 12px/1 var(--f-body); fill: var(--ink-2); text-anchor: middle; }
-.ap-box .ct { font: 500 12.5px/1 var(--f-mono); fill: var(--seal); text-anchor: middle; }
-.ap-box .ctp { fill: var(--seal-wash); }
-.ap-box .post { stroke: var(--ink-2); stroke-width: 2; }
-.ap-box .door { fill: none; stroke: var(--rule-2); stroke-width: 1.4; }
-.ap-box .keyhole { fill: var(--ink-2); }
-.ap .ap-box-note { margin: -14px 0 0; text-align: center; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 30ch; }
+/* 中継: a letter slot set into the paper, the sealed count a small mark beside it (feedback
+   2026-10-26: the earlier post box read as a laptop) */
+.ap-slot { position: relative; display: grid; grid-template-columns: minmax(0, 240px) auto; align-items: center; justify-content: center; gap: 16px; width: 100%; }
+.ap-slot-plate { display: block; width: 100%; height: auto; }
+.ap-slot .plate { fill: var(--sheet); stroke: var(--rule-2); stroke-width: 1.4; }
+.ap-slot .kj { font: 800 20px/1 var(--f-seal); fill: var(--head); letter-spacing: .3em; text-anchor: middle; }
+.ap-slot .en { font: 400 11.5px/1 var(--f-body); fill: var(--ink-2); text-anchor: middle; }
+.ap-slot .flap { fill: var(--paper); stroke: var(--ink-2); stroke-width: 1.2; }
+.ap-slot .mouth { fill: var(--ink); }
+.ap-slot .pin { fill: none; stroke: var(--ink-2); stroke-width: 1.2; }
+.ap-slot-ct { display: grid; justify-items: center; gap: 4px; font: 500 12.5px/1 var(--f-mono); color: var(--ink-2); white-space: nowrap; }
+.ap-slot-mk { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px dashed var(--rule-2); color: transparent; font: 800 15px/1 var(--f-seal); transform: rotate(-6deg); transition: color var(--dur-seal) var(--ease-snap), border-color var(--dur-seal) var(--ease-snap); }
+.ap-slot-ct.is-in { color: var(--seal); }
+.ap-slot-ct.is-in .ap-slot-mk { border: 2px solid var(--seal); color: var(--seal); background: var(--seal-wash); }
+.ap .ap-box-note { margin: -12px 0 0; text-align: center; font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 36ch; }
 
-.ap-tray { position: relative; width: 100%; max-width: 360px; display: grid; gap: 8px; }
-.ap-tray-k { display: flex; align-items: baseline; gap: 10px; font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }
-.ap-tray-k b { font: 700 16px/1 var(--f-seal); color: var(--head); letter-spacing: .2em; }
-.ap-bed { position: relative; min-height: 210px; padding: 16px 16px 26px; border-radius: 16px 16px 10px 10px; background: var(--paper); box-shadow: inset 0 0 0 1.6px var(--ink-2), inset 0 10px 18px rgba(70, 29, 58, .06); display: grid; align-items: end; }
-.ap-bed::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -6px; height: 26px; border-radius: 0 0 12px 12px; background: var(--sheet); box-shadow: inset 0 0 0 1.6px var(--ink-2); }
-.ap .ap-empty { position: relative; z-index: 1; margin: 0 0 18px; text-align: center; font: 400 13px/1.45 var(--f-body); color: var(--ink-2); }
-/* the invite: a letter that lands in the tray */
-.ap-inv { position: relative; z-index: 2; display: grid; gap: 10px; padding: 18px; margin-bottom: 2px; background: var(--sheet); border-radius: 3px; box-shadow: 0 10px 22px rgba(70, 29, 58, .14), inset 0 0 0 1px var(--rule); transform: rotate(-1deg); }
-.ap .ap-inv-t { font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .5em; }
+/* 返信: no tray drawn (feedback 2026-10-26: the reply tray read as a laptop). A small heading on a
+   hairline, then one quiet ink line with the check beside it; the 招待状 lands on the paper itself */
+.ap-reply { width: 100%; max-width: 360px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+.ap-reply-k { flex: 1 1 100%; display: flex; align-items: baseline; gap: 10px; font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }
+.ap-reply-k b { font: 700 16px/1 var(--f-seal); color: var(--head); letter-spacing: .2em; }
+.ap-reply-k::after { content: ""; flex: 1 1 auto; align-self: center; height: 1px; background: var(--rule-2); }
+.ap .ap-empty { flex: 1 1 220px; display: flex; align-items: flex-start; gap: 10px; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); }
+.ap-reply-mk { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin-top: -2px; border-radius: 50%; border: 1.5px dashed var(--rule-2); color: var(--rule-2); font: 800 13px/1 var(--f-seal); transform: rotate(-6deg); }
+.ap-reply .ap-link { flex: none; font-size: 14.5px; }
+.ap-reply.has-letter .ap-link { margin-left: auto; }
+.ap-reply:not(.has-letter) .ap-link { margin-left: 36px; }
+/* the invite: a letter that lands on the paper under the slot */
+.ap-inv { flex: 1 1 100%; position: relative; z-index: 2; display: grid; gap: 10px; padding: 20px 18px 18px; margin: 4px 0 6px; background: var(--sheet); border-radius: 3px; box-shadow: 0 10px 22px rgba(70, 29, 58, .14), inset 0 0 0 1px var(--rule); transform: rotate(-1deg); }
+/* the text starts below the 提供者 stamp, so the stamp never sits on a line */
+.ap .ap-inv-t { min-height: 32px; font: 800 22px/1 var(--f-seal); color: var(--head); letter-spacing: .5em; }
 .ap-inv p { font: 400 14px/1.5 var(--f-body); color: var(--ink); }
 .ap-from { position: absolute; top: 12px; right: 14px; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 11.5px/1.1 var(--f-seal); text-align: center; transform: rotate(8deg); }
 .ap .ap-inv .ap-btn { justify-self: start; padding: 12px 20px; font-size: 15px; }
@@ -165,8 +172,7 @@
 @media (max-width: 1359px) { .ap-cap { max-width: 64ch; } }
 @media (max-width: 1100px) {
   .ap-vis { grid-template-columns: minmax(0, 1fr); }
-  .ap-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; justify-items: center; }
-  .ap-say { grid-column: 1 / -1; max-width: none; }
+  .ap-reply, .ap-say { max-width: 480px; }
 }
 @media (max-width: 760px) {
   .ap-sec { gap: 22px; }
@@ -185,8 +191,6 @@
   .ap-uke { bottom: auto; top: 18px; right: 14px; width: 86px; height: 86px; }
   .ap-act .ap-btn { flex: 1 1 100%; justify-content: center; }
   .ap-act .ap-link { flex: 1 1 100%; text-align: center; }
-  .ap-right { grid-template-columns: minmax(0, 1fr); }
-  .ap-box { width: 200px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ap *, .ap *::before, .ap *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }

@@ -10,6 +10,7 @@ import { account } from "../lib/app-session";
 import { receive, remove, type Received } from "../lib/relay";
 import type { MessageType } from "../lib/relay-message";
 import { hasInbox } from "../lib/sections";
+import { onStoreChange } from "../lib/store";
 import type { StationKey } from "../lib/supplier-deal";
 import type { Did } from "./outcome";
 
@@ -26,6 +27,11 @@ export interface Handler {
   run: (r: Received) => Promise<Done>;
   /** One line about the letter in plain words (which invoice, how much), read before acting. */
   about?: (r: Received) => Promise<string | null>;
+  /**
+   * The letter's work is already done on this device (judge run 2, finding 3): its seal or
+   * signature is kept, the deal moved past it, its invoice is settled. It no longer counts.
+   */
+  handled?: (r: Received) => Promise<boolean>;
 }
 export type Handlers = Partial<Record<MessageType, Handler>>;
 
@@ -45,6 +51,8 @@ export interface Letter {
   about?: string;
   /** Arrived at the last check (not at the first one after sign-in). */
   fresh: boolean;
+  /** Its work is already done on this device (Handler.handled): shown, not counted. */
+  handled?: boolean;
 }
 
 export interface InboxState {
@@ -83,14 +91,31 @@ let timer: ReturnType<typeof setInterval> | undefined;
 let owner: string | null = null; // the fingerprint the inbox was opened for
 let checks = 0;
 
-/** A letter this role can act on: its signature holds and a handler takes its kind. */
+/** A letter this role can act on: its signature holds, a handler takes its kind, and its work is not done yet. */
 export function actionable(l: Letter, h: Handlers | null = state.handlers): boolean {
-  return l.r.signatureOk && !!h?.[l.r.message.header.type];
+  return l.r.signatureOk && !l.handled && !!h?.[l.r.message.header.type];
 }
+
+/** A letter still waiting for this person: actionable and not acted on. */
+export const unhandled = (l: Letter, h: Handlers | null = state.handlers) => l.state !== "done" && actionable(l, h);
 
 /** The count on the bell: letters with an action not taken yet. */
 export function unread(s: InboxState = state): number {
-  return s.letters.filter((l) => l.state !== "done" && actionable(l, s.handlers)).length;
+  return s.letters.filter((l) => unhandled(l, s.handlers)).length;
+}
+
+/** Asks each letter's handler whether its work is already done on this device, and marks it. */
+async function markHandled(): Promise<void> {
+  const h = state.handlers;
+  const me = owner;
+  if (!h) return;
+  for (const l of state.letters) {
+    const f = h[l.r.message.header.type]?.handled;
+    if (!f || !l.r.signatureOk || l.state === "done" || l.state === "busy") continue;
+    const yes = await f(l.r).catch(() => false);
+    if (owner !== me) return;
+    if (!!l.handled !== yes) patchLetter(l.r.relayId, { handled: yes });
+  }
 }
 
 export async function checkInbox(auto = false): Promise<void> {
@@ -119,6 +144,7 @@ export async function checkInbox(auto = false): Promise<void> {
       const about = state.handlers?.[l.r.message.header.type]?.about;
       if (about && l.r.signatureOk) void about(l.r).then((x) => x && patchLetter(l.r.relayId, { about: x }), () => undefined);
     }
+    void markHandled();
   } catch (e) {
     if (owner === me) set(auto ? {} : { error: e instanceof Error ? e.message : String(e) });
   } finally {
@@ -151,15 +177,23 @@ export function letGo(l: Letter): void {
 
 /** The letters of one kind not acted on yet (History's requests hang off the chain). */
 export function lettersOf(s: InboxState, type: MessageType): Letter[] {
-  return s.letters.filter((l) => l.r.message.header.type === type && l.r.signatureOk && l.state !== "done");
+  return s.letters.filter((l) => l.r.message.header.type === type && unhandled(l, s.handlers));
 }
 
-/** The letters about one deal (N), for the page that shows it. */
+/**
+ * The letters about one deal (N) still waiting for this person, for the page that shows it: a
+ * letter this role has nothing to do with (another party's seal sent for the record), or whose
+ * work is already done, does not count (judge run 2, finding 3).
+ */
 export function lettersFor(s: InboxState, n: string, type?: MessageType): Letter[] {
-  return s.letters.filter((l) => l.r.message.header.n === n && (!type || l.r.message.header.type === type) && l.state !== "done");
+  return s.letters.filter((l) => l.r.message.header.n === n && (!type || l.r.message.header.type === type) && unhandled(l, s.handlers));
 }
+
+let offStore: (() => void) | undefined;
 
 function stop(): void {
+  offStore?.();
+  offStore = undefined;
   if (timer) clearInterval(timer);
   timer = undefined;
   owner = null;
@@ -182,6 +216,11 @@ function follow(): void {
   set({ role, mailbox: "opening" });
   const handlers = (LOADERS[role]?.() ?? Promise.resolve({})).then((h) => {
     if (owner === want) set({ handlers: h });
+  });
+  // a write to this role's store (an action here or on a page) may finish a letter's work
+  offStore?.();
+  offStore = onStoreChange((c) => {
+    if (owner === want && c.role === role) void markHandled();
   });
   void Promise.all([handlers, myMailbox()]).then(
     () => {

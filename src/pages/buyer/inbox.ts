@@ -42,9 +42,22 @@ async function contactOf(mailbox: string): Promise<Contact | undefined> {
   return account.current?.store?.get<Contact>(contactId({ mailbox_pk: mailbox } as Contact)).catch(() => undefined);
 }
 
+/** The letter's work is done on its invoice already (judge run 2, finding 3); no invoice: not done. */
+const doneOn = (yes: (r: Inv, h: Header) => boolean) => async (x: Received) => {
+  const r = await invoiceByN(x.message.header.n ?? "").catch(() => undefined);
+  return r ? yes(r, x.message.header) : false;
+};
+
 /** HNK-26.T16: the letter from the financier's node, or a seal on it, kept with the invoice. */
 function keepAssignment(type: MessageType, take: (h: Header, files: Uint8Array[], r: Inv) => Promise<NonNullable<BuyerInvoice["assignment"]>>): Handler {
   return {
+    handled: doneOn((r, h) => {
+      const a = r.assignment;
+      if (r.bundle) return true;
+      if (type === "deal.letter") return !!a?.letter && a.letter === String(h.body.letter);
+      const seal = String(h.body.seal);
+      return a?.supplier_seal === seal || a?.financier_seal === seal || a?.buyer_seal === seal;
+    }),
     about: aboutInvoice((r, h) =>
       type === "deal.letter"
         ? `The financier's assignment letter for ${facts(r)}, with its PDF: read it, then seal.`
@@ -111,6 +124,7 @@ export const buyerInbox: Handlers = {
   // HNK-23.T7: the supplier's invoice and its PDF, kept once it is known to be addressed to one of
   // this buyer's keys (one passkey touch); the check and the signature happen on the open invoice
   "invoice.sign_request": {
+    handled: doneOn((r, h) => r.invoice === String(h.body.invoice) && !!r.terms_pdf),
     about: async (x) => {
       const h = x.message.header;
       try {
@@ -176,6 +190,7 @@ export const buyerInbox: Handlers = {
   },
   // buyer-late: the financier's node reminds at D-7, D-1 and D+1; the slip says the rest
   "deal.reminder": {
+    handled: doneOn((r) => !!r.bundle),
     about: aboutInvoice((rec) => {
       const s = lateState(rec, today());
       return s.kind === "due-soon" || s.kind === "overdue" ? `The financier reminds you: ${reminderText({ invoice_id: rec.invoice_id, state: s }, `${zatToZec(rec.amount_zat)} ZEC`)}` : `The financier's reminder for ${rec.invoice_id}, due ${daysToDate(rec.due_date)}.`;
@@ -192,6 +207,7 @@ export const buyerInbox: Handlers = {
   },
   // HNK-26.T18: kept here, in the panel; the slip shows 済
   "deal.bundle": {
+    handled: doneOn((r) => !!r.bundle),
     about: aboutInvoice((r) => `${r.invoice_id}: your repayment settled; the financier sent the bundle that proves the whole deal.`),
     run: async (x) => {
       const hd = x.message.header;

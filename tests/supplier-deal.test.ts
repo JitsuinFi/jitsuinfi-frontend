@@ -13,6 +13,7 @@ import {
   nextAction,
   nextMove,
   nextStep,
+  outcomeOn,
   route,
   sortDeals,
   standing,
@@ -152,4 +153,18 @@ test("after the advance the deal waits for repayment; only a settled deal is com
   assert.equal(route(paid, false)[5].state, "wait");
   assert.equal(standing(paid, true), "settled");
   assert.equal(standing(deal({ ...sealed, advance: { txid: "t", received_zat: 1, matches: false } }), false), null);
+});
+
+test("an action's outcome stays on the desk it belongs to; one taken in the mailbox is brought into view (judge run 2026-10-26)", () => {
+  const n = "ab".repeat(32);
+  const station = { n, glyph: "署", title: "Offer sent", text: "In the financier's mailbox." };
+  const inbox = { n, glyph: "登", title: "Entry request received", text: "Sign the entry (Step 3).", inbox: true };
+  const key = { n: "", glyph: "新", title: "Buyer's key received", text: "It is on your next invoice.", inbox: true };
+  assert.deepEqual(outcomeOn(station, n), { outcome: station, reveal: false }, "a station action: the supplier is already at the work");
+  assert.deepEqual(outcomeOn(inbox, n), { outcome: inbox, reveal: true }, "an inbox action: the desk scrolls to it");
+  assert.equal(outcomeOn(inbox, "cd".repeat(32)), null, "another deal open: nothing drawn");
+  assert.equal(outcomeOn(inbox, null), null, "the blank sheet does not show a deal's outcome");
+  assert.deepEqual(outcomeOn(key, null), { outcome: key, reveal: true }, "the buyer's key shows on the blank sheet it filled");
+  assert.equal(outcomeOn(key, n), null);
+  assert.equal(outcomeOn(null, n), null);
 });

@@ -28,6 +28,11 @@ export interface MailboxIdentity {
   mailbox_id: string;
 }
 
+/** A registration: the mailbox, and whether this call created it (the relay answers 201). */
+export interface Registered extends MailboxIdentity {
+  created: boolean;
+}
+
 export interface Received {
   /** The relay's id, to remove it after use. */
   relayId: string;
@@ -83,12 +88,12 @@ async function proven(inbox: Uint8Array, d: RelayDeps, me: MailboxIdentity, purp
   return { challenge_id: ch.challenge_id, proof: d.wasm.mailboxProofBytes(inbox.slice(), purpose, ch.eph_pk, ch.nonce) };
 }
 
-/** Registers this role's mailbox at the relay (harmless when it exists). */
-export async function ensureMailbox(inbox: Uint8Array, d: RelayDeps): Promise<MailboxIdentity> {
+/** Registers this role's mailbox at the relay (harmless when it exists); `created` when it was new. */
+export async function ensureMailbox(inbox: Uint8Array, d: RelayDeps): Promise<Registered> {
   const me = identity(inbox, d);
-  const r = (await (await call(d, "POST", "/api/mailbox", { mailbox_pk: me.mailbox_pk, ...(await proven(inbox, d, me, "register")) })).json()) as { mailbox_id: string };
+  const r = (await (await call(d, "POST", "/api/mailbox", { mailbox_pk: me.mailbox_pk, ...(await proven(inbox, d, me, "register")) })).json()) as { mailbox_id: string; created?: boolean };
   if (r.mailbox_id !== me.mailbox_id) throw new RelayError("the relay computed another mailbox id; do not use it");
-  return me;
+  return { ...me, created: r.created === true };
 }
 
 /** Seals `plaintext` (an encoded relay message) to `toPk` and drops it in that mailbox. */
@@ -158,7 +163,7 @@ export async function saveState(inbox: Uint8Array, plaintext: Uint8Array, d: Rel
   await call(d, "PUT", `/api/mailbox/${me.mailbox_id}/state`, sealed, { Authorization: `Bearer ${await token(inbox, d, me)}` });
 }
 
-/** This role's state from the relay, opened; null when none was saved. */
+/** This role's state from the relay, opened; null when none was saved (404, or 204 with no body). */
 export async function loadState(inbox: Uint8Array, d: RelayDeps): Promise<Uint8Array | null> {
   const me = identity(inbox, d);
   let r: Response;
@@ -168,6 +173,7 @@ export async function loadState(inbox: Uint8Array, d: RelayDeps): Promise<Uint8A
     if (e instanceof RelayError && e.status === 404) return null;
     throw e;
   }
+  if (r.status === 204) return null;
   return d.wasm.mailboxOpenBytes(inbox.slice(), new Uint8Array(await r.arrayBuffer()));
 }
 

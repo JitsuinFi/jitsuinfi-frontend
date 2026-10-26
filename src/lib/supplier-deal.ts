@@ -245,3 +245,27 @@ export function entryRequestProblems(d: SupplierDeal, r: EntryRequest): string[]
     d.offer && r.financier_pk === d.offer.financier_pk ? null : "the request comes from another financier than the one you offered to",
   ].filter((p): p is string => p !== null);
 }
+
+/**
+ * HNK-34 E2E: the outcome of the action the supplier just took, kept on the desk until they move
+ * on. `n` is the deal it belongs to, or "" for the blank sheet (Write an invoice). `inbox`: it was
+ * taken in the mailbox, away from the desk's work, so the desk brings it into view once.
+ */
+export interface Outcome {
+  n: string;
+  glyph: string;
+  title: string;
+  text: string;
+  /** The action came back refused by someone else (a declined offer). */
+  warn?: boolean;
+  inbox?: boolean;
+}
+
+/**
+ * Judge run 2026-10-26: what the desk showing deal `open` (null: the blank sheet) draws of `o`, and
+ * whether it scrolls it into view. An outcome for another deal draws nothing.
+ */
+export function outcomeOn(o: Outcome | null, open: string | null): { outcome: Outcome; reveal: boolean } | null {
+  if (!o || o.n !== (open ?? "")) return null;
+  return { outcome: o, reveal: o.inbox === true };
+}

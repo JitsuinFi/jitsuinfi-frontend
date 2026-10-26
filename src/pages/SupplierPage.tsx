@@ -31,7 +31,7 @@ import { NET } from "../lib/network";
 import { PROVIDER } from "../lib/provider";
 import { draft, send, signInWasm, type Received } from "../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../lib/relay-message";
-import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceIdTaken, looksShielded, nextMove, nextStep, route, sortDeals, standing, STEPS, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
+import { decodeEntryRequest, encodeOffer, entryRequestProblems, invoiceIdTaken, looksShielded, nextMove, nextStep, outcomeOn, route, sortDeals, standing, STEPS, type Outcome, type StationKey, type StationState, type SupplierDeal } from "../lib/supplier-deal";
 import { reducedMotion } from "../landing/motion";
 import { MailboxCard, takeContact, type InboxAction } from "./MailboxCard";
 import { Seikyusho, type SheetFields } from "./try/Seikyusho";
@@ -56,16 +56,16 @@ let cardOpen = false;
 // the desk's work until the supplier moves on (picks a station, opens another deal, writes an
 // invoice or leaves the screen). Every action redraws the desk on the next station, so the outcome
 // of the action itself was never seen.
-interface Did {
-  n: string;
-  glyph: string;
-  title: string;
-  text: string;
-  /** "warn": the action came back refused by someone else (a declined offer). */
-  warn?: boolean;
-}
+// Judge run 2026-10-26: an inbox action keeps its outcome on the desk the same way, and the desk
+// brings it into view once (the mailbox sits beside or below the work, so it was never seen).
+type Did = Outcome;
 let did: Did | null = null;
 const didIt = (d: { n: string }, glyph: string, title: string, text: string, warn?: boolean): void => void (did = { n: d.n, glyph, title, text, ...(warn ? { warn } : {}) });
+/** The same, for an action taken in the mailbox. */
+const didInInbox = (d: { n: string }, glyph: string, title: string, text: string, warn?: boolean): void => {
+  didIt(d, glyph, title, text, warn);
+  did = { ...did!, inbox: true };
+};
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
@@ -194,8 +194,10 @@ function SupplierDesk({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refr
         if (r.message.header.signer !== k) throw new Error("this key did not sign its own message");
         arrivedBuyerKey = k;
         writing = true;
+        const done = `The buyer's key ${k.slice(0, 10)}… is on your next invoice (Write an invoice).`;
+        didInInbox({ n: "" }, "新", "Buyer's key received", `${done} Write the number, dates and amount on the sheet, add the PDF and create it.`);
         refresh();
-        return `The buyer's key ${k.slice(0, 10)}… is on your next invoice (Write an invoice).`;
+        return done;
       },
     },
     "deal.commitment_opening": fromFinancier(refresh, "Use this entry request", ["登", "Entry request received"], async (d, h) => {
@@ -564,6 +566,8 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
   const terms = useRef<HTMLInputElement>(null);
   const [to, setTo] = useState(arrivedBuyerKey ? short(arrivedBuyerKey) : "the buyer's key, below");
   const out = useOut();
+  // what just happened for the blank sheet (the buyer's key from the mailbox), until the supplier moves on
+  const shown = outcomeOn(did, null);
   useEffect(() => {
     const b = buyer.current!;
     const f = terms.current!;
@@ -610,6 +614,7 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
         <p className="sp-rail-cap">{deals.length ? "Writing a new invoice. Its route starts once you create it." : "Issue your first invoice on the sheet."}</p>
       </div>
       <section className="sp-work" aria-label="Write an invoice">
+        {shown ? <DidLine did={shown.outcome} reveal={shown.reveal} /> : null}
         <Work glyph="新" step="New" title="Write an invoice" hint="Its key is derived from your passkey, the invoice number and the buyer's key. The canonical invoice is what the buyer signs; its fingerprint N is what financiers look up on the board. Write the number, dates and amount on the sheet above.">
           <Field label="Buyer key for this invoice" placeholder="64 hex characters from the buyer's screen" value={arrivedBuyerKey ?? undefined} help={arrivedBuyerKey ? "Arrived in your mailbox from the buyer; it is on this sheet." : "The buyer copies it from their screen (Give this key to the supplier), or sends it to your mailbox."} inputRef={buyer} />
           <FileField label="Invoice document (PDF)" help="Hashed in your browser with SHA-256. The file is never uploaded." inputRef={terms} />
@@ -658,6 +663,7 @@ function NewInvoice({ deals, refresh }: { deals: SupplierDeal[]; refresh: Refres
                 className="sp-ink"
                 onClick={() => {
                   writing = false;
+                  did = null;
                   refresh();
                 }}
               >
@@ -719,7 +725,7 @@ function DealView({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): ReactN
   const [view, setView] = useState<StationKey | null>(null);
   const sel = view ?? nowStation(stations).key;
   // the outcome of the action just taken on this deal, until the supplier picks a station
-  const [shown, setShown] = useState<Did | null>(() => (did?.n === d.n ? did : null));
+  const [shown, setShown] = useState(() => outcomeOn(did, d.n));
   const pick = (k: StationKey) => {
     did = null;
     setShown(null);
@@ -805,17 +811,28 @@ function DealView({ d, refresh }: { d: SupplierDeal; refresh: Refresh }): ReactN
         </p>
       </div>
       <section className="sp-work" aria-label="This station's work">
-        {shown ? <DidLine did={shown} /> : null}
+        {shown ? <DidLine did={shown.outcome} reveal={shown.reveal} /> : null}
         <StationWork key={sel} d={d} station={sel} stations={stations} board={board} refresh={refresh} />
       </section>
     </>
   );
 }
 
-/** The outcome of the action just taken: the station's mark pressed as a hanko, and a sentence. */
-function DidLine({ did: x }: { did: Did }): ReactNode {
+/**
+ * The outcome of the action just taken: the station's mark pressed as a hanko, and a sentence.
+ * `reveal` (taken in the mailbox): scrolled into view once, when it is off screen.
+ */
+function DidLine({ did: x, reveal = false }: { did: Did; reveal?: boolean }): ReactNode {
+  const el = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!reveal || !el.current) return;
+    if (did === x) did = { ...x, inbox: false }; // once: a later redraw does not scroll again
+    const r = el.current.getBoundingClientRect();
+    if (r.top < 72 || r.bottom > window.innerHeight) el.current.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
-    <div className={x.warn ? "sp-did is-warn" : "sp-did"} role="status">
+    <div className={x.warn ? "sp-did is-warn" : "sp-did"} role="status" ref={el}>
       <span className="sp-did-seal" lang="ja" aria-hidden="true">
         {x.glyph}
       </span>
@@ -881,7 +898,7 @@ function signatureFromInbox(refresh: Refresh): InboxAction {
       wasm.bundleBuild(JSON.stringify({ invoice: d.invoice, buyer_signature: s }));
       await save({ ...d, buyer_signature: s });
       openDeal(d.n);
-      didIt(d, "照", "Signed by the buyer", "The buyer's signature arrived and holds for exactly this invoice. Next: offer it to one financier.");
+      didInInbox(d, "照", "Signed by the buyer", "The buyer's signature arrived and holds for exactly this invoice. Next: offer it to one financier.");
       refresh();
       return `The buyer signed ${d.invoice_id}. Next: offer it to one financier.`;
     },
@@ -902,7 +919,7 @@ function fromFinancier(refresh: Refresh, label: string, [glyph, title]: [string,
       if (!d.offer || d.offer.financier_pk !== h.signer) throw new Error("this message is not from the financier you offered this invoice to");
       const done = await use(d, h, r.message.attachments);
       openDeal(d.n);
-      didIt(d, glyph, title, done);
+      didInInbox(d, glyph, title, done);
       refresh();
       return done;
     },
@@ -922,7 +939,7 @@ function declineFromInbox(refresh: Refresh): InboxAction {
       const reason = String(h.body.reason ?? "");
       await save({ ...d, offer: undefined, declined: [...(d.declined ?? []), { financier_pk: d.offer.financier_pk, reason, at: Date.now() }] });
       openDeal(d.n);
-      didIt(d, "署", "Offer declined", `${reason} You can offer ${d.invoice_id} to another financier.`, true);
+      didInInbox(d, "署", "Offer declined", `${reason} You can offer ${d.invoice_id} to another financier.`, true);
       refresh();
       return `Declined: ${reason} You can offer ${d.invoice_id} to another financier.`;
     },

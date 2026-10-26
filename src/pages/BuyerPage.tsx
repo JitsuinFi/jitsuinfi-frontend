@@ -19,7 +19,7 @@
 import { handToVerify } from "../lib/verify-handoff";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Banner, Button, CodeBlock, TrustedSvg, useOut } from "../app/ui";
-import { myIdentity, myMailbox, relayDeps } from "../lib/app-relay";
+import { myIdentity, myMailbox, relayDeps, relayMayHoldState, stateSaved } from "../lib/app-relay";
 import { account } from "../lib/app-session";
 import { boardLine, loadBoard, type BoardData } from "../lib/board";
 import { checkInvoice, type CheckResult } from "../lib/buyer-check";
@@ -61,12 +61,14 @@ async function backupHistory(h: HistoryDoc): Promise<void> {
   if (!s) return;
   await myMailbox();
   await saveState(s.inbox, encodeBackup(h), relayDeps);
+  stateSaved();
 }
 
 async function relayHistory(): Promise<HistoryDoc | null> {
   const s = account.current;
   if (!s) return null;
-  await myMailbox();
+  // a mailbox this session just created holds no copy yet: no read, no 404 (judge run 2026-10-26)
+  if (!(await relayMayHoldState())) return null;
   const b = await loadState(s.inbox, relayDeps);
   return b ? decodeBackup(b) : null;
 }

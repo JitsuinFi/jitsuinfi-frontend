@@ -28,6 +28,8 @@ test("checking again keeps the first time and the signature; another invoice und
   const again = invoiceRecord(dec("aa", "TES-INV-T25"), "SlRTSQ", 0, true, 5000, first);
   assert.deepEqual([again.received_at, again.signature, again.terms_checked], [1000, "sig", true]);
   assert.throws(() => invoiceRecord(dec("aa", "TES-INV-T25"), "OTHER", 0, true, 5000, first), /another invoice/);
+  // judge run 3: the reminder milestones seen on the slip survive a second check
+  assert.deepEqual(invoiceRecord(dec("aa", "TES-INV-T25"), "SlRTSQ", 0, true, 5000, { ...first, reminders_seen: ["d-7"] }).reminders_seen, ["d-7"]);
 });
 
 test("status and order", () => {

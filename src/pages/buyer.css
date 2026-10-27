@@ -385,3 +385,5 @@ p.by-late b { color: var(--head); font-weight: 600; }
 .by-settled-acts button { min-height: 44px; }
 @media (max-width: 599px) { .by-settled-acts { grid-column: 1 / -1; } .by-settled .by-verify { flex: 1 1 100%; justify-content: center; min-height: 48px; } }
 .by-plate { scroll-margin-top: 72px; }
+/* the drawn QR stops under the top bar, clear of the bottom bar (mobile E2E 2, finding 6) */
+.by-plate .qrp-plate { scroll-margin-top: 76px; scroll-margin-bottom: calc(var(--tabbar-h, 0px) + 96px); }

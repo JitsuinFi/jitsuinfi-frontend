@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { ROLES, roleLabel, type Role } from "../lib/account";
 import { account } from "../lib/app-session";
 import { useSyncStatus, type SyncStatus } from "../lib/device-sync";
+import { dropMyDrafts } from "./kept";
 import { firstSection } from "../lib/sections";
 import type { Session } from "../lib/session";
 
@@ -126,6 +127,7 @@ export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, curre
             role="menuitem"
             className="ia-out"
             onClick={() => {
+              void dropMyDrafts();
               account.lock();
               onLeave("/app");
             }}

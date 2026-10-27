@@ -9,6 +9,7 @@
 // On a desktop the caption names the invoice and lists your other invoices; on a phone the screen
 // goes one step down from Invoices with a back control, one primary action at a time.
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useFormDraft } from "../../app/kept";
 import { storedCodes, syncedCodes, type Codes } from "../../lib/desk-sync";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
@@ -140,6 +141,8 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   useVars(root);
   const path = start ? invoicePath(start.ref) : "/buyer/invoices/by-hand";
   const shown = useDid(path);
+  // finding F10: codes pasted by hand survive a reload (sealed in this tab)
+  const byHand = useFormDraft<HTMLDetailsElement>(start ? `buyer/invoice/${start.ref}` : "buyer/by-hand");
 
   // the codes behind the sheet, mirrored for drawing (the fields stay the source for every action)
   const [codes, setCodes] = useState({ inv: start?.invoice ?? "", letter: start?.assignment?.letter ?? "", seal: start?.assignment?.supplier_seal ?? "" });
@@ -257,6 +260,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         return withSignature(prev, sig);
       }, n);
       setPress("sig");
+      byHand.clear();
       signOut.show(<SendSignature n={n} sig={sig} replyTo={saved.reply_to} />);
     } catch (e) {
       signOut.error(e);
@@ -310,6 +314,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         await send(t, await encodeMessage(hd as Header), relayDeps);
       }
       setPress("seal");
+      byHand.clear();
       if (to.length && own) {
         await saveInvoice((prev) => ({ ...(prev ?? own), assignment: { ...a, buyer_seal: seal, sealed_at: Date.now() } }), n);
         sealOut.show(<Banner kind="ok" title="Sealed and sent" text="Your seal went to the financier and the supplier. The financier pays the advance next, with its own seal." glyph="印" />);
@@ -574,7 +579,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   );
 
   const codesFold = (
-    <details className="by-codes" open={!start}>
+    <details className="by-codes" open={!start || byHand.restoredAny} ref={byHand.ref}>
       <summary>
         <span>
           <b>The codes behind this sheet</b>
@@ -695,6 +700,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
             {shown ? <DidLine did={shown} /> : null}
             {route}
             {desk}
+            {byHand.note}
             {codesFold}
           </div>
         </section>

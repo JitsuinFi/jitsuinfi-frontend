@@ -21,6 +21,7 @@ import { Page } from "../app/AppShell";
 import { Lede } from "../app/Lede";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
+import { dropMyDrafts } from "../app/kept";
 import { firstSection } from "../lib/sections";
 import { NoPrfError, passkeysAvailable } from "../lib/passkey";
 import { onboarding } from "../lib/onboarding";
@@ -852,6 +853,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                       onClick={() => {
                         view = "login";
                         loginName = who?.username ?? "";
+                        void dropMyDrafts();
                         account.lock();
                       }}
                     >

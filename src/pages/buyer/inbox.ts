@@ -8,7 +8,7 @@ import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
 import { append, head, localNextIndex } from "../../lib/buyer-history";
 import { invoiceRecord, type BuyerInvoice } from "../../lib/buyer-invoices";
-import { lateState, reminderText } from "../../lib/buyer-late";
+import { lateState, reminderHandled, reminderText, slipSeen } from "../../lib/buyer-late";
 import { contactId, type Contact } from "../../lib/contact";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../../lib/core";
 import { leadPath, letterAction, type Lead } from "../../lib/inbox-routes";
@@ -188,9 +188,11 @@ export const buyerInbox: Handlers = {
       return { said, did: { glyph: "歴", title: "History sent", text: said }, to: to("history.request") };
     },
   },
-  // buyer-late: the financier's node reminds at D-7, D-1 and D+1; the slip says the rest
+  // buyer-late: the financier's node reminds at D-7, D-1 and D+1; the slip says the rest. Judge
+  // run 3, finding 1: handled once the buyer saw the slip at the reminder's milestone (the slip
+  // records it, PayPage.tsx) or the invoice settled; a later milestone counts again.
   "deal.reminder": {
-    handled: doneOn((r) => !!r.bundle),
+    handled: doneOn((r, h) => reminderHandled(r, h.body.milestone)),
     about: aboutInvoice((rec) => {
       const s = lateState(rec, today());
       return s.kind === "due-soon" || s.kind === "overdue" ? `The financier reminds you: ${reminderText({ invoice_id: rec.invoice_id, state: s }, `${zatToZec(rec.amount_zat)} ZEC`)}` : `The financier's reminder for ${rec.invoice_id}, due ${daysToDate(rec.due_date)}.`;
@@ -200,6 +202,12 @@ export const buyerInbox: Handlers = {
       const rec = await invoiceOf(hd);
       if (!rec.assignment?.financier_pk || rec.assignment.financier_pk !== hd.signer) throw new Error("not from the financier your letter names");
       if (hd.body.due_date !== rec.due_date || hd.body.amount_zat !== rec.amount_zat) throw new Error("the reminder names another due date or amount than your invoice");
+      // the action opens the slip: this milestone is seen
+      if (slipSeen(rec.reminders_seen, rec.due_date, today(), [hd.body.milestone]))
+        await saveInvoice((prev) => {
+          const p = prev ?? rec;
+          return { ...p, reminders_seen: slipSeen(p.reminders_seen, p.due_date, today(), [hd.body.milestone]) ?? p.reminders_seen };
+        }, rec.n);
       const s = lateState(rec, today());
       const line = s.kind === "due-soon" || s.kind === "overdue" ? reminderText({ invoice_id: rec.invoice_id, state: s }, `${zatToZec(rec.amount_zat)} ZEC`) : `${rec.invoice_id} is due ${daysToDate(rec.due_date)}.`;
       return { said: `${rec.invoice_id} is open on Pay: its slip says what paying late means.`, did: { glyph: "期", title: s.kind === "overdue" ? `Past due: ${rec.invoice_id}` : `Due soon: ${rec.invoice_id}`, text: `${line} Pay it on the slip below.` }, to: to("deal.reminder", rec) };

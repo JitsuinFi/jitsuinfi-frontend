@@ -102,3 +102,38 @@ export function readContact(text: string): Contact {
 export function contactName(c: Pick<Contact, "username" | "fingerprint">): string {
   return c.username ? `@${c.username}` : c.fingerprint;
 }
+
+// ---------- the buyer's card from its key letter (judge run 3, finding 2) ----------
+// A buyer who added the supplier from a contact link sends its next invoice key at once
+// (`key.invoice_pk`). That letter is signed by the invoice key, and the signed part names the
+// buyer's mailbox and, since this change, its role key fingerprint and @name. The supplier's app
+// reads the card from a letter it already accepted (signature checked, key signed by itself) and
+// offers "Add @name to your contacts" with one confirm, as a contact link does: the fingerprint
+// is still compared with the buyer out of band. A letter without a fingerprint offers nothing.
+
+/** The fields of a key letter's header that make the card. */
+export interface KeyLetterFrom {
+  from: { role: string; mailbox_pk: string };
+  body: Record<string, unknown>;
+}
+
+/** The buyer's contact card a key letter carries, or null when it carries none that holds. */
+export function cardFromKeyLetter(h: KeyLetterFrom): Contact | null {
+  if (h.from.role !== "buyer") return null;
+  const { fingerprint, username } = h.body;
+  if (typeof fingerprint !== "string") return null;
+  const c: Contact = { v: 1, role: "buyer", ...(typeof username === "string" && username ? { username } : {}), mailbox_pk: h.from.mailbox_pk, fingerprint };
+  return contactProblems(c).length ? null : c;
+}
+
+/**
+ * `c` with the name the person gave them on the confirm (a card without an @name). A leading @
+ * and spaces at the ends are dropped; an empty name keeps the card as it is.
+ */
+export function namedContact(c: Contact, name: string): Contact {
+  if (c.username) return c;
+  const n = name.trim().replace(/^@+/, "").trim();
+  if (!n) return c;
+  if (n.length > 32) throw new Error("a name is at most 32 characters");
+  return { ...c, username: n };
+}

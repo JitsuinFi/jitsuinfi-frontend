@@ -187,3 +187,44 @@ export function reminderText(r: Pick<Reminder, "invoice_id" | "state">, amount: 
 export function payBadge(list: Parameters<typeof reminders>[0], today: number): number {
   return reminders(list, today).length;
 }
+
+// ---------- the financier's reminder letters (judge run 3, finding 1) ----------
+// The financier's node sends `deal.reminder` at three milestones (node `reminder::MILESTONES`):
+// "d-7", "d-1" and "d+1", once each. A reminder only says "open the slip", so it is handled once
+// the buyer saw that slip at or after its milestone, or once the invoice is settled on this
+// device (its bundle is kept; the node sends no reminder once the repayment is pending or
+// settled). A later milestone is news again: its letter counts until the slip is seen once more.
+
+/** The node's milestones, as days from the due date (node `reminder::MILESTONES`). */
+export const REMINDER_MILESTONES: ReadonlyArray<readonly [string, number]> = [
+  ["d-7", -7],
+  ["d-1", -1],
+  ["d+1", 1],
+];
+
+/** The milestones reached on `today` (days since the epoch) for an invoice due on `dueDate`. */
+export function milestonesReached(dueDate: number, today: number): string[] {
+  return REMINDER_MILESTONES.filter(([, off]) => today >= dueDate + off).map(([m]) => m);
+}
+
+/**
+ * What the invoice's `reminders_seen` becomes when the buyer opens its slip on `today`: the
+ * milestones reached by then and those of the reminder letters in the inbox, added to the ones
+ * seen before. Null when nothing new is seen (nothing to write).
+ */
+export function slipSeen(seen: readonly string[] | undefined, dueDate: number, today: number, inInbox: readonly unknown[] = []): string[] | null {
+  const known = new Set(REMINDER_MILESTONES.map(([m]) => m));
+  const was = new Set(seen ?? []);
+  const add = [...milestonesReached(dueDate, today), ...inInbox.filter((m): m is string => typeof m === "string" && known.has(m))].filter((m) => !was.has(m));
+  if (!add.length) return null;
+  const all = new Set([...was, ...add]);
+  return REMINDER_MILESTONES.map(([m]) => m).filter((m) => all.has(m));
+}
+
+/** A reminder for `milestone` is handled: the invoice is settled here, or its slip was seen at that milestone. */
+export function reminderHandled(rec: Pick<BuyerInvoice, "bundle" | "reminders_seen">, milestone: unknown): boolean {
+  if (rec.bundle) return true;
+  const seen = rec.reminders_seen ?? [];
+  // a reminder without a milestone (not one this app knows): seeing the slip once is enough
+  return typeof milestone === "string" && REMINDER_MILESTONES.some(([m]) => m === milestone) ? seen.includes(milestone) : seen.length > 0;
+}

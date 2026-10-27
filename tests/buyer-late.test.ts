@@ -2,7 +2,7 @@
 // the lines the slip shows for it, run with `npm test`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countdown, ledgerLine, lateLines, lateState, msToCutoff, reminders, reminderText, WARN_DAYS, type LateFacts } from "../src/lib/buyer-late.ts";
+import { countdown, ledgerLine, lateLines, lateState, milestonesReached, msToCutoff, reminderHandled, reminders, reminderText, slipSeen, WARN_DAYS, type LateFacts } from "../src/lib/buyer-late.ts";
 
 const DUE = 20_754; // 2026-10-28
 const financed = { due_date: DUE, assignment: { financier_seal: "s2" } };
@@ -90,4 +90,46 @@ test("reminders: due within a week or overdue, not settled on this device, soone
   assert.deepEqual(r.map((x) => x.n), ["b", "a"]);
   assert.equal(reminderText(r[0], "0.0006 ZEC"), "INV-b: 0.0006 ZEC, 2 days past its due date. It will be marked late when paid.");
   assert.equal(reminderText(r[1], "0.0006 ZEC"), "INV-a: 0.0006 ZEC due in 5 days.");
+});
+
+// judge run 3, finding 1: the D-7 reminder sent right after financing kept the bell at 1 until
+// the bundle came; it is handled once the slip was seen at its milestone, and D-1, D+1 are news
+test("the node's milestones reached on a day: D-7, D-1 and D+1 from the due date", () => {
+  assert.deepEqual(milestonesReached(DUE, DUE - 8), []);
+  assert.deepEqual(milestonesReached(DUE, DUE - 3), ["d-7"]);
+  assert.deepEqual(milestonesReached(DUE, DUE - 1), ["d-7", "d-1"]);
+  assert.deepEqual(milestonesReached(DUE, DUE), ["d-7", "d-1"]);
+  assert.deepEqual(milestonesReached(DUE, DUE + 1), ["d-7", "d-1", "d+1"]);
+});
+
+test("a reminder counts until its slip is seen at its milestone, or the invoice settles", () => {
+  // financed three days before the due date: the node sends D-7 at once
+  const fresh = { reminders_seen: undefined as string[] | undefined };
+  assert.equal(reminderHandled(fresh, "d-7"), false);
+  // the buyer opens the slip (from the financier's seal, not from the reminder)
+  const seen = slipSeen(fresh.reminders_seen, DUE, DUE - 3);
+  assert.deepEqual(seen, ["d-7"]);
+  const rec = { reminders_seen: seen! };
+  assert.equal(reminderHandled(rec, "d-7"), true);
+  // opening it again the same day writes nothing
+  assert.equal(slipSeen(rec.reminders_seen, DUE, DUE - 3), null);
+  // D-1 is a new letter: it counts until the slip is seen again on or after D-1
+  assert.equal(reminderHandled(rec, "d-1"), false);
+  const later = slipSeen(rec.reminders_seen, DUE, DUE - 1)!;
+  assert.deepEqual(later, ["d-7", "d-1"]);
+  assert.equal(reminderHandled({ reminders_seen: later }, "d-1"), true);
+  assert.equal(reminderHandled({ reminders_seen: later }, "d+1"), false);
+  // settled on this device: every reminder is done, seen or not
+  assert.equal(reminderHandled({ bundle: "b" }, "d+1"), true);
+});
+
+test("a reminder in the inbox is seen with the slip even if the buyer's day lags the node's", () => {
+  // the node's UTC day reached D-7, the buyer's clock still says D-8
+  assert.deepEqual(slipSeen(undefined, DUE, DUE - 8, ["d-7"]), ["d-7"]);
+  // opening the reminder itself records its milestone; unknown words are ignored
+  assert.deepEqual(slipSeen(["d-7"], DUE, DUE - 8, ["d-1", "soon", 3]), ["d-7", "d-1"]);
+  assert.equal(slipSeen(undefined, DUE, DUE - 8, ["soon"]), null);
+  // a reminder without a milestone: seeing the slip once is enough
+  assert.equal(reminderHandled({ reminders_seen: [] }, undefined), false);
+  assert.equal(reminderHandled({ reminders_seen: ["d-7"] }, undefined), true);
 });

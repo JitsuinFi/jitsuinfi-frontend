@@ -4,14 +4,14 @@
 // station it moved, or Write an invoice; keeping a settlement bundle completes in the panel.
 import type { Handler, Handlers } from "../../app/inbox";
 import { account } from "../../lib/app-session";
-import { contactId, type Contact } from "../../lib/contact";
+import { cardFromKeyLetter, contactId, contactName, type Contact } from "../../lib/contact";
 import { daysToDate, json, wasm, zatToZec } from "../../lib/core";
 import { leadPath, letterAction } from "../../lib/inbox-routes";
 import { readablePrint } from "../../lib/print";
 import type { Received } from "../../lib/relay";
 import type { Header, MessageType } from "../../lib/relay-message";
 import { entryRequestProblems, type StationKey } from "../../lib/supplier-deal";
-import { dealByN, keepArrivedKey, save, store, type Deal } from "./data";
+import { dealByN, keepArrivedKey, keepLetterCard, save, store, type Deal } from "./data";
 
 const bytesToB64 = (b: Uint8Array) => btoa(Array.from(b, (x) => String.fromCharCode(x)).join(""));
 
@@ -91,7 +91,8 @@ export const supplierInbox: Handlers = {
     },
     about: async (r) => {
       const c = await contactOf(r.message.header.from.mailbox_pk);
-      const who = c ? `${c.username ? `@${c.username}` : "A buyer in your contacts"} (${c.fingerprint})` : "A buyer not in your contacts yet";
+      const card = c ? null : cardFromKeyLetter(r.message.header);
+      const who = c ? `${c.username ? `@${c.username}` : "A buyer in your contacts"} (${c.fingerprint})` : card ? `${card.username ? `@${card.username}` : "A buyer"}, not in your contacts yet (fingerprint ${card.fingerprint}),` : "A buyer not in your contacts yet";
       return `${who} sent the key for your next invoice to them, key ${readablePrint(String(r.message.header.body.invoice_pk))}, signed by that key.`;
     },
     run: async (r) => {
@@ -99,7 +100,10 @@ export const supplierInbox: Handlers = {
       const k = String(h.body.invoice_pk);
       if (h.signer !== k) throw new Error("This key did not sign its own letter: it is ignored.");
       await keepArrivedKey({ invoice_pk: k, mailbox_pk: h.from.mailbox_pk, at: Date.now() });
-      const said = `The buyer's key ${readablePrint(k)} is on your next invoice.`;
+      // judge run 3, finding 2: the card in the signed letter, offered on the buyer line until added
+      const card = (await contactOf(h.from.mailbox_pk)) ? null : cardFromKeyLetter(h);
+      if (card) await keepLetterCard(card, Date.now());
+      const said = `The buyer's key ${readablePrint(k)} is on your next invoice.${card ? ` Add ${card.username ? contactName(card) : "them"} to your contacts from the sheet's buyer line.` : ""}`;
       return { said, did: { glyph: "新", title: "Buyer's key received", text: `${said} Write the number, dates and amount on the sheet, add the PDF and create it: it goes back to the buyer's inbox to sign.` }, to: to("key.invoice_pk") };
     },
   },

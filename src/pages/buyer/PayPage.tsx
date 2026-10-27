@@ -9,17 +9,19 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
+import { lettersFor } from "../../app/inbox";
+import { useInbox } from "../../app/InboxPanel";
 import { LongList } from "../../app/LongList";
 import { DidLine, useDid } from "../../app/outcome";
 import { Button, CodeBlock, TrustedSvg, useOut } from "../../app/ui";
 import { hasSlip, slipOrder } from "../../lib/buyer-invoices";
-import { DEFAULT_GRACE_DAYS, lateState, msToCutoff } from "../../lib/buyer-late";
+import { DEFAULT_GRACE_DAYS, lateState, msToCutoff, slipSeen } from "../../lib/buyer-late";
 import { payProblems } from "../../lib/buyer-letter";
 import { daysToDate, json, today, wasm, zatToZec } from "../../lib/core";
 import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
 import { handToVerify } from "../../lib/verify-handoff";
 import { LatePanel } from "../BuyerLate";
-import { statusesOf, awaitsBoard, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
+import { statusesOf, awaitsBoard, saveInvoice, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
 import { Check, DueLine, dueWords, LedgerLine, ledgerWords, Tag, Totals, useVars } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
@@ -52,6 +54,20 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
     const t = window.setInterval(() => setNowMs(Date.now()), 60_000);
     return () => window.clearInterval(t);
   }, []);
+  // judge run 3, finding 1: an open slip is the financier's reminder seen, for the milestones
+  // reached today and the reminders in the inbox now; their letters stop counting on the bell
+  const inbox = useInbox();
+  const asked = lettersFor(inbox, r.n, "deal.reminder").map((l) => String(l.r.message.header.body.milestone ?? "")).join(" ");
+  useEffect(() => {
+    if (r.bundle || !hasSlip(r)) return;
+    const said = asked ? asked.split(" ") : [];
+    if (!slipSeen(r.reminders_seen, r.due_date, today(), said)) return;
+    void saveInvoice((prev) => {
+      const p = prev ?? r;
+      return { ...p, reminders_seen: slipSeen(p.reminders_seen, p.due_date, today(), said) ?? p.reminders_seen };
+    }, r.n).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r.n, asked]);
   const paid = !!r.bundle;
   const why = payCheck(r);
   const ready = !why.length && !paid;

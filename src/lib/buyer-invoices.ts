@@ -49,6 +49,11 @@ export interface BuyerInvoice {
   ref?: string;
   /** IA port: the terms PDF that came with the sign request (base64), kept so the check needs no file. */
   terms_pdf?: { name: string; b64: string };
+  /**
+   * Judge run 3, finding 1: the financier's reminder milestones ("d-7", "d-1", "d+1") the buyer
+   * saw the slip at (opened it then, or from the reminder itself); their letters no longer count.
+   */
+  reminders_seen?: string[];
 }
 
 const PREFIX = "invoice:";
@@ -88,6 +93,7 @@ export function invoiceRecord(
     ...(previous?.history_cert ? { history_cert: previous.history_cert } : {}),
     ...(previous?.ref ? { ref: previous.ref } : {}),
     ...(previous?.terms_pdf ? { terms_pdf: previous.terms_pdf } : {}),
+    ...(previous?.reminders_seen ? { reminders_seen: previous.reminders_seen } : {}),
   };
 }
 

@@ -2,11 +2,13 @@
 // IA port 2026-10-26): the caption column (the 売 tag, the title, who you are, three numbers), the
 // deal route as six physical stations (照 署 登 印 金 済), a station's work heading, and the buyer
 // named in plain words. Styles: pages/supplier.css.
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { account } from "../../lib/app-session";
+import { contactName } from "../../lib/contact";
 import { readablePrint } from "../../lib/print";
 import { nextStep, route, stationLabel, STEPS, type StationKey, type StationState, type SupplierDeal } from "../../lib/supplier-deal";
-import { contactFor, type Book } from "./data";
+import { AddContact } from "../ContactAdd";
+import { contactFor, letterCardFor, type Book } from "./data";
 
 export const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
 
@@ -268,6 +270,24 @@ export function buyerName(book: Book | null, d: { buyer_mailbox?: string; buyer_
   const c = contactFor(book, d.buyer_mailbox);
   if (c) return { name: c.username ? `@${c.username}` : "A buyer in your contacts", print: c.fingerprint };
   return { name: d.buyer_mailbox ? "A buyer not in your contacts yet" : "The buyer", print: readablePrint(d.buyer_pk) };
+}
+
+/**
+ * Judge run 3, finding 2: the buyer's key letter carried their card (fingerprint, @name) under
+ * their key's signature; while the supplier keeps no card for that mailbox, the buyer line offers
+ * "Add @name to your contacts" with one confirm (a card without a name is named on it).
+ */
+export function AddBuyerBack({ book, mailbox }: { book: Book | null; mailbox: string | undefined }): ReactNode {
+  const [open, setOpen] = useState(false);
+  const card = letterCardFor(book, mailbox);
+  if (!card) return null;
+  const { at: _at, ...c } = card;
+  if (open) return <AddContact c={c} nameable onCancel={() => setOpen(false)} onAdded={() => setOpen(false)} />;
+  return (
+    <button type="button" className="secondary sp-addback" onClick={() => setOpen(true)}>
+      {`Add ${c.username ? contactName(c) : "this buyer"} to your contacts`}
+    </button>
+  );
 }
 
 /** The next move as one line: what to do, or where the deal stands. */

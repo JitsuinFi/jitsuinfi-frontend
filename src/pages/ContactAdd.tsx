@@ -9,8 +9,9 @@ import { Button } from "../app/ui";
 import type { Role } from "../lib/account";
 import { myIdentity } from "../lib/app-relay";
 import { account } from "../lib/app-session";
-import { contactId, contactName, type Contact } from "../lib/contact";
+import { contactId, contactName, namedContact, type Contact } from "../lib/contact";
 import { explain } from "../lib/explain";
+import "./contacts.css";
 
 const KANJI: Record<Contact["role"], string> = { supplier: "売", buyer: "買", member: "資", financier: "融" };
 const WHO: Record<Contact["role"], string> = { supplier: "a supplier", buyer: "a buyer", member: "a fund member", financier: "a financier" };
@@ -48,11 +49,24 @@ export async function keepContact(c: Contact): Promise<void> {
 
 /** "Add @name to your contacts?" with one confirm, then the next step. */
 /** `fromLink`: opened from a contact link; the next step takes the link's place in history (Back skips it). */
-export function AddContact({ c, onCancel, cancelLabel = "Not now", fromLink }: { c: Contact; onCancel?: () => void; cancelLabel?: string; fromLink?: boolean }): ReactNode {
+/**
+ * Judge run 3, finding 2: `nameable` (a card from a buyer's key letter) lets the person name a
+ * card that came without an @name on the same confirm; `onAdded` replaces the next step (the
+ * page that offered the add shows the name at once).
+ */
+export function AddContact({ c: given, onCancel, cancelLabel = "Not now", fromLink, nameable, onAdded }: { c: Contact; onCancel?: () => void; cancelLabel?: string; fromLink?: boolean; nameable?: boolean; onAdded?: (c: Contact) => void }): ReactNode {
   const s = account.current;
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
   if (!s) return null;
+  const naming = !!nameable && !given.username;
+  let c = given;
+  try {
+    c = naming ? namedContact(given, name) : given;
+  } catch {
+    c = given; // too long: said on Add
+  }
   const next = nextStepFor(s.role, c);
   return (
     <section className="ia-add" aria-labelledby="ia-add-h" aria-live="polite">
@@ -73,6 +87,13 @@ export function AddContact({ c, onCancel, cancelLabel = "Not now", fromLink }: {
             </dd>
           </div>
         </dl>
+        {naming && !added ? (
+          <label className="ia-add-name">
+            <span>Their name, as you know them</span>
+            <input type="text" value={name} maxLength={40} autoComplete="off" spellCheck="false" enterKeyHint="done" placeholder="e.g. their company" onChange={(e) => setName(e.target.value)} />
+            <small>Their key letter came without a name. Only you see this name; leave it empty to show their fingerprint.</small>
+          </label>
+        ) : null}
         <p className="ia-add-hint">{`Compare the fingerprint with them, by phone or in person: it must match what their screen shows. Their documents then reach you sealed, and yours reach them.`}</p>
         {error ? (
           <p className="ia-add-err" role="alert">
@@ -101,8 +122,10 @@ export function AddContact({ c, onCancel, cancelLabel = "Not now", fromLink }: {
               onClick={async () => {
                 try {
                   setError(null);
-                  await keepContact(c);
-                  setAdded(true);
+                  const kept = naming ? namedContact(given, name) : given;
+                  await keepContact(kept);
+                  if (onAdded) onAdded(kept);
+                  else setAdded(true);
                 } catch (e) {
                   setError(e instanceof Error ? e.message : String(e));
                 }

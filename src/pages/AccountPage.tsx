@@ -234,6 +234,9 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(prfFailed);
   const [role, setRole] = useState<Role>(draft.role);
+  // messy-state E2E 2026-10-27: a sign-in this browser cannot place (a new device with the same
+  // passkey, or test data) asks which counter to open instead of opening Supplier by itself
+  const [loginRole, setLoginRole] = useState<Role>(() => account.lastRole() ?? "supplier");
   // the lines marked on the card, for the view they were checked in
   const [marks, setMarks] = useState<{ v: CardView; email?: string | null; user?: string | null }>({ v });
   const errors = marks.v === v ? marks : { v };
@@ -353,7 +356,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
 
   const logIn = () =>
     act("login", async () => {
-      const ok = await passkey(() => account.signInAs(loginName, want));
+      const ok = await passkey(() => account.signInAs(loginName, want ?? (askRole ? loginRole : undefined)));
       if (ok && !want && account.current) void navigate({ to: rolePath(account.current.role) });
     });
 
@@ -401,6 +404,8 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
 
   const who = s ? account.who() : null;
   const pk = passkeysAvailable();
+  /** The login-passkey view asks for the role: no role screen asked, and this browser does not know the username (or has no passkeys). */
+  const askRole = v === "login-passkey" && !want && (!pk || !account.usernameKnown(loginName));
   const fixed = v === "signup-passkey" || v === "onboard";
   const seatRole: Role | null = s ? s.role : v === "signup" ? role : v === "signup-passkey" ? draft.role : null;
   const seat: "blank" | "carved" | "pressed" = s ? "pressed" : seatRole ? "carved" : "blank";
@@ -408,7 +413,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   // always offered under the passkey step; open by itself when passkeys cannot give keys here
   const showDemo = v === "signup-passkey" || v === "login-passkey";
   const demoOpen = !pk || failed;
-  const demoRole: Role = v === "signup-passkey" ? draft.role : (want ?? "supplier");
+  const demoRole: Role = v === "signup-passkey" ? draft.role : (want ?? loginRole);
 
   // caption
   let title: string;
@@ -438,7 +443,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       title = "Welcome back";
       lede = account.usernameKnown(loginName)
         ? "Use your passkey to sign in. Your device asks for your fingerprint, your face, or your device password."
-        : "This device has not seen this username yet. Pick the passkey you made for it; your device asks for your fingerprint, face, or device password.";
+        : "This device has not seen this username yet. Choose the counter to open, then pick the passkey you made for it; your device asks for your fingerprint, face, or device password.";
       break;
     case "roles":
       title = wantOther ? `Continue as ${roleLabel(wantOther)}?` : "Choose a role";
@@ -643,12 +648,12 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                     </div>
                   ) : null}
 
-                  {/* 資格: the role chooses the seal */}
-                  {v !== "login" && v !== "login-passkey" ? (
+                  {/* 資格: the role chooses the seal (and, signing in on a new device, the counter it opens) */}
+                  {(v !== "login" && v !== "login-passkey") || askRole ? (
                     <div className="ac-ln is-role">
                       <span className="ac-lab" id="ac-role-lab">
                         <b lang="ja">資格</b>
-                        <small>{v === "roles" ? "Your roles" : v === "signup" ? "I am a" : "Role"}</small>
+                        <small>{v === "roles" ? "Your roles" : v === "signup" ? "I am a" : askRole ? "Open as" : "Role"}</small>
                       </span>
                       {v === "roles" && s ? (
                         <div className="ac-seals" role="group" aria-labelledby="ac-role-lab">
@@ -669,9 +674,9 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                       ) : (
                         <div className="ac-seals" role="radiogroup" aria-labelledby="ac-role-lab">
                           {ROLES.map(({ role: r, label }) => {
-                            const on = r === (v === "signup" ? role : seatRole);
+                            const on = r === (v === "signup" ? role : askRole ? loginRole : seatRole);
                             return (
-                              <button key={r} type="button" role="radio" className={`ac-sl${on ? " is-on" : ""}`} aria-checked={on} aria-disabled={fixed || undefined} disabled={lock} onClick={() => v === "signup" && pickRole(r)}>
+                              <button key={r} type="button" role="radio" className={`ac-sl${on ? " is-on" : ""}`} aria-checked={on} aria-disabled={fixed || undefined} disabled={lock} onClick={() => (v === "signup" ? pickRole(r) : askRole && setLoginRole(r))}>
                                 <span className="ac-tick" aria-hidden="true">
                                   <Tick />
                                 </span>

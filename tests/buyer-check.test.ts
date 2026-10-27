@@ -10,7 +10,7 @@ test("both checks hold: ready to sign", () => {
   const r = checkInvoice({ termsHash: H, fileHash: H.toUpperCase(), keyIndex: 2 });
   assert.equal(r.canSign, true);
   assert.equal(r.kind, "ok");
-  assert.deepEqual(r.rows, [["Terms PDF", "matches the invoice"], ["Addressed to", "your invoice key #2"]]);
+  assert.deepEqual(r.rows, [["Terms PDF", "matches the invoice"], ["Addressed to", "you"]]);
 });
 
 test("a wrong PDF or a missing one keeps signing off", () => {

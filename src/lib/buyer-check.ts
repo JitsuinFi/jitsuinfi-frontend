@@ -29,7 +29,7 @@ export function checkInvoice(c: CheckInput): CheckResult {
   const keyOk = c.keyIndex !== null;
   const rows: Array<[string, string]> = [
     ["Terms PDF", c.fileHash === null ? "not chosen" : hashOk ? "matches the invoice" : "does not match the invoice"],
-    ["Addressed to", keyOk ? `your invoice key #${c.keyIndex}` : "a key that is not yours"],
+    ["Addressed to", keyOk ? "you" : "a key that is not yours"],
   ];
   if (!keyOk) {
     return { canSign: false, kind: "bad", title: "Not addressed to you", text: "This invoice names a buyer key that is not one of yours. Do not sign it; ask the supplier for your key.", rows };
@@ -42,7 +42,7 @@ export function checkInvoice(c: CheckInput): CheckResult {
   }
   if (c.sameKey?.length) {
     const ids = c.sameKey.join(", ");
-    rows[1] = ["Addressed to", `your invoice key #${c.keyIndex}, already on ${ids}`];
+    rows[1] = ["Addressed to", `you, with a key already used on ${ids}`];
     return {
       canSign: true,
       kind: "warn",

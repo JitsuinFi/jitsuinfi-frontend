@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
+import { Dock } from "../../app/Dock";
 import { lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { LongList } from "../../app/LongList";
@@ -22,7 +23,7 @@ import { daysToDate, json, today, wasm, zatToZec } from "../../lib/core";
 import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
 import { handToVerify } from "../../lib/verify-handoff";
 import { LatePanel } from "../BuyerLate";
-import { statusesOf, awaitsBoard, saveInvoice, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
+import { statusesOf, awaitsBoard, saveInvoice, useBoard, useInvoices, useSenders, withInvoiceIndex, type Inv } from "./data";
 import { Check, DueLine, dueWords, LedgerLine, ledgerWords, Tag, Totals, useVars } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
@@ -44,8 +45,10 @@ function payCheck(r: Inv): string[] {
 }
 
 /** The 払込票 slip of one invoice, with its QR, "If you pay late" and, once paid, the bundle. */
-function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
+function Slip({ r, status, from }: { r: Inv; status: string | null; from?: string }): ReactNode {
   const out = useOut();
+  const phone = usePhone();
+  const plate = useRef<HTMLDivElement>(null);
   const [qr, setQr] = useState<{ svg: string; uri: string; payTo: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -89,6 +92,8 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
       const res = json<{ uri: string; qr_svg: string }>(await withInvoiceIndex(r.invoice, (m, k) => wasm.buyerRepaymentBytes(m, k, r.invoice, a, today())));
       setQr({ svg: res.qr_svg, uri: res.uri, payTo: letter?.financier_address ?? "" });
       out.clear();
+      // the payment lands in place, under the slip's facts, and comes into view (mobile E2E 2026-10-27, finding 3)
+      requestAnimationFrame(() => plate.current?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
     } catch (e) {
       out.error(e);
     } finally {
@@ -110,6 +115,28 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
         For <b>{r.invoice_id}</b>
         <span lang="ja">{" · letter sealed 売 買 融"}</span>
       </p>
+      {from ? <p className="by-from">{`From ${from}`}</p> : null}
+      {paid ? (
+        // settled: screen 1 is the 済 line and the way to check it (mobile E2E 2026-10-27, B-27/28)
+        <div className="by-why by-settled">
+          <span className="rp-hanko is-ok" lang="ja" aria-hidden="true">
+            済
+          </span>
+          <span>
+            <strong>{`Paid. ${r.invoice_id} is settled.`}</strong>
+            {" The proof of the whole deal is kept on this device; anyone can check it."}
+          </span>
+          <span className="by-settled-acts">
+            {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
+            <a className="by-a by-verify" href="/verify" onClick={() => handToVerify(r.bundle!)}>
+              Check it on Verify
+            </a>
+            <Button secondary onClick={async () => void (await navigator.clipboard.writeText(r.bundle!).then(() => setCopied(true)))}>
+              {copied ? "Copied" : "Copy the proof"}
+            </Button>
+          </span>
+        </div>
+      ) : null}
       <div className="by-slip-body">
         <dl className="by-slip-facts">
           <div>
@@ -128,7 +155,10 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
           </div>
         </dl>
       </div>
+      {paid || (phone && !qr) ? null : (
+      <div className="by-plate" ref={plate}>
       <QrPlate
+        dock
         svg={qr?.svg ?? null}
         text={qr?.uri ?? ""}
         caption={`Pay ${zatToZec(r.amount_zat)} ZEC to the financier`}
@@ -140,30 +170,14 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
         veil={{ glyph: paid ? "済" : ready ? "印" : "待", text: paid ? "Settled. Nothing more to pay." : ready ? "Press Show payment QR to draw it." : "It opens once all three seals hold." }}
         raw={{ label: "Payment request (ZIP-321)", filename: `${r.invoice_id}.payment.txt` }}
       />
+      </div>
+      )}
       <LatePanel
         state={late}
         cutoffMs={msToCutoff(r.due_date, nowMs)}
         facts={{ inHistory: !!r.history_cert, amount: `${zatToZec(r.amount_zat)} ZEC`, due: daysToDate(r.due_date), defaultFrom: daysToDate(r.due_date + DEFAULT_GRACE_DAYS + 1) }}
       />
-      {paid ? (
-        <div className={`by-why${late.kind === "paid" ? "" : " is-plain"}`}>
-          {late.kind === "paid" ? (
-            <span className="rp-hanko is-ok" lang="ja" aria-hidden="true">
-              済
-            </span>
-          ) : null}
-          <span>
-            {`${r.invoice_id} is settled. The bundle is kept on this device and proves the whole deal to anyone. `}
-            <Button secondary onClick={async () => void (await navigator.clipboard.writeText(r.bundle!).then(() => setCopied(true)))}>
-              {copied ? "Copied" : "Copy the bundle"}
-            </Button>{" "}
-            {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
-            <a className="by-a" href="/verify" onClick={() => handToVerify(r.bundle!)}>
-              Check it on Verify
-            </a>
-          </span>
-        </div>
-      ) : why.length ? (
+      {paid ? null : why.length ? (
         <p className="by-why">
           <span className="rp-hanko" lang="ja" aria-hidden="true">
             待
@@ -173,10 +187,14 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
       ) : null}
       {paid ? null : (
         <div className="actions">
-          <button type="button" disabled={!ready || busy || !!qr} onClick={() => void pay()}>
-            {busy ? "Making the QR…" : "Show payment QR"}
-          </button>
-          <span className="hint">{ready ? "Scan with a Zcash wallet. The payment is shielded; its memo carries your signed receipt and your claim, which the financier countersigns once the payment is on chain." : "The QR opens once the financier's seal is in your inbox: it seals the letter when it pays the advance."}</span>
+          {phone && qr ? null : (
+            <Dock label="Pay">
+              <button type="button" disabled={!ready || busy || !!qr} aria-busy={busy || undefined} onClick={() => void pay()}>
+                {busy ? "Making the QR…" : "Show payment QR"}
+              </button>
+            </Dock>
+          )}
+          <span className="hint">{ready ? "Open it in your Zcash wallet, or scan it with one. The payment stays private and carries your signed receipt; the financier countersigns it once the payment is on chain." : "The QR opens once the financier's seal is in your inbox: it seals the letter when it pays the advance."}</span>
         </div>
       )}
       {out.el}
@@ -219,6 +237,7 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
   useVars(root);
   const list = Array.isArray(recs) ? recs : [];
   const statuses = statusesOf(list, board);
+  const senders = useSenders(list);
   const slips = slipOrder(list) as Inv[];
   const waiting = list.filter((r) => r.assignment?.letter && !hasSlip(r));
   const picked = slipRef ? byRef(slips, slipRef) : undefined;
@@ -242,7 +261,7 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
           labels={{ move: "To pay", wait: "Waiting", done: "Paid" }}
           searchLabel="Search by invoice number"
           className="by-ledger"
-          render={(r) => <LedgerLine r={r} href={slipPath(r.ref)} status={statuses?.[r.n]} current={r.n === sel?.n} />}
+          render={(r) => <LedgerLine r={r} href={slipPath(r.ref)} status={statuses?.[r.n]} current={r.n === sel?.n} from={senders[r.n]} />}
         />
       ) : (
         // an empty state with the next step (audit 2026-10-27, finding 16)
@@ -311,7 +330,7 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
             ) : null}
             {sel ? (
               <div className={one ? "by-flat" : "by-pay-row"}>
-                <Slip key={sel.n} r={sel} status={statuses?.[sel.n] ?? null} />
+                <Slip key={sel.n} r={sel} status={statuses?.[sel.n] ?? null} from={senders[sel.n]} />
                 <WherePays r={sel} />
               </div>
             ) : null}

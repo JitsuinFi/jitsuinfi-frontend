@@ -186,7 +186,7 @@ const trail = { from: "" };
 const noteFrom = () => void (trail.from = location.pathname);
 
 /** One ledger line, a link to the invoice (or its slip). */
-export function LedgerLine({ r, href, status, current }: { r: BuyerInvoice; href: string; status: string | null | undefined; current?: boolean }): ReactNode {
+export function LedgerLine({ r, href, status, current, from }: { r: BuyerInvoice; href: string; status: string | null | undefined; current?: boolean; from?: string }): ReactNode {
   const a = nextAction(r);
   const s = sealCount(r);
   const [word, cls] = TAG[a];
@@ -195,7 +195,7 @@ export function LedgerLine({ r, href, status, current }: { r: BuyerInvoice; href
     <Link className="by-ln" to={href} aria-current={current ? "page" : undefined} onClick={noteFrom}>
       <span className="by-l-id">{r.invoice_id}</span>
       <span className="by-l-amt">{`${zatToZec(r.amount_zat)} ZEC`}</span>
-      <span className="by-l-sub">{`due ${daysToDate(r.due_date)} · key #${r.key_index}`}</span>
+      <span className="by-l-sub">{from ? `due ${daysToDate(r.due_date)} · from ${from}` : `due ${daysToDate(r.due_date)}`}</span>
       <span className="by-l-seals" role="img" aria-label={`${s} of 3 seals`}>
         {["売", "買", "融"].map((g, i) => (
           <i key={g} className={i < s ? "is-on" : undefined} lang="ja">

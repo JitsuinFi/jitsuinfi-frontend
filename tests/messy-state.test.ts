@@ -19,7 +19,7 @@ test("a key already on a signed invoice is said before the buyer signs a second 
   assert.deepEqual([r.canSign, r.kind], [true, "warn"]);
   assert.match(r.title, /^Key #0 is on another invoice already$/);
   assert.match(r.text, /only one invoice per key can be financed/);
-  assert.deepEqual(r.rows[1], ["Addressed to", "your invoice key #0, already on TES-INV-A"]);
+  assert.deepEqual(r.rows[1], ["Addressed to", "you, with a key already used on TES-INV-A"]);
   assert.equal(checkInvoice({ termsHash: H, fileHash: H, keyIndex: 0, sameKey: [] }).kind, "ok");
 });
 

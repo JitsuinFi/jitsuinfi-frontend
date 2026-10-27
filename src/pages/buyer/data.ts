@@ -25,6 +25,8 @@ import { keyMissText, type KeyMiss } from "../../lib/key-match";
 import { draft, RelayError, send } from "../../lib/relay";
 import { encodeMessage } from "../../lib/relay-message";
 import { BUYER_CHANGED } from "../../app/DueReminder";
+import { contactId, senderWords, type Contact } from "../../lib/contact";
+import { readablePrint } from "../../lib/print";
 
 export type Inv = BuyerInvoice & { ref: string };
 
@@ -101,6 +103,37 @@ export function useInvoices(): Inv[] | "blocked" | null {
     return () => void (live = false);
   }, [v]);
   return list;
+}
+
+// ---------- who sent each invoice (mobile E2E 2026-10-27, B-14) ----------
+
+/** The supplier of each invoice in words ("@name", or not in contacts with its fingerprint), by N; read again on every store change. */
+export function useSenders(list: BuyerInvoice[]): Record<string, string> {
+  const v = useVersion();
+  const [names, setNames] = useState<Record<string, string>>({});
+  const key = list.map((r) => `${r.n}:${r.reply_to ?? r.assignment?.supplier_mailbox ?? ""}`).join(",");
+  useEffect(() => {
+    let live = true;
+    const store = account.current?.store;
+    void (async () => {
+      const out: Record<string, string> = {};
+      for (const r of list) {
+        const mb = r.reply_to ?? r.assignment?.supplier_mailbox;
+        const c = mb && store ? await store.get<Contact>(contactId({ mailbox_pk: mb } as Contact)).catch(() => undefined) : undefined;
+        let print = "";
+        try {
+          print = readablePrint(json<{ supplier_pk: string }>(wasm.invoiceDecode(r.invoice)).supplier_pk);
+        } catch {
+          print = "";
+        }
+        out[r.n] = senderWords(c, print);
+      }
+      if (live) setNames(out);
+    })();
+    return () => void (live = false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, v]);
+  return names;
 }
 
 // ---------- the board's word on each signed invoice (HNK-25.T7, BL-D25-09) ----------

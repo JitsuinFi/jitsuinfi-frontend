@@ -10,7 +10,7 @@ import { nextStep, route, stationLabel, STEPS, type StationKey, type StationStat
 import { AddContact } from "../ContactAdd";
 import { contactFor, letterCardFor, type Book } from "./data";
 
-export const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, sign its board entry, seal the letter and receive the advance.";
+export const LEAD = "Issue an invoice, have the buyer sign it, offer it to one financier, register it on the public board, seal the letter and receive the advance.";
 
 // The six stations, each a physical mark (照 the buyer's seal checked under a loupe, 署 the pen
 // that signs the offer, 登 the public board slab, 印 the seal on the letter, 金 the coin into the

@@ -148,7 +148,9 @@ export async function checkInbox(auto = false): Promise<void> {
       return was ? (isNew && was.fresh ? { ...was, fresh: false } : was) : { r, state: "new", fresh: !first };
     });
     // a letter acted on stays until the panel lets it go, even when the relay already removed it
-    for (const l of state.letters) if (l.state === "done" && !letters.some((x) => x.r.relayId === l.r.relayId)) letters.push(l);
+    // mobile E2E 2026-10-27: so does a letter being acted on (it is left out of the mailbox read
+    // while its action runs); dropping it lost its "Working…" and its 済 when a check ran meanwhile
+    for (const l of state.letters) if ((l.state === "done" || l.state === "busy") && !letters.some((x) => x.r.relayId === l.r.relayId)) letters.push(l);
     const added = letters.filter((l) => !old.has(l.r.relayId));
     set({ letters, refused: g.refused, mailbox: "ready", why: undefined, nothingNew: !auto && !added.length });
     for (const l of added) {

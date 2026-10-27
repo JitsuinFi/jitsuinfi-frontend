@@ -122,7 +122,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                 </dd>
               </div>
               <div>
-                <dt>mailbox</dt>
+                <dt>inbox</dt>
                 <dd className="is-word">{mailbox}</dd>
               </div>
             </dl>
@@ -234,7 +234,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                   ))}
                 </ul>
               ) : (
-                <p className="ia-ct-none">{`No contact yet. Share your contact above, or add theirs below.${s.role === "supplier" ? " A buyer who sends you their key through the relay needs no card: their mailbox comes with the key." : ""}`}</p>
+                <p className="ia-ct-none">{`No contact yet. Share your contact above, or add theirs below.${s.role === "supplier" ? " A buyer who sends you their key from the app needs no card: their address comes with the key." : ""}`}</p>
               )}
               <div className="ia-ct-add">
                 <h3>Scan or paste a contact</h3>

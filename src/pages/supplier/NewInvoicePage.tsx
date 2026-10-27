@@ -103,7 +103,7 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           <input type="text" spellCheck="false" autoComplete="off" aria-label="The buyer's invoice key, from their screen" placeholder="the buyer's invoice key, from their screen" aria-invalid={bad.includes("buyer") || undefined} ref={typed} onInput={() => bad.length && setBad([])} />
         </span>
       ) : null}
-      <small>{arrived ? "to this buyer's key for this invoice; it goes back to the mailbox it came from to sign" : "to the buyer's key for this invoice"}</small>
+      <small>{arrived ? "to this buyer's key for this invoice; it goes back to the buyer who sent it, to sign" : "to the buyer's key for this invoice"}</small>
     </div>
   );
   const termsSlot = (

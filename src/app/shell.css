@@ -460,3 +460,8 @@ button[aria-busy="true"] { cursor: progress; }
 button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9em; height: .9em; margin-left: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ia-spin 800ms linear infinite; }
 @keyframes ia-spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { button[aria-busy="true"]::after { animation: none; border-right-color: currentColor; opacity: .5; } }
+/* a field brought into view (focus, the keyboard) stops above a sticky primary, not under it
+   (mobile E2E 2026-10-27, finding 8: Continue covered the Email field on sign-up) */
+@media (max-width: 599px) {
+  html:has(.ac .ac-act > .ac-btn), html:has(.sp .ia-new-go), html:has(.ap .ap-act), html:has(.fi .fi-actions) { scroll-padding-bottom: calc(var(--tabbar-h) + 88px + env(safe-area-inset-bottom, 0px)); }
+}

@@ -90,7 +90,7 @@ function SendSignature({ n, sig, replyTo }: { n: string; sig: string; replyTo: s
               try {
                 await sendSignature(n, sig, replyTo);
                 setDone(true); // sent once; a second copy would only repeat it
-                out.show(<Banner kind="ok" title="Signature sent" text="Sealed to the supplier's mailbox. The supplier offers the invoice to a financier next." glyph="送" />);
+                out.show(<Banner kind="ok" title="Signature sent" text="Sent privately to the supplier. The supplier offers the invoice to a financier next." glyph="送" />);
               } catch (e) {
                 out.error(e);
               }
@@ -407,7 +407,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         </p>
       </div>
       {/* a phone: what to do, in one sentence (DS-MOB P4); the codes are right below */}
-      <p className="by-blank">{phone ? "Paste the code a supplier gave you by hand below, with its terms PDF." : "Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices addressed to your keys through the relay arrive in your inbox instead."}</p>
+      <p className="by-blank">{phone ? "Paste the code a supplier gave you by hand below, with its terms PDF." : "Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices sent to you from the app arrive in your inbox instead."}</p>
     </article>
   );
 
@@ -514,7 +514,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       {invCheck ? <Verdict kind={invCheck.kind} glyph={invCheck.kind === "ok" ? "認" : invCheck.kind === "warn" ? "待" : "拒"} title={invCheck.title} text={invCheck.text} /> : null}
       {rec?.signature ? (
         press === "sig" ? null : rec.signature_sent_at ? (
-          <Verdict kind="ok" glyph="送" title="Signature sent" text="Sealed to the supplier's mailbox. The supplier offers the invoice to a financier next." land={false} />
+          <Verdict kind="ok" glyph="送" title="Signature sent" text="Sent privately to the supplier. The supplier offers the invoice to a financier next." land={false} />
         ) : (
           <SendSignature n={rec.n} sig={rec.signature} replyTo={rec.reply_to} />
         )
@@ -551,7 +551,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
 
   const sideSeal = (
     <div className="by-side">
-      <h3>Acknowledge the assignment</h3>
+      <h3>Agree to pay the financier</h3>
       <p>Sealing the letter is your written acknowledgment that you will pay the financier named in it at maturity. The financier pays the supplier only after this.</p>
       <ul className="by-checks" aria-label="Letter checks">
         {letterRes ? letterRes.map((c, i) => <Check key={c.label} ok={c.ok} label={c.label} text={c.text} i={i} />) : pendingLines(["Letter for this invoice", "The letter's PDF", "Supplier's seal"], "not checked yet")}

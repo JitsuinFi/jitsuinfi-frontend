@@ -38,7 +38,7 @@ export function checkInvoice(c: CheckInput): CheckResult {
     return { canSign: false, kind: "warn", title: "Add the terms PDF", text: "Choose the PDF the supplier sent, so you sign the terms you read and not just a number.", rows };
   }
   if (!hashOk) {
-    return { canSign: false, kind: "bad", title: "The PDF is not the invoiced document", text: "Its hash differs from the one in the invoice. Ask the supplier for the exact file before signing.", rows };
+    return { canSign: false, kind: "bad", title: "The PDF is not the invoiced document", text: "Its fingerprint differs from the one in the invoice. Ask the supplier for the exact file before signing.", rows };
   }
   if (c.sameKey?.length) {
     const ids = c.sameKey.join(", ");

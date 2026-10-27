@@ -58,10 +58,13 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
         {l.r.signatureOk && !done ? (
           can ? (
             <div className="ia-acts">
-              <button type="button" disabled={l.state === "busy"} onClick={() => onLead(l)}>
+              <button type="button" disabled={l.state === "busy"} aria-busy={l.state === "busy" || undefined} onClick={() => onLead(l)}>
                 {l.state === "busy" ? "Working…" : a.label}
               </button>
-              <span className="ia-goes">{a.goes}</span>
+              {/* the press shows at once; a passkey step can take a while (mobile E2E 2026-10-27, finding 8) */}
+              <span className="ia-goes" role={l.state === "busy" ? "status" : undefined}>
+                {l.state === "busy" ? "Working on it. If your device asks for your passkey, confirm there." : a.goes}
+              </span>
             </div>
           ) : (
             <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : l.away ? "For an invoice this device has not synced yet: it shows here once your other device has synced, or open your inbox there. The letter waits in your mailbox for it." : "Nothing to do with this letter here."}</small>

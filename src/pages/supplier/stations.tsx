@@ -6,7 +6,7 @@
 // key came through the relay in a letter that names the buyer's mailbox (and is signed by that
 // key), so the deal keeps that mailbox and "Send to the buyer" uses it; the buyer signs in their
 // inbox; the signature comes back to the supplier's inbox, and this page offers "Check and keep"
-// as soon as it is there. Pasting by hand is a folded fallback ("No relay? Hand it over by hand").
+// as soon as it is there. Pasting by hand is a folded fallback ("Sending from here does not work? Hand it over by hand").
 // The copy says what a thing is, not its encoding: keys show as fingerprints.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Actions, Banner, Button, CodeBlock, Field, FileField, Kv, useOut } from "../../app/ui";
@@ -130,7 +130,7 @@ export function StationWork(p: WorkProps & { station: StationKey; stations: Stat
 }
 
 /** A folded fallback for working without the relay. */
-function ByHand({ title = "No relay? Hand it over by hand", children }: { title?: string; children: ReactNode }): ReactNode {
+function ByHand({ title = "Sending from here does not work? Hand it over by hand", children }: { title?: string; children: ReactNode }): ReactNode {
   return (
     <details className="sp-fold">
       <summary>{title}</summary>
@@ -177,7 +177,7 @@ function SignatureWork(p: WorkProps): ReactNode {
       if (!mailbox) throw new Error("Choose the buyer to send it to: from your contacts, or paste their contact card.");
       // user test 2026-10-27: a key that came in another buyer's letter never goes to this mailbox
       const other = d.buyer_mailbox ? null : knownMailbox(d.buyer_pk, mailbox, book?.keys ?? []);
-      if (other) throw new Error(`This invoice is for key ${readablePrint(d.buyer_pk)}, which came from the mailbox ${readablePrint(other)}, not this buyer's: they could not open it. Send it to the buyer who sent that key.`);
+      if (other) throw new Error(`This invoice is for key ${readablePrint(d.buyer_pk)}, which came from the inbox ${readablePrint(other)}, not this buyer's: they could not open it. Send it to the buyer who sent that key.`);
       const file = held ?? pdf.current?.files?.[0];
       if (!file) throw new Error("Choose the invoice PDF: the same file you wrote the invoice with.");
       const terms = json<{ terms_hash: string }>(wasm.invoiceDecode(d.invoice)).terms_hash;
@@ -288,7 +288,7 @@ function SignatureWork(p: WorkProps): ReactNode {
               <>
                 <strong>{who.name}</strong>
                 <code>{who.print}</code>
-                <small>The buyer's key came from this mailbox: the invoice goes back to it.</small>
+                <small>The buyer's key came from this inbox: the invoice goes back to it.</small>
               </>
             ) : buyers.length ? (
               <>
@@ -469,7 +469,7 @@ function OfferWork(p: WorkProps): ReactNode {
     );
   const noDirectory = fits !== null && (typeof fits === "string" || !fits.length);
   return (
-    <Work glyph="署" step="Step 2" title="Offer it to one financier" hint="Your offer goes sealed to the financier's inbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you for the board entry.">
+    <Work glyph="署" step="Step 2" title="Offer it to one financier" hint="Your offer goes sealed to the financier's inbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you to register the invoice on the public board.">
       {/* HNK-26.T6: the last financier that declined; the invoice was never on the board, so it is free */}
       {d.declined?.length ? <Banner kind="warn" title="Declined" text={`${d.declined[d.declined.length - 1].reason} Offer it to another financier.`} /> : null}
       {finder}
@@ -557,7 +557,7 @@ function OfferWork(p: WorkProps): ReactNode {
               await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
               await rememberAddress(offer.supplier_address).catch(() => undefined);
               kept.clear();
-              did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you for the board entry.`);
+              did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you to register the invoice on the public board.`);
             } catch (e) {
               out.error(e);
             }
@@ -596,8 +596,8 @@ function EntryWork(p: WorkProps): ReactNode {
   const req = d.entry_request;
   if (!req) {
     return (
-      <Work glyph="登" step="Step 3" title="Wait for the entry request" hint="The financier asks for the board entry only after it has checked the board for this invoice (and the buyer's history, if it needs it). The request arrives in your inbox. Nothing to sign before that.">
-        <ByHand title="No relay? Paste the request the financier gave you">
+      <Work glyph="登" step="Step 3" title="Wait for the entry request" hint="The financier asks you to register the invoice on the public board only after it has checked the board for this invoice (and the buyer's history, if it needs it). The request arrives in your inbox. Nothing to sign before that.">
+        <ByHand title="Got it another way? Paste the request the financier gave you">
           <Field label="Entry request (from the financier)" area placeholder="jitsuin-entry-request-v1:…" inputRef={code} />
           <Actions>
             <Button
@@ -611,7 +611,7 @@ function EntryWork(p: WorkProps): ReactNode {
                     return;
                   }
                   await save({ ...d, entry_request: r });
-                  did(p, "登", "Entry request read", "It is for this invoice, from the financier you offered it to. Sign the board entry next.");
+                  did(p, "登", "Entry request read", "It is for this invoice, from the financier you offered it to. Register it on the public board next.");
                 } catch (e) {
                   out.error(e);
                 }
@@ -627,7 +627,7 @@ function EntryWork(p: WorkProps): ReactNode {
   }
   const classes = req.discount === undefined ? "none" : `${req.discount} / ${req.tenor}`;
   return (
-    <Work glyph="登" step="Step 3" title="Sign the board entry" hint="The financier checked the board and asks for your entry. The entry commits to that financier without naming it.">
+    <Work glyph="登" step="Step 3" title="Register the invoice on the public board" hint="The financier checked the board and asks for your entry. The entry commits to that financier without naming it.">
       <Kv
         rows={[
           ["Financier", finPrint || "…"],
@@ -788,7 +788,7 @@ function SealWork(p: WorkProps): ReactNode {
         </p>
       )}
       <details className="sp-fold" open={!d.letter_in}>
-        <summary>{d.letter_in ? "The letter as it came" : "No relay? Paste the letter the financier gave you"}</summary>
+        <summary>{d.letter_in ? "The letter as it came" : "Got it another way? Paste the letter the financier gave you"}</summary>
         <div className="sp-fold-body">
           <Field label="Assignment letter (from the financier)" area value={d.letter_in?.letter} inputRef={letter} />
           <FileField label="The letter's PDF" help={d.letter_in?.pdf ? "Already here: it came sealed with the letter. Choose a file only to check another one." : d.letter_in?.pdf_away ? "PDF on your other device: it came there with the letter. Choose it here to check it, or seal on that device." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />

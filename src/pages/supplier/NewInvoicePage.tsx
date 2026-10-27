@@ -9,6 +9,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
 import { Button, useOut } from "../../app/ui";
 import { DidLine, setDid, useDid } from "../../app/outcome";
+import { useFormDraft } from "../../app/kept";
 import { account } from "../../lib/app-session";
 import { dateToDays, fileHash, json, wasm, zecToZat } from "../../lib/core";
 import { dealPath, newRef } from "../../lib/deal-ref";
@@ -59,6 +60,8 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
   const [file, setFile] = useState<{ name: string; hash: string } | null>(null);
   const out = useOut();
   const shown = useDid("/supplier/invoices/new");
+  // finding F10: what is written here survives a reload (sealed in this tab); the PDF is asked for again
+  const draft = useFormDraft<HTMLFormElement>("supplier/invoices/new");
   // a key that arrives while the page is open is chosen, unless the supplier picked one
   const picked = useRef(false);
   useEffect(() => {
@@ -202,6 +205,7 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
       await save({ n, ref, invoice_id: invoiceId, buyer_pk: buyerPk, supplier_pk: supplierPk, amount_zat: amountZat, due_date: dueDay, invoice: code, created_at: Date.now(), ...(mailbox ? { buyer_mailbox: mailbox } : {}) });
       keepPdf(n, f);
       if (arrived) await dropArrivedKey(arrived.invoice_pk);
+      draft.clear();
       freshN.n = n;
       setDid({
         at: dealPath(ref),
@@ -246,7 +250,9 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
             {shown ? <DidLine did={shown} /> : null}
             {/* judge run 3, finding 2: the key's letter carried the buyer's card: add them back */}
             {arrived ? <AddBuyerBack book={book} mailbox={arrived.mailbox_pk} /> : null}
+            {draft.note}
             <form
+              ref={draft.ref}
               className="ia-new-form"
               onSubmit={(e) => {
                 e.preventDefault();

@@ -122,8 +122,10 @@ async function markHandled(): Promise<void> {
     if (!hd || !l.r.signatureOk || l.state === "done" || l.state === "busy") continue;
     const yes = hd.handled ? await hd.handled(l.r).catch(() => false) : false;
     const away = hd.elsewhere ? await hd.elsewhere(l.r).catch(() => false) : false;
+    // finding F10: a record that came from another device changes what the letter is about too
+    const about = hd.about ? await hd.about(l.r).catch(() => null) : null;
     if (owner !== me) return;
-    if (!!l.handled !== yes || !!l.away !== away) patchLetter(l.r.relayId, { handled: yes, away });
+    if (!!l.handled !== yes || !!l.away !== away || (about && about !== l.about)) patchLetter(l.r.relayId, { handled: yes, away, ...(about ? { about } : {}) });
   }
 }
 

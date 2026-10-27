@@ -104,7 +104,7 @@ export function DealPage({ dealRef: r, at }: { dealRef: string; at?: string }): 
         <div className="sp" data-wide="true">
           <div className="ia-empty">
             <h1>This deal is not on this device</h1>
-            <p className="sp-lede">Deals are kept encrypted in this browser only. Open one from your ledger.</p>
+            <p className="sp-lede">Deals are kept encrypted on your devices. One written on another device shows here once that device has synced. Open one from your ledger.</p>
             <p className="ia-goline">
               <Link className="sp-ink" to="/supplier/invoices">
                 Your invoices

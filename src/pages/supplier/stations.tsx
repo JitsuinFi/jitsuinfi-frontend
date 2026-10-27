@@ -15,6 +15,7 @@ import { routeScan } from "../../lib/scan";
 import { act, checkInbox, letGo, lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { setDid } from "../../app/outcome";
+import { useFormDraft } from "../../app/kept";
 import { financierFingerprint } from "../../lib/account";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
@@ -355,6 +356,14 @@ function OfferWork(p: WorkProps): ReactNode {
   const addr = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const manual = useRef<HTMLDetailsElement>(null);
   const out = useOut();
+  // finding F10: the offer's fields survive a reload (sealed in this tab)
+  const kept = useFormDraft<HTMLDivElement>(`supplier/deal/${d.ref}/offer`);
+  /** A value put in by a tap is kept like a typed one. */
+  const put = (el: HTMLInputElement | HTMLTextAreaElement | null, v: string) => {
+    if (!el) return;
+    el.value = v;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  };
   const finPrint = useFinPrint(d.offer?.financier_pk);
   // HNK-30.T20 (D-47): the financiers that chose to be listed, matched to this invoice here, in
   // the browser. Picking one fills its contact card and key; nothing about the invoice is sent.
@@ -430,8 +439,8 @@ function OfferWork(p: WorkProps): ReactNode {
                   className="sp-pill"
                   aria-pressed={picked === f.listing.financier_pk}
                   onClick={() => {
-                    contact.current!.value = f.listing.contact;
-                    fin.current!.value = f.listing.financier_pk;
+                    put(contact.current, f.listing.contact);
+                    put(fin.current, f.listing.financier_pk);
                     setPicked(f.listing.financier_pk);
                     adv.current!.focus();
                   }}
@@ -458,7 +467,9 @@ function OfferWork(p: WorkProps): ReactNode {
       {/* HNK-26.T6: the last financier that declined; the invoice was never on the board, so it is free */}
       {d.declined?.length ? <Banner kind="warn" title="Declined" text={`${d.declined[d.declined.length - 1].reason} Offer it to another financier.`} /> : null}
       {finder}
-      <details className="sp-fold" open={noDirectory} ref={manual}>
+      {kept.note}
+      <div className="ia-draft-area" ref={kept.ref}>
+      <details className="sp-fold" open={noDirectory || kept.restoredAny} ref={manual}>
         <summary>{picked ? "The chosen financier's card" : "Not in the directory? Paste the financier's card"}</summary>
         <div className="sp-fold-body">
           <Field label="The financier's contact card" area placeholder="jitsuin-contact-v1:…" help="From the financier's console, under For suppliers." inputRef={contact} />
@@ -478,7 +489,7 @@ function OfferWork(p: WorkProps): ReactNode {
               type="button"
               className="sp-pill sp-addr-last"
               onClick={() => {
-                addr.current!.value = suggest;
+                put(addr.current, suggest);
                 setAddrSay(addressProblem(suggest));
               }}
             >
@@ -486,6 +497,7 @@ function OfferWork(p: WorkProps): ReactNode {
             </button>
           ) : null}
         </label>
+      </div>
       </div>
       <Actions>
         <Button
@@ -523,6 +535,7 @@ function OfferWork(p: WorkProps): ReactNode {
               const at = Date.now();
               await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
               await rememberAddress(offer.supplier_address).catch(() => undefined);
+              kept.clear();
               did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you for the board entry.`);
             } catch (e) {
               out.error(e);
@@ -686,7 +699,7 @@ function SealWork(p: WorkProps): ReactNode {
     try {
       const code = value(letter);
       const f = json<LetterFields>(wasm.assignmentDecode(code, d.invoice));
-      const arrived = d.letter_in && d.letter_in.letter === code ? new File([b64ToBytes(d.letter_in.pdf)], "letter.pdf", { type: "application/pdf" }) : undefined;
+      const arrived = d.letter_in?.pdf && d.letter_in.letter === code ? new File([b64ToBytes(d.letter_in.pdf)], "letter.pdf", { type: "application/pdf" }) : undefined;
       const file = pdf.current?.files?.[0] ?? arrived;
       const pdfOk = file ? (await fileHash(file)) === f.terms_hash : false;
       const finOk = f.financier_pk === d.offer!.financier_pk;
@@ -750,7 +763,7 @@ function SealWork(p: WorkProps): ReactNode {
         <summary>{d.letter_in ? "The letter as it came" : "No relay? Paste the letter the financier gave you"}</summary>
         <div className="sp-fold-body">
           <Field label="Assignment letter (from the financier)" area value={d.letter_in?.letter} inputRef={letter} />
-          <FileField label="The letter's PDF" help={d.letter_in ? "Already here: it came sealed with the letter. Choose a file only to check another one." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />
+          <FileField label="The letter's PDF" help={d.letter_in?.pdf ? "Already here: it came sealed with the letter. Choose a file only to check another one." : d.letter_in?.pdf_away ? "PDF on your other device: it came there with the letter. Choose it here to check it, or seal on that device." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />
         </div>
       </details>
       <Actions>
@@ -771,6 +784,8 @@ function AdvanceWork(p: WorkProps): ReactNode {
   const txid = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const got = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const out = useOut();
+  // finding F10: what was typed for the advance survives a reload (sealed in this tab)
+  const kept = useFormDraft<HTMLDivElement>(`supplier/deal/${d.ref}/advance`);
   const agreed = d.offer!.advance_zat;
   const pre = advancePrefill(d);
   if (d.advance?.matches) {
@@ -789,11 +804,13 @@ function AdvanceWork(p: WorkProps): ReactNode {
   const record = async (receivedZat: number, tx: string) => {
     const a = advanceRecord(d, receivedZat, id64(tx, "the transaction id"));
     await save({ ...d, advance: a });
+    kept.clear();
     if (a.matches) did(p, "金", "Advance received as agreed", `${zatToZec(a.received_zat)} ZEC arrived in your wallet. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the settlement bundle arrives in your inbox then.`);
     else out.show(<Banner kind="bad" title="Advance differs" text={`Your wallet received ${zatToZec(a.received_zat)} ZEC instead of the ${zatToZec(agreed)} ZEC you asked for. Tell the financier before anything else.`} />);
   };
   const byHand = (
-    <>
+    <div className="ia-draft-area" ref={kept.ref}>
+      {kept.note}
       <Field label="Amount your wallet received (ZEC)" type="number" placeholder={zatToZec(pre?.zat ?? agreed)} inputRef={got} />
       <Field label="The transaction it came in" placeholder="from the financier's letter or your wallet" value={pre?.txid} help="Your wallet app shows it with the payment." inputRef={txid} />
       <Actions>
@@ -810,7 +827,7 @@ function AdvanceWork(p: WorkProps): ReactNode {
           Record what my wallet received
         </Button>
       </Actions>
-    </>
+    </div>
   );
   return (
     <Work glyph="金" step="Step 5" title="Check the advance" hint={pre ? `The financier says it paid the advance on ${when(pre.at)}. Open your wallet app and compare.` : `You asked for ${zatToZec(agreed)} ZEC. The financier's notice arrives in your inbox when it pays; or record what your wallet received by hand.`}>

@@ -37,6 +37,8 @@ export interface BuyerInvoice {
     buyer_seal?: string;
     financier_seal?: string;
     sealed_at?: number;
+    /** Finding F10: the letter's PDF stayed on another device (left out of the synced records for room). */
+    pdf_away?: { sha256: string; bytes: number };
   };
   /** HNK-26.T18: the verification bundle the financier sent once the repayment settled. */
   bundle?: string;
@@ -48,7 +50,7 @@ export interface BuyerInvoice {
    */
   ref?: string;
   /** IA port: the terms PDF that came with the sign request (base64), kept so the check needs no file. */
-  terms_pdf?: { name: string; b64: string };
+  terms_pdf?: { name: string; b64: string; /** Finding F10: the bytes stayed on another device (b64 empty). */ away?: { sha256: string; bytes: number } };
   /**
    * Judge run 3, finding 1: the financier's reminder milestones ("d-7", "d-1", "d+1") the buyer
    * saw the slip at (opened it then, or from the reminder itself); their letters no longer count.

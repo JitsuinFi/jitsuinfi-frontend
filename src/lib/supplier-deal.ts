@@ -40,7 +40,7 @@ export interface SupplierDeal {
   /** T6: the signed register entry for that financier's commitment. */
   entry?: { memo: string; commitment: string; tagged: boolean; discount: number; tenor: number; sent?: number };
   /** HNK-26.T16: the letter and its PDF (base64) as the financier's node sent them (`deal.letter`). */
-  letter_in?: { letter: string; pdf: string; at: number };
+  letter_in?: { letter: string; pdf: string; at: number; /** Finding F10: the PDF stayed on another device (pdf empty). */ pdf_away?: { sha256: string; bytes: number } };
   /** T7: the assignment letter, its PDF check and the supplier's seal s0. */
   seal?: { letter: string; s0: string; sent?: number };
   /** HNK-26.T18: the verification bundle the financier sent once the repayment settled. */

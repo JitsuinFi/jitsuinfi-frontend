@@ -173,3 +173,42 @@ export function keyTakenNote(k: number, on: ReadonlyArray<{ invoice_id: string; 
     text: `A key is for one invoice, and your next key comes only once ${ids} is financed. A supplier who used this key sees it as used; another supplier who writes to it gets an invoice that cannot be financed as well. Give it to no one else until then.`,
   };
 }
+
+// ---------- the keys handed out, from every device (finding F10) ----------
+/** The buyer's invoice keys handed out (the synced "keys:given" record): k, to whom, when. */
+export interface GivenKeys {
+  /** `to`: the supplier's mailbox key, or "copied" for a key copied whole by hand. */
+  given: Array<{ k: number; to: string; at: number }>;
+}
+
+/** One past the newest key index any device used: on an invoice, or handed out (widens the key search). */
+export function keysFloor(invoices: ReadonlyArray<{ key_index: number }>, g: GivenKeys): number {
+  return Math.max(0, ...invoices.map((x) => x.key_index + 1), ...g.given.map((x) => x.k + 1));
+}
+
+/**
+ * What the buyer is told when key #k was already handed out (on this device or another one) and
+ * no invoice names it yet: to whom and when, and that it goes to no one else. Null when it was not.
+ * `nameOf` names a supplier's mailbox ("@name", or "a supplier" when there is no card).
+ */
+export function keyGivenNote(k: number, g: GivenKeys, nameOf: (to: string) => string): { kind: "warn"; title: string; text: string } | null {
+  const to = g.given.filter((x) => x.k === k);
+  if (!to.length) return null;
+  const who = [...new Set(to.map((x) => (x.to === "copied" ? "copied by hand" : nameOf(x.to))))];
+  const when = new Date(Math.min(...to.map((x) => x.at))).toISOString().slice(0, 10);
+  return {
+    kind: "warn",
+    title: `Key #${k} was handed out on ${when}: ${who.join(", ")}.`,
+    text: `No invoice names it on your devices yet. A key is for one invoice: send it again to the same supplier if they lost it, but give it to no one else. Your next key comes once that invoice is financed.`,
+  };
+}
+
+/**
+ * The key to offer once the other devices' certificates are known (finding F10). `k` is what this
+ * device worked out; `here` the certificates on this device; `other` the certificates in the
+ * synced copy (sealed with this account's key, so they are this account's even when the board
+ * cannot be read to check them). A key below `other` is used: the offer moves past it.
+ */
+export function keyAfterOtherDevices(k: number, here: number, other: number): { k: number; moved: boolean } {
+  return k < other && here < other ? { k: other, moved: true } : { k, moved: false };
+}

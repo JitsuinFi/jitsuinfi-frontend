@@ -7,7 +7,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
-import { useKept, useKeptState } from "../../app/kept";
+import { useFormDraft, useKept, useKeptState } from "../../app/kept";
 import { LongList } from "../../app/LongList";
 import { WaitingRows } from "../../app/WaitingRows";
 import { DidLine, useDid } from "../../app/outcome";
@@ -29,10 +29,12 @@ import "../member.css";
 import { Lede } from "../../app/Lede";
 
 /** A withdrawal request 払戻請求, written on the slip it empties. */
-function Request({ x, out }: { x: Holding; out: ReturnType<typeof useOut> }): ReactNode {
+function Request({ x, out, onCancel }: { x: Holding; out: ReturnType<typeof useOut>; onCancel: () => void }): ReactNode {
   const amount = useRef<HTMLInputElement>(null);
   const address = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  // finding F10: the request survives a reload (sealed in this tab)
+  const kept = useFormDraft<HTMLFormElement>(`member/units/withdraw/${x.leaf_id}`);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -44,14 +46,17 @@ function Request({ x, out }: { x: Holding; out: ReturnType<typeof useOut> }): Re
       await send(x.fund_mailbox, await encodeMessage(hd), relayDeps);
       const w = await load();
       await save({ ...w, holdings: w.holdings.map((y) => (y.leaf_id === x.leaf_id ? { ...y, pending: { units: u, period, sent_at: Date.now() } } : y)) });
+      kept.clear();
+      onCancel();
     } catch (err) {
       setBusy(false);
       out.error(err);
     }
   };
   return (
-    <form className="fm-req" onSubmit={(e) => void submit(e)}>
+    <form className="fm-req" onSubmit={(e) => void submit(e)} ref={kept.ref}>
       <b lang="ja">払戻請求</b>
+      {kept.note}
       <label className="field">
         <span>Units</span>
         <input type="text" inputMode="numeric" enterKeyHint="next" defaultValue="all" aria-label="Units to withdraw, or all" ref={amount} />
@@ -65,6 +70,17 @@ function Request({ x, out }: { x: Holding; out: ReturnType<typeof useOut> }): Re
         <button type="submit" disabled={busy}>
           {busy ? "Sending…" : "Send the request"}
         </button>
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          onClick={() => {
+            kept.clear();
+            onCancel();
+          }}
+        >
+          Cancel
+        </button>
       </div>
     </form>
   );
@@ -73,7 +89,8 @@ function Request({ x, out }: { x: Holding; out: ReturnType<typeof useOut> }): Re
 /** One deposit slip 受領書 on the tray. */
 function Slip({ x, i }: { x: Holding; i: number }): ReactNode {
   const out = useOut();
-  const [asking, setAsking] = useState(false);
+  // finding F10: an open withdrawal request is open again after a reload
+  const [asking, setAsking] = useKeptState(`member/units/withdraw/${x.leaf_id}`, "asking", false);
   const stamp = !x.path ? ["待", "wait", "Waiting for the first close of the period"] : x.path.ok ? ["認", "ok", `Your units are in the period ${x.path.period} root`] : ["偽", "bad", `The period ${x.path.period} path does not hold: tell the auditor`];
   // HNK-29.T2: the same path, checked against the root on chain with the fund's viewing key
   const body = x.path?.body;
@@ -107,7 +124,7 @@ function Slip({ x, i }: { x: Holding; i: number }): ReactNode {
           </button>
         ) : null}
       </div>
-      {!x.pending && asking ? <Request x={x} out={out} /> : null}
+      {!x.pending && asking ? <Request x={x} out={out} onCancel={() => setAsking(false)} /> : null}
     </article>
   );
 }
@@ -267,7 +284,7 @@ export function UnitsPage(): ReactNode {
                 <h2 className="fm-h3">What the slips and stamps mean</h2>
               </summary>
               <Lede className="hint">
-                One deposit slip <span lang="ja">受領書</span> per holding, signed by the fund. Its withdraw token is the only thing that opens those units, so it stays on this device only. Each close, the fund sends a path: <span lang="ja">認</span> when it holds against the period's root, <span lang="ja">偽</span> when it does not, <span lang="ja">待</span> before the first close.
+                One deposit slip <span lang="ja">受領書</span> per holding, signed by the fund. Its withdraw token is the only thing that opens those units, so it is kept only in your encrypted records: on this device and, sealed to your passkey, on your other devices. Each close, the fund sends a path: <span lang="ja">認</span> when it holds against the period's root, <span lang="ja">偽</span> when it does not, <span lang="ja">待</span> before the first close.
               </Lede>
             </details>
             <h2 className="fm-h3">Paid out</h2>

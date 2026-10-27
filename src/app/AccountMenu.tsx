@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ROLES, roleLabel, type Role } from "../lib/account";
 import { account } from "../lib/app-session";
+import { useSyncStatus, type SyncStatus } from "../lib/device-sync";
+import { dropMyDrafts } from "./kept";
 import { firstSection } from "../lib/sections";
 import type { Session } from "../lib/session";
 
@@ -92,6 +94,7 @@ export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, curre
             <small>{s.demo ? "Test data · keys from a test secret, for test data only" : "Keys from your passkey · one touch per signature"}</small>
           </div>
         </div>
+        <SyncLine />
         <p className="ia-menu-k">Your roles · one passkey, separate keys for each</p>
         <div className="ia-roles" role="group" aria-label="Switch role">
           {ROLES.map(({ role: r }) => (
@@ -124,6 +127,7 @@ export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, curre
             role="menuitem"
             className="ia-out"
             onClick={() => {
+              void dropMyDrafts();
               account.lock();
               onLeave("/app");
             }}
@@ -134,5 +138,53 @@ export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, curre
         <small>Another role asks your passkey once. Signs you out by itself after 15 minutes without input.</small>
       </div>
     </>
+  );
+}
+
+/** How long ago, in words, for the sync line. */
+function ago(t: number, now: number): string {
+  const s = Math.max(0, Math.round((now - t) / 1000));
+  if (s < 45) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h} h ago` : new Date(t).toLocaleDateString();
+}
+
+/** The sync line's words (finding F10): quiet when it works, plain about why when it does not. */
+export function syncLine(st: SyncStatus, now: number): { text: string; off: boolean } | null {
+  switch (st.kind) {
+    case "off":
+      return null;
+    case "syncing":
+      return { text: st.last ? `Syncing with your other devices · last ${ago(st.last, now)}` : "Syncing with your other devices…", off: false };
+    case "synced": {
+      const extra = st.older ? " · the relay handed back an older copy; this device kept its records" : st.held ? ` · ${st.held} older record${st.held === 1 ? "" : "s"} stay on the device that has them` : "";
+      return { text: `Synced with your other devices · ${ago(st.at, now)}${extra}`, off: false };
+    }
+    case "offline":
+      return { text: "Not synced yet: this device is offline", off: true };
+    case "failed":
+      return { text: "Not synced yet: the relay did not take your records. It tries again by itself.", off: true };
+  }
+}
+
+function SyncLine(): ReactNode {
+  const st = useSyncStatus();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, [st]);
+  const line = syncLine(st, now);
+  if (!line) return null;
+  return (
+    <p className={line.off ? "ia-menu-sync is-off" : "ia-menu-sync"} role="status" title={st.kind === "failed" ? st.text : undefined}>
+      <b lang="ja" aria-hidden="true">
+        {line.off ? "待" : "同"}
+      </b>
+      <span>{line.text}</span>
+    </p>
   );
 }

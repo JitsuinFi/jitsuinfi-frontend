@@ -116,7 +116,7 @@ export function InvoicesPage(): ReactNode {
                       新
                     </b>
                     <strong>No invoices yet</strong>
-                    <p>Write your first invoice: it goes to the buyer's inbox to sign. Invoices written on another device stay on that device.</p>
+                    <p>Write your first invoice: it goes to the buyer's inbox to sign. Invoices written on another device with this passkey show here once it has synced.</p>
                     <Link className="ia-none-go" to="/supplier/invoices/new">
                       Write your first invoice
                     </Link>
@@ -125,7 +125,7 @@ export function InvoicesPage(): ReactNode {
               </section>
               <p className="ia-book-foot">
                 <span>Each line: the station it waits at (照 署 登 印 金 済), and your next move.</span>
-                <span>Kept encrypted on this device.</span>
+                <span>Kept encrypted, synced with your other devices.</span>
               </p>
             </div>
           </section>

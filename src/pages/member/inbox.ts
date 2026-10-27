@@ -23,7 +23,7 @@ export const memberInbox: Handlers = {
     },
     run: async (r) => {
       await save(await addReceipt(await load(), r.message.header));
-      const said = "Kept: the slip is on the tray. Its withdraw token stays on this device only.";
+      const said = "Kept: the slip is on the tray. Its withdraw token stays in your encrypted records, on your devices only.";
       return { said, did: { glyph: "受", title: "Deposit receipt kept", text: said }, to: to("fund.receipt") };
     },
   },

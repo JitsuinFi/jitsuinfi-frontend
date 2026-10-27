@@ -109,3 +109,10 @@
 @media (prefers-reduced-motion: reduce) {
   .rp *, .rp *::before, .rp *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }
+
+/* a phone: 44 px hit areas, the look unchanged (audit 2026-10-27, finding 13; DS-MOB T1). A pill
+   grows by a transparent border clipped from its background; a link in a sentence by padding
+   given back as a negative margin. */
+@media (max-width: 599px) {
+  .rp-file { min-height: 44px; box-sizing: border-box; }
+}

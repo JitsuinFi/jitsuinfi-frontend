@@ -21,7 +21,7 @@
 .by-keynote.is-ok .rp-hanko { color: var(--pool-2); }
 .by-keynote.is-bad .rp-hanko, .by-keynote.is-bad b { color: var(--seal); }
 .by-keyrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.by-keyrow > button { padding: 9px 14px; font-size: 13px; }
+.by-keyrow > button { min-height: 46px; } /* the screen's primary, one height with the others (audit 2026-10-27, finding 16) */
 .by-keyrow .rp-file { flex: 1 1 220px; }
 .by-help { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); margin-top: -6px !important; }
 .by-share summary { cursor: pointer; list-style: none; font: 500 14px/1.3 var(--f-body); color: var(--seal); }
@@ -189,7 +189,7 @@ p.by-late b { color: var(--head); font-weight: 600; }
 
 /* the checks: lines that tick */
 .by-side { display: grid; gap: 18px; align-content: start; min-width: 0; }
-.by-side h3 { font-size: 21px; }
+.by-side h3, .by-side h2.by-side-h { font-size: 21px; }
 .by-side > p { font: 400 14px/1.55 var(--f-body); color: var(--ink); }
 .by-checks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-2); }
 .by-checks li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 3px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
@@ -251,7 +251,7 @@ p.by-late b { color: var(--head); font-weight: 600; }
 .by-board-rows { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 28px; margin-top: 10px; width: max-content; }
 .by-board-rows span { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid rgba(196, 199, 242, .22); font: 400 11.5px/1.35 var(--f-mono); color: rgba(196, 199, 242, .8); }
 .by-board-rows span b { font: 500 12px/1.2 var(--f-body); color: var(--glint); }
-.by-board-rows span.is-next { color: rgba(196, 199, 242, .45); border-top-style: dashed; }
+.by-board-rows span.is-next { color: rgba(196, 199, 242, .62); border-top-style: dashed; } /* Vodka 62% on the pool: 4.9:1 (was .45, 3.16:1; audit 2026-10-27) */
 
 @media (max-width: 839px) {
   .by-desk { grid-template-columns: minmax(0, 1fr); }
@@ -291,7 +291,7 @@ p.by-late b { color: var(--head); font-weight: 600; }
    step; on a phone one screen down with a back control), Pay (the 払込票 slip as the main object),
    History (the chain over the board), and the next invoice key as its own screen on a phone.
    Approved prototype design-samples/ia/prototype.html. */
-.by .ia-dot { font-style: normal; margin: 0 8px; color: var(--fold); }
+.by .ia-dot { font-style: normal; margin: 0 8px; color: rgba(80, 42, 80, .72); } /* 4.7:1 on paper (audit 2026-10-27) */
 .by .ia-sec { color: var(--ink-2); }
 .by-led-k { margin-right: 10px; font: 700 20px/1 var(--f-seal); letter-spacing: .12em; color: var(--head); }
 .by .rp-list-h h2 { display: flex; align-items: baseline; }
@@ -378,3 +378,4 @@ p.by-late b { color: var(--head); font-weight: 600; }
 .by-keymore[open] > summary::after { content: "−"; }
 .by-keymore > div { display: grid; gap: 10px; padding: 0 0 12px; }
 .by-keymore .by-help { margin-top: 0 !important; }
+.by-side h2.by-side-h { line-height: 1.15; font-weight: 700; letter-spacing: 0; }

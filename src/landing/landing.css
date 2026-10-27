@@ -1153,7 +1153,7 @@ body.landing {
   font-weight: 800;
   font-size: 18px;
   line-height: 1;
-  color: var(--fold);
+  color: rgba(80, 42, 80, .72); /* Japanese Violet 72%%: 4.7:1 on paper; Pearly Purple was 3.25:1 (audit 2026-10-27) */
 }
 
 .sc-seal-name {
@@ -2937,3 +2937,24 @@ body.landing {
   background: url(/tittle.svg) center / contain no-repeat;
 }
 .wm-fi { color: var(--seal); font-weight: inherit; }
+
+/* a phone: 44 px hit areas around the landing's controls without changing the pills (audit
+   2026-10-27, finding 13; DS-MOB T1): a text control grows and gives the height back as a
+   negative margin; a filled one grows by a transparent border clipped from its fill. The
+   playground's fields are 16 px so iOS does not zoom into them (finding 8, DS-MOB F2). */
+@media (max-width: 599px) {
+  .brand { min-height: 44px; margin-block: -6px; }
+  .lang-opt { min-height: 44px; margin-block: -5px; }
+  .nav-pill .nav-link { display: inline-flex; align-items: center; min-height: 44px; margin-block: -3px; }
+  .nav-pill .nav-cta { display: inline-flex; align-items: center; border: 3px solid transparent; background-clip: padding-box; margin: -3px; min-height: 44px; box-sizing: border-box; }
+  .rail-pause { width: 44px; height: 44px; border: 5px solid transparent; background-clip: padding-box; margin: -5px; box-sizing: border-box; }
+  .rail-beat { min-width: 44px; min-height: 44px; justify-content: center; margin-block: -3px; }
+  .fp-input { font-size: 16px; min-height: 44px; }
+  .fp-step { min-width: 44px; min-height: 44px; }
+  .fn-txid { min-height: 44px; }
+}
+@media (max-width: 599px) {
+  .lang-opt { min-width: 44px; }
+  #landing .ink-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .fp-rows label { display: inline-block; padding-block: 14px; margin-block: -14px; }
+}

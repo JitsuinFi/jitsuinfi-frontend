@@ -33,8 +33,8 @@ export function letterChecks(c: LetterCheckInput): LetterCheck[] {
   return [
     { label: "Letter for this invoice", ok: c.matchesInvoice === true, text: c.matchesInvoice === true ? "N, amount and due date equal the invoice's" : other, problem: c.matchesInvoice === true ? null : other },
     c.fileHash === null
-      ? { label: "PDF hash", ok: null, text: "choose the letter's PDF", problem: "choose the letter's PDF" }
-      : { label: "PDF hash", ok: pdfOk, text: pdfOk ? "the PDF is the letter's document" : "the PDF is not the letter's document", problem: pdfOk ? null : "the PDF is not the letter's document" },
+      ? { label: "The letter's PDF", ok: null, text: "choose the letter's PDF", problem: "choose the letter's PDF" }
+      : { label: "The letter's PDF", ok: pdfOk, text: pdfOk ? "the PDF is the letter's document" : "the PDF is not the letter's document", problem: pdfOk ? null : "the PDF is not the letter's document" },
     { label: "Supplier's seal", ok: sealOk, text: sealOk ? "holds for this letter: the supplier assigned the invoice to this financier" : sealBad, problem: sealOk ? null : sealBad },
   ];
 }

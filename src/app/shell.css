@@ -434,3 +434,35 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
   .ia-goline a { display: inline-flex; align-items: center; min-height: 44px; }
 }
 .ia-draft-area { display: contents; }
+
+/* a phone: the screen's one primary in a bar above the tab bar (Dock.tsx; mobile E2E 2026-10-27,
+   finding 4). The page keeps room under its last line so the bar never covers it. */
+.ia-bar { display: none; }
+@media (max-width: 599px) {
+  .ia-bar {
+    position: fixed; z-index: 35; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px var(--gutter);
+    background: var(--paper); border-top: 1px solid var(--rule);
+    animation: ia-bar-in var(--dur-enter) var(--ease-land) both;
+  }
+  .ia-bar > button, .ia-bar > a, .ia-bar > form > button { flex: 1 1 100%; min-height: 48px; justify-content: center; }
+  .ia-bar > a { display: flex; align-items: center; border-radius: var(--r-control); background: var(--seal); color: var(--sheet); font: 600 15px/1 var(--f-body); text-decoration: none; }
+  .ia-bar > a.secondary { background: var(--seal-wash); color: var(--seal); }
+  .ia-bar > .hint, .ia-bar > small { flex: 1 1 100%; margin: 0; font-size: 13px; color: var(--ink-2); text-align: center; }
+  body.has-dock main { padding-bottom: calc(var(--s-6) + var(--tabbar-h) + 72px + env(safe-area-inset-bottom, 0px)); }
+  body.has-dock footer { padding-bottom: calc(var(--s-3) + var(--tabbar-h) + 72px + env(safe-area-inset-bottom, 0px)); }
+  body.has-dock main { scroll-padding-bottom: calc(var(--tabbar-h) + 72px); }
+  html:has(body.has-dock) { scroll-padding-bottom: calc(var(--tabbar-h) + 80px + env(safe-area-inset-bottom, 0px)); }
+}
+@keyframes ia-bar-in { from { transform: translateY(16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ia-bar { animation: none; } }
+/* busy: a pressed action says so at once (mobile E2E 2026-10-27, finding 8) */
+button[aria-busy="true"] { cursor: progress; }
+button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9em; height: .9em; margin-left: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ia-spin 800ms linear infinite; }
+@keyframes ia-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { button[aria-busy="true"]::after { animation: none; border-right-color: currentColor; opacity: .5; } }
+/* a field brought into view (focus, the keyboard) stops above a sticky primary, not under it
+   (mobile E2E 2026-10-27, finding 8: Continue covered the Email field on sign-up) */
+@media (max-width: 599px) {
+  html:has(.ac .ac-act > .ac-btn), html:has(.sp .ia-new-go), html:has(.ap .ap-act), html:has(.fi .fi-actions) { scroll-padding-bottom: calc(var(--tabbar-h) + 88px + env(safe-area-inset-bottom, 0px)); }
+}

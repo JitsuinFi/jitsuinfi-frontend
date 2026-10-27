@@ -297,3 +297,13 @@ test("financierFingerprint: the node's contact card fingerprint (same vector as 
   assert.equal(await financierFingerprint("09".repeat(32)), "XEUS-G6UK-2CXX-G237");
   await assert.rejects(financierFingerprint("xyz"));
 });
+
+test("the last username survives a reload, for Welcome back (mobile E2E 2026-10-27)", async () => {
+  const kv = new MapStorage();
+  const { acct } = setup(kv);
+  assert.equal(acct.lastUsername(), null);
+  await acct.register("buyer", { username: "Hans_01" });
+  acct.lock();
+  const again = setup(kv); // a reload: a new Account on the same profile
+  assert.equal(again.acct.lastUsername(), "hans_01");
+});

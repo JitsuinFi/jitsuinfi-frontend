@@ -16,7 +16,7 @@ import { dealPath, newRef } from "../../lib/deal-ref";
 import { defaultChoice, HAND, keyChoices } from "../../lib/key-match";
 import { filePdfProblem } from "../../lib/pdf-check";
 import { readablePrint } from "../../lib/print";
-import { invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
+import { DUE_PRESETS, dueIn, invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
 import { Seikyusho, type SheetFields } from "../try/Seikyusho";
 import { dropArrivedKey, keepPdf, save, useBook, useDeals, type Book } from "./data";
 import { AddBuyerBack, Caption, ObjectDefs } from "./parts";
@@ -103,7 +103,7 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           <input type="text" spellCheck="false" autoComplete="off" aria-label="The buyer's invoice key, from their screen" placeholder="the buyer's invoice key, from their screen" aria-invalid={bad.includes("buyer") || undefined} ref={typed} onInput={() => bad.length && setBad([])} />
         </span>
       ) : null}
-      <small>{arrived ? "to this buyer's key for this invoice; it goes back to the mailbox it came from to sign" : "to the buyer's key for this invoice"}</small>
+      <small>{arrived ? "to this buyer's key for this invoice; it goes back to the buyer who sent it, to sign" : "to the buyer's key for this invoice"}</small>
     </div>
   );
   const termsSlot = (
@@ -279,6 +279,26 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
                   slots={{ to: toSlot, terms: termsSlot }}
                   kase={{ sealed: "pending", nCode, ring, crack, art, inside: null }}
                 />
+              </div>
+              {/* due presets: one tap instead of the date picker (mobile E2E 2026-10-27, finding 7; DS-MOB F3) */}
+              <div className="ia-due-presets" role="group" aria-label="Due in">
+                <span>Due in</span>
+                {DUE_PRESETS.map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    className="secondary"
+                    onClick={() => {
+                      const due = fields.due.current;
+                      if (!due) return;
+                      due.value = dueIn(fields.issued.current?.value || today, days);
+                      due.dispatchEvent(new Event("input", { bubbles: true }));
+                      if (bad.length) setBad([]);
+                    }}
+                  >
+                    {`${days} days`}
+                  </button>
+                ))}
               </div>
               <div className="ia-new-go">
                 <Button onClick={create}>Create invoice</Button>

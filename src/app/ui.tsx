@@ -21,11 +21,11 @@ export function Card({ step, title, hint, children, cardRef }: { step: string; t
 }
 
 /** A labelled input or text area; uncontrolled, read through `inputRef`. */
-export function Field({ label, type, placeholder, area, value, help, inputRef }: { label: string; type?: string; placeholder?: string; area?: boolean; value?: string; help?: string; inputRef?: Ref<HTMLInputElement & HTMLTextAreaElement> }): ReactNode {
+export function Field({ label, type, placeholder, area, value, help, inputRef, inputMode }: { label: string; type?: string; placeholder?: string; area?: boolean; value?: string; help?: string; inputRef?: Ref<HTMLInputElement & HTMLTextAreaElement>; inputMode?: "decimal" | "numeric" | "text" }): ReactNode {
   return (
     <label className="field">
       <span>{label}</span>
-      {area ? <textarea key={value ?? ""} placeholder={placeholder} spellCheck="false" defaultValue={value} ref={inputRef} /> : <input key={value ?? ""} type={type ?? "text"} placeholder={placeholder} spellCheck="false" autoComplete="off" defaultValue={value} ref={inputRef} />}
+      {area ? <textarea key={value ?? ""} placeholder={placeholder} spellCheck="false" defaultValue={value} ref={inputRef} /> : <input key={value ?? ""} type={type ?? "text"} inputMode={inputMode} placeholder={placeholder} spellCheck="false" autoComplete="off" defaultValue={value} ref={inputRef} />}
       {help ? <small>{help}</small> : null}
     </label>
   );
@@ -49,6 +49,7 @@ export function Button({ onClick, secondary, children }: { onClick: () => void |
       type="button"
       className={secondary ? "secondary" : undefined}
       disabled={busy}
+      aria-busy={busy || undefined}
       onClick={async () => {
         setBusy(true);
         try {

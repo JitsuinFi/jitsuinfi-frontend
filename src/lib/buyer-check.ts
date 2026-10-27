@@ -29,7 +29,7 @@ export function checkInvoice(c: CheckInput): CheckResult {
   const keyOk = c.keyIndex !== null;
   const rows: Array<[string, string]> = [
     ["Terms PDF", c.fileHash === null ? "not chosen" : hashOk ? "matches the invoice" : "does not match the invoice"],
-    ["Addressed to", keyOk ? `your invoice key #${c.keyIndex}` : "a key that is not yours"],
+    ["Addressed to", keyOk ? "you" : "a key that is not yours"],
   ];
   if (!keyOk) {
     return { canSign: false, kind: "bad", title: "Not addressed to you", text: "This invoice names a buyer key that is not one of yours. Do not sign it; ask the supplier for your key.", rows };
@@ -38,11 +38,11 @@ export function checkInvoice(c: CheckInput): CheckResult {
     return { canSign: false, kind: "warn", title: "Add the terms PDF", text: "Choose the PDF the supplier sent, so you sign the terms you read and not just a number.", rows };
   }
   if (!hashOk) {
-    return { canSign: false, kind: "bad", title: "The PDF is not the invoiced document", text: "Its hash differs from the one in the invoice. Ask the supplier for the exact file before signing.", rows };
+    return { canSign: false, kind: "bad", title: "The PDF is not the invoiced document", text: "Its fingerprint differs from the one in the invoice. Ask the supplier for the exact file before signing.", rows };
   }
   if (c.sameKey?.length) {
     const ids = c.sameKey.join(", ");
-    rows[1] = ["Addressed to", `your invoice key #${c.keyIndex}, already on ${ids}`];
+    rows[1] = ["Addressed to", `you, with a key already used on ${ids}`];
     return {
       canSign: true,
       kind: "warn",

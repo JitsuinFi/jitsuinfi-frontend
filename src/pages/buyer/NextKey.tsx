@@ -10,6 +10,7 @@ import { Page } from "../../app/AppShell";
 import { useStoreVersion } from "../../app/store-change";
 import { Banner, Button, useOut } from "../../app/ui";
 import { ScanButton } from "../../app/Scanner";
+import { Dock } from "../../app/Dock";
 import { routeScan } from "../../lib/scan";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
@@ -58,9 +59,9 @@ async function showKey(boardFile: File | undefined): Promise<void> {
           restored = r.added;
         } else if (r.kind === "relay-behind") {
           await backupHistory(hist);
-          said.push({ kind: "warn", title: "The relay's copy of your history was behind.", text: `It held ${plural(remote.certs.length, "certificate")}; this device has ${hist.certs.length}. The copy is updated now. If you did not remove anything yourself, the relay lost or held back your newest certificate.` });
+          said.push({ kind: "warn", title: "Your history backup was behind.", text: `It held ${plural(remote.certs.length, "certificate")}; this device has ${hist.certs.length}. The copy is updated now. If you did not remove anything yourself, the relay lost or held back your newest certificate.` });
         } else if (r.kind === "diverged") {
-          said.push({ kind: "bad", title: "Your history on the relay differs from this device.", text: "The two copies disagree about an earlier certificate. This device keeps its own; do not issue a new certificate until you know which device holds your real history." });
+          said.push({ kind: "bad", title: "Your history backup differs from this device.", text: "The two copies disagree about an earlier certificate. This device keeps its own; do not issue a new certificate until you know which device holds your real history." });
         }
       } else if (hist.certs.length) {
         await backupHistory(hist);
@@ -90,7 +91,7 @@ async function showKey(boardFile: File | undefined): Promise<void> {
       }
       // restored certificates passed historyNext (signatures, links, anchors): keep them
       if (restored && !loose.drop.length) await saveHistory(hist);
-      if (restored) said.push({ kind: "ok", title: "History restored from the relay.", text: `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.` });
+      if (restored) said.push({ kind: "ok", title: "History restored from your backup.", text: `${restored} newer certificate${restored === 1 ? "" : "s"} from your other device, checked against the board.` });
       chainState.successorOnBoard = r.successor_on_board;
       if (relayUnread !== null && (hist.certs.length > 0 || r.next_index > 0 || chainState.successorOnBoard)) said.unshift(unreadNote());
       // the anchored certificates, then the kept ones whose deals may still register
@@ -181,7 +182,7 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
       await noteGiven(k, c.mailbox_pk).catch(() => undefined);
       if (sendKeyTo.mailbox === c.mailbox_pk) sendKeyTo.mailbox = null;
       setSentTo(c.mailbox_pk);
-      out.show(<Banner kind="ok" title={`Key sent to ${contactName(c)}`} text={`Sealed to their mailbox: it fills the buyer line of the invoice they write. When they send it, it arrives in your inbox to sign.`} />);
+      out.show(<Banner kind="ok" title={`Key sent to ${contactName(c)}`} text={`Sent privately to them: it fills the buyer line of the invoice they write. When they send it, it arrives in your inbox to sign.`} />);
     } catch (e) {
       out.error(e);
     }
@@ -192,7 +193,7 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
       <div>
         <p className="hint">Each invoice uses a different key, so the public board cannot link your invoices. The supplier sees the same fingerprint on its side.</p>
         <div className="by-keyhex">
-          <span className="by-keyhex-k">{`Your invoice key #${k}`}</span>
+          <span className="by-keyhex-k">{k === 0 ? "Your first invoice key" : "Your next invoice key"}</span>
           <code className="by-keyhex-v is-print">{readablePrint(invoicePk)}</code>
           <Button
             secondary
@@ -213,11 +214,22 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
           <div className="by-send-to">
             <p className="by-keyhex-or">Send it sealed to a supplier you keep a card for:</p>
             <div className="actions rp-small">
-              {suppliers.map((c, i) => (
-                <Button key={contactId(c)} secondary={i > 0 || sentTo !== null} onClick={() => go(c)}>
-                  {sentTo === c.mailbox_pk ? `Sent to ${contactName(c)} · send again` : `Send to ${contactName(c)}`}
-                </Button>
-              ))}
+              {suppliers.map((c, i) => {
+                const primary = i === 0 && sentTo === null;
+                const b = (
+                  <Button key={contactId(c)} secondary={!primary} onClick={() => go(c)}>
+                    {sentTo === c.mailbox_pk ? `Sent to ${contactName(c)} · send again` : `Send to ${contactName(c)}`}
+                  </Button>
+                );
+                // the screen's one primary rides the phone's bottom bar (mobile E2E 2026-10-27, finding 4)
+                return primary ? (
+                  <Dock key={contactId(c)} label="Send">
+                    {b}
+                  </Dock>
+                ) : (
+                  b
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -344,7 +356,7 @@ export function KeyPage(): ReactNode {
           <div className="rp-cap">
             <Tag section="Invoices" />
             <h1 id="by-tk">Your next invoice key</h1>
-            <p className="rp-lede">A supplier addresses your next invoice to this key. Give it to them sealed through the relay, or copy it whole.</p>
+            <p className="rp-lede">A supplier addresses your next invoice to this key. Send it to them privately from here, or copy it whole.</p>
             <KeyBlock />
           </div>
         </section>

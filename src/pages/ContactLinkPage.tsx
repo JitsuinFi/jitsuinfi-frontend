@@ -6,16 +6,18 @@ import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { account } from "../lib/app-session";
-import { readContact, type Contact } from "../lib/contact";
+import { contactName, readContact, type Contact } from "../lib/contact";
 import { asSentence, explain } from "../lib/explain";
 import type { Role } from "../lib/account";
 import { firstSection } from "../lib/sections";
 import { AccountPage, onboardingPending, useSessionGate } from "./AccountPage";
-import { AddContact } from "./ContactAdd";
+import { AddContact, keepContact } from "./ContactAdd";
 import "./contacts.css";
 
 // the card read from the link, kept in memory while the person signs in (never stored)
 let held: { hash: string; c: Contact | null; error: string | null } | null = null;
+// the held card was added from the sign-up's Ready step (mobile E2E 2026-10-27, B-04 → B-06)
+let addedAtSignUp: Contact | null = null;
 
 function read(hash: string): { c: Contact | null; error: string | null } {
   if (held && (held.hash === hash || !hash)) return held;
@@ -45,7 +47,19 @@ export function ContactLinkPage(): ReactNode {
   const [{ c, error }] = useState(() => read(hash));
   const [dismissed, setDismissed] = useState(false);
   const s = account.current;
-  if (c && (!s || onboardingPending())) return <AccountPage want={counterpart(c.role)} />;
+  if (c && (!s || onboardingPending()))
+    return (
+      <AccountPage
+        want={counterpart(c.role)}
+        shared={{
+          name: contactName(c),
+          add: async () => {
+            await keepContact(c);
+            addedAtSignUp = c;
+          },
+        }}
+      />
+    );
   const home = s ? firstSection(s.role) : "/app";
   return (
     <Page wide>
@@ -53,9 +67,9 @@ export function ContactLinkPage(): ReactNode {
         <p className="sp-tag">
           <b lang="ja">名</b>Contact link
         </p>
-        <h1>{c ? "Someone shared their contact" : "This contact link does not open"}</h1>
+        <h1>{c ? `${contactName(c)} shared their contact` : "This contact link does not open"}</h1>
         {c && !dismissed ? (
-          <AddContact c={c} onCancel={() => setDismissed(true)} fromLink />
+          <AddContact c={c} onCancel={() => setDismissed(true)} fromLink added={addedAtSignUp === c} />
         ) : c ? (
           <p className="ia-ct-lede">Not added. Open the link again whenever you want to add them.</p>
         ) : (

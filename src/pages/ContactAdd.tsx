@@ -54,9 +54,9 @@ export async function keepContact(c: Contact): Promise<void> {
  * card that came without an @name on the same confirm; `onAdded` replaces the next step (the
  * page that offered the add shows the name at once).
  */
-export function AddContact({ c: given, onCancel, cancelLabel = "Not now", fromLink, nameable, onAdded }: { c: Contact; onCancel?: () => void; cancelLabel?: string; fromLink?: boolean; nameable?: boolean; onAdded?: (c: Contact) => void }): ReactNode {
+export function AddContact({ c: given, onCancel, cancelLabel = "Not now", fromLink, nameable, onAdded, added: addedBefore = false }: { c: Contact; onCancel?: () => void; cancelLabel?: string; fromLink?: boolean; nameable?: boolean; onAdded?: (c: Contact) => void; added?: boolean }): ReactNode {
   const s = account.current;
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState(addedBefore);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   if (!s) return null;

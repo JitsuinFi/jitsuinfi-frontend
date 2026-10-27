@@ -14,7 +14,7 @@ import { DidLine, useDid } from "../../app/outcome";
 import { buyerStage, hasSlip } from "../../lib/buyer-invoices";
 import { invoicePath, slipPath } from "../../lib/deal-ref";
 import { readablePrint } from "../../lib/print";
-import { statusesOf, awaitsBoard, useBoard, useInvoices, useKeyInfo } from "./data";
+import { statusesOf, awaitsBoard, useBoard, useInvoices, useKeyInfo, useSenders } from "./data";
 import { KeyBlock } from "./NextKey";
 import { DueLine, LEDE, LEDGER_LABELS, LedgerLine, ledgerWords, Tag, Totals } from "./parts";
 import "../role-paper.css";
@@ -28,6 +28,7 @@ export function InvoicesPage(): ReactNode {
   const shown = useDid("/buyer/invoices");
   const list = Array.isArray(recs) ? recs : [];
   const statuses = statusesOf(list, board);
+  const senders = useSenders(list);
   return (
     <Page wide>
       <div className="rp by">
@@ -89,7 +90,7 @@ export function InvoicesPage(): ReactNode {
                 labels={LEDGER_LABELS}
                 searchLabel="Search by invoice number"
                 className="by-ledger"
-                render={(r) => <LedgerLine r={r} href={invoicePath(r.ref)} status={statuses?.[r.n]} />}
+                render={(r) => <LedgerLine r={r} href={invoicePath(r.ref)} status={statuses?.[r.n]} from={senders[r.n]} />}
               />
             )}
             <p className="ia-book-foot by-foot">

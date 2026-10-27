@@ -91,9 +91,10 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
     const f = KEYS.find(([key]) => key === k)![1];
     return String(changed.includes(f) || changed.includes("unreadable"));
   };
-  const input = (k: keyof SheetFields, label: string, value: string, opts: { type?: string; mono?: boolean; size?: number } = {}) => (
+  const input = (k: keyof SheetFields, label: string, value: string, opts: { type?: string; mono?: boolean; size?: number; mode?: "decimal" } = {}) => (
     <input
       type={opts.type ?? "text"}
+      inputMode={opts.mode}
       spellCheck="false"
       autoComplete="off"
       aria-label={label}
@@ -175,7 +176,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
           <small>Amount due</small>
         </span>
         <span className="sk-total-v">
-          {input("amount", "Amount due in ZEC", o.amount, { size: 8 })}
+          {input("amount", "Amount due in ZEC", o.amount, { size: 8, mode: "decimal" })}
           <b>ZEC</b>
         </span>
       </label>

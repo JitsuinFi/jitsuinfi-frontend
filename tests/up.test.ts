@@ -11,9 +11,9 @@ test("top-level screens need no Back: Home, the tabs, the nav", () => {
 });
 
 test("every screen under a section goes up to it", () => {
-  assert.deepEqual(upFor("/supplier/deal/abc", "", "supplier", true), { to: "/supplier/invoices", title: "Invoices" });
+  assert.deepEqual(upFor("/supplier/deal/abc", "", "supplier", true), { to: "/supplier/invoices", title: "All invoices" });
   assert.deepEqual(upFor("/supplier/deal/abc", "?at=offer", "supplier", true), { to: "/supplier/deal/abc", title: "the deal" });
-  assert.deepEqual(upFor("/supplier/deal/abc", "?at=offer", "supplier", false), { to: "/supplier/invoices", title: "Invoices" });
+  assert.deepEqual(upFor("/supplier/deal/abc", "?at=offer", "supplier", false), { to: "/supplier/invoices", title: "All invoices" });
   assert.deepEqual(upFor("/buyer/invoices/xyz", "", "buyer", true), { to: "/buyer/invoices", title: "Invoices" });
   assert.deepEqual(upFor("/buyer/invoices/key", "", "buyer", false), { to: "/buyer/invoices", title: "Invoices" });
   assert.deepEqual(upFor("/buyer/invoices/by-hand", "", "buyer", true), { to: "/buyer/invoices", title: "Invoices" });
@@ -44,4 +44,15 @@ test("screens are named in plain words", () => {
   assert.equal(screenName("/buyer/pay", "buyer"), "Pay");
   assert.equal(screenName("/app", null), "Home");
   assert.equal(screenName("/supplier/invoices/new", "supplier"), "Write an invoice");
+});
+
+test("a record does not go back to the form that made it, nor to the screen under the inbox (mobile E2E 2026-10-27)", () => {
+  const deal = upFor("/supplier/deal/abc", "", "supplier", true)!;
+  assert.deepEqual(backTarget(deal, "/supplier/invoices/new", "/supplier/deal/abc", "", "supplier"), { kind: "up", to: "/supplier/invoices", title: "All invoices" });
+  assert.equal(backTarget(deal, "/supplier/invoices", "/supplier/deal/abc", "", "supplier").kind, "history");
+  const inv = upFor("/buyer/invoices/xyz", "", "buyer", true)!;
+  assert.deepEqual(backTarget(inv, "/buyer/invoices/key", "/buyer/invoices/xyz", "", "buyer"), { kind: "up", to: "/buyer/invoices", title: "Invoices" });
+  assert.equal(backTarget(inv, "/buyer/invoices", "/buyer/invoices/xyz", "", "buyer").kind, "history");
+  const slip = upFor("/buyer/pay/xyz", "", "buyer", true)!;
+  assert.deepEqual(backTarget(slip, "/buyer/invoices/xyz", "/buyer/pay/xyz", "", "buyer"), { kind: "history", to: "/buyer/invoices/xyz", title: "the invoice" });
 });

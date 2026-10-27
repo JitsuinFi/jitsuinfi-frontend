@@ -12,6 +12,7 @@ import { parseQrSvg, qrFit, qrPath, qrPixels, qrSpan, QR_CAP, type QrGrid } from
 import { dismissSheet, useBackCloses } from "./sheet";
 import { usePhone } from "./phone";
 import { CodeBlock } from "./ui";
+import { Dock } from "./Dock";
 import "./qr.css";
 
 const INK: [number, number, number] = [0x02, 0x0d, 0x2f]; // --head, Cetacean
@@ -87,6 +88,8 @@ export interface QrPlateProps {
   veil?: { glyph: string; text: string };
   /** "Show the link": its label and the .txt download it offers. */
   raw?: { label: string; filename?: string };
+  /** The plate's primary is the screen's: on a phone it rides in the bottom bar (Dock.tsx). */
+  dock?: boolean;
 }
 
 export function QrPlate(p: QrPlateProps): ReactNode {
@@ -168,13 +171,29 @@ export function QrPlate(p: QrPlateProps): ReactNode {
       {g ? (
         <div className="qrp-acts">
           {open ? (
-            <a className={primary === "open" ? "qrp-btn is-primary" : "qrp-btn is-quiet"} href={p.text}>
-              Open in wallet
-            </a>
+            primary === "open" && p.dock ? (
+              <Dock label="Pay">
+                <a className="qrp-btn is-primary" href={p.text}>
+                  Open in wallet
+                </a>
+              </Dock>
+            ) : (
+              <a className={primary === "open" ? "qrp-btn is-primary" : "qrp-btn is-quiet"} href={p.text}>
+                Open in wallet
+              </a>
+            )
           ) : null}
-          <button type="button" className={primary === "copy" ? "qrp-btn is-primary" : "secondary qrp-btn"} onClick={() => void copy()}>
-            {copied ? "Copied" : (p.copyLabel ?? "Copy link")}
-          </button>
+          {primary === "copy" && p.dock ? (
+            <Dock label="Share">
+              <button type="button" className="qrp-btn is-primary" onClick={() => void copy()}>
+                {copied ? "Copied" : (p.copyLabel ?? "Copy link")}
+              </button>
+            </Dock>
+          ) : (
+            <button type="button" className={primary === "copy" ? "qrp-btn is-primary" : "secondary qrp-btn"} onClick={() => void copy()}>
+              {copied ? "Copied" : (p.copyLabel ?? "Copy link")}
+            </button>
+          )}
           <button type="button" className="secondary qrp-btn" onClick={() => void save()}>
             Save PNG
           </button>

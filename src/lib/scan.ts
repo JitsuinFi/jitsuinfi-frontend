@@ -69,3 +69,26 @@ export function scanScale(w: number, h: number, max = 720): { w: number; h: numb
   const k = Math.min(1, max / Math.max(w, h, 1));
   return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
 }
+
+// ---------- the advance address from a QR (mobile E2E 2026-10-27, finding 7) ----------
+
+/**
+ * The shielded address in what the camera read for the offer's "Where you want the advance paid":
+ * a bare address, or a zcash: payment request (ZIP-321, `zcash:<address>?…`) as a wallet's
+ * receive QR shows it. Throws ScanRefused with the address check's own sentence.
+ */
+export function addressFromScan(text: string, problem: (a: string) => string | null): string {
+  let t = text.trim();
+  if (!t) throw new ScanRefused("The code was empty. Try again, a little further away.");
+  if (/^zcash:/i.test(t)) {
+    t = t.slice(6);
+    const q = t.indexOf("?");
+    const params = new URLSearchParams(q >= 0 ? t.slice(q + 1) : "");
+    t = (q >= 0 ? t.slice(0, q) : t) || params.get("address") || "";
+    t = decodeURIComponent(t);
+  }
+  if (t.includes("jitsuin-")) throw new ScanRefused("This is a JitsuinFi code, not an address. Open Receive in your Zcash wallet and scan its QR.");
+  const why = problem(t);
+  if (why) throw new ScanRefused(why);
+  return t;
+}

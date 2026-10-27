@@ -137,3 +137,13 @@ export function namedContact(c: Contact, name: string): Contact {
   if (n.length > 32) throw new Error("a name is at most 32 characters");
   return { ...c, username: n };
 }
+
+// ---------- who sent it (mobile E2E 2026-10-27, B-14) ----------
+// The buyer's invoice, its ledger line and its pay slip name the supplier: "@name" from the
+// contacts, else "a supplier not in your contacts yet" with the fingerprint to compare.
+
+/** "@name", or "a supplier not in your contacts yet · fingerprint …" (`print`: the invoice's supplier key, readable). */
+export function senderWords(c: Pick<Contact, "username" | "fingerprint"> | undefined, print: string, who = "a supplier"): string {
+  if (c) return c.username ? `@${c.username}` : `${who} in your contacts · fingerprint ${c.fingerprint}`;
+  return print ? `${who} not in your contacts yet · fingerprint ${print}` : `${who} not in your contacts yet`;
+}

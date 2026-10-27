@@ -8,6 +8,7 @@ import { acceptedLine, dueDay, refusal, short, totals, zec } from "./model";
 import { del, post } from "./node";
 import type { Mail, Offer } from "./types";
 import { Lede } from "../app/Lede";
+import { Dock } from "../app/Dock";
 
 // Message types (relay-message.ts) in the operator's words, and the role seals of the app.
 const TYPE_LABEL: Record<string, string> = {
@@ -142,7 +143,7 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
       {facts}
       {checked}
       {rules}
-      <form className="cs-accept" onSubmit={(e) => void accept(e)}>
+      <form className="cs-accept" id={`cs-accept-${relayId}`} onSubmit={(e) => void accept(e)}>
         <div className="cs-accept-f">
           <label className="cs-field">
             <span>Advance you pay (ZEC)</span>
@@ -156,9 +157,12 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
           </label>
         </div>
         <div className="cs-actions">
-          <button className={`cs-btn${accepting ? " is-busy" : ""}`} type="submit" disabled={accepting}>
-            Accept offer
-          </button>
+          {/* a phone: the offer's one action rides the bottom bar; `form` keeps it this form's submit (mobile E2E 2026-10-27, finding 5) */}
+          <Dock label="Answer the offer">
+            <button className={`cs-btn${accepting ? " is-busy" : ""}`} type="submit" form={`cs-accept-${relayId}`} disabled={accepting} aria-busy={accepting || undefined}>
+              {accepting ? "Accepting…" : "Accept offer"}
+            </button>
+          </Dock>
         </div>
         <div className="cs-decline">
           <label className="cs-field">
@@ -190,7 +194,7 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
   );
 }
 
-function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }): ReactNode {
+export function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }): ReactNode {
   const [note, setNote] = useState("");
   const signed = m.signer !== undefined && m.signer !== null;
   const fail = (e: unknown) => setNote(say(e));
@@ -212,7 +216,7 @@ function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }): Reac
           {`from ${m.from?.role ?? "?"} · ${ago(m.received_at)}`}
           {m.n ? (
             <>
-              {" · N "}
+              {" · fingerprint "}
               <span className="is-mono">{short(m.n)}</span>
             </>
           ) : null}
@@ -267,7 +271,8 @@ function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }): Reac
   );
 }
 
-export function TraySection({ mail, refused, note, demo, load }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load }): ReactNode {
+/** `onOpen`: a phone (compact) opens a letter as its own screen instead of beside the list. */
+export function TraySection({ mail, refused, note, demo, load, onOpen }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load; onOpen?: (relayId: string) => void }): ReactNode {
   const [open, setOpen] = useState<string | null>(null);
   // keep the opened letter across reloads; open the first one otherwise
   useEffect(() => {
@@ -309,7 +314,7 @@ export function TraySection({ mail, refused, note, demo, load }: { mail: Mail[] 
           <ul className="cs-tray-list" aria-label="Letters">
             {(mail ?? []).map((m) => (
               <li key={m.relay_id} className="cs-letter-row">
-                <button className="cs-lt" type="button" aria-pressed={m.relay_id === open} onClick={() => setOpen(m.relay_id)}>
+                <button className="cs-lt" type="button" aria-pressed={onOpen ? undefined : m.relay_id === open} onClick={() => (onOpen ? onOpen(m.relay_id) : setOpen(m.relay_id))}>
                   <span className="cs-badge" lang="ja" aria-hidden="true">
                     {ROLE_BADGE[m.from?.role ?? ""] ?? "外"}
                   </span>
@@ -330,7 +335,7 @@ export function TraySection({ mail, refused, note, demo, load }: { mail: Mail[] 
                       </>
                     ) : m.n ? (
                       <>
-                        {" · N "}
+                        {" · fingerprint "}
                         <span className="is-mono">{short(m.n)}</span>
                       </>
                     ) : null}
@@ -347,7 +352,7 @@ export function TraySection({ mail, refused, note, demo, load }: { mail: Mail[] 
           </ul>
           {mail && !mail.length ? <p className="cs-tray-empty">No messages.</p> : null}
         </div>
-        {opened ? <Opened key={opened.relay_id} m={opened} demo={demo} load={load} /> : <p className="cs-note cs-opened-empty">{mail ? "No letter to open." : ""}</p>}
+        {onOpen ? null : opened ? <Opened key={opened.relay_id} m={opened} demo={demo} load={load} /> : <p className="cs-note cs-opened-empty">{mail ? "No letter to open." : ""}</p>}
       </div>
     </section>
   );

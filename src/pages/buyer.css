@@ -372,3 +372,16 @@ p.by-late b { color: var(--head); font-weight: 600; }
 
 /* a pasted invoice code that does not read says why (messy-state E2E 2026-10-27) */
 .by-codes .by-code-bad { color: var(--seal); }
+
+/* who sent it (mobile E2E 2026-10-27, B-14): the supplier named at the top of the invoice and the slip */
+.by-from { margin: 4px 0 0; font: 500 14px/1.4 var(--f-body); color: var(--head); overflow-wrap: anywhere; }
+/* settled: the 済 line first, with Check it on Verify as its way on (B-27/28) */
+.by-settled { margin: 14px 0 6px; font-size: 15px; }
+.by-settled strong { display: block; font: 600 16px/1.35 var(--f-body); color: var(--head); }
+.by-settled .rp-hanko { width: 34px; height: 34px; font-size: 17px; }
+.by-settled-acts { grid-column: 2; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+.by-settled .by-verify { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: var(--r-control); background: var(--seal); color: var(--sheet); font: 600 15px/1 var(--f-body); text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .by-settled .by-verify:hover { background: var(--seal-hi); } }
+.by-settled-acts button { min-height: 44px; }
+@media (max-width: 599px) { .by-settled-acts { grid-column: 1 / -1; } .by-settled .by-verify { flex: 1 1 100%; justify-content: center; min-height: 48px; } }
+.by-plate { scroll-margin-top: 72px; }

@@ -6,7 +6,7 @@
 // (the only dark object: it is where Zcash is) with four big numbers, and the selected deal's
 // paper file: the assignment letter over the 請求書, three seal boxes, index tabs per deal, the
 // route 照 署 登 印 金 済 as marks and the one action as the seal-red button.
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { download } from "../lib/download";
 import { explain, stopReason } from "../lib/explain";
 import { Act, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
@@ -15,7 +15,9 @@ import { keepName } from "./name";
 import { approvePayment, contactFingerprint, get, post } from "./node";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
 import { SignIn } from "./SignIn";
-import { TraySection } from "./Tray";
+import { Opened, TraySection } from "./Tray";
+import { Dock } from "../app/Dock";
+import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import type { BoardScan, DealRow, Info, Mail, Session } from "./types";
 
 const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -332,6 +334,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
         </div>
         <div className="cs-actions">
           {!demo && d.state === "Pay" && d.intent ? (
+            <Dock label="Pay the advance">
             <Act
               className="cs-btn"
               label={`Pay the advance, ${zec(d.advance_zat)} ZEC`}
@@ -349,8 +352,10 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
             >
               <PasskeyGlyph />
             </Act>
+            </Dock>
           ) : null}
           {!demo && !["Pay", "Done", "Stopped"].includes(d.state) ? (
+            <Dock label="Move this deal on">
             <Act
               label="Move on now"
               run={async () => {
@@ -360,6 +365,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               }}
               fail={fail}
             />
+            </Dock>
           ) : null}
           {/* BL-D28-03: the settled deal's verification bundle, for an auditor or a court (Verify page) */}
           {d.bundle ? (
@@ -450,6 +456,99 @@ function DealFile({ deals, note, name, demo, load, paid }: { deals: DealRow[] | 
   );
 }
 
+// ---------- a phone: list, then detail (mobile E2E 2026-10-27, finding 5; DS-MOB L2, N4) ----------
+// Below the console's phone width (console.css, 720 px) the desk is screens, not one long page:
+// the nav shows one section at a time, and an in-tray letter or a deal opens as its own screen
+// with an in-app Back. Where you are lives in the address's hash (#tray, #tray/<id>, #deal/<n>),
+// so the system Back and a reload agree. Wider, the one-page desk is unchanged.
+const COMPACT = "(max-width: 720px)";
+function useCompact(): boolean {
+  return useSyncExternalStore(
+    (f) => {
+      const mq = matchMedia(COMPACT);
+      mq.addEventListener("change", f);
+      return () => mq.removeEventListener("change", f);
+    },
+    () => matchMedia(COMPACT).matches,
+  );
+}
+type View = { sec: string; open?: { kind: "mail" | "deal"; id: string } };
+const SECS = new Set(["desk", "tray", "rules", "fund", "keys"]);
+/** The compact view named by the hash ("#tray/abc" → the in-tray letter abc). */
+export function viewOf(hash: string): View {
+  const [a, ...rest] = hash.replace(/^#/, "").split("/");
+  const id = decodeURIComponent(rest.join("/"));
+  if (a === "tray" && id) return { sec: "tray", open: { kind: "mail", id } };
+  if (a === "deal" && id) return { sec: "desk", open: { kind: "deal", id } };
+  return { sec: SECS.has(a) ? a : "desk" };
+}
+// a detail screen pushed from its list in this visit: its Back goes back in history
+let pushedDetail = false;
+
+/** What the person has to do now: offers to answer, then deals waiting for their action. */
+function NeedsYou({ deals, mail, open }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void }): ReactNode {
+  const offers = (mail ?? []).filter((m) => m.offer?.ok && !m.offer.accepted);
+  const acting = (deals ?? []).filter((d) => d.state === "Pay");
+  const moving = (deals ?? []).filter((d) => !["Pay", "Done", "Stopped"].includes(d.state));
+  const rest = (deals ?? []).filter((d) => !acting.includes(d) && !moving.includes(d));
+  const row = (key: string, glyph: string, what: string, line: string, go: string, act?: string) => (
+    <li key={key}>
+      <button type="button" className="cs-need" onClick={() => open(go)} title={`${what}: ${line}`}>
+        <i lang="ja" aria-hidden="true">
+          {glyph}
+        </i>
+        <span>
+          <b>{what}</b>
+          <small>{line}</small>
+        </span>
+        {act ? <em>{act}</em> : null}
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6 3l5 5-5 5" />
+        </svg>
+      </button>
+    </li>
+  );
+  const none = mail !== null && deals !== null && !offers.length && !acting.length && !moving.length;
+  return (
+    <>
+      <div className="cs-needs-h">
+        <h2>Needs you now</h2>
+      </div>
+      <ul className="cs-needs" aria-label="Needs you now">
+        {offers.map((m) => row(m.relay_id, "売", `Financing offer · ${m.offer?.invoice_id ?? ""}`, `${zec(m.offer?.advance_zat ?? 0)} ZEC asked · ${m.offer?.mandate?.verdict === "breaks" ? "breaks your rules" : m.offer?.mandate?.verdict === "fits" ? "fits your rules" : "checked by your node"}`, `tray/${encodeURIComponent(m.relay_id)}`, "Accept or decline"))}
+        {acting.map((d) => row(d.n, "金", d.invoice_id, `Sealed by both · ${zec(d.advance_zat)} ZEC`, `deal/${d.n}`, "Pay the advance"))}
+        {moving.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`, "Move on"))}
+      </ul>
+      {none ? <p className="cs-note">Nothing waits for you. New offers arrive in the in-tray.</p> : mail === null || deals === null ? <p className="cs-note">Opening your desk…</p> : null}
+      {rest.length ? (
+        <>
+          <div className="cs-needs-h">
+            <h2>Your other deals</h2>
+          </div>
+          <ul className="cs-needs is-quiet" aria-label="Your other deals">
+            {rest.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`))}
+          </ul>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/** The phone's in-app Back of a detail screen. */
+function BackTo({ label, onBack }: { label: string; onBack: () => void }): ReactNode {
+  return (
+    <button type="button" className="cs-back" onClick={onBack}>
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M10 3L5 8l5 5" />
+      </svg>
+      <span>
+        <b>Back</b>
+        <small>{`to ${label}`}</small>
+      </span>
+    </button>
+  );
+}
+
 const NAV: Array<[string, string]> = [
   ["desk", "Desk"],
   ["tray", "In-tray"],
@@ -471,6 +570,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   const [boardErr, setBoardErr] = useState("");
   const [blink, setBlink] = useState(0);
   const [current, setCurrent] = useState("desk");
+  const compact = useCompact();
   const lastTip = useRef<number | null>(null);
 
   const loadMail = useCallback(async () => {
@@ -524,18 +624,75 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
       if (el) io.observe(el);
     });
     return () => io.disconnect();
-  }, []);
+  }, [compact]);
 
   const t = totals(deals, mail);
+  const navigate = useNavigate();
+  const router = useRouter();
+  const hash = useRouterState({ select: (r) => r.location.hash });
+  const view = viewOf(hash);
+  /** A phone: to another screen of the console (a real history entry). */
+  const go = (h: string, opts: { replace?: boolean } = {}) => {
+    pushedDetail = !opts.replace && /\//.test(h);
+    void navigate({ to: "/console", hash: h, replace: opts.replace });
+  };
+  const back = () => {
+    if (pushedDetail) {
+      pushedDetail = false;
+      router.history.back();
+    } else go(view.sec, { replace: true });
+  };
+  // a new screen starts at its top
+  useEffect(() => {
+    if (compact) window.scrollTo(0, 0);
+  }, [compact, hash]);
+  const sec = compact ? view.sec : current;
+  const openMail = compact && view.open?.kind === "mail" ? (mail?.find((m) => m.relay_id === view.open!.id) ?? null) : null;
+  const openDeal = compact && view.open?.kind === "deal" ? (deals?.find((d) => d.n === view.open!.id) ?? null) : null;
+  const detail = compact && view.open ? (
+    view.open.kind === "mail" ? (
+      <section className="cs-sec cs-screen" id="tray" aria-label="Letter">
+        <BackTo label="In-tray" onBack={back} />
+        {openMail ? <Opened key={openMail.relay_id} m={openMail} demo={demo} load={loadMail} /> : <p className="cs-note">{mail ? "This letter is no longer in the in-tray." : "Opening the letter…"}</p>}
+      </section>
+    ) : (
+      <section className="cs-sec cs-screen is-deal" id="desk" aria-labelledby="cs-deal-t">
+        <BackTo label="Desk" onBack={back} />
+        {openDeal ? (
+          <>
+            <h1 id="cs-deal-t" className="cs-deal-t">
+              {openDeal.invoice_id}
+              <span>{`${zec(openDeal.amount_zat)} ZEC · due ${dueDay(openDeal.due_date)}`}</span>
+            </h1>
+            <div className="cs-desk cs-detail" aria-label={openDeal.invoice_id}>
+              <DealPaper key={openDeal.n} d={openDeal} name={name} demo={demo} load={loadDeals} paid={() => setBlink((n) => n + 1)} />
+            </div>
+          </>
+        ) : (
+          <p className="cs-note">{deals ? "This deal is not on your node." : dealsNote || "Opening the deal…"}</p>
+        )}
+      </section>
+    )
+  ) : null;
   return (
-    <div className={`cs${demo ? " is-demo" : ""}`}>
+    <div className={`cs${demo ? " is-demo" : ""}${compact ? " is-compact" : ""}`}>
       <TopBar
         net={netLabel(info.network)}
         where={<span className="cs-brand-sub">Financier console</span>}
         nav={
           <nav className="cs-nav" aria-label="Console">
             {NAV.map(([id, label]) => (
-              <a key={id} href={`#${id}`} aria-current={current === id ? "true" : undefined}>
+              <a
+                key={id}
+                href={`#${id}`}
+                aria-current={sec === id ? "true" : undefined}
+                onClick={(e) => {
+                  if (!compact) return;
+                  // a phone: one section a screen, not a jump down a long page
+                  e.preventDefault();
+                  go(id, { replace: !view.open && view.sec !== "desk" });
+                }}
+              >
                 {label}
                 {id === "tray" && t.offers ? <span className="cs-n-count">{t.offers}</span> : null}
               </a>
@@ -559,6 +716,8 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
         }
       />
       <main id="cs-main" tabIndex={-1}>
+        {detail}
+        {detail ? null : compact && sec !== "desk" ? null : (
         <section className="cs-sec is-desk" id="desk" aria-labelledby="cs-desk-t">
           <div className="cs-cap">
             <p className="cs-eyebrow">
@@ -566,6 +725,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
               <span>{demo ? "Demo console: payments, invites, removals and the profile are off" : "Financier node · the keys and wallet stay on the node"}</span>
             </p>
             <h1 id="cs-desk-t">{name ? `Welcome, ${name}` : "Financier console"}</h1>
+            {compact ? <NeedsYou deals={deals} mail={mail} open={(h) => go(h)} /> : null}
             <NodeSlab info={info} board={board} boardErr={boardErr} blink={blink} />
             <dl className="cs-totals" aria-label="Your desk at a glance">
               <div className="is-act">
@@ -589,14 +749,17 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
               </div>
             </dl>
           </div>
-          <div className="cs-vis">
-            <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={loadDeals} paid={() => setBlink((n) => n + 1)} />
-          </div>
+          {compact ? null : (
+            <div className="cs-vis">
+              <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={loadDeals} paid={() => setBlink((n) => n + 1)} />
+            </div>
+          )}
         </section>
-        <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={loadMail} />
-        <RulesSection name={name} mail={mail} demo={demo} />
-        <FundSection info={info} demo={demo} />
-        <KeysSection info={info} name={name} demo={demo} onName={setName} />
+        )}
+        {detail || (compact && sec !== "tray") ? null : <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={loadMail} onOpen={compact ? (id) => go(`tray/${encodeURIComponent(id)}`) : undefined} />}
+        {detail || (compact && sec !== "rules") ? null : <RulesSection name={name} mail={mail} demo={demo} />}
+        {detail || (compact && sec !== "fund") ? null : <FundSection info={info} demo={demo} />}
+        {detail || (compact && sec !== "keys") ? null : <KeysSection info={info} name={name} demo={demo} onName={setName} />}
       </main>
       <Foot />
     </div>

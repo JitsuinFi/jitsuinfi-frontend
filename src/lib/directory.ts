@@ -9,6 +9,8 @@ export interface Mandate {
   max_zat: number;
   max_tenor_days: number;
   buyer_kyc: boolean;
+  /** The share of an invoice it typically advances (0–1), when the listing gives one: the offer form prefills from it. */
+  advance_ratio?: number;
 }
 
 /** The provider's attested record (HNK-30.T21, D-48): coarse classes only. */

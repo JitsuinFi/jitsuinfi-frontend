@@ -13,6 +13,7 @@ import { useFormDraft } from "../../app/kept";
 import { storedCodes, syncedCodes, type Codes } from "../../lib/desk-sync";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
+import { Dock } from "../../app/Dock";
 import { LongList } from "../../app/LongList";
 import { clearDid, DidLine, useDid } from "../../app/outcome";
 import { Banner, Button, CodeBlock, useOut } from "../../app/ui";
@@ -26,7 +27,7 @@ import { asSentence, explain } from "../../lib/explain";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, type Header } from "../../lib/relay-message";
-import { findKeyIndex, fromB64, saveInvoice, sendSignature, statusesOf, awaitsBoard, useBoard, useInvoices, withInvoiceIndex, type Inv } from "./data";
+import { findKeyIndex, fromB64, saveInvoice, sendSignature, statusesOf, awaitsBoard, useBoard, useInvoices, useSenders, withInvoiceIndex, type Inv } from "./data";
 import { Check, FilePill, LEDGER_LABELS, LedgerLine, ledgerWords, Seal, Tag, useVars, Verdict } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
@@ -52,7 +53,7 @@ const ROUTE_CAP: Record<BuyerAction, string> = {
   seal: "the financier's letter and the supplier's seal are here. Read the letter, then seal.",
   "wait-financier": "you sealed the letter. The financier seals it when it pays the advance.",
   pay: "the financier sealed the letter and paid the supplier. Pay at maturity on its slip, under Pay.",
-  settled: "settled. The bundle is kept on this device: it proves the whole deal to anyone, on the Verify page.",
+  settled: "settled. The proof is kept on this device: it shows the whole deal to anyone, on the Verify page.",
 };
 
 interface InvoiceFields {
@@ -83,12 +84,13 @@ function SendSignature({ n, sig, replyTo }: { n: string; sig: string; replyTo: s
     <>
       {done ? null : (
         <div className="actions">
+          <Dock label="Send">
           <Button
             onClick={async () => {
               try {
                 await sendSignature(n, sig, replyTo);
                 setDone(true); // sent once; a second copy would only repeat it
-                out.show(<Banner kind="ok" title="Signature sent" text="Sealed to the supplier's mailbox. The supplier offers the invoice to a financier next." glyph="送" />);
+                out.show(<Banner kind="ok" title="Signature sent" text="Sent privately to the supplier. The supplier offers the invoice to a financier next." glyph="送" />);
               } catch (e) {
                 out.error(e);
               }
@@ -96,6 +98,7 @@ function SendSignature({ n, sig, replyTo }: { n: string; sig: string; replyTo: s
           >
             Send signature to the supplier
           </Button>
+          </Dock>
         </div>
       )}
       {out.el}
@@ -174,6 +177,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   const [checked, setChecked] = useState<string | null>(null);
   const [invCheck, setInvCheck] = useState<CheckResult | null>(null);
   const [signing, setSigning] = useState(false);
+  const [checking, setChecking] = useState<"invoice" | "letter" | null>(null);
   // the invoice, letter and supplier seal that passed the letter checks (HNK-32.T1, BL-D24-06)
   const [letterOk, setLetterOk] = useState<string | null>(null);
   const [letterRes, setLetterRes] = useState<LetterCheck[] | null>(null);
@@ -204,6 +208,9 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   }, [codes, dec]);
   // the record of the invoice behind the sheet (a pasted code may be another one of this device's)
   const rec = dec ? list.find((x) => x.n === dec.nullifier) : undefined;
+  // who sent it, named at the top (mobile E2E 2026-10-27, B-14)
+  const senders = useSenders(list);
+  const from = rec ? senders[rec.n] : undefined;
   const act = rec ? nextAction(rec) : null;
   const kept = !!rec?.assignment?.letter && rec.assignment.letter === codes.letter;
   const mode: "none" | "invoice" | "letter" = !dec ? "none" : codes.letter ? "letter" : "invoice";
@@ -225,6 +232,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   // ---------- sign the invoice ----------
   const checkIt = async () => {
     clearDid();
+    setChecking("invoice");
     try {
       setChecked(null);
       setInvCheck(null);
@@ -246,6 +254,8 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       if (r.canSign) setChecked(invoice);
     } catch (e) {
       signOut.error(e);
+    } finally {
+      setChecking(null);
     }
   };
   const signIt = async () => {
@@ -273,6 +283,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   const letterKey = () => [v(cInv), v(cLetter), v(cSeal)].join("|");
   const checkLetter = async () => {
     clearDid();
+    setChecking("letter");
     try {
       setLetterOk(null);
       setLetterRes(null);
@@ -297,6 +308,8 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       if (!letterProblems(input).length) setLetterOk(letterKey());
     } catch (e) {
       sealOut.error(e);
+    } finally {
+      setChecking(null);
     }
   };
   const sealIt = async () => {
@@ -331,7 +344,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
     <article className="by-sheet" key={`i-${dec.nullifier}`} aria-label={`Invoice ${dec.invoice_id}`}>
       <div className="by-s-head">
         <p className="by-s-title" lang="ja">
-          請求書<small>{`Invoice${rec ? ` · sent to your key #${rec.key_index}` : ""}`}</small>
+          請求書<small>{from ? `Invoice from ${from}` : "Invoice"}</small>
         </p>
         <p className="by-s-no">
           No.<b>{dec.invoice_id}</b>
@@ -341,7 +354,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       <p className="by-s-to">
         <span className="mono">{readablePrint(dec.buyer_pk)}</span>
         <b lang="ja">御中</b>
-        {rec ? `to your invoice key #${rec.key_index}` : "to the buyer key it names"}
+        {rec ? "to you" : "to the buyer key it names"}
       </p>
       <dl className="by-s-rows">
         <div className="is-amt">
@@ -394,7 +407,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         </p>
       </div>
       {/* a phone: what to do, in one sentence (DS-MOB P4); the codes are right below */}
-      <p className="by-blank">{phone ? "Paste the code a supplier gave you by hand below, with its terms PDF." : "Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices addressed to your keys through the relay arrive in your inbox instead."}</p>
+      <p className="by-blank">{phone ? "Paste the code a supplier gave you by hand below, with its terms PDF." : "Paste the invoice code a supplier gave you by hand into the codes behind this sheet, with its terms PDF. Invoices sent to you from the app arrive in your inbox instead."}</p>
     </article>
   );
 
@@ -485,7 +498,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
 
   // ---------- the step beside the sheet ----------
   const pendingLines = (labels: string[], text: string) => labels.map((l, i) => <Check key={l} ok={null} label={l} text={text} i={i} />);
-  const invLine = (label: string, value: string, i: number) => <Check key={label} ok={value === "not chosen" ? null : value.startsWith("matches") || value.startsWith("your") ? true : false} label={label} text={value} i={i} />;
+  const invLine = (label: string, value: string, i: number) => <Check key={label} ok={value === "not chosen" ? null : value.startsWith("matches") || value.startsWith("you") ? true : false} label={label} text={value} i={i} />;
 
   const sideSign = (
     <div className="by-side">
@@ -495,25 +508,41 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         {invCheck
           ? [...invCheck.rows].reverse().map(([l, x], i) => invLine(l, x, i))
           : rec?.terms_checked && rec.invoice === codes.inv
-            ? [<Check key="a" ok label="Addressed to" text={`your invoice key #${rec.key_index}`} i={0} />, <Check key="t" ok label="Terms PDF" text="matched the invoice when you checked it" i={1} />]
+            ? [<Check key="a" ok label="Addressed to" text="you" i={0} />, <Check key="t" ok label="Terms PDF" text="matched the invoice when you checked it" i={1} />]
             : pendingLines(["Addressed to", "Terms PDF"], arrivedPdf ? `not checked yet · ${arrivedPdf.name} came with it` : "not checked yet")}
       </ul>
       {invCheck ? <Verdict kind={invCheck.kind} glyph={invCheck.kind === "ok" ? "認" : invCheck.kind === "warn" ? "待" : "拒"} title={invCheck.title} text={invCheck.text} /> : null}
       {rec?.signature ? (
         press === "sig" ? null : rec.signature_sent_at ? (
-          <Verdict kind="ok" glyph="送" title="Signature sent" text="Sealed to the supplier's mailbox. The supplier offers the invoice to a financier next." land={false} />
+          <Verdict kind="ok" glyph="送" title="Signature sent" text="Sent privately to the supplier. The supplier offers the invoice to a financier next." land={false} />
         ) : (
           <SendSignature n={rec.n} sig={rec.signature} replyTo={rec.reply_to} />
         )
       ) : (
         <div className="actions">
-          {/* one primary action: Check until it holds, then Sign */}
-          <button type="button" className={checked === null ? undefined : "secondary"} disabled={!dec} onClick={() => void checkIt()}>
-            Check invoice
-          </button>
-          <button type="button" className={checked === null ? "secondary" : undefined} disabled={checked === null || signing} onClick={() => void signIt()}>
-            {signing ? "Signing…" : "Sign invoice"}
-          </button>
+          {/* one primary action: Check until it holds, then Sign (on a phone in the bottom bar; mobile E2E 2026-10-27, finding 4) */}
+          {checked === null ? (
+            <Dock label="Check">
+              <button type="button" disabled={!dec || checking !== null} aria-busy={checking === "invoice" || undefined} onClick={() => void checkIt()}>
+                {checking === "invoice" ? "Checking…" : "Check invoice"}
+              </button>
+            </Dock>
+          ) : (
+            <button type="button" className="secondary" disabled={!dec || checking !== null} onClick={() => void checkIt()}>
+              Check again
+            </button>
+          )}
+          {checked === null ? (
+            <button type="button" className="secondary" disabled>
+              Sign invoice
+            </button>
+          ) : (
+            <Dock label="Sign">
+              <button type="button" disabled={signing} aria-busy={signing || undefined} onClick={() => void signIt()}>
+                {signing ? "Signing…" : "Sign invoice"}
+              </button>
+            </Dock>
+          )}
         </div>
       )}
       {signOut.el}
@@ -522,7 +551,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
 
   const sideSeal = (
     <div className="by-side">
-      <h3>Acknowledge the assignment</h3>
+      <h3>Agree to pay the financier</h3>
       <p>Sealing the letter is your written acknowledgment that you will pay the financier named in it at maturity. The financier pays the supplier only after this.</p>
       <ul className="by-checks" aria-label="Letter checks">
         {letterRes ? letterRes.map((c, i) => <Check key={c.label} ok={c.ok} label={c.label} text={c.text} i={i} />) : pendingLines(["Letter for this invoice", "The letter's PDF", "Supplier's seal"], "not checked yet")}
@@ -535,12 +564,28 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         )
       ) : null}
       <div className="actions">
-        <button type="button" className={letterOk === null ? undefined : "secondary"} onClick={() => void checkLetter()}>
-          Check letter
-        </button>
-        <button type="button" className={letterOk === null ? "secondary" : undefined} disabled={letterOk === null || sealing} onClick={() => void sealIt()}>
-          {sealing ? "Sealing…" : "Seal as buyer"}
-        </button>
+        {letterOk === null ? (
+          <Dock label="Check">
+            <button type="button" disabled={checking !== null} aria-busy={checking === "letter" || undefined} onClick={() => void checkLetter()}>
+              {checking === "letter" ? "Checking…" : "Check letter"}
+            </button>
+          </Dock>
+        ) : (
+          <button type="button" className="secondary" disabled={checking !== null} onClick={() => void checkLetter()}>
+            Check again
+          </button>
+        )}
+        {letterOk === null ? (
+          <button type="button" className="secondary" disabled>
+            Seal as buyer
+          </button>
+        ) : (
+          <Dock label="Seal">
+            <button type="button" disabled={sealing} aria-busy={sealing || undefined} onClick={() => void sealIt()}>
+              {sealing ? "Sealing…" : "Seal as buyer"}
+            </button>
+          </Dock>
+        )}
       </div>
       {sealOut.el}
     </div>
@@ -662,6 +707,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       {dec ? <span>{`${zatToZec(dec.amount_zat)} ZEC · due ${daysToDate(dec.due_date)}`}</span> : null}
     </h1>
   );
+  const fromLine = from ? <p className="by-from">{`From ${from}`}</p> : null;
   const statuses = statusesOf(list, board);
 
   // DS-MOB L5: one tree at every width. On a phone the caption and the visual boxes step aside
@@ -674,6 +720,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
           <div className={phone ? "by-flat" : "rp-cap"}>
             <Tag section="Invoices" />
             {title}
+            {fromLine}
             {!phone && list.length ? (
               <section className="ia-switch" aria-labelledby="by-sw-h">
                 <div className="ia-switch-h">
@@ -691,7 +738,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
                   limit={5}
                   searchLabel="Search your invoices"
                   className="by-ledger is-compact"
-                  render={(x) => <LedgerLine r={x} href={invoicePath(x.ref)} status={statuses?.[x.n]} current={x.n === rec?.n} />}
+                  render={(x) => <LedgerLine r={x} href={invoicePath(x.ref)} status={statuses?.[x.n]} current={x.n === rec?.n} from={senders[x.n]} />}
                 />
               </section>
             ) : null}

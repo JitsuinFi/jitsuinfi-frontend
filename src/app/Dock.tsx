@@ -3,9 +3,12 @@
 // long the document above it is. Wider, the children stay where they are written. One bar a
 // screen: the last Dock mounted shows, the others wait (a screen promotes its next action by
 // rendering it in the Dock and demoting the one done). Styles: shell.css (.ia-bar).
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePhone } from "./phone";
+
+/** False around a part of the tree that is kept but hidden (a phone's deal screen keeps its station's work): its Docks stay in place. */
+export const DockHere = createContext(true);
 
 let seq = 0;
 const stack: number[] = [];
@@ -19,7 +22,9 @@ function syncBody(): void {
 }
 
 export function Dock({ children, label = "Next step" }: { children: ReactNode; label?: string }): ReactNode {
-  const phone = usePhone();
+  const narrow = usePhone();
+  const here = useContext(DockHere);
+  const phone = narrow && here;
   const [id] = useState(() => ++seq);
   const showing = useSyncExternalStore(
     (f) => {

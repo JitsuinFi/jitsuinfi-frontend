@@ -363,3 +363,20 @@ export function advanceRecord(d: Pick<SupplierDeal, "offer">, receivedZat: numbe
   if (!Number.isSafeInteger(receivedZat) || receivedZat <= 0) throw new Error("write the amount your wallet received, in ZEC (more than 0)");
   return { txid, received_zat: receivedZat, matches: receivedZat === d.offer.advance_zat };
 }
+
+// ---------- the advance asked, prefilled (mobile E2E 2026-10-27, finding 7; DS-MOB F3) ----------
+
+/** The share of the invoice a supplier asks by default when the financier names none. */
+export const DEFAULT_ADVANCE_RATIO = 0.9;
+
+/**
+ * The advance to prefill on the offer form: the financier's typical ratio from its directory
+ * listing when it gives one, else DEFAULT_ADVANCE_RATIO; never above the invoice nor the
+ * mandate's maximum. The supplier can change it.
+ */
+export function advanceSuggestion(amountZat: number, mandate?: { max_zat?: number; advance_ratio?: number }): number {
+  const ratio = mandate?.advance_ratio && mandate.advance_ratio > 0 && mandate.advance_ratio <= 1 ? mandate.advance_ratio : DEFAULT_ADVANCE_RATIO;
+  let zat = Math.floor(amountZat * ratio);
+  if (mandate?.max_zat && mandate.max_zat > 0) zat = Math.min(zat, mandate.max_zat);
+  return Math.max(0, Math.min(zat, amountZat));
+}

@@ -11,7 +11,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Actions, Banner, Button, CodeBlock, Field, FileField, Kv, useOut } from "../../app/ui";
 import { ScanButton } from "../../app/Scanner";
-import { routeScan } from "../../lib/scan";
+import { addressFromScan, routeScan } from "../../lib/scan";
+import { Dock } from "../../app/Dock";
 import { act, checkInbox, letGo, lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { setDid } from "../../app/outcome";
@@ -27,7 +28,7 @@ import { readablePrint } from "../../lib/print";
 import { PROVIDER } from "../../lib/provider";
 import { draft, send, signInWasm } from "../../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../../lib/relay-message";
-import { advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
+import { DEFAULT_ADVANCE_RATIO, advanceSuggestion, advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
 import { handToVerify } from "../../lib/verify-handoff";
 import { takeContact } from "../MailboxCard";
 import { buyerName, STATION, Work, type Stations } from "./parts";
@@ -114,9 +115,11 @@ export function StationWork(p: WorkProps & { station: StationKey; stations: Stat
           ) : null}
           <Actions>
             {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
-            <a className="sp-ink" href="/verify" onClick={() => d.bundle && handToVerify(d.bundle)}>
-              Check it on Verify
-            </a>
+            <Dock label="Check">
+              <a className="sp-ink" href="/verify" onClick={() => d.bundle && handToVerify(d.bundle)}>
+                Check it on Verify
+              </a>
+            </Dock>
           </Actions>
         </Work>
       ) : (
@@ -329,7 +332,9 @@ function SignatureWork(p: WorkProps): ReactNode {
         </details>
       ) : null}
       <Actions>
-        <Button onClick={sendToBuyer}>Send to the buyer</Button>
+        <Dock label="Send">
+          <Button onClick={sendToBuyer}>Send to the buyer</Button>
+        </Dock>
       </Actions>
       {sendOut.el}
       {handFold}
@@ -442,7 +447,8 @@ function OfferWork(p: WorkProps): ReactNode {
                     put(contact.current, f.listing.contact);
                     put(fin.current, f.listing.financier_pk);
                     setPicked(f.listing.financier_pk);
-                    adv.current!.focus();
+                    // its typical advance, or the default share of the invoice; the supplier can change it
+                    put(adv.current, zatToZec(advanceSuggestion(d.amount_zat, f.listing.mandate)));
                   }}
                 >
                   {picked === f.listing.financier_pk ? "Chosen" : "Offer to this financier"}
@@ -477,29 +483,44 @@ function OfferWork(p: WorkProps): ReactNode {
         </div>
       </details>
       <div className="sp-row2">
-        <Field label="Advance you ask (ZEC)" type="number" placeholder={zatToZec(Math.round(d.amount_zat * 0.95))} inputRef={adv} />
-        <label className="field sp-addr">
-          <span>Where you want the advance paid</span>
-          <input type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={() => addrSay && setAddrSay(null)} />
+        <Field label="Advance you ask (ZEC)" inputMode="decimal" value={zatToZec(advanceSuggestion(d.amount_zat))} help={`Prefilled at ${Math.round(DEFAULT_ADVANCE_RATIO * 100)} % of the invoice (${zatToZec(d.amount_zat)} ZEC), or the chosen financier's usual share. Change it if you agreed otherwise.`} inputRef={adv} />
+        <div className="field sp-addr">
+          <label className="sp-addr-lab" htmlFor="sp-addr-in">Where you want the advance paid</label>
+          {/* mobile E2E 2026-10-27, finding 7: the saved address in one tap, or a scan of the wallet's receive QR */}
+          <span className="sp-addr-quick">
+            {suggest ? (
+              <button
+                type="button"
+                className="sp-pill sp-addr-last"
+                onClick={() => {
+                  put(addr.current, suggest);
+                  setAddrSay(addressProblem(suggest));
+                }}
+              >
+                Use my saved address
+                <small>{`${suggest.slice(0, 10)}…${suggest.slice(-6)}`}</small>
+              </button>
+            ) : null}
+            <ScanButton
+              what="your wallet's receive QR"
+              label="Scan my wallet's QR"
+              onPaste={() => addr.current?.focus()}
+              onRead={(t) => {
+                const a = addressFromScan(t, addressProblem);
+                put(addr.current, a);
+                setAddrSay(null);
+              }}
+            />
+          </span>
+          <input id="sp-addr-in" type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={() => addrSay && setAddrSay(null)} />
           <small id="sp-addr-say" className={addrSay ? "is-bad" : undefined} role={addrSay ? "alert" : undefined}>
             {addrSay ?? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.`}
           </small>
-          {suggest ? (
-            <button
-              type="button"
-              className="sp-pill sp-addr-last"
-              onClick={() => {
-                put(addr.current, suggest);
-                setAddrSay(addressProblem(suggest));
-              }}
-            >
-              {`Use the last one from this device (${suggest.slice(0, 12)}…${suggest.slice(-6)})`}
-            </button>
-          ) : null}
-        </label>
+        </div>
       </div>
       </div>
       <Actions>
+        <Dock label="Offer">
         <Button
           onClick={async () => {
             try {
@@ -544,6 +565,7 @@ function OfferWork(p: WorkProps): ReactNode {
         >
           Send offer
         </Button>
+        </Dock>
       </Actions>
       {out.el}
     </Work>
@@ -623,6 +645,7 @@ function EntryWork(p: WorkProps): ReactNode {
         </label>
       )}
       <Actions>
+        <Dock label="Sign">
         <Button
           onClick={async () => {
             try {
@@ -649,6 +672,7 @@ function EntryWork(p: WorkProps): ReactNode {
         >
           Sign entry
         </Button>
+        </Dock>
       </Actions>
       {out.el}
     </Work>
@@ -671,6 +695,7 @@ function SealWork(p: WorkProps): ReactNode {
   const letter = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const pdf = useRef<HTMLInputElement>(null);
   const out = useOut();
+  const [letterOk, setLetterOk] = useState(false);
   if (d.seal) {
     return (
       <Work glyph="印" step="Step 4" title="Letter sealed" hint="Your seal goes to the buyer and the financier. The buyer seals next; the financier's seal arrives with the advance.">
@@ -720,6 +745,7 @@ function SealWork(p: WorkProps): ReactNode {
           ]}
         />
       );
+      setLetterOk(ok);
       if (!ok) {
         out.show(
           <>
@@ -734,7 +760,9 @@ function SealWork(p: WorkProps): ReactNode {
           {fields}
           <Banner kind="ok" title="Letter checks out" text="Same invoice, same financier, and the PDF is the letter's document." />
           <Actions>
-            <Button onClick={sealIt(code)}>Seal as supplier</Button>
+            <Dock label="Seal">
+              <Button onClick={sealIt(code)}>Seal as supplier</Button>
+            </Dock>
           </Actions>
         </>,
       );
@@ -767,7 +795,16 @@ function SealWork(p: WorkProps): ReactNode {
         </div>
       </details>
       <Actions>
-        <Button onClick={check}>Check letter</Button>
+        {/* once the letter checks out, Seal is the screen's primary and Check steps back (mobile E2E 2026-10-27, finding 4) */}
+        {letterOk ? (
+          <Button secondary onClick={check}>
+            Check again
+          </Button>
+        ) : (
+          <Dock label="Check">
+            <Button onClick={check}>Check letter</Button>
+          </Dock>
+        )}
       </Actions>
       {out.el}
     </Work>
@@ -841,6 +878,7 @@ function AdvanceWork(p: WorkProps): ReactNode {
           </p>
           {pre.asAgreed ? null : <Banner kind="warn" title="Not the amount you asked for" text={`The financier names ${zatToZec(pre.zat)} ZEC; your offer asked ${zatToZec(agreed)} ZEC. Confirm only what your wallet shows.`} />}
           <Actions>
+            <Dock label="Confirm">
             <Button
               onClick={async () => {
                 try {
@@ -852,6 +890,7 @@ function AdvanceWork(p: WorkProps): ReactNode {
             >
               {`Confirm: ${zatToZec(pre.zat)} ZEC received`}
             </Button>
+            </Dock>
           </Actions>
           <details className="sp-fold">
             <summary>Different amount</summary>

@@ -26,6 +26,7 @@ import { LEDGER_LABELS, LedgerLine, ledgerWords } from "./InvoicesPage";
 import { freshN } from "./NewInvoicePage";
 import { AddBuyerBack, buyerName, isStation, nextLine, nowStation, ObjectDefs, Rail, STATION } from "./parts";
 import { StationWork } from "./stations";
+import { DockHere } from "../../app/Dock";
 import "../supplier.css";
 
 // Each deal's station states as last drawn: a station that turns done is stamped 済 once.
@@ -297,7 +298,7 @@ function Desk({ d, deals, book, at }: { d: Deal; deals: Deal[]; book: Book | nul
               {frame === "desk" ? <DealSheet d={d} settled={settled} stamp={stamp} who={who} /> : null}
               <section className="sp-work" aria-label="This station's work" hidden={frame === "deal" || undefined}>
                 {frame === "desk" && shown ? <DidLine did={shown} /> : null}
-                {work}
+                <DockHere.Provider value={frame !== "deal"}>{work}</DockHere.Provider>
               </section>
             </div>
           </section>

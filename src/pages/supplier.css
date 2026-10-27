@@ -825,3 +825,14 @@
 .sp .ia-station-of { display: flex; align-items: baseline; gap: 10px; margin: 0; }
 .sp .ia-station-of b { font: 500 15px/1.2 var(--f-mono); color: var(--head); }
 .sp .ia-station-of small { font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }
+/* the advance address: the saved one in one tap, or a scan of the wallet (mobile E2E 2026-10-27, finding 7) */
+.sp .sp-addr-lab { font: 500 13.5px/1.3 var(--f-body); color: var(--head); }
+.sp .sp-addr > small { font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
+.sp .sp-addr-quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp .sp-addr-quick > button { min-height: 44px; }
+.sp .sp-addr-last { display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+.sp .sp-addr-last small { font: 400 11.5px/1.2 var(--f-mono); opacity: .8; }
+.sp div.sp-addr { margin: 0 0 var(--s-2); }
+/* "Add @buyer to your contacts" wraps inside its column at 390 px (mobile E2E 2026-10-27, finding 8) */
+.sp .sp-addback { max-width: 100%; white-space: normal; text-align: left; overflow-wrap: anywhere; box-sizing: border-box; }
+.sp .ia-facts dd { min-width: 0; }

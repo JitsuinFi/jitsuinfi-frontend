@@ -205,8 +205,20 @@ function Resolve({ text, className }: { text: string; className?: string }): Rea
 
 type Say = { mk: string; text: string; bad?: boolean };
 
-/** `want`: the role screen the user tried to open. */
-export function AccountPage({ want }: { want?: Role }): ReactNode {
+/**
+ * Mobile E2E 2026-10-27 (B-04 → B-06): a contact link opened signed out. The sign-up names the
+ * person who shared it, and the Ready step's primary adds them (the link's card is held in memory
+ * by ContactLinkPage.tsx), instead of a role's first step that dropped the card.
+ */
+export interface SharedCard {
+  /** "@supplier" (or their fingerprint). */
+  name: string;
+  /** Keeps the card on this device; the contact screen then shows it added. */
+  add: () => Promise<void>;
+}
+
+/** `want`: the role screen the user tried to open. `shared`: a contact link waits behind the sign-up. */
+export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard }): ReactNode {
   useSessionGate();
   const [, paint] = useReducer((x: number) => x + 1, 0);
   const navigate = useNavigate();
@@ -220,7 +232,12 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   let v: CardView;
   if (s) v = onboarding.on ? "onboard" : "roles";
   else {
-    if (!view) view = account.knownCredentials().length ? "login" : "signup";
+    if (!view) {
+      // after a reload "Welcome back" keeps the username this browser used last (mobile E2E 2026-10-27)
+      const last = account.knownCredentials().length ? account.lastUsername() : null;
+      if (last && !loginName) loginName = last;
+      view = last ? "login-passkey" : account.knownCredentials().length ? "login" : "signup";
+    }
     if (want && view === "signup" && !draft.username) draft.role = want;
     v = view;
   }
@@ -422,8 +439,12 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   let step = 0;
   switch (v) {
     case "signup":
-      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Create your account";
-      lede = want ? `New here? Write your name on the card; the ${roleLabel(want)} seal is chosen. Have an account? Sign in.` : `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
+      title = shared ? `${shared.name} shared their contact` : want ? `Sign in to open the ${roleLabel(want)} counter` : "Create your account";
+      lede = shared
+        ? `Sign up to add them. Write your name on the card${want ? `; the ${roleLabel(want)} seal is chosen` : ""}. Have an account? Sign in.`
+        : want
+          ? `New here? Write your name on the card; the ${roleLabel(want)} seal is chosen. Have an account? Sign in.`
+          : `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
       step = 1;
       break;
     case "signup-passkey":
@@ -433,16 +454,18 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       break;
     case "onboard":
       title = who ? `You're set, @${who.username}` : "You're set";
-      lede = `You signed up as ${roleLabel(s!.role)}.`;
+      lede = shared ? `You signed up as ${roleLabel(s!.role)}. ${shared.name}'s contact is waiting to be added.` : `You signed up as ${roleLabel(s!.role)}.`;
       step = 3;
       break;
     case "login":
-      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Sign in";
-      lede = "Enter your username. Your passkey comes next.";
+      title = shared ? `${shared.name} shared their contact` : want ? `Sign in to open the ${roleLabel(want)} counter` : "Sign in";
+      lede = shared ? "Sign in to add them. Enter your username; your passkey comes next." : "Enter your username. Your passkey comes next.";
       break;
     case "login-passkey":
       title = "Welcome back";
-      lede = account.usernameKnown(loginName)
+      lede = shared
+        ? `Use your passkey to sign in and add ${shared.name}.`
+        : account.usernameKnown(loginName)
         ? "Use your passkey to sign in. Your device asks for your fingerprint, your face, or your device password."
         : "This device has not seen this username yet. Choose the counter to open, then pick the passkey you made for it; your device asks for your fingerprint, face, or device password.";
       break;
@@ -465,7 +488,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   const writtenEmail = v === "signup-passkey" ? draft.email : who?.email;
   const ink = v === "signup-passkey" ? " ac-ink" : "";
   const lock = busy !== null;
-  const first = s ? FIRST_STEP[s.role] : null;
+  const first: { label: string; line: string; to?: string } | null = s ? (shared ? { label: `Add ${shared.name}`, line: "Their contact card came with the link; one tap keeps it on this device." } : FIRST_STEP[s.role]) : null;
 
   return (
     <Page wide>
@@ -814,12 +837,27 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                       I'll do it later
                     </button>
                     <button
-                      className="ac-btn"
+                      className={`ac-btn${busy === "first" ? " is-busy" : ""}`}
                       type="button"
-                      onClick={() => {
-                        setOnboarding(false);
-                        void router.navigate({ href: first.to ?? rolePath(s.role) });
-                      }}
+                      disabled={lock}
+                      aria-busy={busy === "first" || undefined}
+                      onClick={() =>
+                        void act("first", async () => {
+                          if (shared) {
+                            // the contact screen comes back with the card added and its next step
+                            try {
+                              await shared.add();
+                            } catch (e) {
+                              say({ mk: "拒", text: sentence(e), bad: true });
+                              return;
+                            }
+                            setOnboarding(false);
+                            return;
+                          }
+                          setOnboarding(false);
+                          void router.navigate({ href: first.to ?? rolePath(s.role) });
+                        })
+                      }
                     >
                       {first.label}
                     </button>

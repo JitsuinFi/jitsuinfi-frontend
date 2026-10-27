@@ -75,6 +75,12 @@ export class Account {
     return () => this.listeners.delete(fn);
   }
 
+  /** The username this browser signed up or signed in with last, for "Welcome back" after a reload; `null` when none. */
+  lastUsername(): string | null {
+    const named = readProfile(this.deps.profile).credentials.filter((c) => c.label !== "JitsuinFi");
+    return named.at(-1)?.label ?? null;
+  }
+
   /** Credentials this browser remembers (empty on a new device or with blocked storage). */
   knownCredentials(): string[] {
     return credentialIds(readProfile(this.deps.profile));

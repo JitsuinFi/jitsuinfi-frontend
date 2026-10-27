@@ -36,7 +36,7 @@ const NOTE_GLYPH = { ok: "認", warn: "待", bad: "拒" } as const;
  * Reads the next invoice key: one passkey touch for the keys, the relay's copy of the chain, then
  * the board (the chosen file, else the live board) to know which certificates are anchored.
  */
-async function showKey(boardFile: File | undefined): Promise<void> {
+async function showKey(boardFile: File | undefined, then?: (master: Uint8Array, k: number, invoicePk: string) => Promise<void>): Promise<boolean> {
   let hist = await loadHistory();
   let k = localNextIndex(hist);
   const m = await account.stamp();
@@ -129,20 +129,25 @@ async function showKey(boardFile: File | undefined): Promise<void> {
     const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
     setKeyInfo({ id, k, next, notes: said, anchored });
     changed();
+    // mobile E2E 2, finding 5: show and send in one step, with the same passkey touch; never when
+    // a note says this key must not be used (history ahead, key already taken)
+    if (!then || said.some((n) => n.kind === "bad")) return false;
+    await then(m.slice(), k, next);
+    return true;
   } finally {
     m.fill(0);
   }
 }
 
 /** Sends the next invoice key sealed to a supplier's mailbox, signed with that key (one passkey touch). */
-async function sendKey(c: Contact, k: number, invoicePk: string): Promise<void> {
+async function sendKey(c: Contact, k: number, invoicePk: string, master?: Uint8Array): Promise<void> {
   // judge run 3, finding 2: this buyer's fingerprint and @name go along, signed with the key, so
   // the supplier can add the buyer back in one confirm
   const me = myContact();
   const card = { fingerprint: me.fingerprint, ...(me.username ? { username: me.username } : {}) };
   const hd = draft("key.invoice_pk", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, c.mailbox_pk, relayDeps, { body: { invoice_pk: invoicePk, ...card } });
   const withSigner = { ...hd, signer: invoicePk } as Header;
-  const m = await account.stamp();
+  const m = master ?? (await account.stamp());
   const r = json<{ signer: string; sig: string }>(wasm.buyerMessageSignBytes(m, k, signingBytes(withSigner)));
   if (r.signer !== invoicePk) throw new Error("this key is not your invoice key");
   await send(c.mailbox_pk, await encodeMessage({ ...withSigner, sig: r.sig }), relayDeps);
@@ -167,7 +172,7 @@ function useSuppliers(): Contact[] {
  * that very key, so the supplier knows it comes from its holder; or it is copied whole and handed
  * over by hand (the supplier's sheet takes the whole key).
  */
-function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode {
+function ShareKey({ k, invoicePk, sent = null }: { k: number; invoicePk: string; sent?: string | null }): ReactNode {
   const card = useRef<HTMLTextAreaElement>(null);
   const out = useOut();
   const [copied, setCopied] = useState(false);
@@ -175,7 +180,7 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
   // the supplier just added from a contact link goes first (ContactAdd.tsx sendKeyTo)
   const want = sendKeyTo.mailbox;
   const suppliers = [...all].sort((a, b) => Number(b.mailbox_pk === want) - Number(a.mailbox_pk === want));
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(sent);
   const go = async (c: Contact) => {
     try {
       await sendKey(c, k, invoicePk);
@@ -274,7 +279,30 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
   const board = useRef<HTMLInputElement>(null);
   const out = useOut();
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const s = account.current;
+  // mobile E2E 2, finding 5: arriving from "Add @supplier" → "Send them your next invoice key", the
+  // bottom bar sends it at once: one passkey touch shows the key and sends it sealed to them
+  const suppliers = useSuppliers();
+  const want = info ? null : (suppliers.find((c) => c.mailbox_pk === sendKeyTo.mailbox) ?? null);
+  const showAndSend = async (c: Contact) => {
+    setBusy(true);
+    try {
+      const sent = await showKey(board.current?.files?.[0], async (m, k, next) => {
+        await sendKey(c, k, next, m);
+        await noteGiven(k, c.mailbox_pk).catch(() => undefined);
+      });
+      if (sent) {
+        sendKeyTo.mailbox = null;
+        setSentTo(c.mailbox_pk);
+        out.show(<Banner kind="ok" title={`Key sent to ${contactName(c)}`} text="Sent privately to them: it fills the buyer line of the invoice they write. When they send it, it arrives in your inbox to sign." />);
+      } else out.clear();
+    } catch (e) {
+      out.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <div className="by-keyblock" hidden={hidden || undefined}>
       <dl className="by-who" aria-label="Your keys">
@@ -307,10 +335,20 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
           </p>
         </div>
       ))}
+      {want ? (
+        <div className="by-keyrow by-sendnow">
+          <p className="hint">{`One passkey touch shows your next invoice key and sends it sealed to ${contactName(want)}.`}</p>
+          <Dock label="Send">
+            <button type="button" disabled={busy} aria-busy={busy || undefined} onClick={() => void showAndSend(want)}>
+              {busy ? "Reading your keys…" : `Send to ${contactName(want)}`}
+            </button>
+          </Dock>
+        </div>
+      ) : null}
       <div className="by-keyrow">
         <button
           type="button"
-          className={info ? "secondary" : undefined}
+          className={info || want ? "secondary" : undefined}
           disabled={busy}
           onClick={async () => {
             setBusy(true);
@@ -342,7 +380,7 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
         </div>
       </details>
       {out.el}
-      {info ? <ShareKey k={info.k} invoicePk={info.next} /> : null}
+      {info ? <ShareKey key={sentTo ?? "-"} k={info.k} invoicePk={info.next} sent={sentTo} /> : null}
     </div>
   );
 }

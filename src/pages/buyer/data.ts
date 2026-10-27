@@ -18,6 +18,7 @@ import { decodeBackup, emptyHistory, encodeBackup, HISTORY_ID, localNextIndex, t
 import { boardStatus, isInvoiceId, sortInvoices, storeId, type BuyerInvoice } from "../../lib/buyer-invoices";
 import { json, wasm } from "../../lib/core";
 import { newRef, withRefs } from "../../lib/deal-ref";
+import { keyMissText, type KeyMiss } from "../../lib/key-match";
 import { draft, loadState, RelayError, saveState, send } from "../../lib/relay";
 import { encodeMessage } from "../../lib/relay-message";
 import { BUYER_CHANGED } from "../../app/DueReminder";
@@ -142,35 +143,73 @@ function onBoard(rec: BuyerInvoice, boardJson: string): string | null {
 }
 
 // ---------- keys: one passkey touch each ----------
-/** How far `withInvoiceIndex` looks past the next index for an invoice addressed to an older key. */
+/** How far the key search looks past the newest index this device knows of. */
 const LOOKAHEAD = 8;
 
 /**
+ * The newest history index this device knows of: its own chain, the chain's relay copy (another
+ * device with this passkey may have issued newer certificates and handed out a later key: user
+ * test 2026-10-27), and the next key shown in this tab. The relay copy is read once per account in
+ * this tab, before the passkey touch, so no master waits on the network; a copy that cannot be
+ * read counts as none.
+ */
+async function newestIndex(): Promise<number> {
+  const local = localNextIndex(await loadHistory());
+  const fp = account.current?.fingerprint ?? "";
+  if (relayLength?.fp !== fp) {
+    const remote = await relayHistory().catch(() => null);
+    relayLength = { fp, n: remote ? localNextIndex(remote) : 0 };
+  }
+  // the key last shown in this tab can only widen the search
+  return Math.max(local, relayLength.n, keyInfo?.k ?? 0);
+}
+let relayLength: { fp: string; n: number } | null = null;
+
+/** Why an invoice is not for this account: the key it names and the keys checked (lib/key-match.ts). */
+export class KeyMissError extends Error {
+  readonly miss: KeyMiss;
+  constructor(miss: KeyMiss) {
+    super(keyMissText(miss));
+    this.miss = miss;
+  }
+}
+
+/**
  * One passkey touch: finds the history index of the key `invoice` is addressed to, then runs
- * `use` with a fresh copy of the master for that index. The master is zeroed afterwards.
+ * `use` with a fresh copy of the master for that index. The master is zeroed afterwards. Throws
+ * `KeyMissError` when no key of this account up to the newest known index (+ LOOKAHEAD) matches.
  */
 export async function withInvoiceIndex<T>(invoice: string, use: (master: Uint8Array, k: number) => T): Promise<T> {
   const buyerPk = json<{ buyer_pk: string }>(wasm.invoiceDecode(invoice)).buyer_pk;
-  const limit = localNextIndex(await loadHistory()) + LOOKAHEAD;
+  const limit = (await newestIndex()) + LOOKAHEAD;
   const m = await account.stamp();
+  const mine: KeyMiss["mine"] = [];
   try {
     for (let k = 0; k <= limit; k++) {
-      if (json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk === buyerPk) return use(m.slice(), k);
+      const pk = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
+      if (pk === buyerPk) return use(m.slice(), k);
+      mine.push({ k, pk });
     }
-    throw new Error("this invoice is not addressed to one of your invoice keys");
+    throw new KeyMissError({ invoiceKey: buyerPk, mine, demo: !!account.current?.demo });
   } finally {
     m.fill(0);
   }
 }
 
-/** One passkey touch: the history index of the key `invoice` is addressed to, or null. */
-export async function findKeyIndex(invoice: string): Promise<number | null> {
+/** One passkey touch: the history index of the key `invoice` is addressed to, or why there is none. */
+export async function findKey(invoice: string): Promise<{ k: number } | { miss: KeyMiss }> {
   try {
-    return await withInvoiceIndex(invoice, (_m, k) => k);
+    return { k: await withInvoiceIndex(invoice, (_m, k) => k) };
   } catch (e) {
-    if (e instanceof Error && e.message.startsWith("this invoice is not addressed")) return null;
+    if (e instanceof KeyMissError) return { miss: e.miss };
     throw e;
   }
+}
+
+/** One passkey touch: the history index of the key `invoice` is addressed to, or null. */
+export async function findKeyIndex(invoice: string): Promise<number | null> {
+  const r = await findKey(invoice);
+  return "k" in r ? r.k : null;
 }
 
 /** Sends the signature on invoice N to the supplier's mailbox and notes when. */

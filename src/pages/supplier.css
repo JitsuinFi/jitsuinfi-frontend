@@ -645,6 +645,10 @@
 .sp .sk-buyer [aria-invalid="true"] { border-bottom: 2px solid var(--seal); background: rgba(236, 208, 236, .72); }
 .sp .sk-buyer-hand { display: grid; gap: 6px; }
 .sp .sk-buyer small, .sp .sk-buyer-none { font: 400 11.5px/1.35 var(--f-body); color: var(--ink-2); }
+/* user test 2026-10-27: a buyer with no key yet: say so, and the way to ask for one */
+.sp .sk-buyer small.is-ask { color: var(--head); }
+.sp .sk-buyer-ask { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; padding: 0 2px; color: var(--seal); font: 500 13px/1.3 var(--f-body); text-decoration: underline; text-underline-offset: 3px; }
+.sp .sk-buyer-ask:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
 .sp .sk-buyer.is-read { display: grid; gap: 2px; }
 .sp .sk-buyer.is-read strong { font: 500 14px/1.3 var(--f-body); color: var(--head); }
 .sp .sk-buyer.is-read code { font: 400 12.5px/1.3 var(--f-mono); letter-spacing: .04em; color: var(--head); }

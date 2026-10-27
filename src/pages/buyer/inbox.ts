@@ -12,10 +12,11 @@ import { lateState, reminderHandled, reminderText, slipSeen } from "../../lib/bu
 import { contactId, type Contact } from "../../lib/contact";
 import { daysToDate, fileHash, json, today, wasm, zatToZec } from "../../lib/core";
 import { leadPath, letterAction, type Lead } from "../../lib/inbox-routes";
+import { keyMissText } from "../../lib/key-match";
 import { readablePrint } from "../../lib/print";
 import { draft, send, type Received } from "../../lib/relay";
 import { encodeMessage, verifyHeader, type Header, type MessageType } from "../../lib/relay-message";
-import { chainState, findKeyIndex, invoiceByN, loadHistory, saveHistory, saveInvoice, toB64, withInvoiceIndex, type Inv } from "./data";
+import { chainState, findKey, invoiceByN, loadHistory, saveHistory, saveInvoice, toB64, withInvoiceIndex, type Inv } from "./data";
 
 /** Where `type`'s action leads for invoice `r` (or `lead`, when the letter decides it). */
 function to(type: MessageType, r?: Inv, lead?: Lead): { path: string } | undefined {
@@ -145,8 +146,10 @@ export const buyerInbox: Handlers = {
       if (!(await verifyHeader(hd, f.supplier_pk))) throw new Error("not signed by this invoice's supplier key");
       const pdf = x.message.attachments[0];
       if (!pdf) throw new Error("The invoice came without its PDF.");
-      const k = await findKeyIndex(invoice);
-      if (k === null) throw new Error("This invoice is not addressed to one of your invoice keys: it is not kept. Ask the supplier for your key.");
+      // user test 2026-10-27: the refusal names the invoice's key, the keys checked and the fix
+      const found = await findKey(invoice);
+      if ("miss" in found) throw new Error(keyMissText(found.miss));
+      const k = found.k;
       const d = { nullifier: f.nullifier, invoice_id: f.invoice_id, amount_zat: f.amount_zat, due_date: f.due_date };
       const name = hd.attachments[0]?.name ?? `${f.invoice_id}.pdf`;
       const rec = await saveInvoice((prev) => ({ ...invoiceRecord(d, invoice, k, false, Date.now(), prev), reply_to: hd.from.mailbox_pk, terms_pdf: { name, b64: toB64(pdf) } }), f.nullifier);

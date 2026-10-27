@@ -75,7 +75,7 @@ export function InvoicesPage(): ReactNode {
                   帳
                 </b>
                 <strong>No invoices yet</strong>
-                <p>Give a supplier your next invoice key: the invoice they write arrives in your inbox to sign.</p>
+                <p>Give a supplier your next invoice key: the invoice they write arrives in your inbox to sign. Invoices opened on another device stay on that device.</p>
                 <Link className="ia-none-go" to="/buyer/invoices/key">
                   Show my next invoice key
                 </Link>

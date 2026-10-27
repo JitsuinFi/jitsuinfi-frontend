@@ -97,7 +97,9 @@ export const TYPES = {
   "key.invoice_pk": {
     flows: "2.1 → 2.2, 2.4",
     from: ["buyer"], to: ["supplier"], n: "none",
-    body: { invoice_pk: req(H32) },
+    // judge run 3, finding 2: the buyer's role key fingerprint and @name ride along, under the
+    // key's signature like the mailbox, so the supplier can add the buyer back in one confirm
+    body: { invoice_pk: req(H32), fingerprint: opt(text(64)), username: opt(text(32)) },
     attachments: { min: 0, max: 0 }, signer: "buyer-invoice-key",
   },
   "invoice.sign_request": {

@@ -88,6 +88,11 @@
 .ia-add-facts dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
 .ia-add-facts dd { margin: 0; min-width: 0; font: 500 14.5px/1.35 var(--f-body); color: var(--head); overflow-wrap: anywhere; }
 .ia-add-facts code { font: 500 14px/1.35 var(--f-mono); letter-spacing: .04em; }
+.ia-add-name { display: grid; gap: 6px; }
+.ia-add-name > span { font: 500 14px/1.35 var(--f-body); color: var(--head); }
+.ia-add-name input { min-height: 48px; padding: 0 14px; border: 0; border-radius: var(--r-control); background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-strong); color: var(--head); font: 400 16px/1.3 var(--f-body); }
+.ia-add-name input:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+.ia-add-name small { font: 400 13px/1.45 var(--f-body); color: var(--ink-2); }
 .ia-add-hint { font: 400 13px/1.5 var(--f-body); color: var(--ink-2); }
 .ia-add-err { display: flex; gap: 8px; align-items: baseline; font: 400 14px/1.45 var(--f-body); color: var(--seal); }
 .ia-add-err b { font: 800 16px/1 var(--f-seal); }

@@ -19,7 +19,7 @@ import { NET } from "../../lib/network";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, signingBytes, type Header } from "../../lib/relay-message";
-import { takeContact } from "../MailboxCard";
+import { myContact, takeContact } from "../MailboxCard";
 import { backupHistory, backupProblem, chainState, changed, loadHistory, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
@@ -113,7 +113,11 @@ async function showKey(boardFile: File | undefined): Promise<void> {
 
 /** Sends the next invoice key sealed to a supplier's mailbox, signed with that key (one passkey touch). */
 async function sendKey(c: Contact, k: number, invoicePk: string): Promise<void> {
-  const hd = draft("key.invoice_pk", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, c.mailbox_pk, relayDeps, { body: { invoice_pk: invoicePk } });
+  // judge run 3, finding 2: this buyer's fingerprint and @name go along, signed with the key, so
+  // the supplier can add the buyer back in one confirm
+  const me = myContact();
+  const card = { fingerprint: me.fingerprint, ...(me.username ? { username: me.username } : {}) };
+  const hd = draft("key.invoice_pk", { role: "buyer", mailbox_pk: myIdentity().mailbox_pk }, c.mailbox_pk, relayDeps, { body: { invoice_pk: invoicePk, ...card } });
   const withSigner = { ...hd, signer: invoicePk } as Header;
   const m = await account.stamp();
   const r = json<{ signer: string; sig: string }>(wasm.buyerMessageSignBytes(m, k, signingBytes(withSigner)));

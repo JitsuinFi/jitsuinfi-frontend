@@ -24,7 +24,7 @@ import { Seikyusho, type SheetFields } from "../try/Seikyusho";
 import { boardLine, invoiceFacts, isSettled, lastDeal, pdfOf, rememberDeal, useBoard, useBook, useDeals, type Book, type Deal } from "./data";
 import { LEDGER_LABELS, LedgerLine, ledgerWords } from "./InvoicesPage";
 import { freshN } from "./NewInvoicePage";
-import { buyerName, isStation, nextLine, nowStation, ObjectDefs, Rail, STATION } from "./parts";
+import { AddBuyerBack, buyerName, isStation, nextLine, nowStation, ObjectDefs, Rail, STATION } from "./parts";
 import { StationWork } from "./stations";
 import "../supplier.css";
 
@@ -171,6 +171,7 @@ function Desk({ d, deals, book, at }: { d: Deal; deals: Deal[]; book: Book | nul
         <dd>
           {who.name}
           <code>{who.print}</code>
+          <AddBuyerBack book={book} mailbox={d.buyer_mailbox} />
         </dd>
       </div>
       <div>

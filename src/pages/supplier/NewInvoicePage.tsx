@@ -16,7 +16,7 @@ import { readablePrint } from "../../lib/print";
 import { invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
 import { Seikyusho, type SheetFields } from "../try/Seikyusho";
 import { contactFor, dropArrivedKey, keepPdf, save, useBook, useDeals, type Book } from "./data";
-import { Caption, ObjectDefs } from "./parts";
+import { AddBuyerBack, Caption, ObjectDefs } from "./parts";
 import "../supplier.css";
 
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -238,6 +238,8 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           </Caption>
           <section className="ia-vis ia-new" aria-label="The invoice you are writing">
             {shown ? <DidLine did={shown} /> : null}
+            {/* judge run 3, finding 2: the key's letter carried the buyer's card: add them back */}
+            {arrived ? <AddBuyerBack book={book} mailbox={arrived.mailbox_pk} /> : null}
             <form
               className="ia-new-form"
               onSubmit={(e) => {

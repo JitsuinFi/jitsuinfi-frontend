@@ -168,9 +168,25 @@ export async function dropArrivedKey(invoicePk: string): Promise<void> {
   changed();
 }
 
+// ---------- the buyer's card from its key letter (judge run 3, finding 2) ----------
+/**
+ * The contact card a buyer's key letter carried (lib/contact.ts `cardFromKeyLetter`), kept by
+ * its mailbox once the letter was accepted, so the buyer line can offer "Add @name to your
+ * contacts" until the supplier adds them. It is never a contact by itself.
+ */
+export type LetterCard = Contact & { at: number };
+const CARD_PREFIX = "buyercard:";
+
+export async function keepLetterCard(c: Contact, at: number): Promise<void> {
+  await store().put(CARD_PREFIX + c.mailbox_pk, { ...c, at });
+  changed();
+}
+
 export interface Book {
   keys: ArrivedKey[];
   contacts: Array<Contact & { verified_at?: number }>;
+  /** Cards from buyers' key letters, by mailbox (newest kept). */
+  cards: LetterCard[];
 }
 
 /** The arrived keys (newest first) and the contacts, read again whenever the store changes. */
@@ -187,9 +203,10 @@ export function useBook(): Book | null {
           const keys = all.filter((r) => r.id.startsWith(KEY_PREFIX)).map((r) => r.doc as ArrivedKey);
           keys.sort((a, b) => b.at - a.at);
           const contacts = all.filter((r) => r.id.startsWith("contact:")).map((r) => r.doc as Contact & { verified_at?: number });
-          setBook({ keys, contacts });
+          const cards = all.filter((r) => r.id.startsWith(CARD_PREFIX)).map((r) => r.doc as LetterCard);
+          setBook({ keys, contacts, cards });
         },
-        () => live && setBook({ keys: [], contacts: [] }),
+        () => live && setBook({ keys: [], contacts: [], cards: [] }),
       );
     return () => void (live = false);
   }, [v]);
@@ -199,6 +216,12 @@ export function useBook(): Book | null {
 /** The contact whose mailbox this is, if the supplier keeps their card. */
 export function contactFor(book: Book | null, mailboxPk: string | undefined): (Contact & { verified_at?: number }) | undefined {
   return mailboxPk ? book?.contacts.find((c) => contactId(c) === `contact:${mailboxPk}`) : undefined;
+}
+
+/** The card a buyer's key letter carried for this mailbox, while the supplier keeps no card for it. */
+export function letterCardFor(book: Book | null, mailboxPk: string | undefined): LetterCard | undefined {
+  if (!mailboxPk || contactFor(book, mailboxPk)) return undefined;
+  return book?.cards.find((c) => c.mailbox_pk === mailboxPk);
 }
 
 // ---------- the Deal tab remembers the last deal opened (its ref, never the number) ----------

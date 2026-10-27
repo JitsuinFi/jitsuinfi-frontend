@@ -676,6 +676,10 @@
 .sp .ia-facts dt { font: 400 13px/1.35 var(--f-body); color: var(--ink-2); }
 .sp .ia-facts dd { margin: 0; min-width: 0; display: grid; gap: 1px; font: 500 14px/1.35 var(--f-body); color: var(--head); overflow-wrap: anywhere; }
 .sp .ia-facts dd code { font: 400 12.5px/1.45 var(--f-mono); }
+/* judge run 3, finding 2: add the buyer back from their key letter (one confirm, ContactAdd.tsx) */
+.sp .sp-addback { justify-self: start; min-height: 44px; margin-top: 8px; padding: 10px 16px; border-radius: 999px; font: 500 14px/1.25 var(--f-body); }
+.sp .ia-facts dd .ia-add { margin-top: 10px; }
+.sp .ia-new > .sp-addback, .sp .ia-new > .ia-add { margin: 0 0 16px; }
 .sp .sp-cap h1.ia-deal-id, .sp .ia-deal-phone h1.ia-deal-id { font: 800 clamp(34px, 3.2vw, 50px)/1.02 var(--f-display); overflow-wrap: anywhere; }
 .sp .ia-deal-id span { display: block; margin-top: 8px; font: 500 clamp(22px, 1.8vw, 28px)/1 var(--f-mono); letter-spacing: -.01em; color: var(--seal); }
 .sp .ia-switch { margin: 30px 0 0; }

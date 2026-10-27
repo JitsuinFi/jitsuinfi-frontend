@@ -23,7 +23,7 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/sealed message does not open/i, () => "This message was not sealed to your mailbox, or it was changed on the way."],
   [/not a usable X25519 mailbox key/i, () => "This contact card's mailbox key is not valid: ask for the card again."],
   [/invalid Ed25519 public key/i, () => "One of the keys is not a valid key: check that it was copied whole."],
-  [/unknown magic bytes|input truncated|unexpected trailing bytes|unsupported format version|is not base64/i, () => "This code is not a complete JitsuinFi document: copy it again, whole, from where you got it."],
+  [/unknown magic bytes|input truncated|unexpected trailing bytes|unsupported format version|is not base64|invalid base64/i, () => "This code is not a complete JitsuinFi document: copy it again, whole, from where you got it."],
   [/invoice id must be 1-32 printable ASCII bytes/i, () => "The invoice number in No. on the sheet must be 1 to 32 plain characters: letters, digits and signs such as - / _, no spaces."],
   [/amount must be greater than zero/i, () => "The amount must be more than zero."],
   [/due date is before issue date/i, () => "The due date is before the issue date."],

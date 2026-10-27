@@ -369,3 +369,6 @@ p.by-late b { color: var(--head); font-weight: 600; }
 .by-keymore > div { display: grid; gap: 10px; padding: 0 0 12px; }
 .by-keymore .by-help { margin-top: 0 !important; }
 .by-side h2.by-side-h { line-height: 1.15; font-weight: 700; letter-spacing: 0; }
+
+/* a pasted invoice code that does not read says why (messy-state E2E 2026-10-27) */
+.by-codes .by-code-bad { color: var(--seal); }

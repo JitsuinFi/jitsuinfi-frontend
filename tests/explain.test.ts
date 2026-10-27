@@ -40,3 +40,7 @@ test("the relay down reads as an outage to retry, not a refusal (messy-state E2E
   assert.equal(isRelayOutage("the relay answered 404"), false);
   assert.equal(isRelayOutage("relay: mailbox not found"), false);
 });
+
+test("a pasted code that is not base64 reads as an incomplete document (messy-state E2E 2026-10-27)", () => {
+  assert.match(explain("Invalid base64url"), /not a complete JitsuinFi document/);
+});

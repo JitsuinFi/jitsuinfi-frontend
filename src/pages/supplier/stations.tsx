@@ -31,7 +31,7 @@ import { describeFiles, encodeMessage, type Header } from "../../lib/relay-messa
 import { DEFAULT_ADVANCE_RATIO, advanceSuggestion, advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
 import { handToVerify } from "../../lib/verify-handoff";
 import { takeContact } from "../MailboxCard";
-import { buyerName, STATION, Work, type Stations } from "./parts";
+import { BuyerLine, buyerName, STATION, Work, type Stations } from "./parts";
 import { boardLine, lastAddress, pdfOf, rememberAddress, save, type Book, type Deal } from "./data";
 import { addressProblem } from "../../lib/zaddr";
 
@@ -194,7 +194,7 @@ function SignatureWork(p: WorkProps): ReactNode {
       const at = Date.now();
       await save({ ...d, buyer_mailbox: mailbox, sign_request: { to: mailbox, at } });
       const name = buyerName(book, { ...d, buyer_mailbox: mailbox }).name;
-      did(p, "照", "Sent to the buyer", `${d.invoice_id} and its PDF went sealed to ${name === "The buyer" || name.startsWith("A buyer") ? "the buyer's" : `${name}'s`} inbox on ${when(at)}. They sign it there; the signature comes back to your inbox.`);
+      did(p, "照", "Sent to the buyer", `${d.invoice_id} and its PDF went sealed to ${!name.startsWith("@") ? "the buyer's" : `${name}'s`} inbox on ${when(at)}. They sign it there; the signature comes back to your inbox.`);
     } catch (e) {
       sendOut.error(e);
     }
@@ -286,8 +286,7 @@ function SignatureWork(p: WorkProps): ReactNode {
           <dd>
             {d.buyer_mailbox ? (
               <>
-                <strong>{who.name}</strong>
-                <code>{who.print}</code>
+                <BuyerLine book={book} d={d} />
                 <small>The buyer's key came from this inbox: the invoice goes back to it.</small>
               </>
             ) : buyers.length ? (

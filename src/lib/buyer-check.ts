@@ -47,7 +47,7 @@ export function checkInvoice(c: CheckInput): CheckResult {
       canSign: true,
       kind: "warn",
       title: `Key #${c.keyIndex} is on ${c.sameKey.length > 1 ? "other invoices" : "another invoice"} already`,
-      text: `You signed ${ids} with this key. A key is for one invoice: only one invoice per key can be financed, the first one a financier registers. Sign this one only if ${c.sameKey.length > 1 ? "those are" : "that one is"} not going to a financier; otherwise ask this supplier to wait for your next key, which comes once ${ids} is financed.`,
+      text: `You signed ${ids} with this key. A key is for one invoice: only one invoice per key can be financed, the first one a financier registers. Sign this one only if ${c.sameKey.length > 1 ? "those are" : "that one is"} not going to a financier; otherwise ask this supplier to wait for your next key, which comes once ${c.sameKey.length > 1 ? "one of them" : ids} is financed.`,
       rows,
     };
   }

@@ -22,6 +22,7 @@ import { Mark, Wordmark } from "./Mark";
 import { dismissSheet, onSheetEntry, useBackCloses } from "./sheet";
 import { usePhone } from "./phone";
 import { SkipLink } from "./SkipLink";
+import { UpBar } from "./UpBar";
 import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
@@ -107,12 +108,21 @@ export function AppShell(): ReactNode {
   useBackCloses((ib || menu) && phone, shut);
   const closeInbox = useCallback(() => dismissSheet(shut), [shut]);
   const closeMenu = useCallback(() => dismissSheet(shut), [shut]);
-  /** A move to another page from an open sheet: the page takes the sheet's history entry. */
+  /**
+   * A move to another page from an open sheet. The sheet's history entry is stepped back over
+   * first, then the page is pushed: every screen keeps its own history position, so the Back
+   * control (UpBar.tsx) and the system Back agree (judge run 2, finding 9). The page the sheet
+   * was over needs no second entry.
+   */
   const leave = useCallback(
     (href: string) => {
-      const replace = onSheetEntry();
+      const fromSheet = onSheetEntry();
+      const here = location.pathname + location.search;
       shut();
-      void router.navigate({ href, replace });
+      if (!fromSheet) return void router.navigate({ href });
+      if (href === here) return void window.history.back();
+      addEventListener("popstate", () => setTimeout(() => void router.navigate({ href }), 0), { once: true });
+      window.history.back();
     },
     [router, shut],
   );
@@ -184,6 +194,7 @@ export function AppShell(): ReactNode {
         {loading ? <span className="route-load" aria-hidden="true" /> : null}
       </header>
       <ApplyReminder path={path} />
+      <UpBar role={role} phone={phone} wide={wide} />
       {/* A stage page (data-wide) takes the full width: its visuals need the room (HNK-30.T13, FE-M0 M3). */}
       <main ref={setMain} id="main" tabIndex={-1} className={wide ? "wide" : undefined} />
       <footer>

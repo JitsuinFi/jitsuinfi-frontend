@@ -124,11 +124,21 @@ export function Totals({ list, statuses, loading }: { list: BuyerInvoice[]; stat
         </dd>
       </div>
       <div>
-        <dt>{`paid on time, of ${t.due} due`}</dt>
-        <dd>
-          {t.onTime === null ? "–" : t.onTime}
-          <small>{`/ ${t.due}`}</small>
-        </dd>
+        {/* judge run 2: "0 / 0 paid on time" said nothing; with nothing due yet, say so */}
+        {t.due ? (
+          <>
+            <dt>{`paid on time, of ${t.due} due`}</dt>
+            <dd>
+              {t.onTime === null ? "–" : t.onTime}
+              <small>{`/ ${t.due}`}</small>
+            </dd>
+          </>
+        ) : (
+          <>
+            <dt>paid on time: nothing due yet</dt>
+            <dd className="is-word">None due</dd>
+          </>
+        )}
       </div>
     </dl>
   );

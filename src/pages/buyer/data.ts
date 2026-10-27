@@ -9,9 +9,11 @@
 // `account.stamp()`) passed to a jitsuin-wasm `*Bytes` function, which zeroes it. The buyer salt is
 // unchanged (`jitsuin/buyer/master/v1`), so old buyer keys stay the same.
 import { useEffect, useReducer, useState } from "react";
+import { useStoreVersion } from "../../app/store-change";
 import { myIdentity, myMailbox, relayDeps, relayMayHoldState, stateSaved } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
-import { loadBoard, type BoardData } from "../../lib/board";
+import type { BoardData } from "../../lib/board";
+import { refreshBoard, useLiveBoard } from "../../app/board-live";
 import { decodeBackup, emptyHistory, encodeBackup, HISTORY_ID, localNextIndex, type HistoryDoc } from "../../lib/buyer-history";
 import { boardStatus, isInvoiceId, sortInvoices, storeId, type BuyerInvoice } from "../../lib/buyer-invoices";
 import { json, wasm } from "../../lib/core";
@@ -31,13 +33,15 @@ export function changed(): void {
   listeners.forEach((f) => f());
   dispatchEvent(new Event(BUYER_CHANGED)); // the shell's count on Pay
 }
-export function useVersion(): number {
+/** Grows on every notice: one of this module's own, or any write to the buyer's store (the inbox's too). */
+export function useVersion(): string {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
     listeners.add(bump);
     return () => void listeners.delete(bump);
   }, []);
-  return version;
+  const stored = useStoreVersion("buyer");
+  return `${version}:${stored}`;
 }
 
 export function store() {
@@ -96,30 +100,21 @@ export function useInvoices(): Inv[] | "blocked" | null {
 }
 
 // ---------- the board's word on each signed invoice (HNK-25.T7, BL-D25-09) ----------
-let board: BoardData | null = null;
-let boardAsked = false;
-const boardListeners = new Set<() => void>();
+// Read again when a deal changes state, on return to the tab, and while a deal is in flight
+// (judge run 2, finding 2: app/board-live.ts).
 
-/** The board as last read in this tab (null before), read once per tab or again on `readBoard()`. */
-export function useBoard(): BoardData | null {
-  const [, bump] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => {
-    boardListeners.add(bump);
-    if (!boardAsked) void readBoard();
-    return () => void boardListeners.delete(bump);
-  }, []);
-  return board;
+/** The board as last read in this tab (null before); `inFlight`: an invoice waits for the board. */
+export function useBoard(inFlight = false): BoardData | null {
+  return useLiveBoard("buyer", inFlight);
 }
 
+/** Reads the board now (Show my next invoice key). */
 export async function readBoard(): Promise<BoardData | null> {
-  boardAsked = true;
-  const b = await loadBoard((u, i) => fetch(u, i)).catch(() => null);
-  if (b) {
-    board = b;
-    boardListeners.forEach((f) => f());
-  }
-  return b;
+  return refreshBoard();
 }
+
+/** An invoice the board still has news for: signed, not settled on this device. */
+export const awaitsBoard = (list: readonly BuyerInvoice[]) => list.some((r) => !!r.signature && !r.bundle);
 
 /** What the board says about each signed invoice ("financed, registered on the board", "settled on time"…), or null unread. */
 export function statusesOf(list: readonly BuyerInvoice[], b: BoardData | null): Record<string, string | null> | null {

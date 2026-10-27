@@ -327,18 +327,13 @@ p.by-late b { color: var(--head); font-weight: 600; }
 .by-keyhex-v.is-print { font: 500 17px/1.3 var(--f-mono); letter-spacing: .04em; word-break: normal; }
 .by-send-to { display: grid; gap: 8px; }
 /* a row on the caption that opens a screen one step down (a phone) */
-.ia-row-link {
-  display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 56px; padding: 10px 12px; border-radius: 14px;
-  background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--head); text-decoration: none;
-}
-.ia-row-link > b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 17px/1 var(--f-seal); rotate: -4deg; }
-.ia-row-link > span { display: grid; gap: 2px; min-width: 0; }
-.ia-row-link strong { font: 500 15px/1.3 var(--f-body); }
-.ia-row-link small { font: 400 12.5px/1.35 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; }
-.ia-row-link > i { font-style: normal; color: var(--seal); }
 /* a phone: one screen down from the list */
 .by-doc-phone { display: grid; gap: 18px; min-width: 0; }
 .by-doc-phone .ia-did { margin: 0; }
+/* DS-MOB L5: the invoice and the slip draw one tree at every width; on a phone the caption and visual
+   boxes step aside and their parts stand in the screen's column */
+.by-flat { display: contents; }
+.by-keyblock[hidden] { display: none; }
 .rp .ia-back {
   justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 14px 8px 8px; border-radius: 999px;
   background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); text-decoration: none;
@@ -374,3 +369,12 @@ p.by-late b { color: var(--head); font-weight: 600; }
   .by-chain .by-branch { max-width: none; }
   .by-board { max-height: 40dvh; }
 }
+/* judge run 2: the empty "paid on time" figure, and the key block's details fold */
+.by-totals dd.is-word { font-size: 22px; line-height: 1.2; letter-spacing: 0; padding-top: 6px; color: var(--ink-2); }
+.by-keymore { border-top: 1px solid var(--rule); }
+.by-keymore > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; font: 500 14px/1.3 var(--f-body); color: var(--head); }
+.by-keymore > summary::-webkit-details-marker { display: none; }
+.by-keymore > summary::after { content: "+"; margin-left: auto; color: var(--seal); font: 500 18px/1 var(--f-body); }
+.by-keymore[open] > summary::after { content: "−"; }
+.by-keymore > div { display: grid; gap: 10px; padding: 0 0 12px; }
+.by-keymore .by-help { margin-top: 0 !important; }

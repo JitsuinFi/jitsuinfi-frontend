@@ -163,7 +163,7 @@
 .ac .ac-btn:active { transform: scale(.97); }
 .ac .ac-btn:disabled { opacity: .45; cursor: default; transform: none; }
 .ac-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.ac-btn .ac-lbl { display: grid; gap: 3px; text-align: left; }
+.ac-btn .ac-lbl { display: grid; gap: 3px; text-align: left; white-space: normal; min-width: 0; }
 .ac-btn .ac-lbl small { font: 400 12.5px/1.2 var(--f-body); opacity: .82; }
 .ac-btn.is-busy::after { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(252, 252, 254, .4); border-top-color: var(--sheet); animation: ac-spin 800ms linear infinite; }
 @keyframes ac-spin { to { transform: rotate(360deg); } }

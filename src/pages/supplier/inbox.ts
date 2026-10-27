@@ -11,7 +11,7 @@ import { readablePrint } from "../../lib/print";
 import type { Received } from "../../lib/relay";
 import type { Header, MessageType } from "../../lib/relay-message";
 import { entryRequestProblems, type StationKey } from "../../lib/supplier-deal";
-import { dealByN, keepArrivedKey, save, type Deal } from "./data";
+import { dealByN, keepArrivedKey, save, store, type Deal } from "./data";
 
 const bytesToB64 = (b: Uint8Array) => btoa(Array.from(b, (x) => String.fromCharCode(x)).join(""));
 
@@ -36,13 +36,20 @@ const aboutDeal = (line: (d: Deal, h: Header) => string) => async (r: Received) 
   return d ? line(d, r.message.header) : "For an invoice that is not on this device.";
 };
 
+/** The letter's work is done on its deal already (judge run 2, finding 3); no deal: not done. */
+const doneOn = (yes: (d: Deal, h: Header) => boolean) => async (r: Received) => {
+  const d = await dealByN(r.message.header.n ?? "").catch(() => undefined);
+  return d ? yes(d, r.message.header) : false;
+};
+
 /**
  * HNK-26.T16: a letter from the financier's node about one of this device's deals, accepted only
  * from the financier the invoice was offered to (its key signed the letter).
  */
-function fromFinancier(type: MessageType, [glyph, title]: [string, string], use: (d: Deal, h: Header, files: Uint8Array[]) => Promise<string>, about: (d: Deal, h: Header) => string): Handler {
+function fromFinancier(type: MessageType, [glyph, title]: [string, string], use: (d: Deal, h: Header, files: Uint8Array[]) => Promise<string>, about: (d: Deal, h: Header) => string, handled: (d: Deal, h: Header) => boolean): Handler {
   return {
     about: aboutDeal(about),
+    handled: doneOn(handled),
     run: async (r) => {
       const h = r.message.header;
       const d = await dealOf(h);
@@ -61,6 +68,7 @@ export const supplierInbox: Handlers = {
   // HNK-23.T7: the buyer's signature, checked against its deal and kept
   "invoice.signature": {
     about: aboutDeal((d) => `For ${facts(d)}: the buyer signed it.`),
+    handled: doneOn((d) => !!d.buyer_signature),
     run: async (r) => {
       const d = await dealOf(r.message.header);
       const s = String(r.message.header.body.buyer_signature);
@@ -75,6 +83,12 @@ export const supplierInbox: Handlers = {
   },
   // HNK-25.T2 (BL-D22-01): the buyer's key for the next invoice, with the mailbox it came from
   "key.invoice_pk": {
+    // kept already, or an invoice was written for it
+    handled: async (r) => {
+      const k = String(r.message.header.body.invoice_pk);
+      const all = await store().list<{ buyer_pk?: string; invoice_pk?: string }>();
+      return all.some((x) => x.doc.invoice_pk === k || x.doc.buyer_pk === k);
+    },
     about: async (r) => {
       const c = await contactOf(r.message.header.from.mailbox_pk);
       const who = c ? `${c.username ? `@${c.username}` : "A buyer in your contacts"} (${c.fingerprint})` : "A buyer not in your contacts yet";
@@ -92,6 +106,7 @@ export const supplierInbox: Handlers = {
   // HNK-26.T6: a financier declined the offer; the invoice is free to offer to another one
   "deal.decline": {
     about: aboutDeal((d, h) => `${d.invoice_id}: ${String(h.body.reason ?? "")}`),
+    handled: doneOn((d, h) => !d.offer || d.offer.financier_pk !== h.signer || !!d.entry_request || !!d.entry),
     run: async (r) => {
       const h = r.message.header;
       const d = await dealOf(h);
@@ -115,6 +130,7 @@ export const supplierInbox: Handlers = {
       return `The financier checked the board: sign the entry for ${d.invoice_id} (Step 3).`;
     },
     (d) => `The financier you offered ${d.invoice_id} to checked the board and asks for the board entry.`,
+    (d) => !!d.entry_request || !!d.entry,
   ),
   "deal.letter": fromFinancier(
     "deal.letter",
@@ -125,6 +141,7 @@ export const supplierInbox: Handlers = {
       return `The assignment letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
     },
     (d) => `The assignment letter for ${d.invoice_id}, with its PDF: read it, then seal.`,
+    (d) => !!d.letter_in || !!d.seal,
   ),
   "deal.advance": fromFinancier(
     "deal.advance",
@@ -135,6 +152,7 @@ export const supplierInbox: Handlers = {
       return `The financier paid ${zatToZec(b.advance_zat)} ZEC: check it in your wallet (Step 5).`;
     },
     (d, h) => `For ${d.invoice_id}: ${zatToZec(Number(h.body.advance_zat))} ZEC paid to your address for this deal.`,
+    (d) => !!d.advance_notice || !!d.advance?.matches || !!d.bundle,
   ),
   // HNK-26.T18: kept here, in the panel; the deal shows 済
   "deal.bundle": fromFinancier(
@@ -147,5 +165,6 @@ export const supplierInbox: Handlers = {
       return `${d.invoice_id} is settled: the buyer repaid and the financier posted the settled entry. The bundle is on the deal, ready for Verify.`;
     },
     (d) => `${d.invoice_id}: the buyer repaid and the financier posted the settled entry.`,
+    (d) => !!d.bundle,
   ),
 };

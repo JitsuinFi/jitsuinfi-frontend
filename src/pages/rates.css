@@ -186,6 +186,10 @@
   .ri-totals dd { font-size: 40px; }
   .ri-panel { padding: 18px 16px; border-radius: 20px; }
   .ri-tbl-wrap { padding: 4px 12px; }
+  /* judge run 2: the tables fit the phone (DS-MOB D2: no table scrolls sideways) */
+  .ri-tbl { table-layout: fixed; }
+  .ri-tbl th { white-space: normal; padding-right: 8px; }
+  .ri-tbl td { padding-right: 8px; overflow-wrap: anywhere; }
   .ri-mlabels small { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {

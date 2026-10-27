@@ -71,6 +71,8 @@ export interface CaseSheet {
   crack: Ref<SVGPathElement>;
   art: Ref<SVGGElement>;
   inside: ReactNode;
+  /** N as a readable fingerprint instead of 64 hex digits (the supplier's deal, judge run 2). */
+  print?: string;
 }
 
 const lines = (n: string) => [0, 1, 2, 3].map((i) => n.slice(i * 16, i * 16 + 16));
@@ -194,14 +196,18 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
         <div className="sk-n">
           <span className="sk-n-k">N</span>
           <div>
-            {kase ? (
+            {kase?.print && n ? (
+              <code className="is-print" ref={kase.nCode}>
+                <span>{kase.print}</span>
+              </code>
+            ) : kase ? (
               <code className={n ? undefined : "is-none"} ref={kase.nCode}>
                 {n ? lines(n).map((l, i) => <span key={i}>{l}</span>) : <span>{blank ? blank.n : "none: the fields do not make an invoice"}</span>}
               </code>
             ) : (
               <code>{blank ? blank.n : (n ?? "none: the fields do not make an invoice")}</code>
             )}
-            <small>Fingerprint of these exact bytes, computed in your browser</small>
+            <small>{kase?.print && n ? "The invoice's fingerprint: these exact bytes, worked out in your browser" : "Fingerprint of these exact bytes, computed in your browser"}</small>
           </div>
         </div>
         <div className="sk-box">

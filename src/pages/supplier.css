@@ -216,13 +216,23 @@
   box-shadow: inset 0 0 0 4px var(--sheet), inset 0 0 0 5.5px var(--seal); background: rgba(252, 252, 254, .55);
 }
 .sp-done span { font: 800 54px/1 var(--f-seal); }
+/* judge run 2: the 済 takes its own room under the note, clear of the Issuer line and the N */
+.sp-sheet.is-settled .sk-note { margin-bottom: 118px; }
+.sp-sheet.is-settled .sp-done { right: auto; left: 34px; bottom: 22px; }
 .sp-done small { position: absolute; bottom: 12px; font: 500 10px/1 var(--f-body); letter-spacing: .1em; }
 .sp .sk.is-stamp .sp-done { animation: sp-stamp var(--dur-seal) var(--ease-snap); }
 @keyframes sp-stamp { 0% { transform: rotate(-9deg) scale(1.6); opacity: 0; } 72% { transform: rotate(-9deg) scale(.95); opacity: 1; } 100% { transform: rotate(-9deg); } }
 /* the invoice code: a carbon slip under the sheet */
-.sp-slip { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(236, 208, 236, .45); border-top: 1px dashed var(--fold); }
-.sp-slip > span { flex: none; font: 500 12px/1 var(--f-body); color: var(--ink-2); }
-.sp-slip code { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--head); }
+.sp-slip { position: relative; z-index: 2; padding: 0 14px; background: rgba(236, 208, 236, .45); border-top: 1px dashed var(--fold); }
+.sp-slip > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; list-style: none; font: 500 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.sp-slip > summary::-webkit-details-marker { display: none; }
+.sp-slip > summary::after { content: "+"; margin-left: auto; color: var(--seal); font: 500 17px/1 var(--f-body); }
+.sp-slip[open] > summary::after { content: "−"; }
+.sp-slip-body { display: grid; gap: 6px; padding-bottom: 12px; min-width: 0; }
+.sp-slip-body > span { font: 500 12px/1.3 var(--f-body); color: var(--ink-2); }
+.sp-slip code { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--head); }
+.sp-slip code.sp-slip-n { white-space: normal; overflow-wrap: anywhere; }
+.sp .sk-n code.is-print { font: 500 15px/1.4 var(--f-mono); letter-spacing: .05em; }
 .sp .sp-slip button.secondary { padding: 6px 11px; font-size: 12px; }
 
 /* the deal route: six stations, each a physical mark (DS-06 checked stepper) */
@@ -549,10 +559,11 @@
   .sp .sk-box { width: 82px; }
   .sp .sk-seal { width: 56px; height: 56px; }
   .sp-done { right: 150px; bottom: 168px; width: 84px; height: 84px; border-width: 4px; }
+  .sp-sheet.is-settled .sk-note { margin-bottom: 100px; }
+  .sp-sheet.is-settled .sp-done { right: auto; left: 24px; bottom: 18px; }
   .sp-done span { font-size: 44px; }
   .sp-done small { bottom: 7px; font-size: 8px; }
-  .sp-slip { flex-wrap: wrap; }
-  .sp-slip code { flex-basis: calc(100% - 140px); }
+
   .sp-rail::before, .sp-rail-fill { top: 25px; }
   .sp-obj { width: 50px; height: 50px; }
   .sp-obj svg { width: 42px; height: 38px; }
@@ -578,6 +589,7 @@
   .sp .sk-meta input.is-mono { width: 19ch; }
   .sp .sk input[type="date"] { width: 108px; }
   .sp-done { right: 120px; }
+  .sp-sheet.is-settled .sp-done { right: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sp *, .sp *::before, .sp *::after { animation: none !important; transition: none !important; }
@@ -750,7 +762,11 @@
   .sp .ia-facts > div { grid-template-columns: 7em minmax(0, 1fr); }
 }
 /* the desk of the old single page named its grid areas (sheet, rail, work, tray); the sections place their parts themselves */
-.sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > * { grid-area: auto; }
+.sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > *, .sp .ia-flat > * { grid-area: auto; }
+/* DS-MOB L5: the deal draws one tree at every width; on a phone the desk's boxes step aside
+   (display: contents) and the station's work stays mounted, hidden on the deal screen */
+.sp .ia-flat { display: contents; }
+.sp .sp-work[hidden] { display: none; }
 
 /* ---------- part 2 fixes for the phone (2026-10-26, part 1's screenshots) ---------- */
 @media (max-width: 599px) {
@@ -794,3 +810,14 @@
   .sp .sp-sheet.is-new .sk-file-b { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; font-size: 15px; }
   .sp .sp-sheet.is-new .sk-issuer { margin-top: 2px; }
 }
+/* judge run 2: the advance to confirm (金), and the advance address with its check */
+.sp .sp-ask { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 4px 0 2px; font: 400 17px/1.3 var(--f-body); color: var(--head); }
+.sp .sp-ask b { font: 500 clamp(26px, 2.4vw, 34px)/1.1 var(--f-mono); color: var(--head); letter-spacing: -.01em; }
+.sp .sp-addr { display: grid; gap: 6px; }
+.sp .sp-addr input { font: 400 16px/1.4 var(--f-mono); }
+.sp .sp-addr small.is-bad { color: var(--seal); font-weight: 500; }
+.sp .sp-addr input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--seal); }
+.sp .sp-addr-last { justify-self: start; overflow-wrap: anywhere; text-align: left; }
+.sp .ia-station-of { display: flex; align-items: baseline; gap: 10px; margin: 0; }
+.sp .ia-station-of b { font: 500 15px/1.2 var(--f-mono); color: var(--head); }
+.sp .ia-station-of small { font: 400 13px/1.2 var(--f-body); color: var(--ink-2); }

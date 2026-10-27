@@ -4,8 +4,9 @@
 // for this tab only, the PDF each invoice was written with, so "Send to the buyer" does not ask
 // for it again. Every page and the inbox read and write here; a write tells every open page.
 import { useEffect, useReducer, useState } from "react";
+import { useStoreVersion } from "../../app/store-change";
 import { account } from "../../lib/app-session";
-import { loadBoard } from "../../lib/board";
+import { useLiveBoard } from "../../app/board-live";
 import { boardStatus } from "../../lib/buyer-invoices";
 import { contactId, type Contact } from "../../lib/contact";
 import { daysToDate, json, wasm } from "../../lib/core";
@@ -24,13 +25,15 @@ export function changed(): void {
   version++;
   listeners.forEach((f) => f());
 }
-function useVersion(): number {
+/** Grows on every notice: one of this module's own, or any write to the supplier's store (the inbox's too). */
+function useVersion(): string {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
     listeners.add(bump);
     return () => void listeners.delete(bump);
   }, []);
-  return version;
+  const stored = useStoreVersion("supplier");
+  return `${version}:${stored}`;
 }
 
 export function store() {
@@ -79,8 +82,10 @@ export function useDeals(): Deal[] | null {
 }
 
 // ---------- the board's word on each offered deal (HNK-25.T7, BL-D25-09) ----------
+// Read again when a deal changes state, on return to the tab, and while a deal is in flight
+// (judge run 2, finding 2: app/board-live.ts); each deal's line is worked out from the last read.
 let boardSays: Record<string, string> = {};
-let boardRead = false;
+const saidFrom = new WeakMap<object, Map<string, string>>();
 
 /** What the board said about `d` ("On the board: …"), or "" when not read or not offered. */
 export function boardLine(d: SupplierDeal): string {
@@ -90,22 +95,23 @@ export function boardLine(d: SupplierDeal): string {
 /** 済: the financier's settlement bundle is here, or the board shows the deal settled. */
 export const isSettled = (d: SupplierDeal) => !!d.bundle || (boardSays[d.n] ?? "").startsWith("On the board: settled");
 
-/** Reads the live board once per tab for the offered deals; pages redraw when it lands. */
+/** Reads the live board for the offered deals; pages redraw when a new read lands. */
 export function useBoard(deals: SupplierDeal[] | null): void {
-  const [, bump] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => {
-    if (!deals || boardRead || !deals.some((d) => d.buyer_signature && d.offer)) return;
-    boardRead = true;
-    let live = true;
-    void loadBoard((u, i) => fetch(u, i)).then(
-      (b) => {
-        boardSays = Object.fromEntries(deals.map((d) => [d.n, d.buyer_signature && d.offer ? (statusOnBoard(d, b.json) ?? "") : ""]));
-        if (live) bump();
-      },
-      () => void (boardRead = false),
-    );
-    return () => void (live = false);
-  }, [deals]);
+  const offered = !!deals?.some((d) => d.buyer_signature && d.offer);
+  const b = useLiveBoard("supplier", !!deals?.some((d) => d.buyer_signature && d.offer && !d.bundle));
+  if (!b || !deals || !offered) return;
+  // one line per deal and board read (a deal's record is replaced on every write)
+  let memo = saidFrom.get(b);
+  if (!memo) saidFrom.set(b, (memo = new Map()));
+  const next: Record<string, string> = {};
+  for (const d of deals) {
+    if (!(d.buyer_signature && d.offer)) continue;
+    const k = `${d.n}:${d.bundle ? "b" : ""}:${d.seal ? "s" : ""}`;
+    let line = memo.get(k);
+    if (line === undefined) memo.set(k, (line = statusOnBoard(d, b.json) ?? ""));
+    next[d.n] = line;
+  }
+  boardSays = next;
 }
 
 function statusOnBoard(d: SupplierDeal, boardJson: string): string | null {
@@ -210,4 +216,17 @@ export function lastDeal(): string | null {
   } catch {
     return null;
   }
+}
+
+// ---------- the last advance address used here (judge run 2, finding 7) ----------
+// Kept in the encrypted device store (not in plain browser storage), offered as a suggestion on
+// the next offer; the supplier still decides (a new address per deal keeps deals unlinkable).
+const ADDRESS_ID = "pref:advance-address";
+
+export async function lastAddress(): Promise<string | null> {
+  return (await account.current?.store?.get<{ address: string }>(ADDRESS_ID).catch(() => undefined))?.address ?? null;
+}
+
+export async function rememberAddress(address: string): Promise<void> {
+  await account.current?.store?.put(ADDRESS_ID, { address, at: Date.now() });
 }

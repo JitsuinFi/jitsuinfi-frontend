@@ -4,6 +4,7 @@
 // inbox key, so nothing here asks for a stamp. Fund, Units and the inbox read and write here; a
 // write tells every open page.
 import { useEffect, useReducer, useState } from "react";
+import { useStoreVersion } from "../../app/store-change";
 import { account } from "../../lib/app-session";
 import { EMPTY, type Wallet } from "../../lib/fund";
 import type { ReportReading } from "../../lib/fund-report";
@@ -16,13 +17,15 @@ function changed(): void {
   version++;
   listeners.forEach((f) => f());
 }
-function useVersion(): number {
+/** Grows on every notice: one of this module's own, or any write to the member's store (the inbox's too). */
+function useVersion(): string {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
     listeners.add(bump);
     return () => void listeners.delete(bump);
   }, []);
-  return version;
+  const stored = useStoreVersion("member");
+  return `${version}:${stored}`;
 }
 
 export async function load(): Promise<Wallet> {

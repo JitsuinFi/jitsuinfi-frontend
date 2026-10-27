@@ -14,7 +14,7 @@ import { SECTIONS } from "../lib/sections";
 import { reducedMotion } from "../landing/motion";
 import { act, actionable, checkInbox, letGo, snapshot, subscribe, unread, type Letter } from "./inbox";
 import { LongList } from "./LongList";
-import { setDid } from "./outcome";
+import { clearDid, setDid } from "./outcome";
 
 export function useInbox() {
   return useSyncExternalStore(subscribe, snapshot);
@@ -53,7 +53,7 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
               <span className="ia-goes">{a.goes}</span>
             </div>
           ) : (
-            <small className="ia-idle">Nothing to do with this letter here.</small>
+            <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : "Nothing to do with this letter here."}</small>
           )
         ) : null}
         {done && leaving ? <small className="ia-goes">Opening it…</small> : null}
@@ -106,6 +106,8 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
   const lead = async (l: Letter) => {
     const done = await act(l);
     if (!done) return;
+    // the deal moved on: the outcome of an earlier step no longer stands on its page (judge run 2)
+    clearDid();
     if (!done.to) {
       // completed here: the 済 stays on the envelope a moment, then the letter goes
       setTimeout(() => letGo(l), reducedMotion() ? 2400 : 4000);

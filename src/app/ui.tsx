@@ -25,7 +25,7 @@ export function Field({ label, type, placeholder, area, value, help, inputRef }:
   return (
     <label className="field">
       <span>{label}</span>
-      {area ? <textarea placeholder={placeholder} spellCheck="false" defaultValue={value} ref={inputRef} /> : <input type={type ?? "text"} placeholder={placeholder} spellCheck="false" autoComplete="off" defaultValue={value} ref={inputRef} />}
+      {area ? <textarea key={value ?? ""} placeholder={placeholder} spellCheck="false" defaultValue={value} ref={inputRef} /> : <input key={value ?? ""} type={type ?? "text"} placeholder={placeholder} spellCheck="false" autoComplete="off" defaultValue={value} ref={inputRef} />}
       {help ? <small>{help}</small> : null}
     </label>
   );

@@ -2,8 +2,8 @@
 // phone (a history entry, so the back button returns to the deal) and the chosen station on a desktop.
 import { createFileRoute } from "@tanstack/react-router";
 import { DealPage } from "../../pages/supplier/DealPage";
-import { isStation } from "../../pages/supplier/parts";
-import type { StationKey } from "../../lib/supplier-deal";
+// isStation from the pure lib, not the page's parts: this file's search check ships with the entry
+import { isStation, type StationKey } from "../../lib/supplier-deal";
 
 export const Route = createFileRoute("/_app/supplier/deal/$ref")({
   validateSearch: (s: Record<string, unknown>): { at?: StationKey } => (isStation(s.at) ? { at: s.at } : {}),

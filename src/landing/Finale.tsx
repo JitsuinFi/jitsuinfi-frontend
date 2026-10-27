@@ -315,7 +315,7 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
         near.disconnect();
         if (reduced) void loop();
       },
-      { rootMargin: "600px 0px" },
+      { rootMargin: "0px 0px -64px 0px" }, // the wasm (271 KB) loads once the chapter is 64 px into view, never with the first screen (audit 2026-10-27)
     );
     near.observe(close.current!);
     // the loop pauses while the close is off screen

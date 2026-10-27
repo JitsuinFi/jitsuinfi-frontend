@@ -30,8 +30,22 @@ const cspMeta = (): Plugin => ({
   transformIndexHtml: () => [{ tag: "meta", attrs: { "http-equiv": "Content-Security-Policy", content: CSP }, injectTo: "head-prepend" }],
 });
 
+// /site.webmanifest is no file (index.html): in production vercel.json picks the app's or the
+// console's manifest by host; here a Host of jitsuinfi-console* (or MANIFEST=console) gets the
+// console's, so both can be checked on a local server.
+const siteManifest = (): Plugin => {
+  const pick = (req: { url?: string; headers: { host?: string } }, _res: unknown, next: () => void) => {
+    if (req.url?.split("?")[0] === "/site.webmanifest") {
+      const consoleHost = process.env.MANIFEST === "console" || /^jitsuinfi-console/.test(req.headers.host ?? "");
+      req.url = consoleHost ? "/console.webmanifest" : "/manifest.webmanifest";
+    }
+    next();
+  };
+  return { name: "jitsuin-site-manifest", configureServer: (s) => void s.middlewares.use(pick), configurePreviewServer: (s) => void s.middlewares.use(pick) };
+};
+
 export default defineConfig({
-  plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), cspMeta()],
+  plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), cspMeta(), siteManifest()],
   server: { proxy: relay },
   preview: { proxy: relay },
   build: { target: "es2022", assetsInlineLimit: 0 },

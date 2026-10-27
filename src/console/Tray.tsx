@@ -272,7 +272,8 @@ export function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }
 }
 
 /** `onOpen`: a phone (compact) opens a letter as its own screen instead of beside the list. */
-export function TraySection({ mail, refused, note, demo, load, onOpen }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load; onOpen?: (relayId: string) => void }): ReactNode {
+/** `updated`: a phone shows when the desk's one data source last answered (feed.ts). */
+export function TraySection({ mail, refused, note, demo, load, onOpen, updated }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load; onOpen?: (relayId: string) => void; updated?: string }): ReactNode {
   const [open, setOpen] = useState<string | null>(null);
   // keep the opened letter across reloads; open the first one otherwise
   useEffect(() => {
@@ -306,6 +307,11 @@ export function TraySection({ mail, refused, note, demo, load, onOpen }: { mail:
           <button className="cs-btn-q" type="button" onClick={() => void load()}>
             Refresh
           </button>
+          {updated ? (
+            <span className="cs-updated" role="status">
+              {updated}
+            </span>
+          ) : null}
         </div>
         <Status text={note} />
       </div>

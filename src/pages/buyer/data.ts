@@ -10,16 +10,19 @@
 // unchanged (`jitsuin/buyer/master/v1`), so old buyer keys stay the same.
 import { useEffect, useReducer, useState } from "react";
 import { useStoreVersion } from "../../app/store-change";
-import { myIdentity, myMailbox, relayDeps, relayMayHoldState, stateSaved } from "../../lib/app-relay";
+import { myIdentity, relayDeps } from "../../lib/app-relay";
+import { remoteRecord, syncNow } from "../../lib/device-sync";
+import { KEYS_GIVEN } from "../../lib/sync";
 import { account } from "../../lib/app-session";
 import type { BoardData } from "../../lib/board";
 import { refreshBoard, useLiveBoard } from "../../app/board-live";
 import { decodeBackup, emptyHistory, encodeBackup, HISTORY_ID, localNextIndex, type HistoryDoc } from "../../lib/buyer-history";
+import { keysFloor, type GivenKeys } from "../../lib/key-match";
 import { boardStatus, isInvoiceId, sortInvoices, storeId, type BuyerInvoice } from "../../lib/buyer-invoices";
 import { json, wasm } from "../../lib/core";
 import { newRef, withRefs } from "../../lib/deal-ref";
 import { keyMissText, type KeyMiss } from "../../lib/key-match";
-import { draft, loadState, RelayError, saveState, send } from "../../lib/relay";
+import { draft, RelayError, send } from "../../lib/relay";
 import { encodeMessage } from "../../lib/relay-message";
 import { BUYER_CHANGED } from "../../app/DueReminder";
 
@@ -160,8 +163,10 @@ async function newestIndex(): Promise<number> {
     const remote = await relayHistory().catch(() => null);
     relayLength = { fp, n: remote ? localNextIndex(remote) : 0 };
   }
+  // finding F10: the invoices and keys handed out that the other devices synced here
+  const used = keysFloor(await loadInvoices().catch(() => []), await loadGiven());
   // the key last shown in this tab can only widen the search
-  return Math.max(local, relayLength.n, keyInfo?.k ?? 0);
+  return Math.max(local, relayLength.n, used, keyInfo?.k ?? 0);
 }
 let relayLength: { fp: string; n: number } | null = null;
 
@@ -235,25 +240,39 @@ export async function loadHistory(): Promise<HistoryDoc> {
 export async function saveHistory(h: HistoryDoc): Promise<void> {
   await store().put(HISTORY_ID, h);
   changed();
-  await backupHistory(h).catch(() => undefined); // checked again on the next key check
+  await syncNow().catch(() => undefined); // checked again on the next key check
 }
 
-/** HNK-25.T2 (BL-D26-03): the chain's sealed copy at the relay, for another device with this passkey. */
+/**
+ * HNK-25.T2 (BL-D26-03): the chain's sealed copy at the relay, for another device with this
+ * passkey. Finding F10: it is the history record of the role's synced state (lib/sync.ts); written
+ * again here, so this device's chain is the newest and goes to the relay as it is.
+ */
 export async function backupHistory(h: HistoryDoc): Promise<void> {
-  const s = account.current;
-  if (!s) return;
-  await myMailbox();
-  await saveState(s.inbox, encodeBackup(h), relayDeps);
-  stateSaved();
+  if (!account.current) return;
+  await store().put(HISTORY_ID, h);
+  await syncNow();
 }
 
+/** The chain as the relay holds it now (a fresh read), or null when it holds none. */
 export async function relayHistory(): Promise<HistoryDoc | null> {
-  const s = account.current;
-  if (!s) return null;
-  // a mailbox this session just created holds no copy yet: no read, no 404 (judge run 2026-10-26)
-  if (!(await relayMayHoldState())) return null;
-  const b = await loadState(s.inbox, relayDeps);
-  return b ? decodeBackup(b) : null;
+  if (!account.current) return null;
+  const r = await remoteRecord(HISTORY_ID);
+  // through the same check as the version 1 copy: base64url certificates only
+  return r?.doc ? decodeBackup(encodeBackup(r.doc as HistoryDoc)) : null;
+}
+
+// ---------- the invoice keys handed out (finding F10) ----------
+/** The keys this account gave to suppliers, from every device (synced as one record). */
+export async function loadGiven(): Promise<GivenKeys> {
+  return (await account.current?.store?.get<GivenKeys>(KEYS_GIVEN).catch(() => undefined)) ?? { given: [] };
+}
+
+/** Notes that key #k went to `to` (a supplier's mailbox, or "copied" for a key copied by hand). */
+export async function noteGiven(k: number, to: string): Promise<void> {
+  const g = await loadGiven();
+  if (g.given.some((x) => x.k === k && x.to === to)) return;
+  await store().put(KEYS_GIVEN, { given: [...g.given, { k, to, at: Date.now() }] });
 }
 
 /** Why the relay copy of the history could not be read, in a calm sentence (HNK-34 E2E). */

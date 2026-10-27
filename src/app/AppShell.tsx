@@ -17,6 +17,7 @@ import { AccountButton } from "./AccountMenu";
 import { ApplyReminder } from "./ApplyReminder";
 import { useDue } from "./DueReminder";
 import { startInbox } from "./inbox";
+import { startDeviceSync } from "../lib/device-sync";
 import { InboxPanel, useInbox } from "./InboxPanel";
 import { Mark, Wordmark } from "./Mark";
 import { dismissSheet, onSheetEntry, useBackCloses } from "./sheet";
@@ -93,6 +94,7 @@ export function AppShell(): ReactNode {
     document.title = "JitsuinFi App";
   }, []);
   useEffect(() => startInbox(), []);
+  useEffect(() => startDeviceSync(), []);
   // another screen ends the Ready step after sign-up (audit 2026-10-27, finding 1): before paint,
   // so the new screen never flashes the step
   const seen = useRef<string | null>(null);

@@ -17,13 +17,13 @@ import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../..
 import { contactId, contactName, type Contact } from "../../lib/contact";
 import { sendKeyTo } from "../ContactAdd";
 import { json, today, wasm } from "../../lib/core";
-import { keyTakenNote } from "../../lib/key-match";
+import { keyAfterOtherDevices, keyGivenNote, keyTakenNote } from "../../lib/key-match";
 import { NET } from "../../lib/network";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, signingBytes, type Header } from "../../lib/relay-message";
 import { myContact, takeContact } from "../MailboxCard";
-import { backupHistory, backupProblem, chainState, changed, loadHistory, loadInvoices, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
+import { backupHistory, backupProblem, chainState, changed, loadGiven, loadHistory, loadInvoices, noteGiven, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
@@ -45,9 +45,12 @@ async function showKey(boardFile: File | undefined): Promise<void> {
     // the relay copy first: another device may have issued newer certificates
     let restored = 0;
     let relayUnread: unknown = null;
+    // finding F10: certificates the other devices issued, from the synced (sealed, authenticated) records
+    let otherCerts = 0;
     try {
       const remote = await relayHistory();
       if (remote) {
+        if (reconcile(hist, remote, id).kind === "restored") otherCerts = remote.certs.length;
         const r = reconcile(hist, remote, id);
         if (r.kind === "restored") {
           hist = r.doc;
@@ -107,9 +110,21 @@ async function showKey(boardFile: File | undefined): Promise<void> {
       }
       said.push({ kind: "warn", title: "Not checked against the board.", text: "The board could not be read just now. Try again in a moment." });
     }
-    // messy-state E2E 2026-10-27: invoices on this device that already name this key
-    const taken = keyTakenNote(k, (await loadInvoices().catch(() => [])).filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature })));
+    // finding F10: a key below the certificates another device issued is used, whatever this
+    // device could check: the board may be unreadable, but those certificates are this account's
+    if (keyAfterOtherDevices(k, hist.certs.length, otherCerts).moved) {
+      said.push({ kind: "ok", title: `Keys up to #${otherCerts - 1} are used on your other device.`, text: `It issued ${plural(otherCerts, "certificate")} of your history, so this device offers key #${otherCerts}. The certificates come to this device once the board can be read to check them.` });
+      k = otherCerts;
+    }
+    // messy-state E2E 2026-10-27: invoices on this device (and, synced, on the others) that already name this key
+    const invoices = await loadInvoices().catch(() => []);
+    const taken = keyTakenNote(k, invoices.filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature })));
     if (taken) said.push(taken);
+    else {
+      const names = new Map((await account.current?.store?.list<Contact>().catch(() => []))?.filter((x) => x.id.startsWith("contact:")).map((x) => [x.doc.mailbox_pk, contactName(x.doc)]) ?? []);
+      const given = keyGivenNote(k, await loadGiven(), (to) => names.get(to) ?? "a supplier without a card here");
+      if (given) said.push(given);
+    }
     const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
     setKeyInfo({ id, k, next, notes: said, anchored });
     changed();
@@ -163,6 +178,7 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
   const go = async (c: Contact) => {
     try {
       await sendKey(c, k, invoicePk);
+      await noteGiven(k, c.mailbox_pk).catch(() => undefined);
       if (sendKeyTo.mailbox === c.mailbox_pk) sendKeyTo.mailbox = null;
       setSentTo(c.mailbox_pk);
       out.show(<Banner kind="ok" title={`Key sent to ${contactName(c)}`} text={`Sealed to their mailbox: it fills the buyer line of the invoice they write. When they send it, it arrives in your inbox to sign.`} />);
@@ -184,6 +200,7 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
               try {
                 await navigator.clipboard.writeText(invoicePk);
                 setCopied(true);
+                await noteGiven(k, "copied").catch(() => undefined);
               } catch {
                 setCopied(false);
               }

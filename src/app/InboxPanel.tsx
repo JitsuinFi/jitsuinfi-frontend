@@ -64,7 +64,7 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
               <span className="ia-goes">{a.goes}</span>
             </div>
           ) : (
-            <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : l.away ? "For an invoice on another device signed in with your passkey: open your inbox there. The letter waits in your mailbox for it." : "Nothing to do with this letter here."}</small>
+            <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : l.away ? "For an invoice this device has not synced yet: it shows here once your other device has synced, or open your inbox there. The letter waits in your mailbox for it." : "Nothing to do with this letter here."}</small>
           )
         ) : null}
         {done && leaving ? <small className="ia-goes">Opening it…</small> : null}

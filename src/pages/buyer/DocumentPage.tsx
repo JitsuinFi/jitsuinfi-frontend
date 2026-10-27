@@ -114,7 +114,7 @@ export function DocumentPage({ invoiceRef }: { invoiceRef?: string }): ReactNode
         <div className="rp by">
           <div className="ia-empty">
             <h1>This invoice is not on this device</h1>
-            <p className="rp-lede">Invoices are kept encrypted in this browser only. Open one from your invoices.</p>
+            <p className="rp-lede">Invoices are kept encrypted on your devices. One opened on another device shows here once that device has synced. Open one from your invoices.</p>
             <p className="ia-goline">
               <Link to="/buyer/invoices">Your invoices</Link>
             </p>
@@ -215,7 +215,9 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   };
   const sCount = Number(seals.supplier) + Number(seals.buyer) + Number(seals.financier);
   /** The terms PDF that came with the sign request, for the invoice behind the sheet. */
-  const arrivedPdf = rec?.terms_pdf && rec.invoice === codes.inv ? rec.terms_pdf : undefined;
+  const arrivedPdf = rec?.terms_pdf?.b64 && rec.invoice === codes.inv ? rec.terms_pdf : undefined;
+  // finding F10: the PDF came to another device of this account; its bytes stayed there
+  const awayPdf = !arrivedPdf && rec?.terms_pdf?.away && rec.invoice === codes.inv ? rec.terms_pdf : undefined;
 
   // ---------- sign the invoice ----------
   const checkIt = async () => {
@@ -228,7 +230,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       const f = json<Record<string, string | number>>(wasm.invoiceDecode(invoice));
       const own = list.find((x) => x.n === String(f.nullifier) && x.invoice === invoice);
       const chosen = cTerms.current!.files?.[0];
-      const file = chosen ?? (own?.terms_pdf ? new File([fromB64(own.terms_pdf.b64)], own.terms_pdf.name, { type: "application/pdf" }) : undefined);
+      const file = chosen ?? (own?.terms_pdf?.b64 ? new File([fromB64(own.terms_pdf.b64)], own.terms_pdf.name, { type: "application/pdf" }) : undefined);
       const hash = file ? await fileHash(file) : null;
       // an invoice kept on this device was matched to its key when it arrived (one passkey touch)
       const keyIndex = own ? own.key_index : await findKeyIndex(invoice);
@@ -444,6 +446,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
             </dd>
           </div>
         </dl>
+        {kept && !rec?.assignment?.pdf && rec?.assignment?.pdf_away ? <p className="hint by-s-pdf">The letter's PDF is on your other device: this device has the letter and its fingerprint.</p> : null}
         {kept && rec?.assignment?.pdf ? (
           <div className="actions rp-small by-s-pdf">
             <Button
@@ -593,7 +596,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         </label>
         <div className="rp-fieldset">
           <span>Terms PDF from the supplier</span>
-          <FilePill label="Terms PDF from the supplier" empty={arrivedPdf ? `${arrivedPdf.name}, from your inbox` : "no file chosen"} inputRef={cTerms} onChange={lockSign} />
+          <FilePill label="Terms PDF from the supplier" empty={arrivedPdf ? `${arrivedPdf.name}, from your inbox` : awayPdf ? `${awayPdf.name}: PDF on your other device; choose it here to check` : "no file chosen"} inputRef={cTerms} onChange={lockSign} />
           <small>Hashed in your browser and compared with the invoice; the file is not sent anywhere. An invoice from your inbox brings its PDF.</small>
         </div>
         <label className="field">
@@ -606,7 +609,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         </label>
         <div className="rp-fieldset">
           <span>Assignment letter document (PDF)</span>
-          <FilePill label="Assignment letter document (PDF)" empty={kept && rec?.assignment?.pdf ? "from your inbox" : "no file chosen"} inputRef={cLpdf} onChange={lockSeal} />
+          <FilePill label="Assignment letter document (PDF)" empty={kept && rec?.assignment?.pdf ? "from your inbox" : kept && rec?.assignment?.pdf_away ? "PDF on your other device; choose it here to check" : "no file chosen"} inputRef={cLpdf} onChange={lockSeal} />
           <small>Hashed in your browser and compared with the letter. A letter from your inbox brings its PDF, so you can leave this empty.</small>
         </div>
       </div>

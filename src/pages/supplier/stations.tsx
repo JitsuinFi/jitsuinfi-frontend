@@ -686,7 +686,7 @@ function SealWork(p: WorkProps): ReactNode {
     try {
       const code = value(letter);
       const f = json<LetterFields>(wasm.assignmentDecode(code, d.invoice));
-      const arrived = d.letter_in && d.letter_in.letter === code ? new File([b64ToBytes(d.letter_in.pdf)], "letter.pdf", { type: "application/pdf" }) : undefined;
+      const arrived = d.letter_in?.pdf && d.letter_in.letter === code ? new File([b64ToBytes(d.letter_in.pdf)], "letter.pdf", { type: "application/pdf" }) : undefined;
       const file = pdf.current?.files?.[0] ?? arrived;
       const pdfOk = file ? (await fileHash(file)) === f.terms_hash : false;
       const finOk = f.financier_pk === d.offer!.financier_pk;
@@ -750,7 +750,7 @@ function SealWork(p: WorkProps): ReactNode {
         <summary>{d.letter_in ? "The letter as it came" : "No relay? Paste the letter the financier gave you"}</summary>
         <div className="sp-fold-body">
           <Field label="Assignment letter (from the financier)" area value={d.letter_in?.letter} inputRef={letter} />
-          <FileField label="The letter's PDF" help={d.letter_in ? "Already here: it came sealed with the letter. Choose a file only to check another one." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />
+          <FileField label="The letter's PDF" help={d.letter_in?.pdf ? "Already here: it came sealed with the letter. Choose a file only to check another one." : d.letter_in?.pdf_away ? "PDF on your other device: it came there with the letter. Choose it here to check it, or seal on that device." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />
         </div>
       </details>
       <Actions>

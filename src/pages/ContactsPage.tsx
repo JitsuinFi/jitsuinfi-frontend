@@ -198,7 +198,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
             <div className="ia-ct-book">
               <div className="ia-ct-book-h">
                 <h2>Your contacts</h2>
-                <small>kept encrypted on this device</small>
+                <small>kept encrypted, synced with your other devices</small>
               </div>
               {!store ? (
                 <p className="ia-ct-none">This browser keeps nothing here, so contacts are not saved.</p>

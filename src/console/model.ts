@@ -33,7 +33,7 @@ export const ROUTE: Array<{ glyph: string; mark: string; label: string; states: 
 
 export const WAITING: Record<string, string> = {
   Check: "Checking the board for this invoice.",
-  AwaitSupplierSignature: "Waiting for the supplier to sign the board entry.",
+  AwaitSupplierSignature: "Waiting for the supplier to register the invoice on the public board.",
   Register: "Posting the entry to the board.",
   AwaitConfirmation: "Entry posted; waiting for its confirmations.",
   AwaitAssignment: "Letter sent; waiting for the supplier's and the buyer's seals.",
@@ -77,13 +77,13 @@ export function acceptedLine(a: { advance_zat: number; min_confirmations: number
   const terms = `Accepted: ${zec(a.advance_zat)} ZEC after ${a.min_confirmations} confirmation${a.min_confirmations === 1 ? "" : "s"}.`;
   switch (opening) {
     case "awaiting_history":
-      return `${terms} Waiting for the buyer's history; the supplier gets your commitment opening once it passes.`;
+      return `${terms} Waiting for the buyer's history; the supplier gets the go-ahead to register the invoice on the public board once it passes.`;
     case "sent_after_history":
-      return `${terms} The buyer's history passed; the supplier has your commitment opening.`;
+      return `${terms} The buyer's history passed; the supplier has the go-ahead to register the invoice on the public board.`;
     case "sent":
-      return `${terms} The supplier has your commitment opening.`;
+      return `${terms} The supplier has the go-ahead to register the invoice on the public board.`;
     default:
-      return `${terms} The supplier gets your commitment opening, after the buyer's history when your mandate asks for it.`;
+      return `${terms} The supplier gets the go-ahead to register the invoice on the public board, after the buyer's history when your mandate asks for it.`;
   }
 }
 

@@ -65,10 +65,10 @@ test("the 重 card says whose entry came first, in either order", () => {
   for (const o of ["ours_first", "theirs_first", "others_only", undefined]) assert.match(doubleNote(o), /No money left this node/);
 });
 
-test("an accepted offer says when the supplier gets the commitment opening", () => {
+test("an accepted offer says when the supplier gets the go-ahead", () => {
   const a = { advance_zat: 90000, min_confirmations: 1 };
-  assert.equal(acceptedLine(a, "sent"), "Accepted: 0.0009 ZEC after 1 confirmation. The supplier has your commitment opening.");
-  assert.equal(acceptedLine(a, "awaiting_history"), "Accepted: 0.0009 ZEC after 1 confirmation. Waiting for the buyer's history; the supplier gets your commitment opening once it passes.");
-  assert.match(acceptedLine({ advance_zat: 90000, min_confirmations: 3 }, "sent_after_history"), /3 confirmations\. The buyer's history passed; the supplier has your commitment opening\.$/);
-  assert.doesNotMatch(acceptedLine(a, undefined), /has your commitment opening/);
+  assert.equal(acceptedLine(a, "sent"), "Accepted: 0.0009 ZEC after 1 confirmation. The supplier has the go-ahead to register the invoice on the public board.");
+  assert.equal(acceptedLine(a, "awaiting_history"), "Accepted: 0.0009 ZEC after 1 confirmation. Waiting for the buyer's history; the supplier gets the go-ahead to register the invoice on the public board once it passes.");
+  assert.match(acceptedLine({ advance_zat: 90000, min_confirmations: 3 }, "sent_after_history"), /3 confirmations\. The buyer's history passed; the supplier has the go-ahead to register the invoice on the public board\.$/);
+  assert.doesNotMatch(acceptedLine(a, undefined), /has the go-ahead to register the invoice on the public board/);
 });

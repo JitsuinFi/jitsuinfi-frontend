@@ -49,6 +49,7 @@ export function Button({ onClick, secondary, children }: { onClick: () => void |
       type="button"
       className={secondary ? "secondary" : undefined}
       disabled={busy}
+      aria-busy={busy || undefined}
       onClick={async () => {
         setBusy(true);
         try {

@@ -104,7 +104,8 @@ export function BoardStrip({ api }: { api: Ref<BoardApi> }): ReactNode {
               <span>{r.at}</span>
               <span className={`k-${r.kind}`}>{r.kind}</span>
               <span>{r.n}</span>
-              <span>{r.txid}</span>
+              {/* the transaction id cut (DS-MOB P3): the whole values are under the verdict's Technical proof */}
+              <span>{r.txid.length > 20 ? `${r.txid.slice(0, 8)}…${r.txid.slice(-6)}` : r.txid}</span>
             </li>
           ))}
         </ol>

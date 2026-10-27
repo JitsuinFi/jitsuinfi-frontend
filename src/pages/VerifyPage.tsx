@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { Mounted, Page } from "../app/AppShell";
+import { PHONE } from "../app/phone";
 import { boardLine, loadBoard } from "../lib/board";
 import { bundleVerdict, letterStatus } from "../lib/bundle-verdict";
 import { codeKind, daysToDate, json, wasm, zatToZec } from "../lib/core";
@@ -385,6 +386,7 @@ export function VerifyPage(): ReactNode {
     setChecks([]);
     speak({ v: "no", glyph: "拒", title: "Refused at the counter", text });
     void slam();
+    if (matchMedia(PHONE).matches) vd.current?.scrollIntoView({ block: "center", behavior: still() ? "auto" : "smooth" });
   };
 
   const runCheck = async () => {
@@ -396,6 +398,8 @@ export function VerifyPage(): ReactNode {
     const l = loupe.current!;
     setBusy(true);
     slot.current?.classList.add("is-out");
+    // a phone: the bench comes into view as the check starts (mobile E2E 2026-10-27, finding 3)
+    if (matchMedia(PHONE).matches) scene.current?.scrollIntoView({ block: "start", behavior: still() ? "auto" : "smooth" });
     try {
       setChecks([]);
       board.current?.clear();
@@ -473,6 +477,8 @@ export function VerifyPage(): ReactNode {
         tech: result.checks.filter((r) => r.mono && r.found).map((r) => [r.what, r.found]),
       });
       await slam();
+      // and the verdict 真 / 偽 / … is in view when it lands
+      if (live() && matchMedia(PHONE).matches) vd.current?.scrollIntoView({ block: "center", behavior: still() ? "auto" : "smooth" });
     } catch (e) {
       if (live()) speak({ v: "no", glyph: "拒", text: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -599,7 +605,7 @@ export function VerifyPage(): ReactNode {
             <div className="vf-scene-host" ref={scene} />
             <ol className="vf-sr" aria-live="polite">
               {checks.map((c, i) => (
-                <li key={i}>{`${c.what}: ${c.found}${c.stamp ? ` (${STAMP_WORD[c.stamp]})` : ""}`}</li>
+                <li key={i}>{`${c.what}: ${c.mono && c.found.length > 20 ? `${c.found.slice(0, 8)}…${c.found.slice(-8)}` : c.found}${c.stamp ? ` (${STAMP_WORD[c.stamp]})` : ""}`}</li>
               ))}
             </ol>
             <div className="vf-vd" data-v={said.v} aria-live="polite" ref={vd}>

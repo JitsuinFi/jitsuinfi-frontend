@@ -78,7 +78,7 @@ export function keyChoices(keys: readonly KeyLetter[], contacts: readonly KnownB
         ? `${card.username ? `@${card.username}, ` : ""}a buyer not in your contacts yet (fingerprint ${card.fingerprint})`
         : "a buyer not in your contacts yet";
     const detail = usedFor
-      ? `Key ${readablePrint(k.invoice_pk)} from ${who} was used for ${usedFor} already: a key is for one invoice only. Ask them for their next invoice key.`
+      ? `Key ${readablePrint(k.invoice_pk)} from ${who} was used for ${usedFor} already: a key is for one invoice only. Their next key comes once ${usedFor} is financed; until then they see this same key.`
       : `Key ${readablePrint(k.invoice_pk)} came ${day(k.at, true)} in a letter from ${who}, signed by that key, from mailbox ${readablePrint(k.mailbox_pk)}. The invoice goes back to that mailbox only.`;
     return {
       value: k.invoice_pk,
@@ -150,4 +150,26 @@ export function keyMissText(m: KeyMiss): string {
     ? " This session uses test data: keys from your passkey, or from another test secret, are not checked here."
     : " Keys of another passkey, another role or test data are not checked here.";
   return `This invoice is for a buyer key this account doesn't have (key ${readablePrint(m.invoiceKey)}).${keys} Ask the supplier to use the key you send them from Invoices → Your next invoice key, or sign in with the account that sent that key.${other} The invoice stays in your inbox.`;
+}
+
+/**
+ * What the buyer is told about its next key when invoices on this device already name it
+ * (messy-state E2E 2026-10-27): the key only moves on once a financier finances an invoice, so the
+ * same key was handed to a second supplier, or sent again to the first, who then saw it as used.
+ * `on`: the invoices addressed to key #k, with whether each is signed. Null when none.
+ */
+export function keyTakenNote(k: number, on: ReadonlyArray<{ invoice_id: string; signed: boolean }>): { kind: "warn" | "bad"; title: string; text: string } | null {
+  if (!on.length) return null;
+  const ids = on.map((x) => x.invoice_id).join(", ");
+  if (on.length > 1)
+    return {
+      kind: "bad",
+      title: `Key #${k} is on ${on.length} invoices: ${ids}.`,
+      text: "A key is for one invoice: only the first of them a financier registers can be financed. Do not give this key to anyone else. Your next key comes once one of them is financed.",
+    };
+  return {
+    kind: "warn",
+    title: `Key #${k} is on ${ids} already.`,
+    text: `A key is for one invoice, and your next key comes only once ${ids} is financed. A supplier who used this key sees it as used; another supplier who writes to it gets an invoice that cannot be financed as well. Give it to no one else until then.`,
+  };
 }

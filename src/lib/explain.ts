@@ -23,7 +23,7 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/sealed message does not open/i, () => "This message was not sealed to your mailbox, or it was changed on the way."],
   [/not a usable X25519 mailbox key/i, () => "This contact card's mailbox key is not valid: ask for the card again."],
   [/invalid Ed25519 public key/i, () => "One of the keys is not a valid key: check that it was copied whole."],
-  [/unknown magic bytes|input truncated|unexpected trailing bytes|unsupported format version|is not base64/i, () => "This code is not a complete JitsuinFi document: copy it again, whole, from where you got it."],
+  [/unknown magic bytes|input truncated|unexpected trailing bytes|unsupported format version|is not base64|invalid base64/i, () => "This code is not a complete JitsuinFi document: copy it again, whole, from where you got it."],
   [/invoice id must be 1-32 printable ASCII bytes/i, () => "The invoice number in No. on the sheet must be 1 to 32 plain characters: letters, digits and signs such as - / _, no spaces."],
   [/amount must be greater than zero/i, () => "The amount must be more than zero."],
   [/due date is before issue date/i, () => "The due date is before the issue date."],
@@ -31,6 +31,9 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/same financier commitment: not double financing/i, () => "Both entries name the same financier: that is a repeated registration, not double financing."],
   [/malformed verification bundle/i, () => "This bundle is incomplete or changed: ask the financier for it again."],
   [/memo is not ZIP-302|memo padding is not zero/i, () => "This is not a JitsuinFi board memo."],
+  // messy-state E2E 2026-10-27: the relay down (no connection, or a gateway answering for it)
+  [/the relay cannot be reached/i, () => "The relay could not be reached. Nothing is lost: check your connection and try again in a moment; doing it twice does no harm."],
+  [/the relay answered (50[234])/i, (m) => `The relay is not answering right now (${m[1]}). Nothing is lost: try again in a moment; doing it twice does no harm.`],
   // HNK-32 (local E2E 2026-10-22): the node's own errors as the console shows them
   [/lightwalletd: error sending request|transport error|gave up after \d+ s without an answer/i, () => "The Zcash server did not answer in time. Nothing was sent; try again in a minute."],
   [/insufficient balance \(have (\d+), need (\d+)/i, (m) => `The wallet has ${m[1]} zat it can spend now and needs ${m[2]}, fee included. Funds that just arrived become spendable after a few blocks.`],
@@ -43,6 +46,11 @@ export function explain(message: string): string {
     if (m) return say(m);
   }
   return message;
+}
+
+/** The relay was down: the action did not go through, it was not refused (the banner says "Relay not reachable", not "Refused"). */
+export function isRelayOutage(message: string): boolean {
+  return /the relay cannot be reached|the relay answered 50[234]/i.test(message);
 }
 
 /**

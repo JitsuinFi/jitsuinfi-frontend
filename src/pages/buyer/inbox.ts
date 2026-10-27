@@ -4,6 +4,7 @@
 // invoice under Invoices, its slip under Pay, or History; keeping a settlement bundle completes in
 // the panel.
 import type { Handler, Handlers } from "../../app/inbox";
+import { tiedTo } from "../../lib/letter-away";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
 import { append, head, localNextIndex } from "../../lib/buyer-history";
@@ -121,7 +122,7 @@ export async function sendHistory(x: Received): Promise<string> {
   return `Your history (${certsOut.length - 1} earlier invoice${certsOut.length === 2 ? "" : "s"} and the certificate for ${rec.invoice_id}) went to the financier. It checks them on the board; the supplier signs the entry next.`;
 }
 
-export const buyerInbox: Handlers = {
+const handlers: Handlers = {
   // HNK-23.T7: the supplier's invoice and its PDF, kept once it is known to be addressed to one of
   // this buyer's keys (one passkey touch); the check and the signature happen on the open invoice
   "invoice.sign_request": {
@@ -231,3 +232,6 @@ export const buyerInbox: Handlers = {
     },
   },
 };
+
+/** A letter about an invoice opened on another device stays in the mailbox for it (messy-state E2E). */
+export const buyerInbox: Handlers = tiedTo(handlers, async (n) => !!(await invoiceByN(n).catch(() => undefined)), ["invoice.sign_request"]);

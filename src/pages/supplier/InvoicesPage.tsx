@@ -116,7 +116,7 @@ export function InvoicesPage(): ReactNode {
                       新
                     </b>
                     <strong>No invoices yet</strong>
-                    <p>Write your first invoice: it goes to the buyer's inbox to sign.</p>
+                    <p>Write your first invoice: it goes to the buyer's inbox to sign. Invoices written on another device stay on that device.</p>
                     <Link className="ia-none-go" to="/supplier/invoices/new">
                       Write your first invoice
                     </Link>

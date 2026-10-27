@@ -3,6 +3,7 @@
 // plain words about each letter. Where an action leads (lib/inbox-routes.ts): the deal at the
 // station it moved, or Write an invoice; keeping a settlement bundle completes in the panel.
 import type { Handler, Handlers } from "../../app/inbox";
+import { tiedTo } from "../../lib/letter-away";
 import { account } from "../../lib/app-session";
 import { cardFromKeyLetter, contactId, contactName, type Contact } from "../../lib/contact";
 import { daysToDate, json, wasm, zatToZec } from "../../lib/core";
@@ -64,7 +65,7 @@ async function contactOf(mailbox: string): Promise<Contact | undefined> {
   return account.current?.store?.get<Contact>(contactId({ mailbox_pk: mailbox } as Contact)).catch(() => undefined);
 }
 
-export const supplierInbox: Handlers = {
+const handlers: Handlers = {
   // HNK-23.T7: the buyer's signature, checked against its deal and kept
   "invoice.signature": {
     about: aboutDeal((d) => `For ${facts(d)}: the buyer signed it.`),
@@ -93,7 +94,11 @@ export const supplierInbox: Handlers = {
       const c = await contactOf(r.message.header.from.mailbox_pk);
       const card = c ? null : cardFromKeyLetter(r.message.header);
       const who = c ? `${c.username ? `@${c.username}` : "A buyer in your contacts"} (${c.fingerprint})` : card ? `${card.username ? `@${card.username}` : "A buyer"}, not in your contacts yet (fingerprint ${card.fingerprint}),` : "A buyer not in your contacts yet";
-      return `${who} sent the key for your next invoice to them, key ${readablePrint(String(r.message.header.body.invoice_pk))}, signed by that key.`;
+      const k = String(r.message.header.body.invoice_pk);
+      // messy-state E2E 2026-10-27: the same key again (it moves on only once that invoice is financed)
+      const used = (await store().list<{ buyer_pk?: string; invoice_id?: string }>()).find((x) => x.doc.buyer_pk === k)?.doc.invoice_id;
+      if (used) return `${who} sent key ${readablePrint(k)} again: it is on ${used} already, and a key is for one invoice. Their next key comes once ${used} is financed.`;
+      return `${who} sent the key for your next invoice to them, key ${readablePrint(k)}, signed by that key.`;
     },
     run: async (r) => {
       const h = r.message.header;
@@ -172,3 +177,6 @@ export const supplierInbox: Handlers = {
     (d) => !!d.bundle,
   ),
 };
+
+/** A letter about an invoice written on another device stays in the mailbox for it (messy-state E2E). */
+export const supplierInbox: Handlers = tiedTo(handlers, async (n) => !!(await dealByN(n).catch(() => undefined)), ["key.invoice_pk"]);

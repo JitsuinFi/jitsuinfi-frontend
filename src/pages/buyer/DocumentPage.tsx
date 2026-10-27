@@ -16,11 +16,12 @@ import { LongList } from "../../app/LongList";
 import { clearDid, DidLine, useDid } from "../../app/outcome";
 import { Banner, Button, CodeBlock, useOut } from "../../app/ui";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
-import { checkInvoice, type CheckResult } from "../../lib/buyer-check";
+import { checkInvoice, signedWithKey, type CheckResult } from "../../lib/buyer-check";
 import { buyerStage, invoiceRecord, nextAction, routeDone, withSignature, type BuyerAction } from "../../lib/buyer-invoices";
 import { letterChecks, letterProblems, type LetterCheck } from "../../lib/buyer-letter";
 import { daysToDate, fileHash, json, wasm, zatToZec } from "../../lib/core";
 import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
+import { asSentence, explain } from "../../lib/explain";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, type Header } from "../../lib/relay-message";
@@ -183,11 +184,12 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   const onInvoice = () => (lockSign(), lockSeal(), syncCodes());
   const onLetter = () => (lockSeal(), syncCodes());
 
-  const dec = useMemo(() => {
+  // messy-state E2E 2026-10-27: a cut or foreign code said why (Check invoice only stayed off)
+  const [dec, decProblem] = useMemo((): [InvoiceFields | null, string | null] => {
     try {
-      return codes.inv ? json<InvoiceFields>(wasm.invoiceDecode(codes.inv)) : null;
-    } catch {
-      return null;
+      return [codes.inv ? json<InvoiceFields>(wasm.invoiceDecode(codes.inv)) : null, null];
+    } catch (e) {
+      return [null, asSentence(explain(e instanceof Error ? e.message : String(e)))];
     }
   }, [codes.inv]);
   const lf = useMemo(() => {
@@ -230,7 +232,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       const hash = file ? await fileHash(file) : null;
       // an invoice kept on this device was matched to its key when it arrived (one passkey touch)
       const keyIndex = own ? own.key_index : await findKeyIndex(invoice);
-      const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex });
+      const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex, sameKey: keyIndex === null ? [] : signedWithKey(keyIndex, String(f.nullifier), list) });
       if (keyIndex !== null) {
         const d = { nullifier: String(f.nullifier), invoice_id: String(f.invoice_id), amount_zat: Number(f.amount_zat), due_date: Number(f.due_date) };
         await saveInvoice((prev) => invoiceRecord(d, invoice, keyIndex, r.canSign, Date.now(), prev), d.nullifier);
@@ -581,7 +583,13 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
         <label className="field">
           <span>Invoice code from the supplier</span>
           <textarea spellCheck="false" autoCapitalize="none" autoCorrect="off" defaultValue={start?.invoice ?? ""} onInput={onInvoice} ref={cInv} />
-          <small>Signing and sealing read this one invoice.</small>
+          {decProblem ? (
+            <small className="by-code-bad" role="alert">
+              {`This is not an invoice code this app can read. ${decProblem}`}
+            </small>
+          ) : (
+            <small>Signing and sealing read this one invoice.</small>
+          )}
         </label>
         <div className="rp-fieldset">
           <span>Terms PDF from the supplier</span>

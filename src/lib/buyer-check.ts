@@ -9,6 +9,11 @@ export interface CheckInput {
   fileHash: string | null;
   /** Index k of the buyer key the invoice is addressed to, or null when it is none of them. */
   keyIndex: number | null;
+  /**
+   * Other invoices on this device signed with the same key (messy-state E2E 2026-10-27): a key is
+   * for one invoice, so only one of them can be financed.
+   */
+  sameKey?: string[];
 }
 
 export interface CheckResult {
@@ -35,5 +40,24 @@ export function checkInvoice(c: CheckInput): CheckResult {
   if (!hashOk) {
     return { canSign: false, kind: "bad", title: "The PDF is not the invoiced document", text: "Its hash differs from the one in the invoice. Ask the supplier for the exact file before signing.", rows };
   }
+  if (c.sameKey?.length) {
+    const ids = c.sameKey.join(", ");
+    rows[1] = ["Addressed to", `your invoice key #${c.keyIndex}, already on ${ids}`];
+    return {
+      canSign: true,
+      kind: "warn",
+      title: `Key #${c.keyIndex} is on ${c.sameKey.length > 1 ? "other invoices" : "another invoice"} already`,
+      text: `You signed ${ids} with this key. A key is for one invoice: only one invoice per key can be financed, the first one a financier registers. Sign this one only if ${c.sameKey.length > 1 ? "those are" : "that one is"} not going to a financier; otherwise ask this supplier to wait for your next key, which comes once ${c.sameKey.length > 1 ? "one of them" : ids} is financed.`,
+      rows,
+    };
+  }
   return { canSign: true, kind: "ok", title: "Ready to sign", text: "The PDF is the invoiced document and the invoice is addressed to your key.", rows };
+}
+
+/**
+ * The invoices on this device signed with key #`k`, other than `n` (messy-state E2E 2026-10-27:
+ * two suppliers were given the same next key and both invoices were signed without a word).
+ */
+export function signedWithKey(k: number, n: string, list: ReadonlyArray<{ n: string; key_index: number; invoice_id: string; signature?: string }>): string[] {
+  return list.filter((x) => x.n !== n && x.key_index === k && !!x.signature).map((x) => x.invoice_id);
 }

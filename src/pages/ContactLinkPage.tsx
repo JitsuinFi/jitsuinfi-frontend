@@ -67,7 +67,7 @@ export function ContactLinkPage(): ReactNode {
         <p className="sp-tag">
           <b lang="ja">名</b>Contact link
         </p>
-        <h1>{c ? "Someone shared their contact" : "This contact link does not open"}</h1>
+        <h1>{c ? `${contactName(c)} shared their contact` : "This contact link does not open"}</h1>
         {c && !dismissed ? (
           <AddContact c={c} onCancel={() => setDismissed(true)} fromLink added={addedAtSignUp === c} />
         ) : c ? (

@@ -450,6 +450,7 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
   .ia-bar > a.secondary { background: var(--seal-wash); color: var(--seal); }
   .ia-bar > .hint, .ia-bar > small { flex: 1 1 100%; margin: 0; font-size: 13px; color: var(--ink-2); text-align: center; }
   body.has-dock main { padding-bottom: calc(var(--s-6) + var(--tabbar-h) + 72px + env(safe-area-inset-bottom, 0px)); }
+  body.has-dock footer { padding-bottom: calc(var(--s-3) + var(--tabbar-h) + 72px + env(safe-area-inset-bottom, 0px)); }
   body.has-dock main { scroll-padding-bottom: calc(var(--tabbar-h) + 72px); }
   html:has(body.has-dock) { scroll-padding-bottom: calc(var(--tabbar-h) + 80px + env(safe-area-inset-bottom, 0px)); }
 }

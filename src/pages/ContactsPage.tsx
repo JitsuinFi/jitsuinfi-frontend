@@ -145,7 +145,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                   <div className="ia-meishi-main">
                     <small>Key fingerprint · compare it with them</small>
                     <strong>{s.fingerprint}</strong>
-                    <span>{mine ? `mailbox ${readablePrint(mine.mailbox_pk)}` : ""}</span>
+                    <span>{mine ? `inbox ${readablePrint(mine.mailbox_pk)}` : ""}</span>
                   </div>
                   <code className="ia-meishi-code" title={card}>
                     {card}

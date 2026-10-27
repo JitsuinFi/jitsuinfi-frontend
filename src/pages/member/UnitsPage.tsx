@@ -7,6 +7,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
+import { useKept, useKeptState } from "../../app/kept";
 import { LongList } from "../../app/LongList";
 import { DidLine, useDid } from "../../app/outcome";
 import { Banner, Button, TrustedSvg, useOut } from "../../app/ui";
@@ -112,23 +113,26 @@ function Slip({ x, i }: { x: Holding; i: number }): ReactNode {
  * HNK-30.T22: how a member pays in. The manager hands a fund card with a deposit address made for
  * this member; the member pays it from any shielded wallet (the QR is a plain ZIP-321 request),
  * then gives the manager the transaction id and their contact card for the receipt.
+ * A phone draws it in a fold and a desktop in an open section (two trees): what is written in it
+ * and the QR it made are kept above that switch (app/kept.ts, DS-MOB L5), so a resize keeps them.
  */
 function Deposit({ w }: { w: Wallet | null }): ReactNode {
   const code = useRef<HTMLTextAreaElement>(null);
   const amount = useRef<HTMLInputElement>(null);
   const out = useOut();
-  const [req, setReq] = useState<{ uri: string; svg: string } | null>(null);
+  const kd = useKept("member/units/deposit");
+  const [req, setReq] = useKeptState<{ uri: string; svg: string } | null>("member/units/deposit", "qr", null);
   const fund = w?.fund;
   return (
     <div className="rp-vis fm-dep">
       <div className="rp-panel">
         <label className="field">
           <span>Fund card from the manager</span>
-          <textarea spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="jitsuin-fund-v1:…" ref={code} />
+          <textarea spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="jitsuin-fund-v1:…" ref={code} {...kd.field("card")} />
         </label>
         <label className="field">
           <span>Amount to deposit (ZEC)</span>
-          <input type="text" inputMode="decimal" enterKeyHint="done" placeholder="0.01" spellCheck="false" autoComplete="off" ref={amount} />
+          <input type="text" inputMode="decimal" enterKeyHint="done" placeholder="0.01" spellCheck="false" autoComplete="off" ref={amount} {...kd.field("amount")} />
         </label>
         <div className="actions">
           <Button
@@ -139,6 +143,7 @@ function Deposit({ w }: { w: Wallet | null }): ReactNode {
                 const wl = await load();
                 await save({ ...wl, fund: f });
                 code.current!.value = "";
+                kd.set("card", undefined);
                 setReq(null);
                 out.show(<Banner kind="ok" title="Fund card kept" text="Its deposit address and fund key are on the slip." />);
               } catch (e) {
@@ -156,6 +161,7 @@ function Deposit({ w }: { w: Wallet | null }): ReactNode {
                 const zat = zecToZat(amount.current!.value.trim());
                 const r = JSON.parse(wasm.paymentRequest(wl.fund.deposit_address, BigInt(zat))) as { uri: string; qr_svg: string };
                 code.current!.value = "";
+                kd.set("card", undefined);
                 setReq({ uri: r.uri, svg: r.qr_svg });
                 out.clear();
               } catch (e) {
@@ -201,6 +207,9 @@ export function UnitsPage(): ReactNode {
   const lp = w ? latestPortfolio(w) : null;
   const under = lp ? holdings.filter((x) => x.path?.period === lp.period && x.path.ok).reduce((n, x) => n + x.units, 0) : 0;
   const payouts = w ? [...w.payouts].reverse() : [];
+  // DS-MOB L5: the phone's fold opens on what was already written into the deposit (on either layout)
+  const dep = useKept("member/units/deposit");
+  const [fold, setFold] = useState(() => dep.get<boolean>("open") ?? !!(dep.get("card") || dep.get("amount") || dep.get("qr")));
 
   const depositHead = (
     <div className="rp-cap">
@@ -288,7 +297,15 @@ export function UnitsPage(): ReactNode {
         </section>
 
         {phone ? (
-          <details className="rp-sec fm-dep-fold">
+          <details
+            className="rp-sec fm-dep-fold"
+            open={fold}
+            onToggle={(e) => {
+              const open = e.currentTarget.open;
+              dep.set("open", open);
+              setFold(open);
+            }}
+          >
             <summary>
               <span className="rp-stamp" lang="ja" aria-hidden="true">
                 入

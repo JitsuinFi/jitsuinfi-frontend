@@ -46,9 +46,9 @@ export function InvoicesPage(): ReactNode {
                 </span>
                 <i aria-hidden="true">→</i>
               </Link>
-            ) : (
-              <KeyBlock />
-            )}
+            ) : null}
+            {/* DS-MOB L5: the key block stays in the tree on a phone (its own screen there is one tap away), so a card pasted into it survives a resize */}
+            <KeyBlock hidden={phone} />
             <Totals list={list} statuses={statuses} loading={recs === null} />
             <DueLine list={list} slipHref={(r) => (r.ref && hasSlip(r) ? slipPath(r.ref) : undefined)} />
           </div>

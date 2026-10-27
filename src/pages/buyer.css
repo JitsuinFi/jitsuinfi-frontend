@@ -330,6 +330,10 @@ p.by-late b { color: var(--head); font-weight: 600; }
 /* a phone: one screen down from the list */
 .by-doc-phone { display: grid; gap: 18px; min-width: 0; }
 .by-doc-phone .ia-did { margin: 0; }
+/* DS-MOB L5: the invoice and the slip draw one tree at every width; on a phone the caption and visual
+   boxes step aside and their parts stand in the screen's column */
+.by-flat { display: contents; }
+.by-keyblock[hidden] { display: none; }
 .rp .ia-back {
   justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 14px 8px 8px; border-radius: 999px;
   background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); text-decoration: none;

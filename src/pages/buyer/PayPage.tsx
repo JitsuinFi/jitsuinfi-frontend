@@ -244,52 +244,49 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
     </>
   );
 
-  // a phone: one slip as its own screen, back to the list
-  if (phone && sel) {
-    return (
-      <Page wide>
-        <div className="rp by" ref={root}>
-          <section className="by-doc-phone" aria-label={`Slip for ${sel.invoice_id}`}>
-            <Tag k="払" section="Pay" />
-            <h1 className="ia-doc-id">
-              {sel.invoice_id}
-              <span>{`${zatToZec(sel.amount_zat)} ZEC · due ${daysToDate(sel.due_date)}`}</span>
-            </h1>
-            {shown ? <DidLine did={shown} /> : null}
-            <Slip key={sel.n} r={sel} status={statuses?.[sel.n] ?? null} />
-            <WherePays r={sel} />
-          </section>
-        </div>
-      </Page>
-    );
-  }
-
+  // a phone: one slip as its own screen, back to the list. DS-MOB L5: one tree at every width; on
+  // that screen the caption and visual boxes step aside (`.by-flat`, display: contents), so the slip
+  // keeps its place in the tree and its QR survives a resize.
+  const one = phone && !!sel;
   return (
     <Page wide>
       <div className="rp by" ref={root}>
-        <section className="rp-sec" aria-labelledby="by-tp">
-          <div className="rp-cap">
+        <section className={one ? "by-doc-phone" : "rp-sec"} aria-labelledby={one ? undefined : "by-tp"} aria-label={one && sel ? `Slip for ${sel.invoice_id}` : undefined}>
+          <div className={one ? "by-flat" : "rp-cap"}>
             <Tag k="払" section="Pay" />
-            <h1 id="by-tp">Pay</h1>
-            <p className="rp-lede">{LEDE}</p>
-            <Totals list={list} statuses={statuses} />
-            <DueLine list={list} slipHref={(r) => (r.ref && hasSlip(r) ? slipPath(r.ref) : undefined)} />
-            {phone ? null : slipList}
+            {one && sel ? (
+              <h1 className="ia-doc-id">
+                {sel.invoice_id}
+                <span>{`${zatToZec(sel.amount_zat)} ZEC · due ${daysToDate(sel.due_date)}`}</span>
+              </h1>
+            ) : (
+              <h1 id="by-tp">Pay</h1>
+            )}
+            {one ? null : (
+              <>
+                <p className="rp-lede">{LEDE}</p>
+                <Totals list={list} statuses={statuses} />
+                <DueLine list={list} slipHref={(r) => (r.ref && hasSlip(r) ? slipPath(r.ref) : undefined)} />
+                {phone ? null : slipList}
+              </>
+            )}
           </div>
-          <div className="rp-vis">
+          <div className={one ? "by-flat" : "rp-vis"}>
             {shown ? <DidLine did={shown} /> : null}
-            {phone ? (
-              slipList
-            ) : unknown ? (
-              <p className="rp-empty">This slip is not on this device. Pick one from your slips.</p>
-            ) : sel ? (
-              <div className="by-pay-row">
+            {phone && !sel ? slipList : null}
+            {!sel ? (
+              phone ? null : unknown ? (
+                <p className="rp-empty">This slip is not on this device. Pick one from your slips.</p>
+              ) : (
+                <p className="rp-empty">Nothing to pay yet. The 払込票 slip of an invoice appears here once all three seals hold on its letter.</p>
+              )
+            ) : null}
+            {sel ? (
+              <div className={one ? "by-flat" : "by-pay-row"}>
                 <Slip key={sel.n} r={sel} status={statuses?.[sel.n] ?? null} />
                 <WherePays r={sel} />
               </div>
-            ) : (
-              <p className="rp-empty">Nothing to pay yet. The 払込票 slip of an invoice appears here once all three seals hold on its letter.</p>
-            )}
+            ) : null}
           </div>
         </section>
       </div>

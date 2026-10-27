@@ -648,30 +648,17 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
   );
   const statuses = statusesOf(list, board);
 
-  if (phone) {
-    return (
-      <Page wide>
-        <div className="rp by" ref={root}>
-          <section className="by-doc-phone" aria-labelledby="by-t">
-            <Tag section="Invoices" />
-            {title}
-            {shown ? <DidLine did={shown} /> : null}
-            {route}
-            {desk}
-            {codesFold}
-          </section>
-        </div>
-      </Page>
-    );
-  }
+  // DS-MOB L5: one tree at every width. On a phone the caption and the visual boxes step aside
+  // (`.by-flat`, display: contents) and their parts stand in the screen's own column; the codes, the
+  // PDFs and the checks stay where they are in the tree, so what is pasted or chosen survives a resize.
   return (
     <Page wide>
       <div className="rp by" ref={root}>
-        <section className="rp-sec" aria-labelledby="by-t">
-          <div className="rp-cap">
+        <section className={phone ? "by-doc-phone" : "rp-sec"} aria-labelledby="by-t">
+          <div className={phone ? "by-flat" : "rp-cap"}>
             <Tag section="Invoices" />
             {title}
-            {list.length ? (
+            {!phone && list.length ? (
               <section className="ia-switch" aria-labelledby="by-sw-h">
                 <div className="ia-switch-h">
                   <h2 id="by-sw-h">
@@ -693,7 +680,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
               </section>
             ) : null}
           </div>
-          <div className="rp-vis">
+          <div className={phone ? "by-flat" : "rp-vis"}>
             {shown ? <DidLine did={shown} /> : null}
             {route}
             {desk}

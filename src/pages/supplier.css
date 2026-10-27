@@ -762,7 +762,11 @@
   .sp .ia-facts > div { grid-template-columns: 7em minmax(0, 1fr); }
 }
 /* the desk of the old single page named its grid areas (sheet, rail, work, tray); the sections place their parts themselves */
-.sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > * { grid-area: auto; }
+.sp .ia-deal > *, .sp .ia-deal-row > *, .sp .ia-new-form > *, .sp .ia-deal-phone > *, .sp .ia-station > *, .sp .ia-flat > * { grid-area: auto; }
+/* DS-MOB L5: the deal draws one tree at every width; on a phone the desk's boxes step aside
+   (display: contents) and the station's work stays mounted, hidden on the deal screen */
+.sp .ia-flat { display: contents; }
+.sp .sp-work[hidden] { display: none; }
 
 /* ---------- part 2 fixes for the phone (2026-10-26, part 1's screenshots) ---------- */
 @media (max-width: 599px) {

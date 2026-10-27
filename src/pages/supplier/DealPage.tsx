@@ -219,97 +219,83 @@ function Desk({ d, deals, book, at }: { d: Deal; deals: Deal[]; book: Book | nul
     </p>
   );
 
-  if (phone && at) {
-    // ---- a phone: the station's work as its own screen ----
-    return (
-      <Page wide>
-        <div className="sp" data-wide="true">
-          <ObjectDefs />
-          <div className="ia-station">
-            {/* the Back control is the shell's (UpBar.tsx): to the deal; the station names its invoice */}
-            <p className="ia-station-of">
-              <b>{d.invoice_id}</b>
-              <small>{`${zatToZec(d.amount_zat)} ZEC`}</small>
-            </p>
-            <section className="sp-work" aria-label="This station's work">
-              {work}
-            </section>
-          </div>
-        </div>
-      </Page>
-    );
-  }
-
-  if (phone) {
-    // ---- a phone: the deal screen (route, facts, one primary action) ----
-    const now = nowStation(stations);
-    const act = now.state === "next" || now.state === "wait";
-    return (
-      <Page wide>
-        <div className="sp" data-wide="true">
-          <ObjectDefs />
-          <div className="ia-deal-phone">
-            {tag}
-            {title}
-            {shown ? <DidLine did={shown} /> : null}
-            {railArea}
-            <div className="ia-deal-go">
-              <Button onClick={() => pick(now.key)}>{act ? `${STATION[now.key].glyph}  ${now.state === "wait" ? "See what it waits for" : move?.text ? move.text.charAt(0).toUpperCase() + move.text.slice(1) : STATION[now.key].label}` : "See the settlement"}</Button>
-            </div>
-            {factsList}
-            <details className="sp-fold ia-sheet-fold">
-              <summary>
-                <b lang="ja">請求書</b> The invoice
-              </summary>
-              <DealSheet d={d} settled={settled} stamp={stamp} who={who} />
-            </details>
-            <p className="ia-goline">
-              <Link className="sp-ink" to="/supplier/invoices">
-                All invoices
-              </Link>
-            </p>
-          </div>
-        </div>
-      </Page>
-    );
-  }
-
-  // ---- a desktop: the wide master–detail ----
+  // DS-MOB L5: one tree at every width. A phone's deal screen, a phone's station screen and the
+  // desktop's master–detail only change classes and which plain parts are drawn; the station's
+  // work keeps its place in the tree (hidden on the phone's deal screen), so what is typed or
+  // chosen in it survives a rotation, a split screen or a resized window. `.ia-flat` boxes are
+  // `display: contents`: on a phone their children sit in the screen's own column.
+  const frame = !phone ? "desk" : at ? "station" : "deal";
+  const now = nowStation(stations);
+  const act = now.state === "next" || now.state === "wait";
   return (
     <Page wide>
       <div className="sp" data-wide="true">
         <ObjectDefs />
-        <div className="sp-desk ia-deal-desk">
-          <section className="sp-cap" aria-labelledby="sp-h1">
-            {tag}
-            {title}
-            <p className="sp-lede">{`${line.lead} ${line.text}${move ? "." : ""}`}</p>
-            {factsList}
-            <section className="ia-switch" aria-labelledby="ia-sw-h">
-              <div className="ia-switch-h">
-                <h2 id="ia-sw-h">
-                  <b lang="ja">台帳</b>Your deals
-                </h2>
-                <Link to="/supplier/invoices">All invoices</Link>
-              </div>
-              <LongList
-                items={deals}
-                keyOf={(x) => x.n}
-                stage={(x) => dealStage(x, isSettled(x))}
-                words={ledgerWords(book)}
-                labels={LEDGER_LABELS}
-                limit={5}
-                searchLabel="Search your deals"
-                render={(x) => <LedgerLine d={x} book={book} compact current={x.n === d.n} />}
-              />
+        <div className={frame === "desk" ? "sp-desk ia-deal-desk" : frame === "station" ? "ia-station" : "ia-deal-phone"}>
+          {frame === "desk" ? (
+            <section className="sp-cap" aria-labelledby="sp-h1">
+              {tag}
+              {title}
+              <p className="sp-lede">{`${line.lead} ${line.text}${move ? "." : ""}`}</p>
+              {factsList}
+              <section className="ia-switch" aria-labelledby="ia-sw-h">
+                <div className="ia-switch-h">
+                  <h2 id="ia-sw-h">
+                    <b lang="ja">台帳</b>Your deals
+                  </h2>
+                  <Link to="/supplier/invoices">All invoices</Link>
+                </div>
+                <LongList
+                  items={deals}
+                  keyOf={(x) => x.n}
+                  stage={(x) => dealStage(x, isSettled(x))}
+                  words={ledgerWords(book)}
+                  labels={LEDGER_LABELS}
+                  limit={5}
+                  searchLabel="Search your deals"
+                  render={(x) => <LedgerLine d={x} book={book} compact current={x.n === d.n} />}
+                />
+              </section>
             </section>
-          </section>
-          <section className="ia-vis ia-deal" aria-label="The deal">
-            {railArea}
-            <div className="ia-deal-row">
-              <DealSheet d={d} settled={settled} stamp={stamp} who={who} />
-              <section className="sp-work" aria-label="This station's work">
-                {shown ? <DidLine did={shown} /> : null}
+          ) : frame === "station" ? (
+            // a phone: the station's work as its own screen; the Back control is the shell's (UpBar.tsx), to the deal
+            <p className="ia-station-of">
+              <b>{d.invoice_id}</b>
+              <small>{`${zatToZec(d.amount_zat)} ZEC`}</small>
+            </p>
+          ) : (
+            // a phone: the deal screen (route, facts, one primary action)
+            <>
+              {tag}
+              {title}
+              {shown ? <DidLine did={shown} /> : null}
+            </>
+          )}
+          <section className={frame === "desk" ? "ia-vis ia-deal" : "ia-flat"} aria-label={frame === "desk" ? "The deal" : undefined}>
+            {frame === "station" ? null : railArea}
+            {frame === "deal" ? (
+              <>
+                <div className="ia-deal-go">
+                  <Button onClick={() => pick(now.key)}>{act ? `${STATION[now.key].glyph}  ${now.state === "wait" ? "See what it waits for" : move?.text ? move.text.charAt(0).toUpperCase() + move.text.slice(1) : STATION[now.key].label}` : "See the settlement"}</Button>
+                </div>
+                {factsList}
+                <details className="sp-fold ia-sheet-fold">
+                  <summary>
+                    <b lang="ja">請求書</b> The invoice
+                  </summary>
+                  <DealSheet d={d} settled={settled} stamp={stamp} who={who} />
+                </details>
+                <p className="ia-goline">
+                  <Link className="sp-ink" to="/supplier/invoices">
+                    All invoices
+                  </Link>
+                </p>
+              </>
+            ) : null}
+            <div className={frame === "desk" ? "ia-deal-row" : "ia-flat"}>
+              {frame === "desk" ? <DealSheet d={d} settled={settled} stamp={stamp} who={who} /> : null}
+              <section className="sp-work" aria-label="This station's work" hidden={frame === "deal" || undefined}>
+                {frame === "desk" && shown ? <DidLine did={shown} /> : null}
                 {work}
               </section>
             </div>

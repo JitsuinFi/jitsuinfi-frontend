@@ -219,14 +219,14 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
 }
 
 /** Who you are, the next invoice key, and how it reaches a supplier. */
-export function KeyBlock(): ReactNode {
+export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
   const info = useKeyInfo();
   const board = useRef<HTMLInputElement>(null);
   const out = useOut();
   const [busy, setBusy] = useState(false);
   const s = account.current;
   return (
-    <div className="by-keyblock">
+    <div className="by-keyblock" hidden={hidden || undefined}>
       <dl className="by-who" aria-label="Your keys">
         <div>
           <dt>{s?.demo ? "Your test key" : "Your passkey"}</dt>

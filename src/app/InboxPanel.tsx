@@ -8,11 +8,11 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Role } from "../lib/account";
-import { explain } from "../lib/explain";
+import { asSentence, explain } from "../lib/explain";
 import { letterAction, letterGlyph, letterLabel } from "../lib/inbox-routes";
 import { SECTIONS } from "../lib/sections";
 import { reducedMotion } from "../landing/motion";
-import { act, actionable, checkInbox, letGo, snapshot, subscribe, unread, type Done, type Letter } from "./inbox";
+import { act, actionable, checkInbox, letGo, putAside, snapshot, subscribe, unread, type Done, type Letter } from "./inbox";
 import { LongList } from "./LongList";
 import { clearDid, setDid } from "./outcome";
 
@@ -64,20 +64,58 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
               <span className="ia-goes">{a.goes}</span>
             </div>
           ) : (
-            <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : "Nothing to do with this letter here."}</small>
+            <small className="ia-idle">{l.handled ? "Already done on this device: nothing left to do." : l.away ? "For an invoice on another device signed in with your passkey: open your inbox there. The letter waits in your mailbox for it." : "Nothing to do with this letter here."}</small>
           )
         ) : null}
         {done && leaving ? <small className="ia-goes">Opening it…</small> : null}
         {l.state === "failed" && l.error ? (
-          <p className="ia-refused" role="alert">
-            <b lang="ja" aria-hidden="true">
-              拒
-            </b>
-            <span>{explain(l.error)}</span>
-          </p>
+          <>
+            <p className="ia-refused" role="alert">
+              <b lang="ja" aria-hidden="true">
+                拒
+              </b>
+              <span>{explain(l.error)}</span>
+            </p>
+            <PutAside l={l} />
+          </>
         ) : null}
       </div>
     </article>
+  );
+}
+
+/** A refused letter can leave the mailbox for good, so it stops counting (messy-state E2E 2026-10-27). */
+function PutAside({ l }: { l: Letter }): ReactNode {
+  const [ask, setAsk] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="ia-aside">
+      {ask ? (
+        <>
+          <span>Remove this letter from your mailbox for good? The sender can send it again.</span>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              void putAside(l).catch((e) => {
+                setErr(explain(e instanceof Error ? e.message : String(e)));
+                setAsk(false);
+              })
+            }
+          >
+            Remove it
+          </button>
+          <button type="button" className="ia-ink" onClick={() => setAsk(false)}>
+            Keep it
+          </button>
+        </>
+      ) : (
+        <button type="button" className="ia-ink" onClick={() => (setErr(null), setAsk(true))}>
+          Remove from inbox
+        </button>
+      )}
+      {err ? <small role="alert">{`Not removed: ${err}`}</small> : null}
+    </div>
   );
 }
 
@@ -158,7 +196,7 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
           </div>
           {s.mailbox === "unreachable" ? (
             <p className="ia-ib-state is-off">
-              <b>Mailbox not reachable.</b> {`${explain(s.why ?? "")} Your documents stay on this device; try again later.`}
+              <b>Mailbox not reachable.</b> {`${asSentence(explain(s.why ?? ""))} Your documents stay on this device. It is tried again every minute.`}
             </p>
           ) : s.mailbox === "ready" ? (
             <p className="ia-ib-state">
@@ -168,10 +206,10 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
             <p className="ia-ib-state is-wait">Opening your mailbox…</p>
           )}
           <div className="ia-ib-check">
-            <button type="button" className="secondary" disabled={s.checking || s.mailbox !== "ready"} onClick={() => void checkInbox()}>
-              {s.checking ? "Checking…" : "Check inbox"}
+            <button type="button" className="secondary" disabled={s.checking || (s.mailbox !== "ready" && s.mailbox !== "unreachable")} onClick={() => void checkInbox()}>
+              {s.checking ? "Checking…" : s.mailbox === "unreachable" ? "Try again" : "Check inbox"}
             </button>
-            <small role="status">{s.error ? `The relay did not answer: ${explain(s.error)}` : s.nothingNew ? "Nothing new since you last looked." : "opens on its own, then every minute while the app is open"}</small>
+            <small role="status">{s.error ? asSentence(explain(s.error)) : s.nothingNew ? "Nothing new since you last looked." : "opens on its own, then every minute while the app is open"}</small>
           </div>
         </header>
         <div className="ia-ib-body">

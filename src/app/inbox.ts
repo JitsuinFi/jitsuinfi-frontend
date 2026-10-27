@@ -7,7 +7,7 @@
 import type { Role } from "../lib/account";
 import { myMailbox, relayDeps } from "../lib/app-relay";
 import { account } from "../lib/app-session";
-import { receive, remove, type Received } from "../lib/relay";
+import { discard, receive, remove, type Received } from "../lib/relay";
 import type { MessageType } from "../lib/relay-message";
 import { hasInbox } from "../lib/sections";
 import { onStoreChange } from "../lib/store";
@@ -32,6 +32,12 @@ export interface Handler {
    * signature is kept, the deal moved past it, its invoice is settled. It no longer counts.
    */
   handled?: (r: Received) => Promise<boolean>;
+  /**
+   * The letter is about a record this device does not hold (messy-state E2E 2026-10-27): an
+   * invoice written or opened on another device with the same passkey. Not acted on here and not
+   * counted: it stays in the mailbox for that device.
+   */
+  elsewhere?: (r: Received) => Promise<boolean>;
 }
 export type Handlers = Partial<Record<MessageType, Handler>>;
 
@@ -53,6 +59,8 @@ export interface Letter {
   fresh: boolean;
   /** Its work is already done on this device (Handler.handled): shown, not counted. */
   handled?: boolean;
+  /** About a record another device holds (Handler.elsewhere): shown, not counted, left in the mailbox. */
+  away?: boolean;
 }
 
 export interface InboxState {
@@ -93,7 +101,7 @@ let checks = 0;
 
 /** A letter this role can act on: its signature holds, a handler takes its kind, and its work is not done yet. */
 export function actionable(l: Letter, h: Handlers | null = state.handlers): boolean {
-  return l.r.signatureOk && !l.handled && !!h?.[l.r.message.header.type];
+  return l.r.signatureOk && !l.handled && !l.away && !!h?.[l.r.message.header.type];
 }
 
 /** A letter still waiting for this person: actionable and not acted on. */
@@ -110,11 +118,12 @@ async function markHandled(): Promise<void> {
   const me = owner;
   if (!h) return;
   for (const l of state.letters) {
-    const f = h[l.r.message.header.type]?.handled;
-    if (!f || !l.r.signatureOk || l.state === "done" || l.state === "busy") continue;
-    const yes = await f(l.r).catch(() => false);
+    const hd = h[l.r.message.header.type];
+    if (!hd || !l.r.signatureOk || l.state === "done" || l.state === "busy") continue;
+    const yes = hd.handled ? await hd.handled(l.r).catch(() => false) : false;
+    const away = hd.elsewhere ? await hd.elsewhere(l.r).catch(() => false) : false;
     if (owner !== me) return;
-    if (!!l.handled !== yes) patchLetter(l.r.relayId, { handled: yes });
+    if (!!l.handled !== yes || !!l.away !== away) patchLetter(l.r.relayId, { handled: yes, away });
   }
 }
 
@@ -170,6 +179,22 @@ export async function act(l: Letter): Promise<Done | null> {
   }
 }
 
+/**
+ * A letter that cannot be used here (its action refused it: an invoice for another account's key,
+ * a letter from another app) is removed from the mailbox for good, so it no longer counts
+ * (messy-state E2E 2026-10-27: it counted on the bell after every reload).
+ */
+export async function putAside(l: Letter): Promise<void> {
+  const s = account.current;
+  if (!s || l.state === "busy" || l.state === "done") return;
+  used.add(l.r.relayId);
+  await discard(s.inbox, l.r.relayId, relayDeps).catch((e) => {
+    used.delete(l.r.relayId);
+    throw e;
+  });
+  letGo(l);
+}
+
 /** A letter acted on leaves the list. */
 export function letGo(l: Letter): void {
   set({ letters: state.letters.filter((x) => x.r.relayId !== l.r.relayId) });
@@ -222,17 +247,23 @@ function follow(): void {
   offStore = onStoreChange((c) => {
     if (owner === want && c.role === role) void markHandled();
   });
-  void Promise.all([handlers, myMailbox()]).then(
-    () => {
-      if (owner !== want) return;
-      set({ mailbox: "ready" });
-      void checkInbox(true);
-      timer = setInterval(() => {
-        if (document.visibilityState === "visible") void checkInbox(true);
-      }, 60_000);
-    },
-    (e) => owner === want && set({ mailbox: "unreachable", why: e instanceof Error ? e.message : String(e) }),
-  );
+  // messy-state E2E 2026-10-27: a relay that was down at sign-in is tried again every minute (it
+  // stayed "not reachable" until the next sign-in); Check inbox tries it at once
+  const open = () =>
+    Promise.all([handlers, myMailbox()]).then(
+      () => {
+        if (owner !== want) return;
+        set({ mailbox: "ready", why: undefined });
+        void checkInbox(true);
+      },
+      (e) => owner === want && set({ mailbox: "unreachable", why: e instanceof Error ? e.message : String(e) }),
+    );
+  void open();
+  timer = setInterval(() => {
+    if (document.visibilityState !== "visible" || owner !== want) return;
+    if (state.mailbox === "ready") void checkInbox(true);
+    else if (state.mailbox === "unreachable") void open();
+  }, 60_000);
 }
 
 let started = false;

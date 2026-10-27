@@ -12,35 +12,21 @@ import { DidLine, setDid, useDid } from "../../app/outcome";
 import { account } from "../../lib/app-session";
 import { dateToDays, fileHash, json, wasm, zecToZat } from "../../lib/core";
 import { dealPath, newRef } from "../../lib/deal-ref";
+import { defaultChoice, HAND, keyChoices } from "../../lib/key-match";
 import { readablePrint } from "../../lib/print";
 import { invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
 import { Seikyusho, type SheetFields } from "../try/Seikyusho";
-import { contactFor, dropArrivedKey, keepPdf, save, useBook, useDeals, type Book } from "./data";
+import { dropArrivedKey, keepPdf, save, useBook, useDeals, type Book } from "./data";
 import { AddBuyerBack, Caption, ObjectDefs } from "./parts";
 import "../supplier.css";
 
 const HEX64 = /^[0-9a-f]{64}$/;
-const MANUAL = "manual";
 const value = (r: { current: { value: string } | null }) => r.current!.value.trim();
 
 /** The N just created: it resolves digit by digit on its deal's sheet once. */
 export const freshN = { n: null as string | null };
 
 const useSheetFields = (): SheetFields => ({ id: useRef(null), amount: useRef(null), issued: useRef(null), due: useRef(null), terms: useRef(null) });
-
-/** The option's words: short enough for a phone's select (judge run 2: "…key 6LB4·" was cut). */
-function keyLabel(book: Book, k: { invoice_pk: string; mailbox_pk: string; at: number }): string {
-  const c = contactFor(book, k.mailbox_pk);
-  const key = readablePrint(k.invoice_pk).slice(0, 9);
-  return c ? `${c.username ? `@${c.username}` : `Buyer ${c.fingerprint.slice(0, 9)}`} · key ${key}` : `New buyer · key ${key}`;
-}
-
-/** The full detail under the select: who, the whole key fingerprint, when it came. */
-function keyDetail(book: Book, k: { invoice_pk: string; mailbox_pk: string; at: number }): string {
-  const c = contactFor(book, k.mailbox_pk);
-  const who = c ? `${c.username ? `@${c.username}, ` : ""}buyer ${c.fingerprint}` : "a buyer not in your contacts yet";
-  return `Key ${readablePrint(k.invoice_pk)} from ${who}, came ${new Date(k.at).toLocaleDateString()}.`;
-}
 
 export function NewInvoicePage(): ReactNode {
   const deals = useDeals();
@@ -64,25 +50,28 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
   const art = useRef<SVGGElement>(null);
   const pdf = useRef<HTMLInputElement>(null);
   const typed = useRef<HTMLInputElement>(null);
-  const [buyer, setBuyer] = useState<string>(() => book.keys[0]?.invoice_pk ?? MANUAL);
-  const [sendTo, setSendTo] = useState<string>("");
+  // user test 2026-10-27: each key with the mailbox its letter came from, named apart; a used key
+  // is marked and not offered; a contact with no key yet says so (lib/key-match.ts)
+  const choices = keyChoices(book.keys, book.contacts, book.cards, deals);
+  const first = defaultChoice(choices);
+  const [buyer, setBuyer] = useState<string>(first);
   const [file, setFile] = useState<{ name: string; hash: string } | null>(null);
   const out = useOut();
   const shown = useDid("/supplier/invoices/new");
-  const buyers = book.contacts.filter((c) => c.role === "buyer");
   // a key that arrives while the page is open is chosen, unless the supplier picked one
   const picked = useRef(false);
   useEffect(() => {
-    if (!picked.current && book.keys[0]) setBuyer(book.keys[0].invoice_pk);
-  }, [book.keys]);
+    if (!picked.current) setBuyer(first);
+  }, [first]);
 
-  const arrived = book.keys.find((k) => k.invoice_pk === buyer);
+  const choice = choices.find((c) => c.value === buyer) ?? choices.find((c) => c.value === HAND)!;
+  const arrived = choice.kind === "key" && !choice.disabled ? book.keys.find((k) => k.invoice_pk === choice.invoice_pk) : undefined;
   const toSlot = (
     <div className="sk-buyer">
-      {book.keys.length ? (
+      {choices.length > 1 ? (
         <select
           aria-label="The buyer this invoice is for"
-          value={buyer}
+          value={choice.value}
           aria-invalid={bad.includes("buyer") || undefined}
           onChange={(e) => {
             picked.current = true;
@@ -90,31 +79,27 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
             setBad([]);
           }}
         >
-          {book.keys.map((k) => (
-            <option key={k.invoice_pk} value={k.invoice_pk}>
-              {keyLabel(book, k)}
+          {choices.map((c) => (
+            <option key={c.value} value={c.value} disabled={c.disabled}>
+              {c.label}
             </option>
           ))}
-          <option value={MANUAL}>Another buyer: write their key by hand</option>
         </select>
       ) : (
         <small className="sk-buyer-none">No buyer's key yet. Share your contact with the buyer: they send their key back, and it lands here.</small>
       )}
-      {arrived ? <small className="sk-buyer-detail">{keyDetail(book, arrived)}</small> : null}
-      {buyer === MANUAL ? (
+      {choices.length > 1 ? <small className={choice.kind === "contact" ? "sk-buyer-detail is-ask" : "sk-buyer-detail"}>{choice.detail}</small> : null}
+      {choice.kind === "contact" ? (
+        <Link className="sk-buyer-ask" to="/supplier/contacts" search={{ share: 1 } as never}>
+          Ask them for their next invoice key: share your contact
+        </Link>
+      ) : null}
+      {choice.kind === "hand" ? (
         <span className="sk-buyer-hand">
           <input type="text" spellCheck="false" autoComplete="off" aria-label="The buyer's invoice key, from their screen" placeholder="the buyer's invoice key, from their screen" aria-invalid={bad.includes("buyer") || undefined} ref={typed} onInput={() => bad.length && setBad([])} />
-          <select aria-label="Where it goes to be signed" value={sendTo} onChange={(e) => setSendTo(e.target.value)}>
-            <option value="">{buyers.length ? "Send it to: choose the buyer's card" : "Send it to: no buyer card yet (hand it over)"}</option>
-            {buyers.map((c) => (
-              <option key={c.mailbox_pk} value={c.mailbox_pk}>
-                {`${c.username ? `@${c.username}` : "Buyer"} · ${c.fingerprint}`}
-              </option>
-            ))}
-          </select>
         </span>
       ) : null}
-      <small>{arrived ? "to this buyer's key for this invoice; it goes back to their inbox to sign" : "to the buyer's key for this invoice"}</small>
+      <small>{arrived ? "to this buyer's key for this invoice; it goes back to the mailbox it came from to sign" : "to the buyer's key for this invoice"}</small>
     </div>
   );
   const termsSlot = (
@@ -148,8 +133,12 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
       let buyerPk: string;
       let mailbox: string | undefined;
       if (arrived) {
+        // the key and the mailbox its letter came from, as one
         buyerPk = arrived.invoice_pk;
         mailbox = arrived.mailbox_pk;
+      } else if (choice.kind === "contact") {
+        setBad(["buyer"]);
+        throw new Error(`${choice.label.replace(/: no key from them yet$/, "")} has not sent you a key for this invoice yet. Ask them for their next invoice key: it lands on the 御中 line.`);
       } else {
         buyerPk = (typed.current?.value ?? "").trim().toLowerCase();
         if (!HEX64.test(buyerPk)) {
@@ -157,7 +146,9 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           typed.current?.focus();
           throw new Error("Write the buyer's invoice key on the 御中 line: copy it whole from the buyer's screen, or ask the buyer to send it to your inbox.");
         }
-        mailbox = sendTo || undefined;
+        if (deals.some((d) => d.buyer_pk === buyerPk)) throw new Error("This key was used for another invoice already: a key is for one invoice only. Ask the buyer for their next invoice key.");
+        // a key written by hand never borrows a contact's mailbox; one that came in a letter keeps its own
+        mailbox = book.keys.find((k) => k.invoice_pk === buyerPk)?.mailbox_pk;
       }
       const f = pdf.current!.files?.[0];
       if (!f) {

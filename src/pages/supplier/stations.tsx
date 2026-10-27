@@ -20,6 +20,7 @@ import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
 import { daysToDate, fileHash, json, wasm, zatToZec, zecToZat } from "../../lib/core";
 import { rank, recordLine, verifyDirectory, type Directory, type Fit } from "../../lib/directory";
+import { knownMailbox } from "../../lib/key-match";
 import { NET } from "../../lib/network";
 import { readablePrint } from "../../lib/print";
 import { PROVIDER } from "../../lib/provider";
@@ -170,6 +171,9 @@ function SignatureWork(p: WorkProps): ReactNode {
       let mailbox = d.buyer_mailbox ?? to;
       if (!mailbox && card.current?.value.trim()) mailbox = (await takeContact(card.current.value, "buyer")).mailbox_pk;
       if (!mailbox) throw new Error("Choose the buyer to send it to: from your contacts, or paste their contact card.");
+      // user test 2026-10-27: a key that came in another buyer's letter never goes to this mailbox
+      const other = d.buyer_mailbox ? null : knownMailbox(d.buyer_pk, mailbox, book?.keys ?? []);
+      if (other) throw new Error(`This invoice is for key ${readablePrint(d.buyer_pk)}, which came from the mailbox ${readablePrint(other)}, not this buyer's: they could not open it. Send it to the buyer who sent that key.`);
       const file = held ?? pdf.current?.files?.[0];
       if (!file) throw new Error("Choose the invoice PDF: the same file you wrote the invoice with.");
       const terms = json<{ terms_hash: string }>(wasm.invoiceDecode(d.invoice)).terms_hash;
@@ -283,14 +287,17 @@ function SignatureWork(p: WorkProps): ReactNode {
                 <small>The buyer's key came from this mailbox: the invoice goes back to it.</small>
               </>
             ) : buyers.length ? (
-              <select aria-label="The buyer to send it to" value={to} onChange={(e) => setTo(e.target.value)}>
-                <option value="">Choose a buyer from your contacts</option>
-                {buyers.map((c) => (
-                  <option key={c.mailbox_pk} value={c.mailbox_pk}>
-                    {`${c.username ? `@${c.username}` : "Buyer"} · ${c.fingerprint}${c.verified_at ? "" : " (not compared yet)"}`}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select aria-label="The buyer to send it to" value={to} onChange={(e) => setTo(e.target.value)}>
+                  <option value="">Choose a buyer from your contacts</option>
+                  {buyers.map((c) => (
+                    <option key={c.mailbox_pk} value={c.mailbox_pk}>
+                      {`${c.username ? `@${c.username}` : "Buyer"} · ${c.fingerprint}${c.verified_at ? "" : " (not compared yet)"}`}
+                    </option>
+                  ))}
+                </select>
+                <small>{`This invoice is for key ${readablePrint(d.buyer_pk)}, written by hand. Send it only to the buyer who showed you that key: compare it with Invoices → Your next invoice key on their screen.`}</small>
+              </>
             ) : (
               <small>No buyer in your contacts yet: paste their contact card below.</small>
             )}

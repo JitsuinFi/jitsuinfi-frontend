@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page } from "../../app/AppShell";
 import { LongList } from "../../app/LongList";
+import { WaitingRows } from "../../app/WaitingRows";
 import { DidLine, useDid } from "../../app/outcome";
 import { daysToDate, zatToZec } from "../../lib/core";
 import { dealPath } from "../../lib/deal-ref";
@@ -83,6 +84,8 @@ export function InvoicesPage(): ReactNode {
           <Caption title="Invoices" lede={LEAD} deals={deals} />
           <section className="ia-vis" aria-label="Your deals">
             {shown ? <DidLine did={shown} /> : null}
+            {/* user test 2026-10-27: letters waiting in the inbox show here too, with their action */}
+            <WaitingRows role="supplier" />
             <div className="ia-book">
               <section className="sp-ledger" aria-labelledby="sp-led">
                 <div className="sp-ledger-h">

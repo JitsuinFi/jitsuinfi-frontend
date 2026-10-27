@@ -158,3 +158,21 @@ export function leadPath(lead: Lead, ref?: string): { to: string; at?: StationKe
       return ref ? { to: `/supplier/deal/${ref}`, at: lead.station } : { to: "/supplier/deal" };
   }
 }
+
+// ---------- letters waiting on a ledger (user test 2026-10-27) ----------
+// An invoice waiting in the inbox was found only behind the bell. The role's ledger (the buyer's
+// Invoices, the supplier's Invoices, the fund member's Units) now lists the letters whose action
+// leads into that section as rows at its top, running the same action as the panel.
+
+/** The kinds of lead each role's ledger shows as "Waiting for you" rows. */
+const LEDGER_LEADS: Record<Role, ReadonlyArray<Lead["kind"]>> = {
+  buyer: ["invoice"],
+  supplier: ["deal", "new-invoice"],
+  member: ["units"],
+};
+
+/** Whether a letter of `type` shows as a waiting row on `role`'s ledger. */
+export function onLedger(role: Role, type: string): boolean {
+  const a = letterAction(role, type);
+  return !!a && LEDGER_LEADS[role].includes(a.lead.kind);
+}

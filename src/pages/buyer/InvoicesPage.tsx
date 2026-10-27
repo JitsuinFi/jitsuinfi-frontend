@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
 import { LongList } from "../../app/LongList";
+import { WaitingRows } from "../../app/WaitingRows";
 import { DidLine, useDid } from "../../app/outcome";
 import { buyerStage, hasSlip } from "../../lib/buyer-invoices";
 import { invoicePath, slipPath } from "../../lib/deal-ref";
@@ -54,6 +55,8 @@ export function InvoicesPage(): ReactNode {
           </div>
           <div className="rp-vis">
             {shown ? <DidLine did={shown} /> : null}
+            {/* user test 2026-10-27: an invoice waiting in the inbox shows here too, with its action */}
+            <WaitingRows role="buyer" />
             <div className="rp-list-h">
               <h2>
                 <b lang="ja" className="by-led-k">

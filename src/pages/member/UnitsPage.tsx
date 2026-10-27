@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { Page, usePhone } from "../../app/AppShell";
 import { useKept, useKeptState } from "../../app/kept";
 import { LongList } from "../../app/LongList";
+import { WaitingRows } from "../../app/WaitingRows";
 import { DidLine, useDid } from "../../app/outcome";
 import { Banner, Button, useOut } from "../../app/ui";
 import { QrPlate } from "../../app/QrPlate";
@@ -298,6 +299,8 @@ export function UnitsPage(): ReactNode {
           </div>
           <div className="rp-vis">
             {shown ? <DidLine did={shown} /> : null}
+            {/* user test 2026-10-27: letters waiting in the inbox show here too, with their action */}
+            <WaitingRows role="member" />
             <div className="fm-tray" role="status" aria-live="polite">
               {failed ? (
                 <Banner kind="bad" title="Your units could not be read" text={failed} />

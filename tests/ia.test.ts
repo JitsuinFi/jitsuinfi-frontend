@@ -137,7 +137,8 @@ test("the inbox panel routes each supplier letter to the page its action needs, 
   assert.deepEqual(letterAction("supplier", "deal.letter")!.lead, { kind: "deal", station: "seal" });
   assert.deepEqual(letterAction("supplier", "deal.advance")!.lead, { kind: "deal", station: "advance" });
   assert.deepEqual(letterAction("supplier", "deal.decline")!.lead, { kind: "deal", station: "offer" });
-  assert.deepEqual(letterAction("supplier", "deal.bundle"), { label: "Keep it", lead: { kind: "panel" }, goes: "done here; the deal shows 済" });
+  assert.deepEqual(letterAction("supplier", "deal.bundle"), { label: "Keep it", lead: { kind: "deal", station: "settled" }, goes: "opens the deal at 済" });
+  assert.deepEqual(leadPath({ kind: "deal", station: "settled" }, "d1"), { to: "/supplier/deal/d1", at: "settled" });
   assert.equal(letterAction("supplier", "invoice.sign_request"), null, "a buyer's letter: shown, nothing to do here");
   assert.equal(letterAction("supplier", "made.up"), null);
   assert.deepEqual(leadPath({ kind: "deal", station: "entry" }, "k3m9q2x7ab"), { to: "/supplier/deal/k3m9q2x7ab", at: "entry" });

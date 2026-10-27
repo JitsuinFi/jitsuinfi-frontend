@@ -451,7 +451,16 @@ function OfferWork(p: WorkProps): ReactNode {
                     put(adv.current, zatToZec(advanceSuggestion(d.amount_zat, f.listing.mandate)));
                   }}
                 >
-                  {picked === f.listing.financier_pk ? "Chosen" : "Offer to this financier"}
+                  {picked === f.listing.financier_pk ? (
+                    <>
+                      <svg className="fd-tick" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M3 8.5l3 3 7-7" />
+                      </svg>
+                      Chosen
+                    </>
+                  ) : (
+                    "Offer to this financier"
+                  )}
                 </button>
                 <span className="fd-m">{`${zatToZec(m.min_zat)} – ${zatToZec(m.max_zat)} ZEC · up to ${m.max_tenor_days} days${m.buyer_kyc ? " · buyers it knows from KYC" : ""}`}</span>
                 <span className="fd-why">{f.fits ? "Fits this invoice." : f.misses.join("; ")}</span>
@@ -486,9 +495,11 @@ function OfferWork(p: WorkProps): ReactNode {
         <Field label="Advance you ask (ZEC)" inputMode="decimal" value={zatToZec(advanceSuggestion(d.amount_zat))} help={`Prefilled at ${Math.round(DEFAULT_ADVANCE_RATIO * 100)} % of the invoice (${zatToZec(d.amount_zat)} ZEC), or the chosen financier's usual share. Change it if you agreed otherwise.`} inputRef={adv} />
         <div className="field sp-addr">
           <label className="sp-addr-lab" htmlFor="sp-addr-in">Where you want the advance paid</label>
-          {/* mobile E2E 2026-10-27, finding 7: the saved address in one tap, or a scan of the wallet's receive QR */}
-          <span className="sp-addr-quick">
-            {suggest ? (
+          {/* mobile E2E 2026-10-27, finding 7: the saved address in one tap, or a scan of the wallet's receive QR;
+              mobile E2E 2, finding 3: a first-time supplier scans first (a shielded address is about 145
+              characters to paste), and pasting is the second way */}
+          {suggest ? (
+            <span className="sp-addr-quick">
               <button
                 type="button"
                 className="sp-pill sp-addr-last"
@@ -500,21 +511,22 @@ function OfferWork(p: WorkProps): ReactNode {
                 Use my saved address
                 <small>{`${suggest.slice(0, 10)}…${suggest.slice(-6)}`}</small>
               </button>
-            ) : null}
-            <ScanButton
-              what="your wallet's receive QR"
-              label="Scan my wallet's QR"
-              onPaste={() => addr.current?.focus()}
-              onRead={(t) => {
-                const a = addressFromScan(t, addressProblem);
-                put(addr.current, a);
-                setAddrSay(null);
-              }}
-            />
-          </span>
+              <ScanButton what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
+            </span>
+          ) : (
+            <span className="sp-addr-first">
+              <span className="sp-addr-scan">
+                <ScanButton what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
+              </span>
+              <small className="sp-addr-why">Your wallet app shows a QR for your shielded address.</small>
+              <span className="sp-addr-or" aria-hidden="true">
+                or paste it
+              </span>
+            </span>
+          )}
           <input id="sp-addr-in" type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={() => addrSay && setAddrSay(null)} />
           <small id="sp-addr-say" className={addrSay ? "is-bad" : undefined} role={addrSay ? "alert" : undefined}>
-            {addrSay ?? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.`}
+            {addrSay ?? (suggest ? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.` : `It starts with ${NET.addressHint}; this app does not hold your wallet. A new address for every deal keeps your deals apart.`)}
           </small>
         </div>
       </div>

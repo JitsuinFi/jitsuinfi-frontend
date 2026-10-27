@@ -1,7 +1,7 @@
 // The app's parts as React components (HNK-31): the same markup and class names as the DOM
 // helpers of src/lib/ui.ts and src/pages/desk.ts had, so the stylesheets apply unchanged.
-// No innerHTML for user data; the only parsed markup is SVG drawn by our own wasm (TrustedSvg).
-import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
+// No innerHTML and no parsed markup: the QR is drawn as React SVG from its modules (QrPlate.tsx).
+import { useState, type ReactNode, type Ref } from "react";
 import { explain } from "../lib/explain";
 import { download } from "../lib/download";
 
@@ -142,14 +142,4 @@ export function Kv({ rows }: { rows: Array<[string, string, boolean?]> }): React
       </tbody>
     </table>
   );
-}
-
-/** SVG produced by our own wasm (the QR renderer), never user-provided markup. */
-export function TrustedSvg({ svg }: { svg: string }): ReactNode {
-  const wrap = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
-    wrap.current!.replaceChildren(...(root.nodeName.toLowerCase() === "svg" ? [document.importNode(root, true)] : []));
-  }, [svg]);
-  return <div className="qr" ref={wrap} />;
 }

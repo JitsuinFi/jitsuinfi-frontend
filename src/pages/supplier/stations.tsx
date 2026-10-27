@@ -10,6 +10,8 @@
 // The copy says what a thing is, not its encoding: keys show as fingerprints.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Actions, Banner, Button, CodeBlock, Field, FileField, Kv, useOut } from "../../app/ui";
+import { ScanButton } from "../../app/Scanner";
+import { routeScan } from "../../lib/scan";
 import { act, checkInbox, letGo, lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { setDid } from "../../app/outcome";
@@ -304,6 +306,17 @@ function SignatureWork(p: WorkProps): ReactNode {
           <summary>Paste the buyer's contact link or card</summary>
           <div className="sp-fold-body">
             <Field label="The buyer's contact link or card" area placeholder="https://…/app/contact#… or jitsuin-contact-v1:…" help="Compare its fingerprint with the buyer before you send. It is kept in your contacts." inputRef={card} />
+            {/* a scanned contact QR fills the field; sending stays the person's own press */}
+            <div className="actions">
+              <ScanButton
+                what="the buyer's contact QR"
+                onPaste={() => card.current?.focus()}
+                onRead={(t) => {
+                  routeScan(t);
+                  card.current!.value = t;
+                }}
+              />
+            </div>
           </div>
         </details>
       ) : null}

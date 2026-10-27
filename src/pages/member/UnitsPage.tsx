@@ -10,7 +10,8 @@ import { Page, usePhone } from "../../app/AppShell";
 import { useKept, useKeptState } from "../../app/kept";
 import { LongList } from "../../app/LongList";
 import { DidLine, useDid } from "../../app/outcome";
-import { Banner, Button, TrustedSvg, useOut } from "../../app/ui";
+import { Banner, Button, useOut } from "../../app/ui";
+import { QrPlate } from "../../app/QrPlate";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { wasm, zecToZat } from "../../lib/core";
 import { download } from "../../lib/download";
@@ -109,6 +110,12 @@ function Slip({ x, i }: { x: Holding; i: number }): ReactNode {
   );
 }
 
+/** The amount a ZIP-321 request asks, as "0.01 ZEC" (or the words for a request without one). */
+function depositZec(uri: string | undefined): string {
+  const a = uri ? /[?&]amount=([0-9.]+)/.exec(uri)?.[1] : undefined;
+  return a ? `${a} ZEC` : "ZEC";
+}
+
 /**
  * HNK-30.T22: how a member pays in. The manager hands a fund card with a deposit address made for
  * this member; the member pays it from any shielded wallet (the QR is a plain ZIP-321 request),
@@ -189,8 +196,18 @@ function Deposit({ w }: { w: Wallet | null }): ReactNode {
             <dd>{fund ? <span className="fm-fp is-sub">{readablePrint(fund.fund_pk)}</span> : <span className="fm-quiet">—</span>}</dd>
           </div>
         </dl>
-        {req ? <TrustedSvg svg={req.svg} /> : <div className="fm-qr-veil">The QR shows once you enter an amount and press Show the deposit QR.</div>}
-        {req ? <p className="mono fm-uri">{req.uri}</p> : null}
+        <QrPlate
+          svg={req?.svg ?? null}
+          text={req?.uri ?? ""}
+          caption={`Deposit ${depositZec(req?.uri)} into the fund`}
+          print={fund ? { label: "Fund key", value: readablePrint(fund.fund_pk) } : undefined}
+          file="jitsuinfi-deposit"
+          copyLabel="Copy payment link"
+          wallet
+          shareTitle="Deposit into the fund"
+          veil={{ glyph: "入", text: "The QR shows once you enter an amount and press Show the deposit QR." }}
+          raw={{ label: "Payment request (ZIP-321)" }}
+        />
       </article>
     </div>
   );

@@ -9,6 +9,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Page } from "../../app/AppShell";
 import { useStoreVersion } from "../../app/store-change";
 import { Banner, Button, useOut } from "../../app/ui";
+import { ScanButton } from "../../app/Scanner";
+import { routeScan } from "../../lib/scan";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
 import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../../lib/buyer-history";
@@ -203,6 +205,16 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
           <textarea rows={2} spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="https://…/app/contact#… or jitsuin-contact-v1:…" ref={card} />
         </label>
         <div className="actions rp-small">
+          {/* a scanned contact QR fills the field; sending stays the person's own press */}
+          <ScanButton
+            what="the supplier's contact QR"
+            onPaste={() => card.current?.focus()}
+            onRead={(t) => {
+              routeScan(t);
+              card.current!.value = t;
+              out.clear();
+            }}
+          />
           <Button
             secondary
             onClick={async () => {

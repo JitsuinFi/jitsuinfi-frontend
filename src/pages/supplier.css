@@ -504,10 +504,6 @@
 .sp-tray details.mb-card > * + * { margin-top: 12px; }
 .sp-tray .copyrow { flex-wrap: wrap; }
 .sp-tray .copyrow .code { flex-basis: 100%; }
-.sp-tray .contact-qr { display: grid; justify-items: center; padding: 10px 0 2px; max-width: none; background: none; border-radius: 0; }
-.sp-tray .contact-qr[hidden] { display: none; }
-.sp-tray .qr { padding: 10px; border-radius: 14px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); }
-.sp-tray .qr svg { width: 148px; height: 148px; }
 .sp-tray .contacts { display: grid; gap: 10px; margin: 0; }
 .sp-tray .contacts p.hint { margin: 0; font: 400 12px/1.45 var(--f-body); color: var(--ink-2); }
 .sp-tray .contacts .deals { display: grid; gap: 0; }

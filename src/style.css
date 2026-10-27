@@ -222,8 +222,6 @@ table.kv td.mono { font: 400 12.5px/1.5 var(--f-mono); word-break: break-all; }
 
 /* rate index (HNK-08.T3): a table of classes in an inset well that scrolls on its own on phones */
 
-.qr { background: var(--sheet); padding: 14px; display: inline-block; border-radius: var(--r-sheet); box-shadow: var(--sheet-shadow); }
-.qr svg { width: 260px; height: 260px; display: block; }
 
 footer { color: var(--ink-2); font-size: 12px; text-align: center; padding: var(--s-3) var(--gutter) calc(var(--s-3) + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
 footer p { margin: 0; }
@@ -311,9 +309,6 @@ footer .foot-links a { font-weight: 500; text-decoration-thickness: 1px; }
 .banner .banner-detail { display: block; margin-top: 4px; font: 400 11px/1.4 var(--f-mono, ui-monospace, monospace); opacity: .7; overflow-wrap: anywhere; }
 
 /* HNK-22.T5: the contact card as a QR, and the contacts kept on this device */
-.contact-qr[hidden] { display: none; }
-.contact-qr { display: grid; place-items: center; padding: 12px; background: #fff; border-radius: 8px; max-width: 280px; }
-.contact-qr svg { width: 100%; height: auto; }
 .contacts { display: grid; gap: 10px; margin-top: 12px; }
 .contacts textarea { width: 100%; font-family: var(--f-mono, ui-monospace, monospace); }
 

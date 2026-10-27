@@ -17,12 +17,13 @@ import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../..
 import { contactId, contactName, type Contact } from "../../lib/contact";
 import { sendKeyTo } from "../ContactAdd";
 import { json, today, wasm } from "../../lib/core";
+import { keyTakenNote } from "../../lib/key-match";
 import { NET } from "../../lib/network";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, signingBytes, type Header } from "../../lib/relay-message";
 import { myContact, takeContact } from "../MailboxCard";
-import { backupHistory, backupProblem, chainState, changed, loadHistory, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
+import { backupHistory, backupProblem, chainState, changed, loadHistory, loadInvoices, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
@@ -106,6 +107,9 @@ async function showKey(boardFile: File | undefined): Promise<void> {
       }
       said.push({ kind: "warn", title: "Not checked against the board.", text: "The board could not be read just now. Try again in a moment." });
     }
+    // messy-state E2E 2026-10-27: invoices on this device that already name this key
+    const taken = keyTakenNote(k, (await loadInvoices().catch(() => [])).filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature })));
+    if (taken) said.push(taken);
     const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
     setKeyInfo({ id, k, next, notes: said, anchored });
     changed();

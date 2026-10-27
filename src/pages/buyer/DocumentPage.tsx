@@ -16,7 +16,7 @@ import { LongList } from "../../app/LongList";
 import { clearDid, DidLine, useDid } from "../../app/outcome";
 import { Banner, Button, CodeBlock, useOut } from "../../app/ui";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
-import { checkInvoice, type CheckResult } from "../../lib/buyer-check";
+import { checkInvoice, signedWithKey, type CheckResult } from "../../lib/buyer-check";
 import { buyerStage, invoiceRecord, nextAction, routeDone, withSignature, type BuyerAction } from "../../lib/buyer-invoices";
 import { letterChecks, letterProblems, type LetterCheck } from "../../lib/buyer-letter";
 import { daysToDate, fileHash, json, wasm, zatToZec } from "../../lib/core";
@@ -230,7 +230,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       const hash = file ? await fileHash(file) : null;
       // an invoice kept on this device was matched to its key when it arrived (one passkey touch)
       const keyIndex = own ? own.key_index : await findKeyIndex(invoice);
-      const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex });
+      const r = checkInvoice({ termsHash: String(f.terms_hash), fileHash: hash, keyIndex, sameKey: keyIndex === null ? [] : signedWithKey(keyIndex, String(f.nullifier), list) });
       if (keyIndex !== null) {
         const d = { nullifier: String(f.nullifier), invoice_id: String(f.invoice_id), amount_zat: Number(f.amount_zat), due_date: Number(f.due_date) };
         await saveInvoice((prev) => invoiceRecord(d, invoice, keyIndex, r.canSign, Date.now(), prev), d.nullifier);

@@ -137,6 +137,15 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-ib-check small { font: 400 12px/1.4 var(--f-body); color: var(--ink-2); }
 .ia-ib-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 22px 22px; }
 .ia-ib-empty, .ia-ib-refused { margin: 8px 0; font: 400 13.5px/1.5 var(--f-body); color: var(--ink-2); }
+/* a phone: the top letter's action in the sheet's bottom area (mobile E2E 2, finding 8) */
+.ia-ib-pin { display: grid; gap: 6px; padding: 12px 22px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--rule); background: var(--paper); box-shadow: 0 -8px 20px rgba(70, 29, 58, .06); }
+.ia-ib-pin-what { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 14px/1.3 var(--f-body); color: var(--head); min-width: 0; }
+.ia-ib-pin-what b { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--seal); color: var(--seal); font: 800 13px/1 var(--f-seal); }
+.ia-ib-pin-what span { overflow-wrap: anywhere; }
+.ia-ib-pin button { min-height: 48px; width: 100%; padding: 0 18px; border: 0; border-radius: 999px; background: var(--seal); color: var(--sheet); cursor: pointer; font: 600 15px/1 var(--f-body); }
+.ia-ib-pin button:disabled { opacity: .7; cursor: progress; }
+.ia-ib-pin small { font: 400 12px/1.35 var(--f-body); color: var(--ink-2); text-align: center; }
+.ia-letter .ia-pin-note { margin-top: 8px; }
 .ia-ib-foot { padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--rule); background: var(--paper); }
 .ia-ib-foot a { display: flex; align-items: baseline; gap: 10px; font: 500 14px/1.3 var(--f-body); color: var(--head); text-decoration: none; }
 .ia-ib-foot a b { font: 700 15px/1 var(--f-seal); color: var(--seal); }
@@ -465,4 +474,13 @@ button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9e
    (mobile E2E 2026-10-27, finding 8: Continue covered the Email field on sign-up) */
 @media (max-width: 599px) {
   html:has(.ac .ac-act > .ac-btn), html:has(.sp .ia-new-go), html:has(.ap .ap-act), html:has(.fi .fi-actions) { scroll-padding-bottom: calc(var(--tabbar-h) + 88px + env(safe-area-inset-bottom, 0px)); }
+  /* the field itself keeps the bar's height below it when anything scrolls it into view */
+  .ac input, .sp input, .ap input, .fi input { scroll-margin-bottom: calc(var(--tabbar-h) + 96px + env(safe-area-inset-bottom, 0px)); }
+  /* mobile E2E 2, finding 2: a sticky Continue still sat over Email (sign-up) and Username (the
+     contact link's sign-up) while the page stood still. A card with fields to write keeps its
+     button in the flow, right after the last field (the seal seat moves below it), so the
+     button never floats over a field; the passkey steps, with nothing to write, keep it sticky */
+  .ac .ac-card.has-fields .ac-body { display: contents; }
+  .ac .ac-card.has-fields .ac-seat { order: 9; }
+  .ac .ac-card.has-fields .ac-act > .ac-btn { position: static; box-shadow: none; }
 }

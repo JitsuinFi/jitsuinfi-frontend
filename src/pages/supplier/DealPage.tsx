@@ -24,7 +24,7 @@ import { Seikyusho, type SheetFields } from "../try/Seikyusho";
 import { boardLine, invoiceFacts, isSettled, lastDeal, pdfOf, rememberDeal, useBoard, useBook, useDeals, type Book, type Deal } from "./data";
 import { LEDGER_LABELS, LedgerLine, ledgerWords } from "./InvoicesPage";
 import { freshN } from "./NewInvoicePage";
-import { AddBuyerBack, buyerName, isStation, nextLine, nowStation, ObjectDefs, Rail, STATION } from "./parts";
+import { BuyerLine, buyerName, isStation, nextLine, nowStation, ObjectDefs, Rail, STATION } from "./parts";
 import { StationWork } from "./stations";
 import { DockHere } from "../../app/Dock";
 import "../supplier.css";
@@ -170,9 +170,7 @@ function Desk({ d, deals, book, at }: { d: Deal; deals: Deal[]; book: Book | nul
       <div>
         <dt>Buyer</dt>
         <dd>
-          {who.name}
-          <code>{who.print}</code>
-          <AddBuyerBack book={book} mailbox={d.buyer_mailbox} />
+          <BuyerLine book={book} d={d} />
         </dd>
       </div>
       <div>
@@ -349,7 +347,7 @@ function DealSheet({ d, settled, stamp, who }: { d: Deal; settled: boolean; stam
           to: (
             <span className="sk-buyer is-read">
               <strong>{who.name}</strong>
-              <code>{who.print}</code>
+              {who.name.startsWith("Buyer key") ? null : <code>{who.print}</code>}
               <small>to the buyer's key for this invoice</small>
             </span>
           ),

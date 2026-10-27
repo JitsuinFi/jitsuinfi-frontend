@@ -110,7 +110,8 @@ const SUPPLIER: Partial<Record<MessageType, LetterAction>> = {
   "deal.commitment_opening": { label: "Use this entry request", lead: { kind: "deal", station: "entry" }, goes: `opens the deal at ${STATION_WORD.entry}` },
   "deal.letter": { label: "Keep the letter", lead: { kind: "deal", station: "seal" }, goes: `opens the deal at ${STATION_WORD.seal}` },
   "deal.advance": { label: "Note the advance", lead: { kind: "deal", station: "advance" }, goes: `opens the deal at ${STATION_WORD.advance}` },
-  "deal.bundle": { label: "Keep it", lead: { kind: "panel" }, goes: "done here; the deal shows 済" },
+  // mobile E2E 2, finding 7: the deal opens at 済, where "Check it on Verify" is on screen 1
+  "deal.bundle": { label: "Keep it", lead: { kind: "deal", station: "settled" }, goes: `opens the deal at ${STATION_WORD.settled}` },
 };
 
 const BUYER: Partial<Record<MessageType, LetterAction>> = {

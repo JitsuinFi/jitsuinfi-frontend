@@ -6,6 +6,8 @@ import { bundleVerdict, letterStatus } from "../src/lib/bundle-verdict.ts";
 
 test("only a sealed letter says every seal checks out", () => {
   assert.equal(bundleVerdict("Sealed").kind, "ok");
+  assert.equal(bundleVerdict("Sealed").title, "The deal is genuine");
+  for (const status of [null, "Sealed", "AwaitingSeal:Buyer"]) assert.doesNotMatch(`${bundleVerdict(status).title} ${bundleVerdict(status).text}`, /bundle|assignment|bytes/i);
   assert.match(bundleVerdict("Sealed").text, /every seal/);
   for (const status of [null, "AwaitingSeal:Supplier", "AwaitingSeal:Buyer", "AwaitingSeal:Financier"]) {
     assert.doesNotMatch(bundleVerdict(status).text, /every seal/, String(status));
@@ -23,7 +25,7 @@ test("an incomplete letter is a warning that names the missing seal", () => {
 test("no letter: the invoice is genuine, nothing more", () => {
   const v = bundleVerdict(null);
   assert.equal(v.title, "Invoice is genuine");
-  assert.match(v.text, /no assignment letter/);
+  assert.match(v.text, /no letter to a financier/);
   assert.equal(letterStatus(null), "not included");
   assert.throws(() => bundleVerdict("Garbage"));
 });

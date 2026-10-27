@@ -15,6 +15,7 @@ import { reducedMotion } from "../landing/motion";
 import { act, actionable, checkInbox, letGo, putAside, snapshot, subscribe, unread, type Done, type Letter } from "./inbox";
 import { LongList } from "./LongList";
 import { clearDid, setDid } from "./outcome";
+import { usePhone } from "./phone";
 
 export function useInbox() {
   return useSyncExternalStore(subscribe, snapshot);
@@ -33,13 +34,14 @@ export function arrive(l: Letter, done: Done & { to: NonNullable<Done["to"]> }):
   return done.to.at ? `${done.to.path}?at=${done.to.at}` : done.to.path;
 }
 
-function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead: (l: Letter) => void; leaving: boolean }): ReactNode {
+/** `pinned`: a phone shows this letter's action in the sheet's bottom area instead (PinnedAction). */
+function LetterRow({ l, role, onLead, leaving, pinned }: { l: Letter; role: Role; onLead: (l: Letter) => void; leaving: boolean; pinned?: boolean }): ReactNode {
   const s = useInbox();
   const t = l.r.message.header.type;
   const a = letterAction(role, t);
   const can = actionable(l, s.handlers) && a !== null;
   const done = l.state === "done";
-  const cls = ["ia-letter", l.fresh && !done ? "is-new" : "", done ? "is-done" : "", leaving ? "is-leaving" : "", !l.r.signatureOk ? "is-forged" : "", !can && l.r.signatureOk ? "is-idle" : ""].filter(Boolean).join(" ");
+  const cls = ["ia-letter", pinned ? "is-pinned" : "", l.fresh && !done ? "is-new" : "", done ? "is-done" : "", leaving ? "is-leaving" : "", !l.r.signatureOk ? "is-forged" : "", !can && l.r.signatureOk ? "is-idle" : ""].filter(Boolean).join(" ");
   return (
     <article className={cls} data-type={t}>
       <span className="ia-env" lang="ja" aria-hidden="true">
@@ -56,7 +58,9 @@ function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead
           <p>{l.about}</p>
         ) : null}
         {l.r.signatureOk && !done ? (
-          can ? (
+          can && pinned ? (
+            <small className="ia-goes ia-pin-note">{`${a.label}: its button is at the bottom of the inbox.`}</small>
+          ) : can ? (
             <div className="ia-acts">
               <button type="button" disabled={l.state === "busy"} aria-busy={l.state === "busy" || undefined} onClick={() => onLead(l)}>
                 {l.state === "busy" ? "Working…" : a.label}
@@ -122,6 +126,30 @@ function PutAside({ l }: { l: Letter }): ReactNode {
   );
 }
 
+/**
+ * Mobile E2E 2, finding 8: on a phone the top letter's action sits in the sheet's bottom area, in
+ * the thumb's reach, whatever the letter list scrolls to.
+ */
+function PinnedAction({ l, role, onLead }: { l: Letter; role: Role; onLead: (l: Letter) => void }): ReactNode {
+  const t = l.r.message.header.type;
+  const a = letterAction(role, t)!;
+  const busy = l.state === "busy";
+  return (
+    <div className="ia-ib-pin">
+      <p className="ia-ib-pin-what">
+        <b lang="ja" aria-hidden="true">
+          {letterGlyph(t)}
+        </b>
+        <span>{letterLabel(t, role, l.r.message.header.body)}</span>
+      </p>
+      <button type="button" disabled={busy} aria-busy={busy || undefined} onClick={() => onLead(l)}>
+        {busy ? "Working…" : a.label}
+      </button>
+      <small role={busy ? "status" : undefined}>{busy ? "Working on it. If your device asks for your passkey, confirm there." : a.goes}</small>
+    </div>
+  );
+}
+
 export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose: () => void; onLeave: (href: string) => void }): ReactNode {
   const s = useInbox();
   const panel = useRef<HTMLElement>(null);
@@ -176,6 +204,9 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
   };
 
   const n = unread(s);
+  const phone = usePhone();
+  // the top letter with an action (the list shows those first), while it can still be acted on
+  const top = phone && role ? (s.letters.find((l) => l.r.signatureOk && l.state !== "done" && actionable(l, s.handlers) && letterAction(role, l.r.message.header.type) !== null) ?? null) : null;
   const contacts = role ? SECTIONS[role].find((x) => x.to.endsWith("/contacts")) : undefined;
   return (
     <>
@@ -229,13 +260,14 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
               searchLabel="Search letters by invoice number"
               limit={6}
               className="ia-letters"
-              render={(l) => <LetterRow l={l} role={role} onLead={(x) => void lead(x)} leaving={leaving === l.r.relayId} />}
+              render={(l) => <LetterRow l={l} role={role} onLead={(x) => void lead(x)} leaving={leaving === l.r.relayId} pinned={top === l} />}
             />
           ) : (
             <p className="ia-ib-empty">Nothing new. Letters for your keys land here; each one carries its action.</p>
           )}
         </div>
-        {contacts ? (
+        {top && role ? <PinnedAction l={top} role={role} onLead={(x) => void lead(x)} /> : null}
+        {contacts && !top ? (
           <footer className="ia-ib-foot">
             <Link to={contacts.to} onClick={(e) => (e.preventDefault(), onLeave(contacts.to))}>
               <b lang="ja">名刺</b>Your contact card and contacts<span aria-hidden="true">→</span>

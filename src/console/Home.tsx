@@ -6,13 +6,14 @@
 // (the only dark object: it is where Zcash is) with four big numbers, and the selected deal's
 // paper file: the assignment letter over the 請求書, three seal boxes, index tabs per deal, the
 // route 照 署 登 印 金 済 as marks and the one action as the seal-red button.
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { download } from "../lib/download";
 import { explain, stopReason } from "../lib/explain";
 import { Act, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
 import { agoSec, bigStamp, doubleNote, dueDay, isDouble, ROUTE, seals, short, stations, tabOf, totals, WAITING, zec } from "./model";
 import { keepName } from "./name";
 import { approvePayment, contactFingerprint, get, post } from "./node";
+import { needs, refresher, updatedLine } from "./feed";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
 import { SignIn } from "./SignIn";
 import { Opened, TraySection } from "./Tray";
@@ -485,12 +486,9 @@ export function viewOf(hash: string): View {
 // a detail screen pushed from its list in this visit: its Back goes back in history
 let pushedDetail = false;
 
-/** What the person has to do now: offers to answer, then deals waiting for their action. */
-function NeedsYou({ deals, mail, open }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void }): ReactNode {
-  const offers = (mail ?? []).filter((m) => m.offer?.ok && !m.offer.accepted);
-  const acting = (deals ?? []).filter((d) => d.state === "Pay");
-  const moving = (deals ?? []).filter((d) => !["Pay", "Done", "Stopped"].includes(d.state));
-  const rest = (deals ?? []).filter((d) => !acting.includes(d) && !moving.includes(d));
+/** What the person has to do now: offers to answer, then deals waiting for their action (feed.ts `needs`). */
+function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string }): ReactNode {
+  const n = needs(deals, mail);
   const row = (key: string, glyph: string, what: string, line: string, go: string, act?: string) => (
     <li key={key}>
       <button type="button" className="cs-need" onClick={() => open(go)} title={`${what}: ${line}`}>
@@ -508,25 +506,34 @@ function NeedsYou({ deals, mail, open }: { deals: DealRow[] | null; mail: Mail[]
       </button>
     </li>
   );
-  const none = mail !== null && deals !== null && !offers.length && !acting.length && !moving.length;
   return (
     <>
       <div className="cs-needs-h">
         <h2>Needs you now</h2>
+        <button type="button" className={`cs-refresh${busy ? " is-busy" : ""}`} onClick={refresh} aria-busy={busy || undefined} aria-describedby="cs-updated">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" />
+          </svg>
+          {busy ? "Refreshing…" : "Refresh"}
+        </button>
+        <p className="cs-updated" id="cs-updated" role="status">
+          {updated}
+        </p>
       </div>
       <ul className="cs-needs" aria-label="Needs you now">
-        {offers.map((m) => row(m.relay_id, "売", `Financing offer · ${m.offer?.invoice_id ?? ""}`, `${zec(m.offer?.advance_zat ?? 0)} ZEC asked · ${m.offer?.mandate?.verdict === "breaks" ? "breaks your rules" : m.offer?.mandate?.verdict === "fits" ? "fits your rules" : "checked by your node"}`, `tray/${encodeURIComponent(m.relay_id)}`, "Accept or decline"))}
-        {acting.map((d) => row(d.n, "金", d.invoice_id, `Sealed by both · ${zec(d.advance_zat)} ZEC`, `deal/${d.n}`, "Pay the advance"))}
-        {moving.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`, "Move on"))}
+        {n.offers.map((m) => row(m.relay_id, "売", `Financing offer · ${m.offer?.invoice_id ?? ""}`, `${zec(m.offer?.advance_zat ?? 0)} ZEC asked · ${m.offer?.mandate?.verdict === "breaks" ? "breaks your rules" : m.offer?.mandate?.verdict === "fits" ? "fits your rules" : "checked by your node"}`, `tray/${encodeURIComponent(m.relay_id)}`, "Accept or decline"))}
+        {n.acting.map((d) => row(d.n, "金", d.invoice_id, `Sealed by both · ${zec(d.advance_zat)} ZEC`, `deal/${d.n}`, "Pay the advance"))}
+        {n.moving.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`, "Move on"))}
       </ul>
-      {none ? <p className="cs-note">Nothing waits for you. New offers arrive in the in-tray.</p> : mail === null || deals === null ? <p className="cs-note">Opening your desk…</p> : null}
-      {rest.length ? (
+      {n.none ? <p className="cs-note">Nothing waits for you. New offers arrive in the in-tray.</p> : n.loading ? <p className="cs-note">Opening your desk…</p> : null}
+      {n.accepted.length || n.rest.length ? (
         <>
           <div className="cs-needs-h">
             <h2>Your other deals</h2>
           </div>
           <ul className="cs-needs is-quiet" aria-label="Your other deals">
-            {rest.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`))}
+            {n.accepted.map((m) => row(m.relay_id, "受", m.offer?.invoice_id ?? "Accepted offer", "Accepted · waiting for the supplier's board entry", `tray/${encodeURIComponent(m.relay_id)}`))}
+            {n.rest.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`))}
           </ul>
         </>
       ) : null}
@@ -573,16 +580,25 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   const compact = useCompact();
   const lastTip = useRef<number | null>(null);
 
-  const loadMail = useCallback(async () => {
-    setMailNote("Opening sealed messages…");
+  // one source for the in-tray and the deals (mobile E2E 2, finding 1: the phone's Desk never
+  // refreshed): loaded together at sign-in, when the Desk or the In-tray comes into view, on focus,
+  // and every 30 s while the page is seen; two asks at once share one request (feed.ts)
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [feedErr, setFeedErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [, setTick] = useState(0);
+  const loadMail = useCallback(async (): Promise<string> => {
+    setMailNote((n) => n || "Opening sealed messages…");
     try {
       const j = await get<{ messages: Mail[]; refused: number }>("/node/mail");
       setMail(j.messages);
       setRefused(j.refused);
       const r = j.refused ? ` ${j.refused} could not be opened or were addressed elsewhere.` : "";
       setMailNote(j.messages.length ? r.trim() : `No messages.${r}`);
+      return "";
     } catch (e) {
       setMailNote(say(e));
+      return say(e);
     }
   }, []);
   const loadBoard = useCallback(async () => {
@@ -597,24 +613,46 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
       setBoardErr(say(e));
     }
   }, []);
-  const loadDeals = useCallback(async () => {
+  const loadDeals = useCallback(async (): Promise<string> => {
     try {
       const r = await get<{ deals: DealRow[] }>("/node/console/deals");
       setDeals(r.deals);
       setDealsNote("");
+      return "";
     } catch (e) {
       setDealsNote(say(e));
+      return say(e);
     }
-    void loadBoard();
-  }, [loadBoard]);
+  }, []);
+  const loadAll = useCallback(async () => {
+    setBusy(true);
+    const [m, d] = await Promise.all([loadMail(), loadDeals(), loadBoard()]);
+    setBusy(false);
+    const err = m || d;
+    setFeedErr(err ? `Could not update: ${err}` : "");
+    if (!err) setUpdatedAt(Date.now());
+  }, [loadMail, loadDeals, loadBoard]);
+  const feed = useMemo(() => refresher(loadAll, { visible: () => document.visibilityState === "visible" }), [loadAll]);
+  // after an action (Accept, Pay, Decline, Remove, a tap on Refresh) the lists follow at once
+  const refresh = useCallback(() => feed.run(true), [feed]);
 
   useEffect(() => {
-    void loadMail();
-    void loadDeals();
-    // the board scan moves on by itself: read its height again now and then while the page is seen
-    const t = setInterval(() => document.visibilityState === "visible" && void loadBoard(), 60_000);
-    return () => clearInterval(t);
-  }, [loadMail, loadDeals, loadBoard]);
+    // sign-in: load even when the tab opened in the background, then poll while it is seen
+    void feed.run();
+    feed.seen();
+    const vis = () => feed.visibility();
+    const focus = () => feed.seen();
+    // "Updated just now" stays true while the page is seen
+    const tick = setInterval(() => document.visibilityState === "visible" && setTick((n) => n + 1), 15_000);
+    document.addEventListener("visibilitychange", vis);
+    window.addEventListener("focus", focus);
+    return () => {
+      feed.stop();
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", vis);
+      window.removeEventListener("focus", focus);
+    };
+  }, [feed]);
 
   // the nav follows the section in view
   useEffect(() => {
@@ -647,13 +685,23 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
     if (compact) window.scrollTo(0, 0);
   }, [compact, hash]);
   const sec = compact ? view.sec : current;
+  // the Desk, the In-tray or a deal or letter screen came into view: read the node again now
+  const shown = compact ? hash : sec;
+  const firstShown = useRef(true);
+  useEffect(() => {
+    if (firstShown.current) {
+      firstShown.current = false;
+      return;
+    }
+    if (compact ? ["desk", "tray"].includes(view.sec) : sec === "desk" || sec === "tray") feed.seen();
+  }, [shown, feed]);
   const openMail = compact && view.open?.kind === "mail" ? (mail?.find((m) => m.relay_id === view.open!.id) ?? null) : null;
   const openDeal = compact && view.open?.kind === "deal" ? (deals?.find((d) => d.n === view.open!.id) ?? null) : null;
   const detail = compact && view.open ? (
     view.open.kind === "mail" ? (
       <section className="cs-sec cs-screen" id="tray" aria-label="Letter">
         <BackTo label="In-tray" onBack={back} />
-        {openMail ? <Opened key={openMail.relay_id} m={openMail} demo={demo} load={loadMail} /> : <p className="cs-note">{mail ? "This letter is no longer in the in-tray." : "Opening the letter…"}</p>}
+        {openMail ? <Opened key={openMail.relay_id} m={openMail} demo={demo} load={refresh} /> : <p className="cs-note">{mail ? "This letter is no longer in the in-tray." : "Opening the letter…"}</p>}
       </section>
     ) : (
       <section className="cs-sec cs-screen is-deal" id="desk" aria-labelledby="cs-deal-t">
@@ -665,7 +713,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
               <span>{`${zec(openDeal.amount_zat)} ZEC · due ${dueDay(openDeal.due_date)}`}</span>
             </h1>
             <div className="cs-desk cs-detail" aria-label={openDeal.invoice_id}>
-              <DealPaper key={openDeal.n} d={openDeal} name={name} demo={demo} load={loadDeals} paid={() => setBlink((n) => n + 1)} />
+              <DealPaper key={openDeal.n} d={openDeal} name={name} demo={demo} load={refresh} paid={() => setBlink((n) => n + 1)} />
             </div>
           </>
         ) : (
@@ -725,7 +773,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
               <span>{demo ? "Demo console: payments, invites, removals and the profile are off" : "Financier node · the keys and wallet stay on the node"}</span>
             </p>
             <h1 id="cs-desk-t">{name ? `Welcome, ${name}` : "Financier console"}</h1>
-            {compact ? <NeedsYou deals={deals} mail={mail} open={(h) => go(h)} /> : null}
+            {compact ? <NeedsYou deals={deals} mail={mail} open={(h) => go(h)} refresh={() => void refresh()} busy={busy} updated={updatedLine(updatedAt, Date.now(), busy, feedErr)} /> : null}
             <NodeSlab info={info} board={board} boardErr={boardErr} blink={blink} />
             <dl className="cs-totals" aria-label="Your desk at a glance">
               <div className="is-act">
@@ -751,12 +799,12 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
           </div>
           {compact ? null : (
             <div className="cs-vis">
-              <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={loadDeals} paid={() => setBlink((n) => n + 1)} />
+              <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={refresh} paid={() => setBlink((n) => n + 1)} />
             </div>
           )}
         </section>
         )}
-        {detail || (compact && sec !== "tray") ? null : <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={loadMail} onOpen={compact ? (id) => go(`tray/${encodeURIComponent(id)}`) : undefined} />}
+        {detail || (compact && sec !== "tray") ? null : <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={refresh} updated={compact ? updatedLine(updatedAt, Date.now(), busy, feedErr) : undefined} onOpen={compact ? (id) => go(`tray/${encodeURIComponent(id)}`) : undefined} />}
         {detail || (compact && sec !== "rules") ? null : <RulesSection name={name} mail={mail} demo={demo} />}
         {detail || (compact && sec !== "fund") ? null : <FundSection info={info} demo={demo} />}
         {detail || (compact && sec !== "keys") ? null : <KeysSection info={info} name={name} demo={demo} onName={setName} />}

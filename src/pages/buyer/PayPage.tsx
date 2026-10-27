@@ -83,6 +83,24 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
     }
   })();
   const late = lateState(r, today(), status);
+  // the payment lands in place, under the slip's facts, and its QR comes into view above the bottom
+  // bar (mobile E2E 2026-10-27, finding 3). Mobile E2E 2, finding 6: the scroll ran before the QR
+  // was drawn (the plate sizes itself first), so it now waits for the drawn QR, for up to a second
+  useEffect(() => {
+    if (!qr) return;
+    let frame = 0;
+    let n = 0;
+    const look = () => {
+      const q = plate.current?.querySelector<HTMLElement>(".qrp-plate:not(.is-veil)");
+      if (q) {
+        q.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        return;
+      }
+      if (++n < 60) frame = requestAnimationFrame(look);
+    };
+    frame = requestAnimationFrame(look);
+    return () => cancelAnimationFrame(frame);
+  }, [qr]);
   const pay = async () => {
     setBusy(true);
     try {
@@ -92,8 +110,6 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
       const res = json<{ uri: string; qr_svg: string }>(await withInvoiceIndex(r.invoice, (m, k) => wasm.buyerRepaymentBytes(m, k, r.invoice, a, today())));
       setQr({ svg: res.qr_svg, uri: res.uri, payTo: letter?.financier_address ?? "" });
       out.clear();
-      // the payment lands in place, under the slip's facts, and comes into view (mobile E2E 2026-10-27, finding 3)
-      requestAnimationFrame(() => plate.current?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
     } catch (e) {
       out.error(e);
     } finally {

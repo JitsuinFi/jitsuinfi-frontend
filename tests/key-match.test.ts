@@ -114,7 +114,8 @@ test("ledger rows: a letter shows on the ledger its action leads into", () => {
   assert.equal(onLedger("buyer", "history.request"), false, "History's, not the ledger's");
   assert.equal(onLedger("supplier", "invoice.signature"), true);
   assert.equal(onLedger("supplier", "key.invoice_pk"), true);
-  assert.equal(onLedger("supplier", "deal.bundle"), false);
+  // mobile E2E 2, finding 7: Keep it opens the deal at 済, so the bundle shows on the ledger too
+  assert.equal(onLedger("supplier", "deal.bundle"), true);
   assert.equal(onLedger("member", "fund.receipt"), true);
   assert.equal(onLedger("member", "invoice.sign_request"), false);
 });

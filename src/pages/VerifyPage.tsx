@@ -95,10 +95,10 @@ function inspectBundle(c: string, boardJson?: string): Inspection {
   const v = json<{ nullifier: string; invoice_id: string; amount_zat: number; due_date: number; assignment: string | null }>(first(() => wasm.verifyBundle(c)));
   const verdict = bundleVerdict(v.assignment);
   const checks: Check[] = [
-    { g: "seal", what: "Buyer's signature", found: "holds for these exact invoice bytes", stamp: "認" },
+    { g: "seal", what: "Buyer's signature", found: "holds for exactly this invoice", stamp: "認" },
     { g: "doc", what: "Invoice", found: v.invoice_id, stamp: "" },
     { g: "amount", what: "Amount", found: `${zatToZec(v.amount_zat)} ZEC, due ${daysToDate(v.due_date)}`, stamp: "" },
-    { g: "seals3", what: "Assignment letter", found: letterStatus(v.assignment), stamp: v.assignment === null ? "" : v.assignment === "Sealed" ? "認" : "待", open: openSeals(v.assignment) },
+    { g: "seals3", what: "Letter to the financier", found: letterStatus(v.assignment), stamp: v.assignment === null ? "" : v.assignment === "Sealed" ? "認" : "待", open: openSeals(v.assignment) },
     { g: "n", what: "Invoice fingerprint", found: v.nullifier, stamp: "", mono: true },
   ];
   let glyph: Hanko = verdict.kind === "ok" ? "真" : "未";
@@ -109,14 +109,14 @@ function inspectBundle(c: string, boardJson?: string): Inspection {
     const reg = b.register;
     const hit = [reg.txid, ...(reg.conflicting ?? [])].filter((x): x is string => !!x);
     if (reg.status === "DoubleFinanced") {
-      checks.push({ g: "board", what: "Registration", found: `registered for ${1 + (reg.conflicting?.length ?? 0)} financiers`, stamp: "重", hit });
+      checks.push({ g: "board", what: "On the public board", found: `registered for ${1 + (reg.conflicting?.length ?? 0)} financiers`, stamp: "重", hit });
       glyph = "重";
       title = "Double financing on the board";
       text = "The supplier registered this invoice for more than one financier.";
     } else if (reg.status === "Registered") {
-      checks.push({ g: "board", what: "Registration", found: `once, entry ${reg.txid?.slice(0, 16)}…`, stamp: "認", hit });
+      checks.push({ g: "board", what: "On the public board", found: "registered once, for one financier", stamp: "認", hit });
     } else {
-      checks.push({ g: "board", what: "Registration", found: "no register entry for this invoice", stamp: "待" });
+      checks.push({ g: "board", what: "On the public board", found: "not registered yet", stamp: "待" });
     }
     checks.push({ g: "settled", what: "Settled", found: b.settled ? `yes, ${b.settled.on_time ? "on time" : "late"}` : "no", stamp: b.settled ? "認" : "", hit: b.settled ? [b.settled.txid] : undefined });
   }
@@ -204,7 +204,7 @@ function refusedSheet(kind: "bundle" | "proof" | "exhibit", err: string): Inspec
         unread("amount", "Amount"),
         unread("seals3", "Assignment letter"),
         unread("n", "Invoice fingerprint"),
-        unread("board", "Registration"),
+        unread("board", "On the public board"),
         unread("settled", "Settled"),
       ]
     : [
@@ -292,8 +292,10 @@ export function VerifyPage(): ReactNode {
   const last = useRef<{ sheet: Sheet; park: number } | null>(null);
   const runId = useRef(0);
 
+  // mobile E2E 2, finding 9: on a phone the verdict's explanation is two lines, the rest under More
+  const [more, setMore] = useState(false);
   const speak = (s: Said) => {
-    flushSync(() => setSaid(s));
+    flushSync(() => (setSaid(s), setMore(false)));
     const t = vd.current?.querySelector(".vf-vd-t") ?? null;
     replay(t, "is-new");
   };
@@ -614,9 +616,16 @@ export function VerifyPage(): ReactNode {
               </span>
               <div className="vf-vd-t">
                 {said.title ? <strong className="vf-vd-title">{said.title}</strong> : null}
-                <p className="vf-vd-text">{said.text}</p>
-                {said.err ? <p className="vf-vd-err">{said.err}</p> : null}
-                {said.src ? <p className="vf-vd-src">{said.src}</p> : null}
+                <div className={`vf-vd-more${more ? " is-open" : ""}`} id="vf-vd-more">
+                  <p className="vf-vd-text">{said.text}</p>
+                  {said.err ? <p className="vf-vd-err">{said.err}</p> : null}
+                  {said.src ? <p className="vf-vd-src">{said.src}</p> : null}
+                </div>
+                {said.title && (said.src || said.text.length > 80) ? (
+                  <button type="button" className="vf-link vf-more" aria-expanded={more} aria-controls="vf-vd-more" onClick={() => setMore((m) => !m)}>
+                    {more ? "Less" : "More"}
+                  </button>
+                ) : null}
                 {said.tech?.length ? (
                   <details className="vf-tech">
                     <summary>Technical proof</summary>

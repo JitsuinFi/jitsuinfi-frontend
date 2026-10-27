@@ -267,11 +267,18 @@ export function Work({ glyph, step, title, hint, children }: { glyph: string; st
   );
 }
 
-/** The buyer in plain words: the name on their card, or the print of the mailbox the key came from. */
-export function buyerName(book: Book | null, d: { buyer_mailbox?: string; buyer_pk: string }): { name: string; print: string } {
+/**
+ * The buyer in plain words: the name on their card, or the print of the mailbox the key came from.
+ * Mobile E2E 2, finding 4: a buyer not in the contacts yet reads as one short line, the @name
+ * their key letter carried, or "Buyer key ABCD-EFGH", not a sentence plus the key on its own line.
+ */
+export function buyerName(book: Book | null, d: { buyer_mailbox?: string; buyer_pk: string }): { name: string; print: string; known: boolean } {
   const c = contactFor(book, d.buyer_mailbox);
-  if (c) return { name: c.username ? `@${c.username}` : "A buyer in your contacts", print: c.fingerprint };
-  return { name: d.buyer_mailbox ? "A buyer not in your contacts yet" : "The buyer", print: readablePrint(d.buyer_pk) };
+  if (c) return { name: c.username ? `@${c.username}` : "A buyer in your contacts", print: c.fingerprint, known: true };
+  const print = readablePrint(d.buyer_pk);
+  if (!d.buyer_mailbox) return { name: "The buyer", print, known: false };
+  const card = letterCardFor(book, d.buyer_mailbox);
+  return { name: card?.username ? `@${card.username}` : `Buyer key ${print}`, print, known: false };
 }
 
 /**
@@ -289,6 +296,47 @@ export function AddBuyerBack({ book, mailbox }: { book: Book | null; mailbox: st
     <button type="button" className="secondary sp-addback" onClick={() => setOpen(true)}>
       {`Add ${c.username ? contactName(c) : "this buyer"} to your contacts`}
     </button>
+  );
+}
+
+/**
+ * The buyer on a deal screen (mobile E2E 2, finding 4): a contact as name and key; a buyer not in
+ * the contacts yet as one line, "@buyer · Add to contacts" (or "Buyer key ABCD-EFGH · Add to
+ * contacts"), the add a text button that wraps inside the gutter.
+ */
+export function BuyerLine({ book, d }: { book: Book | null; d: { buyer_mailbox?: string; buyer_pk: string } }): ReactNode {
+  const [open, setOpen] = useState(false);
+  const who = buyerName(book, d);
+  const card = letterCardFor(book, d.buyer_mailbox);
+  if (who.known || !d.buyer_mailbox) {
+    return (
+      <>
+        {who.name}
+        <code>{who.print}</code>
+      </>
+    );
+  }
+  if (open && card) {
+    const { at: _at, ...c } = card;
+    return (
+      <>
+        <span className="sp-buyer-line">{who.name}</span>
+        <AddContact c={c} nameable onCancel={() => setOpen(false)} onAdded={() => setOpen(false)} />
+      </>
+    );
+  }
+  return (
+    <span className="sp-buyer-line" title={card?.username ? `Buyer key ${who.print}` : undefined}>
+      <span>{who.name}</span>
+      {card ? (
+        <>
+          <span aria-hidden="true">{" · "}</span>
+          <button type="button" className="sp-ink sp-buyer-add" onClick={() => setOpen(true)}>
+            Add to contacts
+          </button>
+        </>
+      ) : null}
+    </span>
   );
 }
 

@@ -833,6 +833,16 @@
 .sp .sp-addr-last { display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
 .sp .sp-addr-last small { font: 400 11.5px/1.2 var(--f-mono); opacity: .8; }
 .sp div.sp-addr { margin: 0 0 var(--s-2); }
+/* a first-time supplier (mobile E2E 2, finding 3): the wallet's QR first, with why; pasting second */
+.sp .sp-addr-first { display: grid; gap: 6px; }
+.sp .sp-addr-scan .qrs-open { width: 100%; justify-content: center; min-height: 48px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--seal-wash); color: var(--seal); box-shadow: inset 0 0 0 1.5px var(--seal); font: 600 15px/1 var(--f-body); cursor: pointer; }
+.sp .sp-addr-why { font: 400 13px/1.4 var(--f-body); color: var(--ink-2); }
+.sp .sp-addr-or { display: flex; align-items: center; gap: 10px; margin-top: 6px; font: 500 12.5px/1 var(--f-body); color: var(--ink-2); }
+.sp .sp-addr-or::after { content: ""; flex: 1; border-top: 1px solid var(--rule); }
+@media (min-width: 600px) { .sp .sp-addr-scan .qrs-open { width: auto; } }
+/* the chosen financier: a selected pill with a tick, not a second filled primary (finding 3) */
+.sp .fd-row .sp-pill[aria-pressed="true"] { background: var(--seal-wash); color: var(--seal); box-shadow: inset 0 0 0 1.5px var(--seal); }
+.sp .fd-tick { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* "Add @buyer to your contacts" wraps inside its column at 390 px (mobile E2E 2026-10-27, finding 8) */
 .sp .sp-addback { max-width: 100%; white-space: normal; text-align: left; overflow-wrap: anywhere; box-sizing: border-box; }
 .sp .ia-facts dd { min-width: 0; }
@@ -840,3 +850,9 @@
 .sp .ia-due-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
 .sp .ia-due-presets > span { font: 500 13.5px/1.3 var(--f-body); color: var(--head); margin-right: 4px; }
 .sp .ia-due-presets > button { min-height: 44px; padding: 0 16px; border-radius: 999px; }
+
+/* a buyer not in the contacts yet: one line, "@buyer · Add to contacts", wrapping inside the gutter
+   (mobile E2E 2, finding 4: the old pill was clipped at 392 px) */
+.sp .sp-buyer-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; max-width: 100%; overflow-wrap: anywhere; }
+.sp .sp-buyer-add { font-size: inherit; }
+@media (max-width: 599px) { .sp .sp-buyer-add { display: inline-flex; align-items: center; min-height: 44px; margin-block: -12px; } }

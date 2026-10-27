@@ -35,7 +35,7 @@ export function upFor(path: string, search: string, role: Role | null, phone: bo
   if (deal && at && phone) return { to: p, title: "the deal" };
   if (rootsFor(role).has(p)) return null;
   if (/^\/(supplier|buyer|member)$/.test(p) || p === "/") return null; // they open their first section
-  if (deal) return { to: "/supplier/invoices", title: "Invoices" };
+  if (deal) return { to: "/supplier/invoices", title: "All invoices" };
   if (p === "/supplier/deal") return null;
   if (p.startsWith("/supplier/invoices/")) return { to: "/supplier/invoices", title: "Invoices" };
   if (p.startsWith("/buyer/invoices/")) return { to: "/buyer/invoices", title: "Invoices" };
@@ -69,6 +69,20 @@ export function screenName(href: string, role: Role | null): string {
  */
 export function backTarget(up: Up, prev: string | null, path: string, search: string, role: Role | null): { kind: "history" | "up"; to: string; title: string } {
   const sub = !!atOf(search) && /^\/supplier\/deal\/[^/]+$/.test(clean(path));
-  if (prev && (!sub || clean(new URL(prev, "https://x.invalid").pathname) === clean(up.to))) return { kind: "history", to: prev, title: screenName(prev, role) };
+  const prevPath = prev ? clean(new URL(prev, "https://x.invalid").pathname) : null;
+  if (prev && sub && prevPath !== clean(up.to)) return { kind: "up", to: up.to, title: up.title };
+  // mobile E2E 2026-10-27: a deal, an invoice or a slip goes back to a list, Home or another of
+  // them; not to the form that made it (Write an invoice) nor to the screen the inbox sheet lay on
+  // (your invoice key): those go up to the list ("All invoices", "Invoices")
+  if (prev && prevPath && DETAIL.test(clean(path)) && !sub) {
+    const listLike = prevPath === clean(up.to) || DETAIL.test(prevPath) || (rootsFor(role).has(prevPath) && !FORMS.has(prevPath));
+    if (!listLike) return { kind: "up", to: up.to, title: up.title };
+  }
+  if (prev) return { kind: "history", to: prev, title: screenName(prev, role) };
   return { kind: "up", to: up.to, title: up.title };
 }
+
+/** Screens one step under a list: a deal, a buyer's invoice, a slip. */
+const DETAIL = /^\/(supplier\/deal\/[^/]+|buyer\/invoices\/(?!key$|by-hand$)[^/]+|buyer\/pay\/[^/]+)$/;
+/** Forms that make a record: the record's Back does not return to them. */
+const FORMS = new Set(["/supplier/invoices/new"]);

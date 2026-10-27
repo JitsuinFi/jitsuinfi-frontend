@@ -66,7 +66,17 @@ export function InvoicesPage(): ReactNode {
             {recs === "blocked" ? (
               <p className="rp-empty">This browser blocks local storage, so received invoices are not kept.</p>
             ) : recs !== null && !list.length ? (
-              <p className="rp-empty">No invoice yet. Give a supplier your next invoice key: the invoice they write arrives in your inbox to sign, and it is kept here, encrypted on this device.</p>
+              // an empty state with the next step (audit 2026-10-27, finding 16)
+              <div className="ia-none">
+                <b lang="ja" aria-hidden="true">
+                  帳
+                </b>
+                <strong>No invoices yet</strong>
+                <p>Give a supplier your next invoice key: the invoice they write arrives in your inbox to sign.</p>
+                <Link className="ia-none-go" to="/buyer/invoices/key">
+                  Show my next invoice key
+                </Link>
+              </div>
             ) : (
               <LongList
                 items={list}
@@ -80,7 +90,7 @@ export function InvoicesPage(): ReactNode {
               />
             )}
             <p className="ia-book-foot by-foot">
-              <span>Each line: the seals on its letter (売 買 融), and what it waits for.</span>
+              <span>Each line: its letter's seals (売 買 融) and what it waits for.</span>
               <Link to="/buyer/invoices/by-hand">An invoice code you were given by hand</Link>
             </p>
           </div>

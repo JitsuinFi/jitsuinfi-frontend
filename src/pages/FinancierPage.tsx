@@ -17,6 +17,7 @@ import { chainLinks, historyVerdict, type HistoryResult } from "../lib/financier
 import { NET } from "../lib/network";
 import { reducedMotion } from "../landing/motion";
 import "./financier.css";
+import { Lede } from "../app/Lede";
 
 type Area = HTMLInputElement & HTMLTextAreaElement;
 
@@ -221,19 +222,20 @@ export function FinancierPage(): ReactNode {
         <section className="fi-sec" id="fi-letter" aria-labelledby="fi-t">
           <div className="fi-cap">
             <p className="fi-eyebrow">
+              {/* 融, the financier's kanji in the lobby and the tour (audit 2026-10-27, finding 10) */}
               <span className="fi-stamp" lang="ja" aria-hidden="true">
-                証
+                融
               </span>
               Financier, in your browser
             </p>
             <h1 id="fi-t">Financier</h1>
-            <p className="fi-lede">Finance invoices that are provably not financed elsewhere, to buyers whose full history you can check.</p>
+            <Lede className="fi-lede">Finance invoices that are provably not financed elsewhere, to buyers whose full history you can check.</Lede>
             <div className="fi-warn" role="note">
               <i lang="ja" aria-hidden="true">
                 節
               </i>
               <b>Runs in your backend wallet</b>
-              <p>Board registration, waiting for confirmation, the Sign-to-Pay advance and the repayment watchdog need your shielded wallet. They run in the financier backend (jitsuin-flow); this page covers what the browser verifies.</p>
+              <Lede className="fi-warn-t">Registering, paying the advance and watching for repayment need your wallet, so they run on your node. This page covers what your browser checks.</Lede>
             </div>
             <ol className="fi-toc" aria-label="On this page">
               <li>
@@ -253,15 +255,16 @@ export function FinancierPage(): ReactNode {
               <li>
                 <a href="#fi-bun" onClick={jump("fi-bun")}>
                   <i lang="ja">三</i>
-                  <strong>Verification bundle</strong>
+                  <strong>Deal file</strong>
                   <small>Evidence</small>
                 </a>
               </li>
             </ol>
             <p className="fi-hint">
-              {"A real financier works from its node's console, where none of this needs a terminal. "}
+              {"A real financier works from its node's console. "}
               <a className="fi-link" href={CONSOLE_URL} target="_blank" rel="noopener">
                 Try the financier console
+                <span className="fi-ext">· opens in your browser ↗</span>
               </a>
             </p>
           </div>
@@ -287,7 +290,7 @@ export function FinancierPage(): ReactNode {
                   <span lang="ja">請求書</span>
                   <span>Invoice code</span>
                 </label>
-                <textarea id="fi-a-inv" spellCheck="false" placeholder="JTSI…, the code the supplier sent you" ref={aInvoice} />
+                <textarea id="fi-a-inv" spellCheck="false" placeholder="Paste the invoice code the supplier sent you" ref={aInvoice} />
               </div>
               <div className="fi-blank">
                 <label htmlFor="fi-a-key">
@@ -397,7 +400,7 @@ export function FinancierPage(): ReactNode {
               Before you finance
             </p>
             <h2 id="fi-t-hist">Check the buyer's history</h2>
-            <p className="fi-lede">Your browser checks the chain against the board itself: every past invoice must be anchored, nothing may follow the last one, and defaults show up as unsettled entries past due.</p>
+            <Lede className="fi-lede">Your browser checks the buyer's history against the board: every past invoice is on it, none is left out, and defaults show.</Lede>
           </div>
           <div className="fi-hist">
             <form className="fi-panel" aria-label="The buyer's history" onSubmit={checkHistory} noValidate>
@@ -422,7 +425,7 @@ export function FinancierPage(): ReactNode {
                   <label htmlFor="fi-h-board">Choose file</label>
                   <span>{boardName ?? "No file chosen"}</span>
                 </div>
-                <small>{"List of {txid, height, tx_index, output_index, memo}."}</small>
+                <small>The board file your node exports (JSON).</small>
               </div>
               <div className="fi-field">
                 <label htmlFor="fi-h-grace">Grace days</label>
@@ -510,7 +513,7 @@ export function FinancierPage(): ReactNode {
                     ))}
                   </ol>
                 ) : (
-                  <p className="fi-chain-empty">Each certificate will hang here, anchored to its entry on the board.</p>
+                  <p className="fi-chain-empty">Each certificate will hang here, tied to its entry on the board.</p>
                 )}
                 <div key={`b${hist?.run ?? 0}`} className={`fi-board${hist && moving ? " is-scan" : ""}`}>
                   <b lang="ja">公開台帳</b>
@@ -518,7 +521,7 @@ export function FinancierPage(): ReactNode {
                     {`${NET.label} board`}
                     {hist ? (
                       <>
-                        {" · every certificate anchored"}
+                        {" · every certificate on the board"}
                         {last ? (
                           <>
                             {" · nothing after "}
@@ -545,11 +548,11 @@ export function FinancierPage(): ReactNode {
               </span>
               Evidence
             </p>
-            <h2 id="fi-t-bun">Verification bundle</h2>
-            <p className="fi-lede">One file with the signed invoice, the sealed letter and the settlement document. An auditor or judge verifies it offline, or against the board on the Verify page.</p>
+            <h2 id="fi-t-bun">Deal file</h2>
+            <Lede className="fi-lede">One file with the signed invoice, the sealed letter and the settlement document. An auditor or judge verifies it offline, or against the board on the Verify page.</Lede>
           </div>
           <div className="fi-bun">
-            <form className="fi-panel" aria-label="What goes in the bundle" onSubmit={buildBundle} onInput={syncDocs} onChange={syncDocs} noValidate>
+            <form className="fi-panel" aria-label="What goes in the deal file" onSubmit={buildBundle} onInput={syncDocs} onChange={syncDocs} noValidate>
               <label className="fi-field">
                 <span>Invoice code</span>
                 <textarea spellCheck="false" ref={bInvoice} />
@@ -572,7 +575,7 @@ export function FinancierPage(): ReactNode {
               </label>
               <div className="fi-actions">
                 <button className="fi-btn" type="submit">
-                  Build bundle
+                  Build the deal file
                 </button>
               </div>
               <Refused r={bErr} />
@@ -589,11 +592,11 @@ export function FinancierPage(): ReactNode {
                   </div>
                 ))}
                 <div key={`o${bundle?.run ?? 0}`} className={`fi-obi${bundle ? " is-on" : ""}${bundle && moving ? " is-wrap" : ""}`}>
-                  <b>JTSB</b>Bundle (verified)
+                  <b lang="ja">件</b>Deal file (verified)
                 </div>
               </div>
               {bundle ? (
-                <CodeSlip key={bundle.run} title="Bundle (verified)" value={bundle.code} filename="deal.bundle.txt">
+                <CodeSlip key={bundle.run} title="Deal file (verified)" value={bundle.code} filename="deal.bundle.txt">
                   <Link className="fi-link" to="/verify">
                     Check it on the Verify page
                   </Link>

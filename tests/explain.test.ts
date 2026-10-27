@@ -24,3 +24,10 @@ test("the node's network and balance errors read as sentences (HNK-32)", () => {
   assert.match(explain("Error: `enhance` gave up after 300 s without an answer"), /did not answer in time/);
   assert.match(explain("zcash-devtool: Error: Insufficient balance (have 0, need 20000 including fee)"), /has 0 zat it can spend now and needs 20000/);
 });
+
+test("a message on screen is a sentence: capital first, full stop last (audit 2026-10-27)", async () => {
+  const { asSentence } = await import("../src/lib/explain.ts");
+  assert.equal(asSentence("paste the contact card or link they sent you"), "Paste the contact card or link they sent you.");
+  assert.equal(asSentence("Done!"), "Done!");
+  assert.equal(asSentence("  "), "");
+});

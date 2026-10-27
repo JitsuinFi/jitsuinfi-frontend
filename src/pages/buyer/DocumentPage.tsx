@@ -479,7 +479,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
 
   const sideSign = (
     <div className="by-side">
-      <h3>Review and sign the invoice</h3>
+      <h2 className="by-side-h">Review and sign the invoice</h2>
       <p>Your signature confirms the trade happened. Check every field: this is what financiers rely on.</p>
       <ul className="by-checks" aria-label="Invoice checks">
         {invCheck

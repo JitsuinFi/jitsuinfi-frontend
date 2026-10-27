@@ -177,7 +177,8 @@ export function Basin({ p, period, owed, assets, mine, under, empty }: { p: Port
             {p ? "The fund holds nothing in this period" : empty}
           </text>
           <text className="t-num" x={W / 2} y={(TOP + FLOOR) / 2 + 18} textAnchor="middle">
-            {p ? "no cash, no advances out" : "the fund's holdings show with the first path"}
+            {/* short enough to stay inside the pool at its narrowest (audit 2026-10-27, finding 16) */}
+            {p ? "no cash, no advances out" : "shown after the first close"}
           </text>
         </>
       ) : null}

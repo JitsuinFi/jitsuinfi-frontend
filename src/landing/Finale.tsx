@@ -340,7 +340,8 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
       requestAnimationFrame(() => getSelection()?.selectAllChildren(button));
       return;
     }
-    setTimeout(() => setIds((m) => ({ ...m, [i]: short(txid) })), 1400);
+    // then the whole id stays shown: a tap reveals it, not only the tooltip (audit 2026-10-27, finding 14)
+    setTimeout(() => setIds((m) => ({ ...m, [i]: txid })), 1400);
   };
 
   return (
@@ -375,7 +376,7 @@ export function Finale({ reduced }: { reduced: boolean }): ReactNode {
               </p>
               {/* the outside: what any explorer shows */}
               <div className="fn-face fn-outside">
-                <button className="fn-txid data" type="button" aria-label={t("fn.copy")} title={x.txid} onClick={(e) => void copy(i, x.txid, e.currentTarget)}>
+                <button className="fn-txid data" type="button" aria-label={t("fn.copy")} onClick={(e) => void copy(i, x.txid, e.currentTarget)}>
                   {ids[i] ?? short(x.txid)}
                 </button>
                 <p className="fn-facts">

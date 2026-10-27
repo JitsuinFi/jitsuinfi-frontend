@@ -14,6 +14,7 @@ import { NET } from "../lib/network";
 import { classRows, indexRows, summary, type RateIndex, type TenorRow } from "../lib/rate-index";
 import { reducedMotion } from "../landing/motion";
 import "./rates.css";
+import { Lede } from "../app/Lede";
 
 /** "1-2%" → "1–2%", "<= 30 days" → "≤ 30 days", "< 1%" → "<1%": the CLI's labels, typeset. */
 const tenorUi = (s: string) => s.replace(/<=\s?/, "≤ ").replace(/(\d)-(\d)/g, "$1–$2");
@@ -157,14 +158,14 @@ export function RatesPage(): ReactNode {
               Public rate index
             </p>
             <h1 id="ri-t">Rate index</h1>
-            <p className="ri-lede">Each register entry carries a discount class and a tenor class, never an amount or a party. Anyone can recompute the market's prices from the public board; nobody learns who financed whom.</p>
+            <Lede className="ri-lede">Each board entry carries a discount class and a tenor class (how long until it is due), never an amount or a party. Anyone can recompute the market's prices from the public board; nobody learns who financed whom.</Lede>
             <dl className="ri-totals" aria-label="What the board holds">
               <div>
                 <dt>register entries</dt>
                 <dd>{idx ? idx.entries : "–"}</dd>
               </div>
               <div>
-                <dt>invoices (each N once, first entry)</dt>
+                <dt>invoices (each counted once, by its first entry)</dt>
                 <dd>{idx ? idx.invoices : "–"}</dd>
               </div>
               <div className="is-quiet">
@@ -177,15 +178,15 @@ export function RatesPage(): ReactNode {
               </div>
             </dl>
             <p className="ri-knote">
-              <b>{`k = ${k}`}</b>
-              <span>{`A class shows only once it holds at least ${k} invoices, so no single deal's rate shows. Anyone can raise k; nobody can lower it below ${K_MIN}.`}</span>
+              <b>{`At least ${k} per class`}</b>
+              <span>{`No single deal's rate shows. Anyone can raise this threshold, k; nobody can lower it below ${K_MIN}.`}</span>
             </p>
           </div>
 
           <div className="ri-vis">
             <div className="ri-ch-head">
               <h2>Median discount by tenor</h2>
-              <p>{`One row per tenor class, the ${disc.length} discount classes across. Discount is (face − advance) / face; tenor runs from the advance to the due date.`}</p>
+              <Lede className="ri-ch-note">{`One row per tenor class (time from advance to due date), the ${disc.length} discount classes across. Discount is (face − advance) / face.`}</Lede>
             </div>
             <div>
               <div key={res?.run ?? 0} className={`ri-chart${res && !res.animate ? " is-still" : ""}${idx ? "" : " is-waiting"}`} role="group" aria-label="Median discount class for each tenor class" data-v={`--nd:${disc.length}`}>
@@ -361,7 +362,7 @@ export function RatesPage(): ReactNode {
                 <small>{`Without a file the page reads the live ${NET.noun} board from the financier node (the last one this browser saw, or a bundled copy, if the node does not answer).`}</small>
               </div>
               <div className="ri-field">
-                <label htmlFor="ri-k">Smallest class (k)</label>
+                <label htmlFor="ri-k">Fewest invoices per class (k)</label>
                 <div className="ri-stepper">
                   <button type="button" aria-label="Lower k" disabled={k <= K_MIN} onClick={() => changeK(k - 1)}>
                     −

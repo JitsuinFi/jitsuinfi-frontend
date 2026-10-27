@@ -1,0 +1,9 @@
+/* Lede.tsx: two lines on a phone, then "More" (a 44 px text button in the seal ink) */
+.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+button.lede-more {
+  display: inline-flex; align-items: center; justify-self: start; align-self: flex-start; width: auto; min-width: 44px; min-height: 44px; margin: -10px 0 -4px; padding: 0 2px; border: 0; border-radius: 0;
+  background: none; box-shadow: none; color: var(--seal, #7E2A53); font: 500 15px/1.2 var(--f-body, system-ui, sans-serif); cursor: pointer;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) { button.lede-more:hover { background: none; text-decoration-thickness: 3px; } }
+button.lede-more:active { transform: none; }

@@ -85,7 +85,7 @@ export function contactLink(origin: string, c: Contact): string {
  */
 export function readContact(text: string): Contact {
   let t = text.trim();
-  if (!t) throw new Error("paste the contact link or card they sent you");
+  if (!t) throw new Error("Paste the contact card or link they sent you.");
   const hash = t.indexOf("#");
   if (hash >= 0) t = t.slice(hash + 1);
   try {
@@ -94,7 +94,7 @@ export function readContact(text: string): Contact {
     /* not percent-encoded */
   }
   t = t.trim();
-  if (!t.startsWith(CONTACT_PREFIX)) throw new Error("this is not a JitsuinFi contact link or card: ask them to share their contact again");
+  if (!t.startsWith(CONTACT_PREFIX)) throw new Error("This is not a JitsuinFi contact card or link. Ask them to share their contact card again.");
   return decodeContact(t);
 }
 

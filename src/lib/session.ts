@@ -113,7 +113,7 @@ export class Account {
       if (owner && owner.label !== "JitsuinFi" && owner.label !== u) {
         prf.first.fill(0);
         prf.second.fill(0);
-        throw new Error(`this passkey belongs to @${owner.label}; log in as @${owner.label}`);
+        throw new Error(`this passkey belongs to @${owner.label}; sign in as @${owner.label}`);
       }
       writeProfile(this.deps.profile, rememberAccount(readProfile(this.deps.profile), prf.credentialId, { username: u }, this.now()));
     }

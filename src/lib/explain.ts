@@ -46,6 +46,17 @@ export function explain(message: string): string {
 }
 
 /**
+ * A message as a sentence on screen: a capital first letter and a full stop, so two messages
+ * side by side never run together (audit 2026-10-27, finding 11).
+ */
+export function asSentence(message: string): string {
+  const m = message.trim();
+  if (!m) return m;
+  const s = m.charAt(0).toUpperCase() + m.slice(1);
+  return /[.!?…]$/.test(s) ? s : `${s}.`;
+}
+
+/**
  * Why the node stopped a deal (HNK-32.T3, BL-D23-08, BL-D27-01). The node sends a code and the
  * txid of the entry that came first on the board; an older node sent a Debug dump that starts
  * with the same code.

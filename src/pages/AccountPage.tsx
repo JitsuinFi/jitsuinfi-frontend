@@ -1,4 +1,4 @@
-// Account screen (HNK-22.T1 – T3; SEQ-00): sign up, log in, onboarding, role switch, log out.
+// Account screen (HNK-22.T1 – T3; SEQ-00): sign up, sign in, onboarding, role switch, log out.
 // Demo mode (test secret) only where passkeys cannot give keys.
 //
 // Look (HNK-34.T5, approved sample design-samples/internal/account.html): the seal registration
@@ -8,7 +8,7 @@
 // the card; the caption carries the title, the checked stepper and the points.
 // - Sign up: email, username and role, then the passkey (the password), then a short onboarding
 //   (what the passkey is, the key fingerprint, the first step for the role).
-// - Log in: username, then the passkey. The first role opened is the one used last.
+// - Sign in: username, then the passkey. The first role opened is the one used last.
 // No account server exists yet (relay HNK-23): username and email stay in this browser's profile
 // (D-34). The passkey is named after the username, so a synced passkey finds the account on a new
 // device. React since HNK-31.T7.
@@ -18,6 +18,7 @@
 import { useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
+import { Lede } from "../app/Lede";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
 import { firstSection } from "../lib/sections";
@@ -318,7 +319,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       const us = userIn.current!.value;
       const pe = emailProblem(em);
       let pu = usernameProblem(us);
-      if (!pu && account.usernameKnown(us)) pu = "This device already has an account with this username. Log in instead.";
+      if (!pu && account.usernameKnown(us)) pu = "This device already has an account with this username. Sign in instead.";
       setErrors({ email: pe, user: pu });
       if (pe || pu) {
         say({ mk: "拒", text: "Check the lines marked on the card.", bad: true });
@@ -416,7 +417,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   switch (v) {
     case "signup":
       title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Create your account";
-      lede = want ? `New here? Write your name on the card; the ${roleLabel(want)} seal is chosen. Have an account? Log in.` : `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
+      lede = want ? `New here? Write your name on the card; the ${roleLabel(want)} seal is chosen. Have an account? Sign in.` : `${JITSUIN} Write your name on the card and choose the seal you sign with.`;
       step = 1;
       break;
     case "signup-passkey":
@@ -430,13 +431,13 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       step = 3;
       break;
     case "login":
-      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Log in";
+      title = want ? `Sign in to open the ${roleLabel(want)} counter` : "Sign in";
       lede = "Enter your username. Your passkey comes next.";
       break;
     case "login-passkey":
       title = "Welcome back";
       lede = account.usernameKnown(loginName)
-        ? "Use your passkey to log in. Your device asks for your fingerprint, your face, or your device password."
+        ? "Use your passkey to sign in. Your device asks for your fingerprint, your face, or your device password."
         : "This device has not seen this username yet. Pick the passkey you made for it; your device asks for your fingerprint, face, or device password.";
       break;
     case "roles":
@@ -450,7 +451,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
   if (said && said.v === v) line = said;
   else if ((v === "signup-passkey" || v === "login-passkey") && !pk) line = { mk: "拒", text: NO_PASSKEYS, bad: true };
   else if (v === "signup-passkey") line = { mk: "刻", text: "Your device is about to carve this seal into a passkey." };
-  else if (v === "login-passkey") line = { mk: "印", text: "Your seal is on your device. Press it to log in." };
+  else if (v === "login-passkey") line = { mk: "印", text: "Your seal is on your device. Press it to sign in." };
   else if (s) line = { mk: "登", text: REGISTERED };
   else line = { mk: "印", text: JITSUIN };
 
@@ -467,13 +468,14 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
           {/* caption: ≤ 35% */}
           <div className="ac-cap">
             <p className="ac-eyebrow">
+              {/* 印, the Sign in tab's kanji: 登 is Home's (audit 2026-10-27, finding 10) */}
               <span className="ac-stamp" lang="ja" aria-hidden="true">
-                登
+                印
               </span>
               Seal registration
             </p>
             <h1 id="ac-title">{title}</h1>
-            <p className="ac-lede">{lede}</p>
+            <Lede className="ac-lede">{lede}</Lede>
             {step ? <Steps n={step} /> : null}
             {v === "signup-passkey" ? (
               <ul className="ac-points">
@@ -484,7 +486,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                   Every signature in JitsuinFi uses keys made from this passkey on your device.
                 </Point>
                 <Point icon={<SyncIcon />} title="Works on your other devices">
-                  It syncs through your device's password manager, so you can log in elsewhere.
+                  It syncs through your device's password manager, so you can sign in elsewhere.
                 </Point>
               </ul>
             ) : null}
@@ -496,7 +498,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                   </Point>
                 ) : (
                   <Point icon={<PasskeyIcon />} title="Your passkey is your password">
-                    Each time you log in or sign something, your device asks for your fingerprint, face, or device password. No password to remember, nothing to back up.
+                    Each time you sign in or sign something, your device asks for your fingerprint, face, or device password. No password to remember, nothing to back up.
                   </Point>
                 )}
                 <Point icon={<FingerIcon />} title="Your key fingerprint">
@@ -773,7 +775,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                     <p className="ac-switch">
                       Already have an account?{" "}
                       <button type="button" className="ac-link" onClick={() => go("login")}>
-                        Log in
+                        Sign in
                       </button>
                     </p>
                     <button className="ac-btn" type="submit">
@@ -792,6 +794,8 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                   </div>
                 ) : v === "onboard" && s && first ? (
                   <div className="ac-act">
+                    {/* the next step's line beside the buttons, so the primary is one height (audit 2026-10-27, finding 16) */}
+                    <p className="ac-next">{first.line}</p>
                     <button
                       type="button"
                       className="ac-btn2 ac-later"
@@ -811,10 +815,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                         void router.navigate({ href: first.to ?? rolePath(s.role) });
                       }}
                     >
-                      <span className="ac-lbl">
-                        <span>{first.label}</span>
-                        <small>{first.line}</small>
-                      </span>
+                      {first.label}
                     </button>
                   </div>
                 ) : v === "login" ? (
@@ -838,7 +839,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                   </div>
                 ) : (
                   <div className="ac-act">
-                    <span className="ac-switch">Logs out by itself after 15 minutes without input.</span>
+                    <span className="ac-switch">Signs you out by itself after 15 minutes without input.</span>
                     <button
                       type="button"
                       className="ac-link"
@@ -849,7 +850,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                         account.lock();
                       }}
                     >
-                      Log out
+                      Sign out
                     </button>
                   </div>
                 )}

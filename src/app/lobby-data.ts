@@ -24,13 +24,13 @@ export interface RoomCopy {
 export const ROOMS: Record<Room, RoomCopy> = {
   try: { to: "/try", kanji: "試", title: "Try to double-finance", short: "Try", text: "Sell one invoice twice and watch it fail. No wallet needed." },
   verify: { to: "/verify", kanji: "証", title: "Verify", short: "Verify", text: "Check a deal or catch a double financing." },
-  outsider: { to: "/outsider", kanji: "外", title: "What outsiders see", short: "Outsiders", text: "Codes and hashes. Nothing about the parties." },
+  outsider: { to: "/outsider", kanji: "外", title: "What outsiders see", short: "Outsiders", text: "Only what the public board shows. Nothing about the parties." },
   rates: { to: "/rates", kanji: "価", title: "Rate index", short: "Rates", text: "Market prices from the board, no parties." },
   supplier: { to: "/supplier", kanji: "売", title: "Supplier", short: "Supplier", text: "Issue an invoice and get it financed once." },
   buyer: { to: "/buyer", kanji: "買", title: "Buyer", short: "Buyer", text: "Sign, acknowledge and pay with keys from your passkey." },
   member: { to: "/member", kanji: "資", title: "Fund member", short: "Fund", text: "See what the fund holds for you." },
   // the financier's counter is its node's console, on the console's own host: the demo console here
-  financier: { to: CONSOLE_DEMO_URL, ext: true, kanji: "融", title: "Financier", short: "Financier", text: "Finance invoices provably not financed elsewhere." },
+  financier: { to: CONSOLE_DEMO_URL, ext: true, kanji: "融", title: "Financier", short: "Financier", text: "Finance invoices provably not financed elsewhere. The demo console opens in your browser ↗" },
 };
 
 /** The rooms open to anyone, in the order the lobby's directory lists them: a visitor's walk. */

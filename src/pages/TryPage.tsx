@@ -28,6 +28,7 @@ import { Notice } from "./try/Notice";
 import { Phone } from "./try/Phone";
 import { entriesOf, type Entry } from "./try/Registry";
 import { Seikyusho, type SheetFields } from "./try/Seikyusho";
+import { Hash } from "../app/Hash";
 // try.css loads with the app shell (src/app/app-styles.ts)
 
 const short = (x: string, a = 8, b = 8) => `${x.slice(0, a)}…${x.slice(-b)}`;
@@ -676,7 +677,7 @@ export function TryPage({ autoplay = false }: { autoplay?: boolean }): ReactNode
                   {entries.map((e, j) => (
                     <li key={j} data-n={e.n} data-txid={e.txid}>
                       <span className="h">{String(e.height)}</span>
-                      <code title={e.n}>{short(e.n)}</code>
+                      <Hash value={e.n} cut={short(e.n)} label="fingerprint" />
                       <span className="k">{kind(e)}</span>
                     </li>
                   ))}
@@ -784,6 +785,8 @@ export function TryPage({ autoplay = false }: { autoplay?: boolean }): ReactNode
             <p className="fin-links">
               <a className="seal-btn" href="https://jitsuinfi-console-demo.vercel.app/console" target="_blank" rel="noopener">
                 <span>Open the demo console</span>
+                {/* it leaves the installed app (audit 2026-10-27, finding 12) */}
+                <small className="ext-note">opens in your browser ↗</small>
               </a>
               <a className="ink-link" href="/apply">
                 Become a financier

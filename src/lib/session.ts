@@ -56,6 +56,8 @@ export class Account {
   private readonly deps: SessionDeps;
   private session: Session | null = null;
   private demoSecret: Uint8Array | null = null;
+  /** The username and email typed before test data was used: kept in memory, like the secret. */
+  private demoWho: { username: string; email?: string } | null = null;
   private timer: unknown = null;
   private readonly listeners = new Set<() => void>();
 
@@ -111,7 +113,7 @@ export class Account {
       if (owner && owner.label !== "JitsuinFi" && owner.label !== u) {
         prf.first.fill(0);
         prf.second.fill(0);
-        throw new Error(`this passkey belongs to @${owner.label}; log in as @${owner.label}`);
+        throw new Error(`this passkey belongs to @${owner.label}; sign in as @${owner.label}`);
       }
       writeProfile(this.deps.profile, rememberAccount(readProfile(this.deps.profile), prf.credentialId, { username: u }, this.now()));
     }
@@ -120,6 +122,7 @@ export class Account {
 
   /** Username and email of the signed-in passkey, from the local profile. */
   who(): { username: string; email?: string } | null {
+    if (this.session?.demo) return this.demoWho ? { ...this.demoWho } : null;
     const id = this.session?.credentialId;
     if (!id) return null;
     const c = readProfile(this.deps.profile).credentials.find((x) => x.id === id);
@@ -142,20 +145,26 @@ export class Account {
     if (!s) throw new Error("sign in first");
     if (s.demo) {
       const secret = this.demoSecret!.slice();
+      const who = this.demoWho ?? undefined;
       this.lock();
-      return this.signInDemo(role, secret);
+      return this.signInDemo(role, secret, who);
     }
     return this.start(role, await this.deps.keys.evaluate(role, [s.credentialId!]), false);
   }
 
-  /** Demo mode: `secret` (32 bytes) stands in for the PRF output. It is zeroed by `lock`. */
-  async signInDemo(role: Role, secret: Uint8Array): Promise<Session> {
+  /**
+   * Demo mode: `secret` (32 bytes) stands in for the PRF output. It is zeroed by `lock`. `who`, the
+   * username and email typed on the card, is kept for the session only (never in the profile:
+   * test data has no passkey to name).
+   */
+  async signInDemo(role: Role, secret: Uint8Array, who?: { username: string; email?: string }): Promise<Session> {
     if (secret.length !== 32) {
       secret.fill(0);
       throw new Error("a test secret is 64 hex characters");
     }
     this.lock();
     this.demoSecret = secret.slice();
+    this.demoWho = who ? { username: normalizeUsername(who.username), ...(who.email?.trim() ? { email: who.email.trim() } : {}) } : null;
     const second = await hmac(secret, `jitsuin/${role}/inbox/v1`);
     const out = { credentialId: "", first: secret, second };
     return this.start(role, out, true);
@@ -209,6 +218,7 @@ export class Account {
     if (!quiet) {
       this.demoSecret?.fill(0);
       this.demoSecret = null;
+      this.demoWho = null;
     }
     if (had && !quiet) this.emit();
   }

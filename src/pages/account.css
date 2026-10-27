@@ -9,7 +9,7 @@
   --rule-2: rgba(2, 13, 47, .22);
   --wash: rgba(196, 199, 242, .34);
   --seal-wash: rgba(236, 208, 236, .72);
-  --faint: rgba(80, 42, 80, .42);
+  --faint: rgba(80, 42, 80, .69); /* Japanese Violet 69% on the card: 4.6:1 (audit 2026-10-27; was .42, 2.3:1) */
   color: var(--ink);
 }
 .ac p { margin: 0; }
@@ -168,6 +168,8 @@
 .ac-btn.is-busy::after { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(252, 252, 254, .4); border-top-color: var(--sheet); animation: ac-spin 800ms linear infinite; }
 @keyframes ac-spin { to { transform: rotate(360deg); } }
 .ac-switch { font: 400 14.5px/1.4 var(--f-body); color: var(--ink-2); }
+.ac-next { flex: 1 1 100%; text-align: right; font: 400 14px/1.4 var(--f-body); color: var(--ink-2); }
+.ac .ac-btn { min-height: 46px; padding-block: 0; }
 
 /* test data: a rounded paper panel that groups one input (shown only without passkeys) */
 .ac-demo { border-radius: var(--r-panel); background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); padding: 0 20px; }
@@ -176,10 +178,10 @@
 .ac-demo summary::before { content: ""; width: 8px; height: 8px; border-right: 1.6px solid var(--ink-2); border-bottom: 1.6px solid var(--ink-2); transform: rotate(-45deg); transition: transform var(--dur-fade) var(--ease-land); }
 .ac-demo[open] summary::before { transform: rotate(45deg); }
 .ac-demo-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; padding: 0 0 16px; }
-.ac-demo-body input[type=text] { min-width: 0; padding: 12px 14px; border-radius: 12px; border: 0; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 14px/1.2 var(--f-mono); }
+.ac-demo-body input[type=text] { min-width: 0; padding: 12px 14px; border-radius: 12px; border: 0; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-2); color: var(--head); font: 400 16px/1.2 var(--f-mono); } /* 16 px at every width (DS-MOB F2) */
 .ac-demo-body input[type=text]:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--seal); }
 .ac-demo-body small { grid-column: 1 / -1; font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
-.ac .ac-btn2 { cursor: pointer; padding: 12px 18px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 14px/1 var(--f-body); white-space: nowrap; } /* the paper secondary pill, as .rp button.secondary: no navy fill on paper */
+.ac .ac-btn2 { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; padding: 12px 18px; border-radius: 999px; background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-2); font: 500 14px/1 var(--f-body); white-space: nowrap; } /* the paper secondary pill, as .rp button.secondary: no navy fill on paper */
 @media (hover: hover) and (pointer: fine) { .ac .ac-btn2:hover { background: var(--wash); } }
 .ac .ac-btn2:disabled { opacity: .45; cursor: default; }
 
@@ -220,14 +222,21 @@
   .ac-foot { flex-direction: column; align-items: stretch; }
   .ac-act { justify-content: stretch; }
   .ac-act .ac-btn { flex: 1 1 100%; justify-content: center; }
-  .ac-act .ac-switch, .ac-act .ac-link { flex: 1 1 100%; text-align: center; }
+  .ac-act .ac-switch, .ac-act .ac-link, .ac-act .ac-next { flex: 1 1 100%; text-align: center; }
   .ac-demo-body { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .ac *, .ac *::before, .ac *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }
 
-/* a phone: the test-secret field at 16 px, so iOS does not zoom into it (DS-MOB F2) */
+/* a phone: the test-secret field 44 px tall; the card's text buttons get 44 px hit areas, their
+   words unchanged (DS-MOB T1, audit 2026-10-27) */
 @media (max-width: 599px) {
-  .ac-demo-body input[type=text] { font-size: 16px; min-height: 44px; }
+  .ac-demo-body input[type=text] { min-height: 44px; }
+  .ac .ac-act .ac-link { min-height: 44px; }
+  .ac .ac-switch .ac-link { display: inline-block; padding: 12px 8px; margin: -12px -8px; }
+  .ac .ac-who .ac-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; margin: 0 -8px; }
+  .ac .ac-btn, .ac .ac-later { min-height: 48px; }
+  .ac .ac-later { flex: 1 1 100%; }
+  .ac-demo summary { min-height: 44px; }
 }

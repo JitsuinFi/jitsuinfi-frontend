@@ -4,6 +4,7 @@
 // key; N is computed from them. The buyer's seal 買 sits in the 受領印 box and cracks the moment
 // the bytes differ from the ones the buyer signed.
 import type { ReactNode, Ref, RefObject } from "react";
+import { Hash } from "../../app/Hash";
 
 const short = (x: string) => `${x.slice(0, 10)}…${x.slice(-6)}`;
 
@@ -163,7 +164,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
         </div>
       ) : (
         <p className="sk-to">
-          <code title={o.buyer}>{blank ? blank.to : short(o.buyer)}</code>
+          {blank ? <code>{blank.to}</code> : <Hash value={o.buyer} cut={short(o.buyer)} label="buyer key" />}
           <span lang="ja">御中</span>
           <small>to the buyer's invoice key</small>
         </p>
@@ -187,7 +188,7 @@ export function Seikyusho({ o, fields, changed, n, onInput, sheet, blank, kase, 
             "Issuer",
             <>
               <span className="sk-issuer">{o.issuer}</span>
-              {slots?.by ?? <code title={o.supplier}>{blank ? blank.by : short(o.supplier)}</code>}
+              {slots?.by ?? (blank ? <code>{blank.by}</code> : <Hash value={o.supplier} cut={short(o.supplier)} label="supplier key" />)}
             </>,
           )}
         </tbody>

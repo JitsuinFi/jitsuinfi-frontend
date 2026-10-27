@@ -595,7 +595,7 @@
    Invoices (the 台帳 as the page's visual), Write an invoice (the sheet is the form), Deal (route
    over the sheet beside the station's work; on a phone a deal screen and a station screen), and the
    folded by-hand fallbacks. Approved prototype design-samples/ia/prototype.html. */
-.sp .ia-dot { font-style: normal; margin: 0 8px; color: var(--fold); }
+.sp .ia-dot { font-style: normal; margin: 0 8px; color: rgba(80, 42, 80, .72); } /* 4.7:1 on paper (audit 2026-10-27) */
 .sp .ia-sec { color: var(--ink-2); }
 .sp .ia-vis { min-width: 0; }
 .sp .ia-goline { display: flex; align-items: center; gap: 10px; margin-top: 22px; font: 400 13.5px/1.45 var(--f-body); color: var(--ink); }

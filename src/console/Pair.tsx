@@ -81,7 +81,7 @@ export function Pair({ info }: { info: DoorFacts | null }): ReactNode {
       try {
         cred = (await navigator.credentials.create({ publicKey: creationOptions(start.options.publicKey) })) as PublicKeyCredential;
       } catch (e) {
-        const why = e instanceof DOMException && e.name === "InvalidStateError" ? "This device already has a passkey for this console: log in instead." : e instanceof DOMException && e.name === "NotAllowedError" ? "The passkey was not created." : "This browser could not create the passkey.";
+        const why = e instanceof DOMException && e.name === "InvalidStateError" ? "This device already has a passkey for this console: sign in instead." : e instanceof DOMException && e.name === "NotAllowedError" ? "The passkey was not created." : "This browser could not create the passkey.";
         setUsed(true);
         throw new NodeError(`${why} Your invite code is used up; ask for a new invite link to try again.`);
       }
@@ -184,7 +184,7 @@ export function Pair({ info }: { info: DoorFacts | null }): ReactNode {
             No invite yet? <a className="cs-link" href={appHref("/apply", location.hostname)}>Apply as a financier</a>
             <span aria-hidden="true"> · </span>
             <a className="cs-link" href="/console">
-              Back to log in
+              Back to sign in
             </a>
           </p>
         </form>
@@ -216,7 +216,7 @@ export function Pair({ info }: { info: DoorFacts | null }): ReactNode {
       ) : (
         <div className="cs-form">
           <ul className="cs-points">
-            <Point ico={<PasskeyIcon />} title="Your passkey is your password" text="Each time you log in or approve a payment, your device asks for your fingerprint, face, or device PIN. Nothing to remember." />
+            <Point ico={<PasskeyIcon />} title="Your passkey is your password" text="Each time you sign in or approve a payment, your device asks for your fingerprint, face, or device PIN. Nothing to remember." />
             <Point ico={<SyncIcon />} title="More devices" text="In the console, Add a device makes a one-time link for your other phone or computer." />
           </ul>
           <div className="cs-list">

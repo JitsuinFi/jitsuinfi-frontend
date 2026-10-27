@@ -256,7 +256,7 @@ export function SealChain({ reduced }: { reduced: boolean }): ReactNode {
         }
         if (reduced && e.isIntersecting) void loop();
       },
-      { rootMargin: "600px 0px" },
+      { rootMargin: "0px 0px -64px 0px" }, // the wasm (271 KB) loads once the chapter is 64 px into view, never with the first screen (audit 2026-10-27)
     );
     io.observe(sec.current!);
     // the loop pauses while the chapter is off screen

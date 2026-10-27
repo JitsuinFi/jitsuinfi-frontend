@@ -7,7 +7,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { account } from "../lib/app-session";
 import { readContact, type Contact } from "../lib/contact";
-import { explain } from "../lib/explain";
+import { asSentence, explain } from "../lib/explain";
 import type { Role } from "../lib/account";
 import { firstSection } from "../lib/sections";
 import { AccountPage, onboardingPending, useSessionGate } from "./AccountPage";
@@ -28,6 +28,12 @@ function read(hash: string): { c: Contact | null; error: string | null } {
   }
   if (hash) held = { hash, c, error };
   return { c, error };
+}
+
+/** Why the link does not open, in whole sentences, and what to do (audit 2026-10-27, finding 11). */
+function linkProblem(hash: string, error: string | null): string {
+  const why = hash ? asSentence(explain(error ?? "")) : "This link has no contact card in it.";
+  return /ask them/i.test(why) ? `${why} Or paste it on Contacts.` : `${why} Ask them to share their contact card again, or paste it on Contacts.`;
 }
 
 /** The role the person opening a card usually has: a supplier's card goes to a buyer, and back. */
@@ -53,7 +59,7 @@ export function ContactLinkPage(): ReactNode {
         ) : c ? (
           <p className="ia-ct-lede">Not added. Open the link again whenever you want to add them.</p>
         ) : (
-          <p className="ia-ct-lede">{`${explain(error ?? "")} Ask them to share their contact again, or paste it on Contacts.`}</p>
+          <p className="ia-ct-lede">{linkProblem(hash, error)}</p>
         )}
         {dismissed || !c ? (
           <p className="ia-goline">

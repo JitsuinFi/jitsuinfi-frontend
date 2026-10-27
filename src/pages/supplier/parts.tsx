@@ -24,8 +24,10 @@ export const STATION: Record<StationKey, { glyph: string; obj: string; label: st
   settled: { glyph: "済", obj: "sp-o-stamp", label: "Settled" },
 };
 export const STATE_WORD: Record<StationState, string> = { done: "done", next: "your move", wait: "waiting", later: "later" };
-export const STATION_KEYS: readonly StationKey[] = ["signature", "offer", "entry", "seal", "advance", "settled"];
-export const isStation = (x: unknown): x is StationKey => STATION_KEYS.includes(x as StationKey);
+// STATION_KEYS and isStation live in lib/supplier-deal.ts: the deal route's search check reads
+// them, and that route file ships with the entry, so it must not pull this page's code in.
+import { STATION_KEYS } from "../../lib/supplier-deal";
+export { isStation, STATION_KEYS } from "../../lib/supplier-deal";
 
 export type Stations = ReturnType<typeof route>;
 

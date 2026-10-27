@@ -25,7 +25,7 @@ test("a link, its fragment, a percent-encoded link and the bare card all read ba
 });
 
 test("anything else is refused in plain words", () => {
-  assert.throws(() => readContact(""), /paste the contact link/);
+  assert.throws(() => readContact(""), /^Error: Paste the contact card or link they sent you\.$/);
   assert.throws(() => readContact("https://example.com/app/contact#hello"), /not a JitsuinFi contact/);
   const bad = encodeContact(card).slice(0, -6) + "AAAAAA";
   assert.throws(() => readContact(bad), /contact card/);

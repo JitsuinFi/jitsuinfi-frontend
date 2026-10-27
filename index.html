@@ -7,10 +7,13 @@
     <meta name="description" content="Real invoices. Private capital. Financed once. The private invoice fund on Zcash: every receivable leaves one fingerprint on a public board, so it is financed once, while amounts, parties and documents stay shielded." />
     <title>JitsuinFi</title>
     <link rel="icon" href="/seal.svg" type="image/svg+xml" />
-    <!-- installable as an app (DS-MOB S3): same-origin manifest, the paper of the top bar as the theme -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- installable as an app (DS-MOB S3): same-origin manifest, the paper of the top bar as the theme.
+         /site.webmanifest is no file: the host picks it (vercel.json rewrites, vite.config.ts in
+         development), the app's manifest on the app host, the console's on a console host. -->
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#F6F5FC" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="JitsuinFi" />

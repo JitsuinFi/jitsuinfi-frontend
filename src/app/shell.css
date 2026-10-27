@@ -282,14 +282,16 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
   .ia-acct { padding: 4px; }
   .ia-tabs {
     position: fixed; z-index: 40; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-    display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: var(--sheet); max-width: calc(100vw - 20px);
+    /* five tabs share the bar's width, so it never overflows at 320 px (audit 2026-10-27, finding 4) */
+    display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: var(--sheet); width: min(calc(100vw - 20px), 360px); box-sizing: border-box;
     box-shadow: inset 0 0 0 1px var(--rule), 0 14px 32px rgba(70, 29, 58, .18), 0 2px 6px rgba(70, 29, 58, .08);
   }
   .ia-tabs a, .ia-tabs button {
-    position: relative; flex: none; display: grid; justify-items: center; gap: 3px; width: 66px; min-height: 0; padding: 7px 0 6px; border: 0; border-radius: 999px;
-    background: none; color: var(--ink-2); text-decoration: none; font: 500 11px/1 var(--f-body); cursor: pointer;
+    position: relative; flex: 1 1 0; min-width: 0; display: grid; justify-items: center; gap: 3px; min-height: 48px; padding: 7px 2px 6px; border: 0; border-radius: 999px;
+    background: none; color: var(--ink-2); text-decoration: none; font: 500 12px/1 var(--f-body); cursor: pointer;
     transition: background-color var(--dur-fade) var(--ease-land), color var(--dur-fade) var(--ease-land);
   }
+  .ia-tabs .ia-tab-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ia-tabs a > b, .ia-tabs button > b:first-child { font: 800 17px/1 var(--f-seal); }
   .ia-tabs .active { background: var(--seal); color: var(--sheet); }
   .ia-tabs .ia-count { top: 0; right: 6px; box-shadow: 0 0 0 2px var(--sheet); }
@@ -346,3 +348,56 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 /* judge run 2: a sheet landing with a small turn (by-land) poked past the right edge for a frame,
    and a phone kept the page zoomed out after it; nothing in the app may scroll sideways */
 #app { overflow-x: clip; }
+
+/* an empty list: what is missing and the next step, never blank ruled lines (audit 2026-10-27,
+   finding 16). The kanji is the section's own; the step is a paper pill, 44 px. */
+.ia-none { display: grid; justify-items: start; gap: 8px; padding: 20px 0 10px; max-width: 52ch; }
+.ia-none > b { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 19px/1 var(--f-seal); rotate: -4deg; }
+.ia-none > strong { margin-top: 4px; font: 500 17px/1.3 var(--f-body); color: var(--head); }
+.ia-none > p { margin: 0; font: 400 14.5px/1.5 var(--f-body); color: var(--ink-2); }
+.ia-none-go {
+  display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; padding: 0 18px; border-radius: 999px; background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--rule-strong, rgba(2, 13, 47, .22)); color: var(--seal); font: 500 15px/1.2 var(--f-body); text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) { .ia-none-go:hover { box-shadow: inset 0 0 0 1.5px var(--seal); } }
+.ia-none-go:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+
+/* a phone: the contact link page's way back is 44 px tall (audit 2026-10-27, finding 13) */
+@media (max-width: 599px) {
+  .ia-link-page a.sp-ink { display: inline-flex; align-items: center; min-height: 44px; }
+  /* every primary pill one height: 48 px on a phone (46 elsewhere, style.css button), finding 16 */
+  main button:not(.secondary):not([class]), main .ac .ac-btn, main .vf-go, main .fi-btn, main .ap-btn, main .tcase .seal-btn, main .os .os-actions > button:not(.os-inklink) { min-height: 48px; }
+}
+.ext-note { font-weight: 400; }
+
+/* a phone: a form's one primary rides above the tab bar while its form scrolls (audit 2026-10-27,
+   finding 6; DS-MOB P2, F1), on the ground it sits on; the financier's letter foot opens up so
+   its button belongs to the whole form */
+@media (max-width: 599px) {
+  .sp .ia-new-go, .ap .ap-act, .fi .fi-actions {
+    position: sticky; z-index: 6; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding-block: 10px; background: var(--paper);
+  }
+  .fi .fi-l-foot { display: contents; }
+  /* the bar holds the button only: the one-touch note would cover the sheet it rides over */
+  .sp .ia-new-go p { display: none; }
+  .fi .fi-actions { background: var(--sheet); }
+  /* the account card: its foot opens up so the one seal button rides at the card's end */
+  .ac .ac-foot, .ac .ac-act { display: contents; }
+  .ac .ac-act > .ac-btn { position: sticky; z-index: 6; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 6px); display: flex; width: 100%; justify-content: center; margin-top: 14px; box-shadow: 0 10px 24px rgba(70, 29, 58, .22); } /* --ink 22% */
+  .ac .ac-foot > .ac-say { margin-top: 22px; }
+  .ac .ac-act > .ac-switch, .ac .ac-act > .ac-next { display: block; width: 100%; margin-top: 10px; text-align: center; }
+  .ac .ac-act > .ac-link, .ac .ac-act > .ac-later { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 10px; }
+}
+
+/* a phone: a field's label is a 44 px target too, its line unchanged (padding given back), and
+   the account card's handwritten fields are 44 px tall (audit 2026-10-27, finding 13) */
+@media (max-width: 599px) {
+  .ac .ac-ln label.ac-lab, .fi .fi-field > label, .ri .ri-field > label { padding-block: 13px; margin-block: -13px; }
+  .fi .fi-blank > label { padding-block: 2px; margin-block: -2px; min-height: 44px; box-sizing: content-box; }
+  .ac .ac-write input { min-height: 44px; }
+  .ri .ri-stepper input, .fi .fi-stepper input { min-height: 44px; margin-block: -4px; }
+}
+@media (max-width: 599px) {
+  .ia-goline a { display: inline-flex; align-items: center; min-height: 44px; }
+}

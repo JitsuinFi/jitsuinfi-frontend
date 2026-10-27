@@ -293,7 +293,7 @@ export function History({ reduced }: { reduced: boolean }): ReactNode {
   }, [lang, reduced, t]);
 
   // ---------- entry ----------
-  // the wasm loads when the chapter comes near, the scene enters when it is in view
+  // the wasm loads when the chapter is in view (not before: the first screen stays light), the scene enters then too
   useEffect(() => {
     const io = new IntersectionObserver(
       ([e]) => {
@@ -303,7 +303,7 @@ export function History({ reduced }: { reduced: boolean }): ReactNode {
         }
         if (reduced && e.isIntersecting) void loop();
       },
-      { rootMargin: "600px 0px" },
+      { rootMargin: "0px 0px -64px 0px" }, // the wasm (271 KB) loads once the chapter is 64 px into view, never with the first screen (audit 2026-10-27)
     );
     io.observe(sec.current!);
     // the loop pauses while the chapter is off screen

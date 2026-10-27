@@ -26,6 +26,7 @@ import { backupHistory, backupProblem, chainState, changed, loadHistory, readBoa
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
+import { Lede } from "../../app/Lede";
 
 const NOTE_GLYPH = { ok: "認", warn: "待", bad: "拒" } as const;
 
@@ -245,7 +246,7 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
     <div className="by-keyblock" hidden={hidden || undefined}>
       <dl className="by-who" aria-label="Your keys">
         <div>
-          <dt>{s?.demo ? "Your test key" : "Your passkey"}</dt>
+          <dt>{s?.demo ? "Your key fingerprint · test data" : "Your key fingerprint"}</dt>
           <dd className="by-fp">{s?.fingerprint ?? ""}</dd>
         </div>
         <div>
@@ -303,7 +304,7 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
               <dd>{info ? <span className="by-fp is-sub">{readablePrint(info.id)}</span> : <span className="by-quiet">shown with your next invoice key</span>}</dd>
             </div>
           </dl>
-          <p className="by-help">{`Your next key is checked against the live ${NET.noun} board (or the last copy this browser saw, if the node does not answer). To check against a board file you were given instead, choose it here before you ask for the key. Your keys come from your passkey; nothing secret is stored.`}</p>
+          <Lede className="by-help">{`Your next key is checked against the live ${NET.noun} board (or the last copy this browser saw, if the node does not answer). To check against a board file you were given instead, choose it here before you ask for the key. Your keys come from your passkey; nothing secret is stored.`}</Lede>
           <FilePill label="A board file to check against" empty="no board file: the live board is read" inputRef={board} />
         </div>
       </details>

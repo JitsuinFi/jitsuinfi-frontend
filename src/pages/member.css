@@ -94,7 +94,7 @@
 
 /* ---------- the tray: deposit slips 受領書 ---------- */
 .fm-tray { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 26px 22px; align-items: start; }
-.fm-tray > .banner, .fm-tray > .rp-empty { grid-column: 1 / -1; }
+.fm-tray > .banner, .fm-tray > .rp-empty, .fm-tray > .ia-none { grid-column: 1 / -1; }
 .fm-doc { position: relative; display: grid; gap: 8px; padding: 18px; background: var(--sheet); box-shadow: var(--lift); transform: rotate(var(--r, 0deg)); animation: fm-drop var(--dur-enter) var(--ease-land) var(--d, 0ms) both; }
 @keyframes fm-drop { from { transform: translateY(24px) rotate(-2deg); opacity: 0; } to { transform: rotate(var(--r, 0deg)); opacity: 1; } }
 .fm-doc::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 7px; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 100% 50%, 93% 100%, 86% 30%, 79% 90%, 72% 30%, 65% 80%, 58% 20%, 51% 90%, 44% 30%, 37% 80%, 30% 20%, 23% 90%, 16% 40%, 9% 90%, 0 30%); }
@@ -177,25 +177,33 @@
    The verdict leads the caption (the answer first, DS-MOB P3); the limits and privacy become
    disclosures, open on a desktop, folded on a phone; the deposit folds under its own line on a
    phone. Approved prototype design-samples/ia/prototype.html. */
-.fm .ia-dot { font-style: normal; margin: 0 8px; color: var(--fold); }
+.fm .ia-dot { font-style: normal; margin: 0 8px; color: rgba(80, 42, 80, .72); } /* Japanese Violet 72%: 4.7:1 on paper (Pearly Purple was 3.25:1; audit 2026-10-27) */
 .fm .ia-sec { color: var(--ink-2); }
 .fm-solv-cap { margin-top: 2px; }
 .fm-fp.is-sub { font-size: 13.5px !important; }
 .fm-prose details.fm-disc { display: grid; gap: 10px; align-content: start; min-width: 0; }
-.fm-how h3 { font-size: 17px !important; }
+.fm-how h3, .fm-how h2 { font-size: 17px !important; }
+/* section titles one level under the h1 that keep the h3 look (audit 2026-10-27, finding 17) */
+.rp h2.fm-h3 { font-size: clamp(20px, 1.6vw, 26px); line-height: 1.15; font-weight: 700; }
 .fm-disc > summary { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; list-style: none; }
 .fm-disc > summary::-webkit-details-marker { display: none; }
 .fm-disc > summary .rp-stamp { width: 38px; height: 38px; font-size: 21px; border-radius: 8px; }
-.fm-disc > summary::after { content: "open ▾"; margin-left: auto; font: 400 12px/1 var(--f-body); color: var(--seal); }
-.fm-disc[open] > summary::after { content: "fold ▴"; }
+/* a chevron beside the title, never a lone word on its own line (audit 2026-10-27, finding 16) */
+.fm-disc > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin: 0 6px 4px auto; border-right: 1.8px solid var(--seal); border-bottom: 1.8px solid var(--seal); transform: rotate(45deg); transition: transform var(--dur-fade) var(--ease-land); }
+.fm-disc[open] > summary::after { transform: translateY(4px) rotate(225deg); }
+.fm-tech { margin-top: 14px; }
+.fm-tech > summary h3 { font-size: 17px; }
 .fm-disc > p { margin-top: 10px !important; }
-.fm-dep-fold > summary { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 56px; cursor: pointer; list-style: none; }
+.fm-dep-fold > summary { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 56px; cursor: pointer; list-style: none; }
 .fm-dep-fold > summary::-webkit-details-marker { display: none; }
 .fm-dep-fold > summary .rp-stamp { width: 38px; height: 38px; font-size: 21px; border-radius: 8px; }
 .fm-dep-fold > summary > span:last-child { display: grid; gap: 2px; }
 .fm-dep-fold > summary b { font: 500 16px/1.3 var(--f-body); color: var(--head); }
 .fm-dep-fold > summary small { font: 400 12.5px/1.35 var(--f-body); color: var(--ink-2); }
 .fm-dep-fold[open] { display: grid; gap: 22px; }
+/* the fold's chevron, as every disclosure has (audit 2026-10-27, finding 16) */
+.fm-dep-fold > summary::after { content: ""; width: 9px; height: 9px; margin: 0 6px 4px 0; border-right: 1.8px solid var(--seal); border-bottom: 1.8px solid var(--seal); transform: rotate(45deg); transition: transform var(--dur-fade) var(--ease-land); }
+.fm-dep-fold[open] > summary::after { transform: translateY(4px) rotate(225deg); }
 .fm .ia-ll.fm-paid { gap: 8px; }
 .fm .ia-ll.fm-paid ol { display: grid; gap: 0; border-top: 1px solid var(--rule); }
 .fm .ia-ll.fm-paid li { border-bottom: 1px solid var(--rule); }

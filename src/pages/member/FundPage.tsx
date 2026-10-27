@@ -45,13 +45,12 @@ function Solvency({ reading, mine }: { reading: ReportReading | null; mine: numb
           </span>
           <h2 id="fm-ts">Does the fund cover your units?</h2>
         </div>
-        <p className="hint">
-          Run <span className="rp-cmd">{"jitsuin fund --ufvk <key> --manager-pk <key> --path <saved path> --json"}</span> on your own computer, then drop its report here. The viewing key stays in that command; this page only reads the result.
-        </p>
+        {/* audit 2026-10-27, finding 3: the ask in plain words first; the command is for whoever runs it */}
+        <p className="hint">Ask your fund manager for this period's report, then choose the file. This page checks it against your units.</p>
         <div className="rp-panel">
           <div className="rp-fieldset">
-            <span>Report from jitsuin fund (--json)</span>
-            <FilePill label="Report from jitsuin fund (--json)" empty="no file chosen" inputRef={file} />
+            <span>This period's report</span>
+            <FilePill label="This period's report" empty="no file chosen" inputRef={file} />
             <small>Read in your browser, never uploaded.</small>
           </div>
           <label className="field">
@@ -77,16 +76,27 @@ function Solvency({ reading, mine }: { reading: ReportReading | null; mine: numb
           </div>
           {out.el}
         </div>
+        <details className="fm-disc fm-tech">
+          <summary>
+            <span className="rp-stamp" lang="ja" aria-hidden="true">
+              技
+            </span>
+            <h3>For technical members</h3>
+          </summary>
+          <p>
+            You can make the report yourself. With the fund's viewing key from the manager and a path saved from a slip under Units, run <span className="rp-cmd">{"jitsuin fund --ufvk <key> --manager-pk <key> --path <saved path> --json"}</span> on your own computer and choose its output above. The viewing key stays in that command; this page only reads the result.
+          </p>
+        </details>
       </div>
       <div className="rp-vis">
         {!r ? (
-          <p className="rp-empty">No report read yet. Its verdict, the fund's assets against what it owes, and whether your units are under the root show here as a statement.</p>
+          <p className="rp-empty">No report read yet. Once you choose it, the fund's assets against what it owes, and whether your units are counted, show here as a statement.</p>
         ) : (
           <article className="fm-stmt" data-kind={kind} key={run}>
             <header>
               <div>
                 <b lang="ja">支払能力報告</b>
-                <small>{`Solvency report from jitsuin fund · ${r.report.network}${v ? ` · period ${v.period}` : ""}`}</small>
+                <small>{`Solvency report · ${r.report.network}${v ? ` · period ${v.period}` : ""}`}</small>
               </div>
             </header>
             <span className="fm-doc-stamp" lang="ja" aria-hidden="true">
@@ -99,7 +109,7 @@ function Solvency({ reading, mine }: { reading: ReportReading | null; mine: numb
                   <dd>{zec(v.assets_zat)}</dd>
                 </div>
                 <div>
-                  <dt>Owed to members (root total, at par)</dt>
+                  <dt>Owed to members (all members' units, at par)</dt>
                   <dd>{zec(v.liabilities_zat)}</dd>
                 </div>
                 <div>
@@ -122,7 +132,7 @@ function Solvency({ reading, mine }: { reading: ReportReading | null; mine: numb
                 </div>
                 <div>
                   <dt>Your units</dt>
-                  <dd>{inc ? `${inc.units === mine ? units(mine) : `${units(inc.units)} of your ${units(mine)}`} · ${inc.included ? "under the root" : "not under the root"}` : "not checked"}</dd>
+                  <dd>{inc ? `${inc.units === mine ? units(mine) : `${units(inc.units)} of your ${units(mine)}`} · ${inc.included ? "counted" : "not counted"}` : "not checked"}</dd>
                 </div>
               </dl>
             ) : null}
@@ -181,17 +191,17 @@ export function FundPage(): ReactNode {
   const nav = holdings.length ? holdings[holdings.length - 1].nav : null;
 
   const solv: [string, string, string, string] = !reading
-    ? ["wait", "待", "No report read yet", "Read the report from jitsuin fund below to draw what the fund owes."]
+    ? ["wait", "待", "No report read yet", "Choose this period's report from your fund manager below to see what the fund owes."]
     : reading.problems.length
       ? ["bad", "偽", "This report does not answer for your units", "See the statement below."]
       : reading.solvent
-        ? ["ok", "済", `Solvent in period ${v!.period}`, "Assets cover every unit under the root, at par."]
+        ? ["ok", "済", `Solvent in period ${v!.period}`, "Assets cover every member's units, at par."]
         : ["bad", "滞", `Not solvent in period ${v?.period ?? ""}`, "Assets are below what the fund owes at par. Withdrawals are paid from cash only."];
 
   const figs: Array<[string, string, string, ReactNode]> = lp
     ? [
         ["is-big", "Assets", "cash and open advances; overdue counts 0", v ? zec(v.assets_zat) : "—"],
-        [reading && !reading.solvent && !reading.problems.length ? "is-bad" : "", "Owed to members", "root total, at par", v ? zec(v.liabilities_zat) : "read the report"],
+        [reading && !reading.solvent && !reading.problems.length ? "is-bad" : "", "Owed to members", "all members' units, at par", v ? zec(v.liabilities_zat) : "read the report"],
         ["", "Cash", "pays withdrawals", zec(lp.p.cash_zat)],
         ["", "Advances out", `${lp.p.open} open · ${lp.p.due_within[0]} due ≤ 30 d, ${lp.p.due_within[1]} in 31–90 d, ${lp.p.due_within[2]} later`, zec(lp.p.open_zat)],
         ["", "Overdue", `${lp.p.overdue} invoice${lp.p.overdue === 1 ? "" : "s"} unpaid, counted 0 until repaid`, zec(lp.p.overdue_face_zat ?? lp.p.overdue_zat)],
@@ -222,7 +232,7 @@ export function FundPage(): ReactNode {
           <div className="rp-cap">
             <MemberTag />
             <h1 id="fm-t">What the fund holds for you</h1>
-            <p className="rp-lede">Your units, checked against the root the manager signs each period; withdraw at the period's price.</p>
+            <p className="rp-lede">Your units, checked against the list the manager signs each period; withdraw at the period's price.</p>
             <div className={`fm-solv is-${solv[0]} fm-solv-cap`} role="status">
               <span className="rp-hanko" lang="ja" aria-hidden="true">
                 {solv[1]}

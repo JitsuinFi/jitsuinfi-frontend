@@ -1,0 +1,18 @@
+{
+  "id": "/console",
+  "name": "JitsuinFi Console",
+  "short_name": "JF Console",
+  "description": "The financier console of a JitsuinFi node: review letters, advance and settle with your passkeys.",
+  "start_url": "/console",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#F6F5FC",
+  "background_color": "#F6F5FC",
+  "icons": [
+    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

@@ -29,6 +29,7 @@ import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router"
 import { SPEC_URL } from "../lib/hosts";
 import { account, accountDoor } from "../lib/app-session";
 import { legacyTarget } from "../lib/legacy-url";
+import { leaveOnboarding, onScreenChange } from "../lib/onboarding";
 import { NET } from "../lib/network";
 import { activeItem, hasInbox, navItems, phoneTabs } from "../lib/sections";
 import { unread } from "./inbox";
@@ -46,7 +47,7 @@ function useSession() {
 }
 
 /** Paths of the app world: links to them stay in the page instead of reloading the document. */
-const APP_PATHS = /^\/(app|try|try\/play|verify|outsider|rates|account|apply|financier|(supplier|buyer|member)(\/[\w-]+)*)$/;
+const APP_PATHS = /^\/(app|app\/contact|try|try\/play|verify|outsider|rates|account|apply|financier|(supplier|buyer|member)(\/[\w-]+)*)$/;
 
 const Bell = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -92,6 +93,13 @@ export function AppShell(): ReactNode {
     document.title = "JitsuinFi App";
   }, []);
   useEffect(() => startInbox(), []);
+  // another screen ends the Ready step after sign-up (audit 2026-10-27, finding 1): before paint,
+  // so the new screen never flashes the step
+  const seen = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    onScreenChange(seen.current, path);
+    seen.current = path;
+  }, [path]);
   // a new page closes the menu; signing out closes both
   useEffect(() => setMenu(false), [path]);
   useEffect(() => {
@@ -135,10 +143,12 @@ export function AppShell(): ReactNode {
     if (!a || a.target || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
     if (url.origin !== location.origin) return;
-    const to = legacyTarget(url.pathname, url.search, url.hash) ?? url.pathname;
-    if (!APP_PATHS.test(to) || (to === url.pathname && url.hash)) return;
+    const old = legacyTarget(url.pathname, url.search, url.hash);
+    const to = old ?? url.pathname;
+    if (!APP_PATHS.test(to.split("?")[0]) || (!old && url.hash)) return;
     e.preventDefault();
-    void router.navigate({ to });
+    // the search stays (?share=1 opens the share sheet; audit 2026-10-27, finding 19)
+    void router.navigate({ href: old ?? url.pathname + url.search });
   };
 
   const role = s?.role ?? null;
@@ -153,6 +163,7 @@ export function AppShell(): ReactNode {
   /** A tab or nav link pressed while a sheet is open: the page replaces the sheet's entry. */
   const fromSheet = (to: string) => (e: MouseEvent) => {
     door(to)?.();
+    leaveOnboarding(); // a tab or nav link pressed over the Ready step opens its screen
     if (!ib && !menu) return;
     e.preventDefault();
     leave(to);
@@ -163,7 +174,7 @@ export function AppShell(): ReactNode {
       <SkipLink target="main" />
       <header className="top">
         {/* a plain link (the shell moves it inside the app): the brand never says "you are here" */}
-        <a className="brand" href="/app" aria-label="JitsuinFi app, home">
+        <a className="brand" href="/app" aria-label="JitsuinFi app, home" onClick={leaveOnboarding}>
           <Mark className="brand-img" small />
           <Wordmark className="brand-wm" />
         </a>
@@ -216,7 +227,7 @@ export function AppShell(): ReactNode {
                 <b lang="ja" aria-hidden="true">
                   {t.k}
                 </b>
-                {t.short}
+                <span className="ia-tab-l">{t.short}</span>
                 <Count n={n} />
               </button>
             ) : (
@@ -224,7 +235,7 @@ export function AppShell(): ReactNode {
                 <b lang="ja" aria-hidden="true">
                   {t.k}
                 </b>
-                {t.short}
+                <span className="ia-tab-l">{t.short}</span>
                 {badge(t) ? <Count n={badge(t)} /> : null}
               </Link>
             ),

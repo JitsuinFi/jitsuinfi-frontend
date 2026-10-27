@@ -128,10 +128,10 @@ export function AccountButton({ s, open, onOpen, onClose, onAway, onLeave, curre
               onLeave("/app");
             }}
           >
-            Log out
+            Sign out
           </button>
         </div>
-        <small>Another role asks your passkey once. Logs out by itself after 15 minutes without input.</small>
+        <small>Another role asks your passkey once. Signs you out by itself after 15 minutes without input.</small>
       </div>
     </>
   );

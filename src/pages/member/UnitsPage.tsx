@@ -25,6 +25,7 @@ import { load, save, units, useWallet, zec } from "./data";
 import { MemberTag, useVars } from "./parts";
 import "../role-paper.css";
 import "../member.css";
+import { Lede } from "../../app/Lede";
 
 /** A withdrawal request 払戻請求, written on the slip it empties. */
 function Request({ x, out }: { x: Holding; out: ReturnType<typeof useOut> }): ReactNode {
@@ -255,20 +256,20 @@ export function UnitsPage(): ReactNode {
                 {w ? units(mine) : "–"}
                 <small>units</small>
               </strong>
-              <span>{failed ? "Your units could not be read." : lp ? `${units(under)} under the period ${lp.period} root` : holdings.length ? "waiting for the first close" : "No units yet"}</span>
+              <span>{failed ? "Your units could not be read." : lp ? `${units(under)} counted in period ${lp.period}` : holdings.length ? "waiting for the first close" : "No units yet"}</span>
             </div>
             <details className="fm-disc fm-how" open={!phone}>
               <summary>
                 <span className="rp-stamp" lang="ja" aria-hidden="true">
                   認
                 </span>
-                <h3>What the slips and stamps mean</h3>
+                <h2 className="fm-h3">What the slips and stamps mean</h2>
               </summary>
-              <p className="hint">
+              <Lede className="hint">
                 One deposit slip <span lang="ja">受領書</span> per holding, signed by the fund. Its withdraw token is the only thing that opens those units, so it stays on this device only. Each close, the fund sends a path: <span lang="ja">認</span> when it holds against the period's root, <span lang="ja">偽</span> when it does not, <span lang="ja">待</span> before the first close.
-              </p>
+              </Lede>
             </details>
-            <h3>Paid out</h3>
+            <h2 className="fm-h3">Paid out</h2>
             {payouts.length ? (
               <LongList
                 items={payouts}
@@ -301,11 +302,17 @@ export function UnitsPage(): ReactNode {
               {failed ? (
                 <Banner kind="bad" title="Your units could not be read" text={failed} />
               ) : !w ? null : !holdings.length ? (
-                <p className="rp-empty">
-                  {/* a phone: the first screen says what to do; where the receipt goes is in the deposit below (DS-MOB P4) */}
-                  Give the fund manager <Link className="ia-inlink" to="/member/contacts">your contact card</Link>
-                  {phone ? ", then deposit below: the receipt becomes a slip here." : ", then deposit below. Their receipt lands in your inbox and becomes a slip here."}
-                </p>
+                // an empty state with the next step (audit 2026-10-27, finding 16); a phone says only what to do (DS-MOB P4)
+                <div className="ia-none">
+                  <b lang="ja" aria-hidden="true">
+                    受
+                  </b>
+                  <strong>No units yet</strong>
+                  <p>{phone ? "Give the fund manager your contact card, then deposit below: the receipt becomes a slip here." : "Give the fund manager your contact card, then deposit below. Their receipt lands in your inbox and becomes a slip here."}</p>
+                  <Link className="ia-none-go" to="/member/contacts">
+                    Share your contact card
+                  </Link>
+                </div>
               ) : (
                 holdings.map((x, i) => <Slip key={`${x.leaf_id}-${x.pending ? "p" : ""}-${x.path?.period ?? ""}`} x={x} i={i} />)
               )}

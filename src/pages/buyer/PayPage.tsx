@@ -245,7 +245,17 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
           render={(r) => <LedgerLine r={r} href={slipPath(r.ref)} status={statuses?.[r.n]} current={r.n === sel?.n} />}
         />
       ) : (
-        <p className="rp-empty">No slip yet. A slip opens here once the financier seals the letter you sealed: it pays the supplier the advance and seals it then.</p>
+        // an empty state with the next step (audit 2026-10-27, finding 16)
+        <div className="ia-none">
+          <b lang="ja" aria-hidden="true">
+            払
+          </b>
+          <strong>No payment slips yet</strong>
+          <p>A slip opens here once the financier pays the supplier and seals the letter you sealed.</p>
+          <Link className="ia-none-go" to="/buyer/invoices">
+            Your invoices
+          </Link>
+        </div>
       )}
       {waiting.length ? (
         <p className="hint by-wait">

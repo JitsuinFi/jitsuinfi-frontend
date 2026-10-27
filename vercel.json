@@ -5,6 +5,30 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/site.webmanifest",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console.webmanifest"
+    },
+    {
+      "source": "/site.webmanifest",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console.webmanifest"
+    },
+    {
+      "source": "/site.webmanifest",
+      "destination": "/manifest.webmanifest"
+    },
+    {
       "source": "/node/:path*",
       "has": [
         {
@@ -90,6 +114,50 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/app",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/app/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console-demo.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/app",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
+    {
+      "source": "/app/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "jitsuinfi-console.vercel.app"
+        }
+      ],
+      "destination": "/console",
+      "permanent": false
+    },
     {
       "source": "/",
       "has": [

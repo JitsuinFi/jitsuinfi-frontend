@@ -9,6 +9,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Page } from "../../app/AppShell";
 import { useStoreVersion } from "../../app/store-change";
 import { Banner, Button, useOut } from "../../app/ui";
+import { ScanButton } from "../../app/Scanner";
+import { routeScan } from "../../lib/scan";
 import { myIdentity, relayDeps } from "../../lib/app-relay";
 import { account } from "../../lib/app-session";
 import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../../lib/buyer-history";
@@ -24,6 +26,7 @@ import { backupHistory, backupProblem, chainState, changed, loadHistory, readBoa
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
+import { Lede } from "../../app/Lede";
 
 const NOTE_GLYPH = { ok: "認", warn: "待", bad: "拒" } as const;
 
@@ -203,6 +206,16 @@ function ShareKey({ k, invoicePk }: { k: number; invoicePk: string }): ReactNode
           <textarea rows={2} spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="https://…/app/contact#… or jitsuin-contact-v1:…" ref={card} />
         </label>
         <div className="actions rp-small">
+          {/* a scanned contact QR fills the field; sending stays the person's own press */}
+          <ScanButton
+            what="the supplier's contact QR"
+            onPaste={() => card.current?.focus()}
+            onRead={(t) => {
+              routeScan(t);
+              card.current!.value = t;
+              out.clear();
+            }}
+          />
           <Button
             secondary
             onClick={async () => {
@@ -233,7 +246,7 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
     <div className="by-keyblock" hidden={hidden || undefined}>
       <dl className="by-who" aria-label="Your keys">
         <div>
-          <dt>{s?.demo ? "Your test key" : "Your passkey"}</dt>
+          <dt>{s?.demo ? "Your key fingerprint · test data" : "Your key fingerprint"}</dt>
           <dd className="by-fp">{s?.fingerprint ?? ""}</dd>
         </div>
         <div>
@@ -291,7 +304,7 @@ export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
               <dd>{info ? <span className="by-fp is-sub">{readablePrint(info.id)}</span> : <span className="by-quiet">shown with your next invoice key</span>}</dd>
             </div>
           </dl>
-          <p className="by-help">{`Your next key is checked against the live ${NET.noun} board (or the last copy this browser saw, if the node does not answer). To check against a board file you were given instead, choose it here before you ask for the key. Your keys come from your passkey; nothing secret is stored.`}</p>
+          <Lede className="by-help">{`Your next key is checked against the live ${NET.noun} board (or the last copy this browser saw, if the node does not answer). To check against a board file you were given instead, choose it here before you ask for the key. Your keys come from your passkey; nothing secret is stored.`}</Lede>
           <FilePill label="A board file to check against" empty="no board file: the live board is read" inputRef={board} />
         </div>
       </details>

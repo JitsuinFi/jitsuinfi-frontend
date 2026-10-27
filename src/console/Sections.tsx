@@ -9,6 +9,7 @@ import { keepName } from "./name";
 import { short, zec } from "./model";
 import { approvePlan, del, get, post } from "./node";
 import type { Buyer, ClosePlan, Device, FundNav, FundState, Info, Mail, MandateData, PrivateRules } from "./types";
+import { Lede } from "../app/Lede";
 
 const day = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
 const price = (n: FundNav) => (n.assets_zat / Math.max(1, n.units)).toFixed(4);
@@ -258,7 +259,7 @@ export function RulesSection({ name, mail, demo }: { name: string | null | undef
           Your mandate
         </p>
         <h2 id="cs-rules-t">Rules for offers</h2>
-        <p className="cs-lede">The 内規 sheet is your private mandate. It never leaves this node: suppliers only learn which kind of rule an offer broke.</p>
+        <Lede className="cs-lede">The 内規 sheet is your private mandate. It never leaves this node: suppliers only learn which kind of rule an offer broke.</Lede>
         <p className="cs-note">The listing beside it is your public mandate: what suppliers see of you in the financier directory, signed by the node and listed by the node provider.</p>
         <dl className="cs-totals">
           <div>
@@ -320,7 +321,7 @@ export function FundSection({ info, demo }: { info: Info; demo: boolean }): Reac
           For a pooled fund
         </p>
         <h2 id="cs-fund-t">Fund ledger</h2>
-        <p className="cs-lede">Members hold units, priced from this wallet's cash and receivables at each close. Withdrawals wait for the period's end; the close pays them with one passkey approval of the exact plan.</p>
+        <Lede className="cs-lede">Members hold units, priced from this wallet's cash and receivables at each close. Withdrawals wait for the period's end; the close pays them with one passkey approval of the exact plan.</Lede>
         {f ? (
           <dl className="cs-totals is-tight">
             <div>
@@ -718,7 +719,7 @@ function Buyers({ demo }: { demo: boolean }): ReactNode {
   );
 }
 
-/** The financier's own display name: shown only here and at log in on this browser. */
+/** The financier's own display name: shown only here and at sign in on this browser. */
 function NameForm({ current, onSaved }: { current: string | null | undefined; onSaved: (name: string) => void }): ReactNode {
   const input = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
@@ -762,7 +763,7 @@ export function KeysSection({ info, name, demo, onName }: { info: Info; name: st
           Who may act for this node
         </p>
         <h2 id="cs-keys-t">Keys and cards</h2>
-        <p className="cs-lede">Your passkeys sign you in and approve every payment. The meishi is what a supplier needs to send you an offer; the KYC index is the buyers you know.</p>
+        <Lede className="cs-lede">Your passkeys sign you in and approve every payment. The meishi is what a supplier needs to send you an offer; the KYC index is the buyers you know.</Lede>
         {demo ? null : <NameForm current={name} onSaved={onName} />}
       </div>
       <div className="cs-keys">

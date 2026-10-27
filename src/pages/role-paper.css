@@ -99,8 +99,6 @@
 .rp .copyrow { display: grid; gap: 10px; }
 .rp .code { padding: 10px 12px; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); font: 400 12px/1.5 var(--f-mono); color: var(--ink-2); max-height: 96px; overflow: auto; }
 .rp .copyrow .actions button { padding: 9px 14px; font-size: 13px; }
-.rp .qr { padding: 10px; border-radius: 8px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); }
-.rp .qr svg { width: 168px; height: 168px; }
 
 @media (max-width: 599px) {
   .rp-sec { gap: 26px; }
@@ -108,4 +106,11 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rp *, .rp *::before, .rp *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+
+/* a phone: 44 px hit areas, the look unchanged (audit 2026-10-27, finding 13; DS-MOB T1). A pill
+   grows by a transparent border clipped from its background; a link in a sentence by padding
+   given back as a negative margin. */
+@media (max-width: 599px) {
+  .rp-file { min-height: 44px; box-sizing: border-box; }
 }

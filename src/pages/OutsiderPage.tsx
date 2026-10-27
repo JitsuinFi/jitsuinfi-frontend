@@ -17,6 +17,8 @@ import { KIT } from "../lib/kit";
 import { NET } from "../lib/network";
 import { reducedMotion } from "../landing/motion";
 import "./outsider.css";
+import { Lede } from "../app/Lede";
+import { Hash } from "../app/Hash";
 
 // What anyone holding the board's public viewing key learns (HNK-28.T5, BL-D28-07; threat model
 // rows "viewing key holder" and TM #13 – #14). The key is published (D-11), so "outsider" means
@@ -30,7 +32,7 @@ interface Fact {
   key: string;
 }
 const TABLE: Fact[] = [
-  { key: "1", what: "Who the supplier, buyer and financier are", status: "Hidden", why: "Shielded payments; per-invoice keys; each financier behind a commitment whose salt is new for every invoice" },
+  { key: "1", what: "Who the supplier, buyer and financier are", status: "Hidden", why: "Shielded payments; a new key for every invoice; each financier hidden behind a commitment, a sealed code whose secret part (the salt) is new for every invoice" },
   { key: "2", what: "Invoice amount, dates, terms", status: "Hidden", why: "Only inside the signed invoice the parties hold" },
   { key: "3", what: "Which invoice an entry is about", status: "Hidden", why: "N is a hash of the whole invoice, including a per-invoice key; it cannot be guessed" },
   { key: "reg", what: "That an invoice was registered, and when", status: "Visible", why: "A register entry appears on the board in a block" },
@@ -438,7 +440,7 @@ export function OutsiderPage(): ReactNode {
                 Outside the registry
               </p>
               <h1 id="os-t">What outsiders see</h1>
-              <p className="os-lede">The registry board is public so anyone can audit it: its viewing key is published. This is everything anyone can learn from it.</p>
+              <Lede className="os-lede">The registry board is public so anyone can audit it: its viewing key is published. This is everything anyone can learn from it.</Lede>
               <div className="os-seg" role="radiogroup" aria-label="Read the invoice as" onKeyDown={onSeg}>
                 <button type="button" role="radio" aria-checked={view === "parties"} tabIndex={view === "parties" ? 0 : -1} data-view="parties" onClick={() => setView("parties")}>
                   <span lang="ja">当</span>The parties' copy
@@ -461,7 +463,7 @@ export function OutsiderPage(): ReactNode {
                   </dd>
                 </div>
               </dl>
-              <p className="os-hint">{`Invoice ${inv.short} is a real ${NET.noun} invoice of the demo kit. Every bar on it is labelled with what it hides; point at a line of the legend to find its bars, or at a mark on the board to read its entry.`}</p>
+              <Lede className="os-hint">{`Invoice ${inv.short} is a real ${NET.noun} invoice of the demo kit. Point at the legend or the board to see what each bar hides.`}</Lede>
             </div>
 
             <div className="os-vis">
@@ -472,7 +474,7 @@ export function OutsiderPage(): ReactNode {
                     公開台帳
                   </b>
                   <span>
-                    {"The public board · viewing key published · "}
+                    {"The public board · its read-only viewing key is published · "}
                     {board ? (
                       <>
                         <code>{entries.length}</code>
@@ -633,7 +635,7 @@ export function OutsiderPage(): ReactNode {
                     </header>
                     <p className="os-sk-to">
                       <Rd k="1 6" em="who · belongs with">
-                        <code title={inv.buyer_pk}>{short(inv.buyer_pk)}</code>
+                        <Hash value={inv.buyer_pk} cut={short(inv.buyer_pk)} label="buyer key" />
                       </Rd>
                       <span lang="ja">御中</span>
                       <small>to the buyer's invoice key</small>
@@ -667,7 +669,7 @@ export function OutsiderPage(): ReactNode {
                           </th>
                           <td>
                             <Rd k="2" em="terms">
-                              <code title={inv.terms_hash}>{short(inv.terms_hash, 12, 8)}</code>
+                              <Hash value={inv.terms_hash} cut={short(inv.terms_hash, 12, 8)} label="terms hash" />
                             </Rd>
                           </td>
                         </tr>
@@ -679,7 +681,7 @@ export function OutsiderPage(): ReactNode {
                           <td>
                             <Rd k="1" em="who the supplier is">
                               <span className="os-sk-issuer">{KIT.supplier}</span>
-                              <code title={inv.supplier_pk}>{short(inv.supplier_pk)}</code>
+                              <Hash value={inv.supplier_pk} cut={short(inv.supplier_pk)} label="supplier key" />
                             </Rd>
                           </td>
                         </tr>
@@ -823,17 +825,16 @@ export function OutsiderPage(): ReactNode {
           <section className="os-sec" aria-labelledby="os-t-explorer">
             <div className="os-cap">
               <h2 id="os-t-explorer">What a block explorer shows for an advance</h2>
-              <p className="os-lede">
-                {`${NET.short} advance `}
-                <code>{`${ADVANCE.txid.slice(0, 16)}…`}</code>
-                {` paid a supplier ${ADVANCE.amount} with a receipt, a seal and a receivable note in its memo.`}
-              </p>
-              <p className="os-hint">The slip is the supplier's wallet view. Switch to “Anyone with the board key” and it becomes exactly what an explorer shows.</p>
+              <Lede className="os-lede">
+                {`A ${NET.short} advance paid a supplier ${ADVANCE.amount}, with a receipt, a seal and a receivable note in its memo, the payment's private note field.`}
+              </Lede>
+              <Lede className="os-hint">The slip is the supplier's wallet view. Switch to “Anyone with the board key” and it becomes exactly what an explorer shows.</Lede>
             </div>
             <div className="os-slipwrap">
               <article className="os-slip" aria-label="The advance transaction">
                 <p className="os-slip-k">
-                  <b lang="ja">入金票</b>
+                  {/* 着金票, money arrived: 入金票 is the fund member's deposit slip (audit 2026-10-27, finding 10) */}
+                  <b lang="ja">着金票</b>
                   <small>Advance received · the supplier's wallet</small>
                 </p>
                 <dl>
@@ -874,11 +875,11 @@ export function OutsiderPage(): ReactNode {
           <section className="os-sec" aria-labelledby="os-t-read">
             <div className="os-cap">
               <h2 id="os-t-read">Read a board entry as an outsider</h2>
-              <p className="os-hint">You will see the entry's kind, N, the financier commitment, the two classes and any history tag, or a settlement's tag and on-time flag. No party, amount or document. Checking a signature needs the supplier's key, which is only inside the invoice.</p>
+              <Lede className="os-hint">You will see the entry's kind, N, the financier commitment, the two classes and any history tag, or a settlement's tag and on-time flag. No party, amount or document. Checking a signature needs the supplier's key, which is only inside the invoice.</Lede>
             </div>
             <div className="os-panel">
               <label className="os-field">
-                <span>A board memo (base64url)</span>
+                <span>A board memo, the coded note of one entry</span>
                 <textarea ref={memo} spellCheck="false" autoComplete="off" placeholder="Paste a memo read with the board's public viewing key" />
               </label>
               <div className="os-actions">

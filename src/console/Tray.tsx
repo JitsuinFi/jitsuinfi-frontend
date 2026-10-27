@@ -7,6 +7,7 @@ import { Act, say, Stamp, Status, type Load } from "./bits";
 import { acceptedLine, dueDay, refusal, short, totals, zec } from "./model";
 import { del, post } from "./node";
 import type { Mail, Offer } from "./types";
+import { Lede } from "../app/Lede";
 
 // Message types (relay-message.ts) in the operator's words, and the role seals of the app.
 const TYPE_LABEL: Record<string, string> = {
@@ -282,7 +283,7 @@ export function TraySection({ mail, refused, note, demo, load }: { mail: Mail[] 
           Mailbox, read through the node
         </p>
         <h2 id="cs-tray-t">In-tray</h2>
-        <p className="cs-lede">Every letter arrives sealed to your mailbox. The node opens it, checks each signature and matches an offer against your 内規 before you read it.</p>
+        <Lede className="cs-lede">Every letter arrives sealed to your mailbox. The node opens it, checks each signature and matches an offer against your 内規 before you read it.</Lede>
         <dl className="cs-totals">
           <div className="is-act">
             <dt>financing offers to answer</dt>

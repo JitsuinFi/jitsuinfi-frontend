@@ -19,6 +19,7 @@ import { chainState, loadHistory, saveHistory, useBoard, useInvoices, useKeyInfo
 import { Tag, useVars } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
+import { Lede } from "../../app/Lede";
 
 const OUTCOME: Record<string, [string, string, string]> = {
   PaidOnTime: ["済", "paid on time", ""],
@@ -182,7 +183,7 @@ export function HistoryPage(): ReactNode {
           <div className="rp-cap">
             <Tag k="歴" section="History" />
             <h1 id="by-th">History</h1>
-            <p className="rp-lede">What a financier sees when you send your history: each invoice you financed, recorded on the public board, and whether you paid it on time.</p>
+            <Lede className="rp-lede">What a financier sees when you send your history: each invoice you financed, recorded on the public board, and whether you paid it on time.</Lede>
             {phone ? null : checkButton}
             {mineOut.el}
             <details className="by-fold">
@@ -190,7 +191,7 @@ export function HistoryPage(): ReactNode {
                 <b lang="ja">証</b>Issue a certificate by hand
               </summary>
               <div>
-                <p className="hint">Financiers check your full payment history before financing. A certificate is the record of one financed invoice in your history. Each one links to the previous one, which this device keeps for you, and is recorded on the board, so a history cannot be trimmed. A financier's request in your inbox issues it for you.</p>
+                <Lede className="hint">Financiers check your full payment history before financing. A certificate is the record of one financed invoice in your history. Each one links to the previous one, which this device keeps for you, and is recorded on the board, so a history cannot be trimmed. A financier's request in your inbox issues it for you.</Lede>
                 <div className="rp-panel">
                   {signed.length ? (
                     <label className="field">

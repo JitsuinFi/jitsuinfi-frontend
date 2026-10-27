@@ -7,6 +7,7 @@ import { Door, useDoor, type DoorFacts, type Lock } from "./Door";
 import { Foot, LockGlyph, netLabel, Stamp, TopBar } from "./bits";
 import { keptName } from "./name";
 import { assert, creationOptions, post, registrationJson } from "./node";
+import { Lede } from "../app/Lede";
 
 export interface Msg {
   text: string;
@@ -88,7 +89,7 @@ export function DoorPage({ net, eyebrow, title, lede, children, door, visCap }: 
             <span>{eyebrow}</span>
           </p>
           <h1 id="cs-door-t">{title}</h1>
-          {lede ? <p className="cs-lede">{lede}</p> : null}
+          {lede ? <Lede className="cs-lede">{lede}</Lede> : null}
           {children}
         </div>
         <div className="cs-vis">
@@ -154,7 +155,7 @@ export function SignIn({ session, info, rerender }: { session: { console: boolea
       visCap: "The door has no seal yet. The one-time invite from your node provider sets it.",
     },
     login: {
-      title: name ? `Welcome back, ${name}` : "Log in to your console",
+      title: name ? `Welcome back, ${name}` : "Sign in to your console",
       lede: "Use the passkey you set up for this console.",
       lock: "waiting" as Lock,
       capKanji: "印",

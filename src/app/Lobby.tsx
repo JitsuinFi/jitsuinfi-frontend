@@ -22,7 +22,6 @@ import { useFigure } from "../landing/use-figure";
 import { BOARD_COPY } from "../lib/board";
 import { wasm } from "../lib/core";
 import { KIT } from "../lib/kit";
-import { CONSOLE_HOST, CONSOLE_URL } from "../lib/hosts";
 import { storageGet, waitingApplication } from "../lib/apply-state";
 import { blockText, nShort, ORDER, ROOMS, twiceOf, type Room } from "./lobby-data";
 import type { LobbyOffice, OfficeData } from "./figures/lobby-office";
@@ -236,7 +235,9 @@ export function Lobby(): ReactNode {
           <p className="lede">Every invoice leaves one fingerprint on a public board, so it is financed once; amounts, parties and documents stay shielded.</p>
           {/* the landing tells the whole story: a plain link, it is another world */}
           <p className="what">
-            <a href="/">What is this?</a>
+            <a className="ia-inlink" href="/">
+              What is this?
+            </a>
           </p>
         </header>
 
@@ -322,7 +323,7 @@ export function Lobby(): ReactNode {
                       {r.ext ? (
                         <a className={`room${on(room)}`} href={r.to} target="_blank" rel="noopener" data-room={room} {...point(room)}>
                           {body}
-                          <span className="sr-only"> (opens the demo console in a new tab)</span>
+                          <span className="sr-only"> (opens the demo console in your browser)</span>
                         </a>
                       ) : (
                         <Link className={`room${on(room)}`} to={r.to} data-room={room} {...point(room)}>
@@ -332,11 +333,7 @@ export function Lobby(): ReactNode {
                       {room === "financier" ? (
                         <>
                           <p className="aside">
-                            {"Opens the demo console. Have a node? Your console is at "}
-                            <a href={CONSOLE_URL} target="_blank" rel="noopener">
-                              {CONSOLE_HOST}
-                            </a>
-                            {". "}
+                            {/* the production console's link is gone from the lobby: a financier with a node has its own (audit 2026-10-27, finding 12) */}
                             {applied ? (
                               <>
                                 {`Application sent ${applied.day} · `}

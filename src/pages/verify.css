@@ -20,7 +20,7 @@
 .vf-kinds-k { margin: 34px 0 -20px; font: 500 13px/1.3 var(--f-body); color: var(--ink-2); }
 .vf-kinds { margin: 34px 0 0; padding: 0; list-style: none; display: grid; gap: 14px; }
 .vf-kinds li { display: grid; grid-template-columns: 54px 1fr; gap: 12px; align-items: baseline; }
-.vf-code { font: 500 13px/1.4 var(--f-mono); color: var(--head); }
+.vf-code { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 7px; box-shadow: inset 0 0 0 2px var(--seal); color: var(--seal); font: 800 17px/1 var(--f-seal); rotate: -4deg; align-self: start; }
 .vf-kinds strong { display: block; font: 500 15px/1.35 var(--f-body); color: var(--head); }
 .vf-kinds div > span { font: 400 14px/1.45 var(--f-body); color: var(--ink-2); }
 .vf-facts { margin: 36px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline; }
@@ -47,7 +47,7 @@
 .vf-slot.is-drag .vf-well { box-shadow: inset 0 0 0 2px var(--fold); }
 .vf-well textarea {
   position: relative; display: block; width: 100%; min-height: 0; resize: none; border: 0; border-radius: 6px; background: transparent; padding: 12px;
-  font: 400 11px/1.55 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; word-break: break-all;
+  font: 400 13px/1.55 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; word-break: break-all;
   transition: transform var(--dur-exit) var(--ease-exit), opacity var(--dur-exit) var(--ease-exit), background-color var(--dur-fade) ease, box-shadow var(--dur-fade) ease;
 }
 @media (hover: hover) and (pointer: fine) { .vf-well textarea:hover { border: 0; } }
@@ -130,6 +130,15 @@
 .vf-vd-text { margin: 0; max-width: 60ch; font: 400 16px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; }
 .vf-vd-err { margin: 6px 0 0; font: 400 12px/1.4 var(--f-mono); color: var(--seal); overflow-wrap: anywhere; }
 .vf-vd-src { margin: 6px 0 0; font: 400 13px/1.4 var(--f-body); color: var(--ink-2); }
+/* the raw values behind the verdict (audit 2026-10-27, finding 9) */
+.vf-tech { margin: 8px 0 0; }
+.vf-tech summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; color: var(--seal); font: 500 14px/1.3 var(--f-body); list-style: none; }
+.vf-tech summary::-webkit-details-marker { display: none; }
+.vf-tech summary::after { content: ""; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.vf-tech[open] summary::after { transform: translateY(2px) rotate(225deg); }
+.vf-tech dl { display: grid; gap: 8px; margin: 2px 0 0; }
+.vf-tech dt { font: 500 12.5px/1.3 var(--f-body); color: var(--ink-2); }
+.vf-tech dd { margin: 2px 0 0; font: 400 13px/1.45 var(--f-mono); color: var(--head); overflow-wrap: anywhere; user-select: all; }
 .vf-vd .vf-link { margin-top: 6px; }
 .vf-vd-t.is-new { animation: vf-rise var(--dur-enter) var(--ease-land); }
 @keyframes vf-rise { from { opacity: 0; transform: translateY(6px); } }
@@ -184,6 +193,26 @@
   .vf-board { margin: 8px calc(-1 * var(--gutter)) 0; padding: 12px var(--gutter) 14px; }
   .vf-board-rows li { grid-template-columns: 62px 56px minmax(0, 1fr); gap: 8px; font-size: 11px; padding-left: 8px; }
   .vf-board-rows li span:nth-child(2), .vf-board-rows li span:nth-child(4) { display: none; }
+}
+/* a phone: the paste box and "Hand it to the registry" come right after the title; what can be
+   handed in follows the tray (audit 2026-10-27, finding 6). Fields 16 px, links 44 px (F2, T1). */
+@media (max-width: 599px) {
+  .vf-page { display: flex; flex-direction: column; gap: 0; }
+  .vf-cap { display: contents; }
+  .vf-cap > .vf-tag, .vf-cap > h1, .vf-cap > .vf-lede { order: 0; }
+  .vf-cap > .vf-tag { align-self: flex-start; }
+  .vf-work { order: 1; margin-top: 22px; }
+  .vf-cap > .vf-kinds-k { order: 2; margin: 32px 0 0; }
+  .vf-cap > .vf-kinds { order: 2; margin-top: 14px; }
+  .vf-cap > .vf-facts { order: 2; margin-top: 26px; }
+  .vf-well textarea { font-size: 16px; }
+  .vf-well textarea::placeholder { font-size: 16px; }
+  .vf-slot.is-main textarea { height: 132px; }
+  .vf-act .vf-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .vf-env-row { min-height: 44px; box-sizing: border-box; }
+  .vf-go { min-height: 48px; }
+  /* the one primary rides above the tab bar while the tray scrolls (DS-MOB P2, F1) */
+  .vf-act { position: sticky; z-index: 5; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); margin: 4px -16px -20px; padding: 10px 16px 12px; border-radius: 0 0 var(--r-sheet) var(--r-sheet); background: var(--sheet); gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vf-page *, .vf-page *::before, .vf-page *::after { animation: none !important; transition: none !important; }

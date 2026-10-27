@@ -1,0 +1,22 @@
+/* The not-found notice (NotFound.tsx): day paper, a seal-ringed 無, two links. DS-PAL values only
+   (MASTER.md §2), written out because no world's tokens are loaded here. */
+body:has(> #root > .nf) { margin: 0; background: #F6F5FC; } /* only while the notice shows: this sheet ships with the entry */
+.nf {
+  box-sizing: border-box; min-height: 100dvh; display: grid; align-content: center; justify-items: start; gap: 14px;
+  max-width: 560px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left, 0px));
+  color: #461D3A; font: 400 16px/1.5 "Geist Variable", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.nf-mk {
+  display: grid; place-items: center; width: 52px; height: 52px; margin: 0; border-radius: 10px; box-shadow: inset 0 0 0 3px #7E2A53;
+  color: #7E2A53; font: 800 26px/1 "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif; rotate: -4deg;
+}
+.nf h1 { margin: 0; color: #020D2F; font: 800 clamp(30px, 6vw, 44px)/1.05 "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif; }
+.nf-line { margin: 0; }
+.nf code { font: 400 14px/1.4 "Geist Mono Variable", "Geist Mono", ui-monospace, Menlo, monospace; overflow-wrap: anywhere; color: #502A50; }
+.nf-go { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; }
+.nf-go a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; color: #7E2A53; font-weight: 500;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) { .nf-go a:hover { text-decoration-thickness: 3px; } }
+.nf-go a:focus-visible { outline: 2px solid #7E2A53; outline-offset: 2px; border-radius: 4px; }

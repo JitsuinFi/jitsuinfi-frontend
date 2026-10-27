@@ -1,0 +1,11 @@
+/* Hash.tsx: looks like the code it holds; a dotted underline says it opens. 44 px tall on a
+   touch screen without moving the line (padding given back by a negative margin). */
+button.hash-x {
+  display: inline; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  text-decoration: underline dotted; text-decoration-color: currentColor; text-underline-offset: 3px; overflow-wrap: anywhere;
+}
+button.hash-x:active { transform: none; }
+@media (hover: hover) and (pointer: fine) { button.hash-x:hover { background: none; text-decoration-style: solid; } }
+button.hash-x.is-open { word-break: break-all; }
+button.hash-x code { font: inherit; color: inherit; }
+@media (max-width: 599px), (pointer: coarse) { button.hash-x { display: inline-block; min-height: 44px; padding: 13px 0; margin: -13px 0; box-sizing: border-box; } }

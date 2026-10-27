@@ -1,0 +1,152 @@
+/* The app's QR (QrPlate.tsx) and its scanner (Scanner.tsx), 2026-10-27. The code sits on the
+   sheet in the ink (--head on --sheet, DS-PAL), its 4-module quiet zone drawn by the code itself,
+   inside a thin seal-red frame; a whole number of CSS pixels a module, set as the SVG's own width
+   and height (no inline style). It prints top to bottom as it lands (softLand); reduced motion
+   shows it at once. The scanner is the camera's dark surround: the pool, with glass pills. */
+
+/* ---------- the plate ---------- */
+.qrp { margin: 0; display: grid; justify-items: center; gap: 12px; width: 100%; min-width: 0; }
+.qrp-plate {
+  display: grid; place-items: center; overflow: hidden;
+  border: 1.5px solid var(--seal); border-radius: 12px; background: var(--sheet);
+  animation: qrp-land var(--dur-enter) var(--ease-land) both;
+}
+.qrp-code { display: block; animation: qrp-print 500ms var(--ease-land) var(--dur-micro) both; }
+.qrp-sheet { fill: var(--sheet); }
+.qrp-ink { fill: var(--head); }
+.qrp-plate.is-veil {
+  width: min(100%, 240px); aspect-ratio: 1; padding: 18px; animation: none;
+  border-style: dashed; border-color: var(--rule-strong);
+  background: repeating-linear-gradient(135deg, rgba(80, 42, 80, .16) 0 1.5px, transparent 1.5px 8px), var(--paper);
+}
+.qrp-veil { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.qrp-veil b { font: 800 34px/1 var(--f-seal); color: var(--ink-2); }
+.qrp-veil small { font: 400 12.5px/1.45 var(--f-body); color: var(--ink-2); max-width: 22ch; }
+@keyframes qrp-land { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes qrp-print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+
+.qrp-cap { margin: 0; display: grid; justify-items: center; gap: 4px; text-align: center; max-width: 40ch; }
+.qrp-cap strong { font: 500 15px/1.35 var(--f-body); color: var(--head); }
+.qrp-cap span { font: 400 12.5px/1.4 var(--f-body); color: var(--ink-2); }
+.qrp-cap code { font: 500 13px/1.4 var(--f-mono); color: var(--head); letter-spacing: .03em; white-space: nowrap; }
+
+.qrp-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* .qrp before the class: the role pages' own button rules (.sp button, .rp button) give way */
+.qrp .qrp-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; font: 500 14px/1.1 var(--f-body); text-decoration: none; white-space: nowrap;
+}
+.qrp .qrp-raw .copyrow button.secondary { min-height: 44px; padding: 0 16px; font-size: 13.5px; }
+.qrp .qrp-btn.is-primary { background: var(--seal); color: var(--sheet); }
+a.qrp-btn { transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land); }
+/* the wallet link as a secondary: the role pages' secondary pill, drawn the same on every page */
+.qrp a.qrp-btn.is-quiet { background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+@media (hover: hover) and (pointer: fine) { .qrp a.qrp-btn.is-quiet:hover { box-shadow: inset 0 0 0 1.5px var(--seal); } }
+@media (hover: hover) and (pointer: fine) { .qrp-btn.is-primary:hover { background: var(--seal-hi); } }
+.qrp-said { margin: 0; font: 400 13px/1.45 var(--f-body); color: var(--seal); text-align: center; }
+
+.qrp-raw { justify-self: stretch; border-top: 1px solid var(--rule); }
+.qrp-raw > summary { display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; list-style: none; font: 500 13.5px/1.3 var(--f-body); color: var(--seal); }
+.qrp-raw > summary::-webkit-details-marker { display: none; }
+.qrp-raw > summary::after { content: "+"; margin-left: 8px; font: 500 16px/1 var(--f-body); }
+.qrp-raw[open] > summary::after { content: "−"; }
+.qrp-raw .code { max-height: 9em; }
+
+@media (max-width: 599px) {
+  .qrp-plate.is-veil { width: min(100%, 280px); }
+  /* a phone: the one primary across the row, the others sharing the rows under it */
+  .qrp-acts { width: 100%; }
+  .qrp .qrp-btn { flex: 1 1 96px; padding: 0 10px; }
+  .qrp .qrp-btn.is-primary { flex-basis: 100%; min-height: 48px; }
+  /* a payment on a phone: nobody scans their own screen, so the wallet comes first, the QR after */
+  .qrp.has-wallet .qrp-cap { order: -2; }
+  .qrp.has-wallet .qrp-acts { order: -1; }
+}
+
+/* ---------- Enlarge: the QR on its own sheet ---------- */
+.qrp-big {
+  margin: auto; padding: 0; border: 0; width: min(640px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px);
+  border-radius: var(--r-sheet); background: var(--paper); color: var(--ink); box-shadow: var(--sheet-shadow); overflow: auto;
+}
+.qrp-big::backdrop { background: rgba(2, 13, 47, .42); }
+.qrp-big[open] { animation: qrp-rise var(--dur-enter) var(--ease-land); }
+@keyframes qrp-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.qrp-big-in { display: grid; grid-template-rows: auto 1fr; min-height: 100%; }
+.qrp-big-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));
+  border-bottom: 1px solid var(--rule);
+}
+.qrp-big-head > b { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; box-shadow: inset 0 0 0 3px var(--seal); color: var(--seal); font: 800 18px/1 var(--f-seal); rotate: -4deg; }
+.qrp-big-head h2 { margin: 0; font: 800 24px/1.1 var(--f-display); color: var(--head); letter-spacing: -.01em; }
+/* scoped under the sheet: the role pages' button rules (.sp button, .rp button) give way */
+.qrp-big .qrp-x {
+  margin-left: auto; flex: none; display: grid; place-items: center; width: 44px; height: 44px; min-height: 0; padding: 0; border: 0; border-radius: 50%;
+  background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule);
+}
+@media (hover: hover) and (pointer: fine) { .qrp-big .qrp-x:hover { background: var(--seal-wash); } }
+.qrp-big .qrp-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.qrp-big-body { display: grid; justify-items: center; align-content: center; gap: 18px; padding: 28px 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.qrp-bright { margin: 0; display: flex; align-items: center; gap: 10px; max-width: 40ch; font: 400 14px/1.45 var(--f-body); color: var(--ink-2); }
+.qrp-bright i { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--seal); font: 700 15px/1 var(--f-seal); font-style: normal; }
+@media (max-width: 599px) {
+  .qrp-big { width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+}
+
+/* ---------- the scanner ---------- */
+.qrs-open { display: inline-flex; align-items: center; gap: 8px; }
+.qrs-open svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.qrs {
+  margin: 0; padding: 0; border: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  background: var(--pool); color: var(--sheet); overflow: hidden;
+}
+.qrs::backdrop { background: var(--pool); }
+/* inside the pool the focus ring is Button Blue (style.css, nav audit 2026-10-25) */
+.qrs :focus-visible { outline-color: var(--glint); }
+.qrs[open] { animation: qrp-rise var(--dur-enter) var(--ease-land); }
+.qrs-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-enter) var(--ease-land); }
+.qrs-video.is-on { opacity: 1; }
+.qrs-in {
+  position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; gap: 14px;
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.qrs-head { justify-self: stretch; display: flex; align-items: center; gap: 12px; padding-top: 12px; z-index: 1; }
+.qrs-head h2 { margin: 0; font: 800 22px/1.1 var(--f-display); color: var(--sheet); }
+.qrs .qrs-x {
+  margin-left: auto; display: grid; place-items: center; width: 44px; height: 44px; min-height: 0; padding: 0; border-radius: 50%;
+  background: var(--glass-soft); color: var(--sheet); box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+.qrs .qrs-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+/* the viewfinder: a clear square, the rest of the picture dimmed by the pool */
+.qrs-finder {
+  position: relative; align-self: center; width: min(72vw, 300px, 46dvh); aspect-ratio: 1; border-radius: 18px;
+  box-shadow: 0 0 0 100vmax rgba(2, 13, 47, .58);
+}
+.qrs-finder i { position: absolute; width: 34px; height: 34px; border: 0 solid var(--sheet); }
+.qrs-finder i:nth-child(1) { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 18px; }
+.qrs-finder i:nth-child(2) { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 18px; }
+.qrs-finder i:nth-child(3) { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 18px; }
+.qrs-finder i:nth-child(4) { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 18px; }
+/* the line that tells it is looking */
+.qrs-sweep { position: absolute; left: 10%; right: 10%; top: 12%; height: 2px; border-radius: 2px; background: var(--glint); opacity: .85; animation: qrs-sweep 1600ms var(--ease-inout) infinite alternate; }
+@keyframes qrs-sweep { to { top: 88%; } }
+.qrs-say { margin: 0; z-index: 1; max-width: 36ch; min-height: 2.9em; text-align: center; font: 500 15px/1.45 var(--f-body); color: var(--sheet); }
+.qrs-acts { z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.qrs .qrs-pill {
+  min-height: 44px; padding: 0 18px; border-radius: 999px; font: 500 14px/1.1 var(--f-body);
+  background: var(--glass-soft); color: var(--sheet); box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+.qrs .qrs-pill.is-quiet { background: transparent; box-shadow: inset 0 0 0 1px var(--glass-soft); }
+.qrs .qrs-pill.is-on { background: var(--sheet); color: var(--head); }
+@media (hover: hover) and (pointer: fine) { .qrs .qrs-pill:hover, .qrs .qrs-x:hover { background: rgba(252, 252, 254, .24); } .qrs .qrs-pill.is-on:hover { background: var(--sheet); } }
+.qrs-trouble { align-self: center; z-index: 1; display: grid; justify-items: center; gap: 10px; max-width: 34ch; text-align: center; }
+.qrs-trouble strong { font: 600 20px/1.25 var(--f-body); color: var(--sheet); }
+.qrs-trouble p { margin: 0; font: 400 15px/1.5 var(--f-body); color: var(--mist); }
+.qrs-hanko { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; box-shadow: inset 0 0 0 2.5px var(--mist); color: var(--mist); font: 800 28px/1 var(--f-seal); rotate: -6deg; }
+.qrs-file { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qrp-plate, .qrp-code, .qrp-big[open], .qrs[open] { animation: none; }
+  .qrs-sweep { animation: none; top: 50%; }
+  .qrs-video { transition: none; }
+}

@@ -13,7 +13,8 @@ import { lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { LongList } from "../../app/LongList";
 import { DidLine, useDid } from "../../app/outcome";
-import { Button, CodeBlock, TrustedSvg, useOut } from "../../app/ui";
+import { Button, useOut } from "../../app/ui";
+import { QrPlate } from "../../app/QrPlate";
 import { hasSlip, slipOrder } from "../../lib/buyer-invoices";
 import { DEFAULT_GRACE_DAYS, lateState, msToCutoff, slipSeen } from "../../lib/buyer-late";
 import { payProblems } from "../../lib/buyer-letter";
@@ -110,12 +111,6 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
         <span lang="ja">{" · letter sealed 売 買 融"}</span>
       </p>
       <div className="by-slip-body">
-        <div className={`by-qr${qr ? " is-open" : ""}`}>
-          {qr ? <TrustedSvg svg={qr.svg} /> : null}
-          <span className="by-veil" lang="ja" aria-hidden="true">
-            {paid ? "済" : ready ? "印" : "待"}
-          </span>
-        </div>
         <dl className="by-slip-facts">
           <div>
             <dt>Amount</dt>
@@ -133,6 +128,18 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
           </div>
         </dl>
       </div>
+      <QrPlate
+        svg={qr?.svg ?? null}
+        text={qr?.uri ?? ""}
+        caption={`Pay ${zatToZec(r.amount_zat)} ZEC to the financier`}
+        print={qr?.payTo ? { label: "To", value: short(qr.payTo, 12, 8) } : undefined}
+        file={`${r.invoice_id}-payment`}
+        copyLabel="Copy payment link"
+        wallet
+        shareTitle={`Payment for ${r.invoice_id}`}
+        veil={{ glyph: paid ? "済" : ready ? "印" : "待", text: paid ? "Settled. Nothing more to pay." : ready ? "Press Show payment QR to draw it." : "It opens once all three seals hold." }}
+        raw={{ label: "Payment request (ZIP-321)", filename: `${r.invoice_id}.payment.txt` }}
+      />
       <LatePanel
         state={late}
         cutoffMs={msToCutoff(r.due_date, nowMs)}
@@ -172,11 +179,6 @@ function Slip({ r, status }: { r: Inv; status: string | null }): ReactNode {
           <span className="hint">{ready ? "Scan with a Zcash wallet. The payment is shielded; its memo carries your signed receipt and your claim, which the financier countersigns once the payment is on chain." : "The QR opens once the financier's seal is in your inbox: it seals the letter when it pays the advance."}</span>
         </div>
       )}
-      {qr ? (
-        <div className="by-uri">
-          <CodeBlock label="Payment request (ZIP-321)" value={qr.uri} filename={`${r.invoice_id}.payment.txt`} />
-        </div>
-      ) : null}
       {out.el}
     </section>
   );
@@ -243,7 +245,17 @@ export function PayPage({ slipRef }: { slipRef?: string }): ReactNode {
           render={(r) => <LedgerLine r={r} href={slipPath(r.ref)} status={statuses?.[r.n]} current={r.n === sel?.n} />}
         />
       ) : (
-        <p className="rp-empty">No slip yet. A slip opens here once the financier seals the letter you sealed: it pays the supplier the advance and seals it then.</p>
+        // an empty state with the next step (audit 2026-10-27, finding 16)
+        <div className="ia-none">
+          <b lang="ja" aria-hidden="true">
+            払
+          </b>
+          <strong>No payment slips yet</strong>
+          <p>A slip opens here once the financier pays the supplier and seals the letter you sealed.</p>
+          <Link className="ia-none-go" to="/buyer/invoices">
+            Your invoices
+          </Link>
+        </div>
       )}
       {waiting.length ? (
         <p className="hint by-wait">

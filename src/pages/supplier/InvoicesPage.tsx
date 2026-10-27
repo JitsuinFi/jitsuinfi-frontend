@@ -107,11 +107,16 @@ export function InvoicesPage(): ReactNode {
                     render={(d) => <LedgerLine d={d} book={book} />}
                   />
                 ) : (
-                  <div className="sp-ledger-empty">
-                    <p>
-                      No deal yet. <Link className="ia-inlink" to="/supplier/invoices/new">Write your first invoice</Link>: it goes to the buyer's inbox to sign.
-                    </p>
-                    <span className="sp-rules" aria-hidden="true" />
+                  // an empty state with the next step, not blank ruled lines (audit 2026-10-27, finding 16)
+                  <div className="ia-none">
+                    <b lang="ja" aria-hidden="true">
+                      新
+                    </b>
+                    <strong>No invoices yet</strong>
+                    <p>Write your first invoice: it goes to the buyer's inbox to sign.</p>
+                    <Link className="ia-none-go" to="/supplier/invoices/new">
+                      Write your first invoice
+                    </Link>
                   </div>
                 )}
               </section>

@@ -112,6 +112,9 @@ export function timeline(d: SupplierDeal): Array<{ key: StepKey; label: string; 
 // after the advance, and is later before that.
 
 export type StationKey = StepKey | "settled";
+/** The stations in order; the deal route's ?at= is one of them. */
+export const STATION_KEYS: readonly StationKey[] = ["signature", "offer", "entry", "seal", "advance", "settled"];
+export const isStation = (x: unknown): x is StationKey => STATION_KEYS.includes(x as StationKey);
 export type StationState = "done" | "next" | "wait" | "later";
 
 /** What the supplier does next, and whether it waits on someone else; `null` when complete. */

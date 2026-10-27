@@ -8,10 +8,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Page, usePhone } from "../app/AppShell";
 import { useInbox } from "../app/InboxPanel";
-import { Button, TrustedSvg, useOut } from "../app/ui";
+import { Button, useOut } from "../app/ui";
+import { QrPlate } from "../app/QrPlate";
+import { ScanButton } from "../app/Scanner";
+import { routeScan } from "../lib/scan";
 import { roleLabel, type Role } from "../lib/account";
 import { account } from "../lib/app-session";
-import { contactId, contactLink, encodeContact, readContact, type Contact } from "../lib/contact";
+import { contactId, contactLink, contactName, encodeContact, readContact, type Contact } from "../lib/contact";
 import { wasm } from "../lib/core";
 import { download } from "../lib/download";
 import { readablePrint } from "../lib/print";
@@ -51,7 +54,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
   const [qr, setQr] = useState<string | null>(null);
   // judge run 2: "Share my contact" shows the link and its QR (?share=1 opens it at once)
   const [sharing, setSharing] = useState(() => new URLSearchParams(location.search).get("share") === "1");
-  const [copied, setCopied] = useState<"" | "link" | "card">("");
+  const [copied, setCopied] = useState<"" | "card">("");
   const [pending, setPending] = useState<Contact | null>(null);
   const written = useStoreVersion();
   const code = useRef<HTMLTextAreaElement>(null);
@@ -154,31 +157,18 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                 <p>{SHARE[s.role]}</p>
                 {sharing ? (
                   <div className="ia-share">
-                    <div className="ia-qr">{qr ? <TrustedSvg svg={qr} /> : null}</div>
-                    <div className="ia-share-l">
-                      <small>Your contact link</small>
-                      <code className="ia-share-link">{link}</code>
-                      <div className="actions">
-                        <Button
-                          onClick={async () => {
-                            try {
-                              await navigator.clipboard.writeText(link);
-                              setCopied("link");
-                            } catch {
-                              setCopied("");
-                            }
-                          }}
-                        >
-                          {copied === "link" ? "Link copied" : "Copy the link"}
-                        </Button>
-                        {typeof navigator.share === "function" ? (
-                          <Button secondary onClick={async () => void (await navigator.share({ title: "My JitsuinFi contact", url: link }).catch(() => undefined))}>
-                            Send…
-                          </Button>
-                        ) : null}
-                      </div>
-                      <small>The card rides after the # in the link: it is read in their browser and never reaches a server.</small>
-                    </div>
+                    <QrPlate
+                      svg={qr}
+                      text={link}
+                      caption={`Your contact · ${mine?.username ? contactName(mine) : roleLabel(s.role)}`}
+                      print={{ label: "Key fingerprint", value: s.fingerprint }}
+                      file="jitsuinfi-contact"
+                      copyLabel="Copy link"
+                      shareAsUrl
+                      shareTitle="My JitsuinFi contact"
+                      raw={{ label: "Your contact link" }}
+                    />
+                    <small className="ia-share-note">The card rides after the # in the link: it is read in their browser and never reaches a server.</small>
                   </div>
                 ) : (
                   <div className="actions">
@@ -247,12 +237,23 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
               )}
               <div className="ia-ct-add">
                 <h3>Scan or paste a contact</h3>
-                <p className="ia-ct-none">Scan their QR with your phone's camera: it opens in this app. Or paste the link or card they sent you.</p>
+                <p className="ia-ct-none">Scan their contact QR here, or paste the link or card they sent you.</p>
                 <label className="field">
                   <span>Their contact link or card</span>
                   <textarea rows={2} spellCheck="false" autoCapitalize="none" autoCorrect="off" placeholder="https://…/app/contact#… or jitsuin-contact-v1:…" ref={code} />
                 </label>
                 <div className="actions">
+                  <ScanButton
+                    what="their contact QR"
+                    onPaste={() => code.current?.focus()}
+                    onRead={(t) => {
+                      const r = routeScan(t);
+                      out.clear();
+                      setPending(r.contact);
+                      // the one-confirm add lands under the field: bring it into view
+                      requestAnimationFrame(() => document.getElementById("ia-add-h")?.closest("section")?.scrollIntoView({ block: "center" }));
+                    }}
+                  />
                   <Button
                     secondary
                     onClick={async () => {

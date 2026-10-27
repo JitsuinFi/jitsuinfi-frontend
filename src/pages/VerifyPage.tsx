@@ -98,7 +98,7 @@ function inspectBundle(c: string, boardJson?: string): Inspection {
     { g: "doc", what: "Invoice", found: v.invoice_id, stamp: "" },
     { g: "amount", what: "Amount", found: `${zatToZec(v.amount_zat)} ZEC, due ${daysToDate(v.due_date)}`, stamp: "" },
     { g: "seals3", what: "Assignment letter", found: letterStatus(v.assignment), stamp: v.assignment === null ? "" : v.assignment === "Sealed" ? "認" : "待", open: openSeals(v.assignment) },
-    { g: "n", what: "Fingerprint N", found: v.nullifier, stamp: "", mono: true },
+    { g: "n", what: "Invoice fingerprint", found: v.nullifier, stamp: "", mono: true },
   ];
   let glyph: Hanko = verdict.kind === "ok" ? "真" : "未";
   let title = verdict.title;
@@ -119,14 +119,14 @@ function inspectBundle(c: string, boardJson?: string): Inspection {
     }
     checks.push({ g: "settled", what: "Settled", found: b.settled ? `yes, ${b.settled.on_time ? "on time" : "late"}` : "no", stamp: b.settled ? "認" : "", hit: b.settled ? [b.settled.txid] : undefined });
   }
-  return { verdict: { glyph, title, text }, kind: "Verification bundle (JTSB)", checks };
+  return { verdict: { glyph, title, text }, kind: "Deal file", checks };
 }
 
 function inspectProof(c: string, boardJson?: string): Inspection {
   const p = json<{ nullifier: string; supplier_pk: string; first_commitment: string; second_commitment: string; first_at: At | null; second_at: At | null }>(first(() => wasm.verifyProof(c)));
   const keep = { name: "double-signature.proof.txt", text: c };
   const keys: Check[] = [
-    { g: "n", what: "Fingerprint N", found: p.nullifier, stamp: "", mono: true },
+    { g: "n", what: "Invoice fingerprint", found: p.nullifier, stamp: "", mono: true },
     { g: "key", what: "Supplier key", found: p.supplier_pk, stamp: "", mono: true },
   ];
   if (!boardJson) {
@@ -134,7 +134,7 @@ function inspectProof(c: string, boardJson?: string): Inspection {
       verdict: p.first_at
         ? { glyph: "未", title: "Signatures check out; board not checked", text: "The supplier signed this invoice for two different financiers. Add board data to check the positions the proof claims." }
         : { glyph: "偽", title: "Proof does not hold", text: "It gives no board position for the first entry, so nobody can check that this financier registered first." },
-      kind: "Double-signature proof (JTSP)",
+      kind: "Proof of double financing",
       checks: [{ g: "seals2", what: "Signatures", found: "the supplier signed N for two financiers", stamp: "認" }, ...keys],
       keep,
     };
@@ -151,9 +151,9 @@ function inspectProof(c: string, boardJson?: string): Inspection {
   if (r.ordered !== null) checks.splice(3, 0, { g: "order", what: "Order", found: r.ordered ? "① came before ②" : "① is NOT before ②", stamp: r.ordered ? "認" : "偽" });
   return {
     verdict: r.holds
-      ? { glyph: "重", title: "Double financing proven", text: "Two registrations of one invoice for two financiers, both signed with the supplier's key, and every position the proof claims is on the board. Same rule as jitsuin verify." }
+      ? { glyph: "重", title: "Double financing proven", text: "Two registrations of one invoice for two financiers, both signed with the supplier's key, and every position the proof claims is on the board. The same rule the registry checks." }
       : { glyph: "偽", title: "Proof does not hold", text: "At least one claim fails against this board data." },
-    kind: "Double-signature proof (JTSP)",
+    kind: "Proof of double financing",
     checks,
     keep,
   };
@@ -177,16 +177,16 @@ function inspectExhibit(c: string, boardJson: string | undefined, invoice: strin
       found: r.binds === null ? "not stated: the exhibit names no invoice, amount or buyer. Add the invoice to check it is the one" : r.binds ? "the invoice you added: its N and supplier key are the exhibit's" : "NOT the invoice you added",
       stamp: r.binds === null ? "" : r.binds ? "認" : "偽",
     },
-    { g: "n", what: "Fingerprint N", found: r.signatures.nullifier ?? "", stamp: "", mono: true },
+    { g: "n", what: "Invoice fingerprint", found: r.signatures.nullifier ?? "", stamp: "", mono: true },
     { g: "key", what: "Supplier key", found: r.signatures.supplier_pk ?? "", stamp: "", mono: true },
   );
   return {
     verdict: r.holds
-      ? { glyph: "重", title: "Double signature on the board", text: "The same supplier key registered this fingerprint for two financiers, in this order, and both entries are on the board. Same rule as jitsuin verify --exhibit." }
+      ? { glyph: "重", title: "Double signature on the board", text: "The same supplier key registered this fingerprint for two financiers, in this order, and both entries are on the board. The same rule the registry checks." }
       : r.board_entries === null
         ? { glyph: "未", title: "Exhibit does not hold here", text: "No board data could be read, so the positions are only claimed." }
         : { glyph: "偽", title: "Exhibit does not hold here", text: "At least one claim fails." },
-    kind: "Exhibit A (JTSX)",
+    kind: "Exhibit A",
     checks,
     keep: { name: "exhibit-a.txt", text: c },
   };
@@ -202,7 +202,7 @@ function refusedSheet(kind: "bundle" | "proof" | "exhibit", err: string): Inspec
         unread("doc", "Invoice"),
         unread("amount", "Amount"),
         unread("seals3", "Assignment letter"),
-        unread("n", "Fingerprint N"),
+        unread("n", "Invoice fingerprint"),
         unread("board", "Registration"),
         unread("settled", "Settled"),
       ]
@@ -210,7 +210,7 @@ function refusedSheet(kind: "bundle" | "proof" | "exhibit", err: string): Inspec
         { g: "seals2", what: "Signatures", found: "do not hold for these bytes", stamp: "偽" },
         unread("board", "Entry ①"),
         unread("board", "Entry ②"),
-        unread("n", "Fingerprint N"),
+        unread("n", "Invoice fingerprint"),
         unread("key", "Supplier key"),
       ];
   return {
@@ -229,13 +229,14 @@ function refusedSheet(kind: "bundle" | "proof" | "exhibit", err: string): Inspec
 }
 
 const KIND_NAME: Record<string, string> = {
-  bundle: "Verification bundle (JTSB)",
-  proof: "Double-signature proof (JTSP)",
-  exhibit: "Exhibit A (JTSX)",
-  invoice: "Invoice (JTSI)",
-  assignment: "Assignment letter (JTSA)",
-  seal: "Seal (JTL1)",
-  history: "History certificate (JTSH)",
+  // plain names on screen (audit 2026-10-27, finding 9); the file's first letters stay in the code
+  bundle: "Deal file",
+  proof: "Proof of double financing",
+  exhibit: "Exhibit A",
+  invoice: "Invoice",
+  assignment: "Assignment letter",
+  seal: "Seal",
+  history: "Payment history certificate",
 };
 const STAMP_WORD: Record<Stamp, string> = { 認: "holds", 偽: "fails", 重: "already registered", 待: "not checked", "": "" };
 const HANKO_STATE: Record<Hanko | "拒", Said["v"]> = { 真: "ok", 偽: "bad", 重: "dup", 未: "wait", 拒: "no" };
@@ -249,9 +250,11 @@ interface Said {
   err?: string;
   src?: string;
   keep?: { name: string; text: string };
+  /** The raw values (fingerprint, key) behind "Technical proof": the sheet shows them cut. */
+  tech?: Array<[string, string]>;
 }
 
-const IDLE: Said = { v: "idle", glyph: "閲", text: "Bring a bundle, a proof or an exhibit. Everything is checked in this browser; nothing you hand over leaves it." };
+const IDLE: Said = { v: "idle", glyph: "閲", text: "Bring a deal file, a proof or Exhibit A. Everything is checked in this browser; nothing you hand over leaves it." };
 const NO_FILE = `No file: the live ${NET.noun} board is read`;
 const NARROW = "(max-width: 860px)";
 const magicOf = (v: string) => {
@@ -387,7 +390,7 @@ export function VerifyPage(): ReactNode {
   const runCheck = async () => {
     const c = code.current!.value.trim();
     const kind = codeKind(c);
-    if (kind !== "bundle" && kind !== "proof" && kind !== "exhibit") return refuse("this is not a bundle, a proof or an exhibit");
+    if (kind !== "bundle" && kind !== "proof" && kind !== "exhibit") return refuse("This is not a deal file, a proof of double financing or Exhibit A.");
     const id = ++runId.current;
     const live = () => id === runId.current;
     const l = loupe.current!;
@@ -412,7 +415,8 @@ export function VerifyPage(): ReactNode {
       if (boardJson && !result.refused) board.current?.set(boardRows(boardJson, (m) => wasm.boardMemoDescribe(m)), source);
 
       // the sheet lands under the loupe, which reads it line by line
-      const sheet: Sheet = { kind: result.kind, code: c, rows: result.checks };
+      // the sheet shows long values cut (8…8); the whole values are under "Technical proof" (DS-MOB P3)
+      const sheet: Sheet = { kind: result.kind, code: c, rows: result.checks.map((r) => (r.mono && r.found.length > 20 ? { ...r, found: `${r.found.slice(0, 8)}…${r.found.slice(-8)}` } : r)) };
       l.idle = false;
       l.build(sheet, matchMedia(NARROW).matches);
       last.current = null;
@@ -466,6 +470,7 @@ export function VerifyPage(): ReactNode {
         err: result.verdict.err,
         src: result.refused ? undefined : `Board data: ${source}.`,
         keep: result.keep,
+        tech: result.checks.filter((r) => r.mono && r.found).map((r) => [r.what, r.found]),
       });
       await slam();
     } catch (e) {
@@ -480,32 +485,37 @@ export function VerifyPage(): ReactNode {
     <Page wide>
       <div className="vf-page">
         <section className="vf-cap" aria-labelledby="vf-title">
+          {/* the Verify tab's kanji, one per destination (audit 2026-10-27, finding 10) */}
           <p className="vf-tag">
-            <b lang="ja">閲</b>
+            <b lang="ja">証</b>
             Public inspection
           </p>
           <h1 id="vf-title">Verify</h1>
-          <p className="vf-lede">
-            Hand the registry what you were given: a deal bundle, a double-signature proof or Exhibit A. It is checked here, with the same code as <code>jitsuin verify</code>.
-          </p>
+          <p className="vf-lede">Hand in the file you were given. It is checked in this browser, by the registry's own rule.</p>
           <p className="vf-kinds-k">What you can hand in</p>
           <ul className="vf-kinds">
             <li>
-              <span className="vf-code">JTSB</span>
+              <span className="vf-code" lang="ja" aria-hidden="true">
+                件
+              </span>
               <div>
-                <strong>A deal bundle</strong>
+                <strong>A deal file</strong>
                 <span>The invoice, its letter and its seals: is it genuine, registered once, settled?</span>
               </div>
             </li>
             <li>
-              <span className="vf-code">JTSP</span>
+              <span className="vf-code" lang="ja" aria-hidden="true">
+                重
+              </span>
               <div>
-                <strong>A double-signature proof</strong>
+                <strong>A proof of double financing</strong>
                 <span>One invoice signed for two financiers, and where each entry sits on the board.</span>
               </div>
             </li>
             <li>
-              <span className="vf-code">JTSX</span>
+              <span className="vf-code" lang="ja" aria-hidden="true">
+                甲
+              </span>
               <div>
                 <strong>Exhibit A</strong>
                 <span>The double signature without the deal. Add the invoice if you hold it.</span>
@@ -549,20 +559,20 @@ export function VerifyPage(): ReactNode {
                 <textarea
                   spellCheck="false"
                   rows={6}
-                  placeholder="JTSB…, JTSP… or JTSX…: paste what you were given"
+                  placeholder="Paste the deal file, proof or Exhibit A you were given"
                   ref={code}
                   onInput={() => trayUpdate(false)}
                   onPaste={() => window.setTimeout(() => trayUpdate(true))}
                 />
               </span>
-              <small>A bundle (JTSB), a double-signature proof (JTSP) or Exhibit A (JTSX). Paste it, or drop the file on the tray.</small>
+              <small>Paste it, or drop the file on the tray.</small>
             </label>
             <label className="vf-slot is-small">
               <span className="vf-slot-k">
                 <b lang="ja">請求書</b>The invoice (optional)
               </span>
               <span className="vf-well">
-                <textarea spellCheck="false" rows={2} placeholder="JTSI…, only for an exhibit, if you hold the invoice" ref={invoice} />
+                <textarea spellCheck="false" rows={2} placeholder="Only for Exhibit A, if you hold the invoice" ref={invoice} />
               </span>
             </label>
             <label className="vf-env">
@@ -601,6 +611,19 @@ export function VerifyPage(): ReactNode {
                 <p className="vf-vd-text">{said.text}</p>
                 {said.err ? <p className="vf-vd-err">{said.err}</p> : null}
                 {said.src ? <p className="vf-vd-src">{said.src}</p> : null}
+                {said.tech?.length ? (
+                  <details className="vf-tech">
+                    <summary>Technical proof</summary>
+                    <dl>
+                      {said.tech.map(([k, v]) => (
+                        <div key={k}>
+                          <dt>{k}</dt>
+                          <dd>{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                ) : null}
                 {said.keep ? (
                   <button type="button" className="vf-link" onClick={() => download(said.keep!.name, said.keep!.text)}>
                     {`Keep it (${said.keep.name})`}

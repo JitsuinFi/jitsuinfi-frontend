@@ -638,3 +638,20 @@
   .cs-field input, .cs-field input.is-mono, .cs-field textarea, .cs-rline.is-wide textarea { font-size: 16px; }
   .cs-field input, .cs-rline > input { min-height: 44px; }
 }
+
+/* a phone: 44 px hit areas, the look unchanged (audit 2026-10-27, finding 13; DS-MOB T1); a pill
+   grows by a transparent border clipped from its fill, a text button by padding given back */
+@media (max-width: 720px) {
+  .cs-nav a { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; }
+  .cs-cp, .cs-tx-copy { border: 11px solid transparent; border-inline-width: 0; background-clip: padding-box; margin-block: -11px; }
+  .cs-link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 4px; margin-inline: -4px; }
+  .cs-tabs-refresh { margin-block: -13px 0; }
+  .cs-btn-q { min-height: 44px; }
+  .cs-brand { min-height: 44px; }
+  .cs-check { min-height: 44px; }
+}
+/* a checkbox's own font is the field size, so no browser zooms into it (DS-MOB F2) */
+.cs-check input { font-size: 16px; }
+@media (max-width: 720px) {
+  .cs-foot .cs-foot-links a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 4px; }
+}

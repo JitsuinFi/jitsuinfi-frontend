@@ -380,3 +380,13 @@ export function advanceSuggestion(amountZat: number, mandate?: { max_zat?: numbe
   if (mandate?.max_zat && mandate.max_zat > 0) zat = Math.min(zat, mandate.max_zat);
   return Math.max(0, Math.min(zat, amountZat));
 }
+
+/** The due presets on Write (DS-MOB F3): days after the issue date. */
+export const DUE_PRESETS = [30, 60, 90] as const;
+
+/** The ISO date `days` after the ISO date `issued` (UTC days, as the sheet's dates are). */
+export function dueIn(issued: string, days: number): string {
+  const t = Date.parse(`${issued}T00:00:00Z`);
+  if (!Number.isFinite(t)) throw new Error("write the issue date first");
+  return new Date(t + days * 86_400_000).toISOString().slice(0, 10);
+}

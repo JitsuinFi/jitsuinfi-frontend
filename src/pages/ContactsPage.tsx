@@ -164,6 +164,7 @@ export function ContactsPage({ rootClass, counter }: { rootClass: string; counte
                       print={{ label: "Key fingerprint", value: s.fingerprint }}
                       file="jitsuinfi-contact"
                       copyLabel="Copy link"
+                      dock
                       shareAsUrl
                       shareTitle="My JitsuinFi contact"
                       raw={{ label: "Your contact link" }}

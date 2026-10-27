@@ -848,7 +848,7 @@ function AdvanceWork(p: WorkProps): ReactNode {
   const byHand = (
     <div className="ia-draft-area" ref={kept.ref}>
       {kept.note}
-      <Field label="Amount your wallet received (ZEC)" type="number" placeholder={zatToZec(pre?.zat ?? agreed)} inputRef={got} />
+      <Field label="Amount your wallet received (ZEC)" inputMode="decimal" placeholder={zatToZec(pre?.zat ?? agreed)} inputRef={got} />
       <Field label="The transaction it came in" placeholder="from the financier's letter or your wallet" value={pre?.txid} help="Your wallet app shows it with the payment." inputRef={txid} />
       <Actions>
         <Button

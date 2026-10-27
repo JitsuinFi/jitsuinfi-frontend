@@ -19,3 +19,11 @@ test("a scanned address: bare, or inside a zcash: request; anything else refused
   assert.throws(() => addressFromScan("https://x/app/contact#jitsuin-contact-v1:z", ok), ScanRefused);
   assert.throws(() => addressFromScan("t1xyz", ok), /not an address/);
 });
+
+test("due presets count days from the issue date", async () => {
+  const { dueIn, DUE_PRESETS } = await import("../src/lib/supplier-deal.ts");
+  assert.deepEqual([...DUE_PRESETS], [30, 60, 90]);
+  assert.equal(dueIn("2026-10-27", 30), "2026-11-26");
+  assert.equal(dueIn("2026-12-15", 30), "2027-01-14");
+  assert.throws(() => dueIn("", 30), /issue date/);
+});

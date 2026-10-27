@@ -12,7 +12,7 @@ import { explain } from "../lib/explain";
 import { letterAction, letterGlyph, letterLabel } from "../lib/inbox-routes";
 import { SECTIONS } from "../lib/sections";
 import { reducedMotion } from "../landing/motion";
-import { act, actionable, checkInbox, letGo, snapshot, subscribe, unread, type Letter } from "./inbox";
+import { act, actionable, checkInbox, letGo, snapshot, subscribe, unread, type Done, type Letter } from "./inbox";
 import { LongList } from "./LongList";
 import { clearDid, setDid } from "./outcome";
 
@@ -21,6 +21,17 @@ export function useInbox() {
 }
 
 const when = (iso: string) => new Date(iso).toLocaleString();
+
+/**
+ * A letter's action led to a page: the letter leaves the list and its outcome waits on that page
+ * ("Done · from your inbox"). Returns the page's href. The panel and a ledger's waiting rows
+ * (WaitingRows.tsx) both end this way.
+ */
+export function arrive(l: Letter, done: Done & { to: NonNullable<Done["to"]> }): string {
+  letGo(l);
+  if (done.did) setDid({ ...done.did, at: done.to.path, inbox: true });
+  return done.to.at ? `${done.to.path}?at=${done.to.at}` : done.to.path;
+}
 
 function LetterRow({ l, role, onLead, leaving }: { l: Letter; role: Role; onLead: (l: Letter) => void; leaving: boolean }): ReactNode {
   const s = useInbox();
@@ -116,9 +127,7 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
     const to = done.to;
     const go = () => {
       setLeaving(null);
-      letGo(l);
-      if (done.did) setDid({ ...done.did, at: to.path, inbox: true });
-      onLeave(to.at ? `${to.path}?at=${to.at}` : to.path);
+      onLeave(arrive(l, { ...done, to }));
     };
     if (reducedMotion()) return go();
     setTimeout(() => setLeaving(l.r.relayId), 650);

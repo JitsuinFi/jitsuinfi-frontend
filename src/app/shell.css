@@ -327,6 +327,24 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-row-link strong { font: 500 15px/1.3 var(--f-body); }
 .ia-row-link small { font: 400 12.5px/1.35 var(--f-mono); color: var(--ink-2); overflow-wrap: anywhere; }
 .ia-row-link > i { font-style: normal; color: var(--seal); }
+/* user test 2026-10-27: letters waiting in the inbox, as rows at the top of the role's ledger (WaitingRows.tsx) */
+.ia-wait { display: grid; gap: 8px; margin: 0 0 16px; }
+.ia-wait-row {
+  display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 56px; padding: 10px 12px; border-radius: 14px;
+  background: var(--sheet); box-shadow: inset 0 0 0 1.5px var(--seal); color: var(--head);
+}
+.ia-wait-row > b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; box-shadow: inset 0 0 0 2.5px var(--seal); color: var(--seal); font: 800 17px/1 var(--f-seal); rotate: -4deg; }
+.ia-wait-row > span { display: grid; gap: 3px; min-width: 0; }
+.ia-wait-row strong { font: 500 15px/1.3 var(--f-body); }
+.ia-wait-row small { font: 400 13px/1.4 var(--f-body); color: var(--ink-2); overflow-wrap: anywhere; }
+.ia-wait-row > button { min-height: 44px; white-space: nowrap; }
+.ia-wait-no { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; margin-top: 4px; font: 400 13px/1.45 var(--f-body); }
+.ia-wait-no b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--seal); color: var(--sheet); font: 800 11px/1 var(--f-seal); }
+.ia-wait-no span { color: var(--seal); overflow-wrap: anywhere; }
+@media (max-width: 599px) {
+  .ia-wait-row { grid-template-columns: 38px minmax(0, 1fr); align-items: start; }
+  .ia-wait-row > button { grid-column: 1 / -1; width: 100%; }
+}
 .ia-first-step { margin-top: 18px; }
 .ia-first-step small { font-family: var(--f-body); }
 /* judge run 2, finding 9: the Back control of every screen below the top level (UpBar.tsx) */

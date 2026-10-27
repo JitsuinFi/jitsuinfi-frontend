@@ -545,7 +545,7 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
 
           {/* the visual: ≥ 65% */}
           <div className="ac-desk">
-            <form className={`ac-card${fixed ? " is-fixed" : ""}${s ? " is-registered" : ""}`} noValidate aria-labelledby="ac-card-title" onSubmit={submit} ref={card}>
+            <form className={`ac-card${fixed ? " is-fixed" : ""}${s ? " is-registered" : ""}${v === "signup" || v === "login" ? " has-fields" : ""}`} noValidate aria-labelledby="ac-card-title" onSubmit={submit} ref={card}>
               <span className="ac-band" aria-hidden="true" />
               <div className="ac-head">
                 <p className="ac-title" id="ac-card-title">

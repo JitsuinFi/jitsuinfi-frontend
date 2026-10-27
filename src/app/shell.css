@@ -465,4 +465,13 @@ button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9e
    (mobile E2E 2026-10-27, finding 8: Continue covered the Email field on sign-up) */
 @media (max-width: 599px) {
   html:has(.ac .ac-act > .ac-btn), html:has(.sp .ia-new-go), html:has(.ap .ap-act), html:has(.fi .fi-actions) { scroll-padding-bottom: calc(var(--tabbar-h) + 88px + env(safe-area-inset-bottom, 0px)); }
+  /* the field itself keeps the bar's height below it when anything scrolls it into view */
+  .ac input, .sp input, .ap input, .fi input { scroll-margin-bottom: calc(var(--tabbar-h) + 96px + env(safe-area-inset-bottom, 0px)); }
+  /* mobile E2E 2, finding 2: a sticky Continue still sat over Email (sign-up) and Username (the
+     contact link's sign-up) while the page stood still. A card with fields to write keeps its
+     button in the flow, right after the last field (the seal seat moves below it), so the
+     button never floats over a field; the passkey steps, with nothing to write, keep it sticky */
+  .ac .ac-card.has-fields .ac-body { display: contents; }
+  .ac .ac-card.has-fields .ac-seat { order: 9; }
+  .ac .ac-card.has-fields .ac-act > .ac-btn { position: static; box-shadow: none; }
 }

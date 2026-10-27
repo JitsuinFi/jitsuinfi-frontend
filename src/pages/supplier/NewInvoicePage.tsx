@@ -13,6 +13,7 @@ import { account } from "../../lib/app-session";
 import { dateToDays, fileHash, json, wasm, zecToZat } from "../../lib/core";
 import { dealPath, newRef } from "../../lib/deal-ref";
 import { defaultChoice, HAND, keyChoices } from "../../lib/key-match";
+import { filePdfProblem } from "../../lib/pdf-check";
 import { readablePrint } from "../../lib/print";
 import { invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
 import { Seikyusho, type SheetFields } from "../try/Seikyusho";
@@ -112,6 +113,15 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
         onChange={async () => {
           const f = pdf.current?.files?.[0];
           setBad([]);
+          out.clear();
+          // messy-state E2E 2026-10-27: an empty, non-PDF or too large file is refused at once
+          const problem = f ? await filePdfProblem(f) : null;
+          if (problem) {
+            setBad(["pdf"]);
+            setFile(null);
+            out.error(new Error(problem));
+            return;
+          }
           setFile(f ? { name: f.name, hash: await fileHash(f) } : null);
         }}
       />
@@ -154,6 +164,11 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
       if (!f) {
         setBad(["pdf"]);
         throw new Error("Choose the invoice PDF on the 条件 line of the sheet.");
+      }
+      const pdfBad = await filePdfProblem(f);
+      if (pdfBad) {
+        setBad(["pdf"]);
+        throw new Error(pdfBad);
       }
       if (!fields.due.current!.value) {
         setBad(["due"]);

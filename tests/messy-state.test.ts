@@ -42,3 +42,12 @@ test("a letter about an invoice another device holds is marked, the exceptions a
   assert.equal(await h["invoice.signature"]!.elsewhere!(letter("gone")), true);
   assert.equal(h["key.invoice_pk"]!.elsewhere, undefined);
 });
+
+test("the invoice PDF: empty, not a PDF and over 2 MiB are refused before an invoice is bound to it", async () => {
+  const { pdfProblem } = await import("../src/lib/pdf-check.ts");
+  const pdf = new TextEncoder().encode("%PDF-1.7");
+  assert.match(pdfProblem("a.pdf", 0, new Uint8Array()) ?? "", /a\.pdf is empty/);
+  assert.match(pdfProblem("notes.pdf", 17, new TextEncoder().encode("hello")) ?? "", /is not a PDF/);
+  assert.match(pdfProblem("big.pdf", 5 * 1048576, pdf) ?? "", /5\.0 MiB: the relay carries up to 2 MiB/);
+  assert.equal(pdfProblem("ok.pdf", 2 * 1048576, pdf), null);
+});

@@ -14,21 +14,22 @@ export function bundleVerdict(assignment: string | null): Verdict {
     return {
       kind: "ok",
       title: "Invoice is genuine",
-      text: "The buyer signed this invoice. The bundle carries no assignment letter, so it does not show that the invoice was financed.",
+      text: "The buyer signed this invoice. This file carries no letter to a financier, so it does not show that the invoice was financed.",
     };
   }
   if (assignment === "Sealed") {
     return {
       kind: "ok",
-      title: "Bundle is genuine",
-      text: "The buyer signed this invoice and every seal on the assignment letter checks out: supplier, buyer and financier.",
+      // mobile E2E 2, finding 9: plain words on screen 1 (no "bundle", "assignment")
+      title: "The deal is genuine",
+      text: "The buyer signed this invoice and every seal on the letter to the financier checks out: supplier, buyer and financier.",
     };
   }
   const next = assignment.startsWith("AwaitingSeal:") ? assignment.slice("AwaitingSeal:".length).toLowerCase() : "";
   if (!next) throw new Error(`unknown letter status ${assignment}`);
   return {
     kind: "warn",
-    title: "Assignment letter not complete",
+    title: "The letter is not fully sealed",
     text: `The buyer signed this invoice and the seals present check out, but the letter still waits for the ${next}'s seal. It does not prove a financed deal yet.`,
   };
 }

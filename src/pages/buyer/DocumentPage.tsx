@@ -436,8 +436,14 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
             <dt lang="ja">
               支払先<small>You pay at</small>
             </dt>
-            <dd>
-              <span className="mono">{lf.financier_address}</span>
+            {/* mobile E2E 2, finding 9: the ~145-character address wrapped over five lines on a phone;
+                its two ends read first (as the slip shows it), the whole of it under Details */}
+            <dd className="by-s-addr">
+              <span className="mono" title={lf.financier_address}>{`${lf.financier_address.slice(0, 12)}…${lf.financier_address.slice(-8)}`}</span>
+              <details className="by-s-more">
+                <summary>Details</summary>
+                <span className="mono by-s-full">{lf.financier_address}</span>
+              </details>
             </dd>
           </div>
           <div className="is-amt">

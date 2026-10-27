@@ -22,6 +22,7 @@ import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID,
 import { account, accountDoor } from "../lib/app-session";
 import { firstSection } from "../lib/sections";
 import { NoPrfError, passkeysAvailable } from "../lib/passkey";
+import { onboarding } from "../lib/onboarding";
 import { dur, ease, run, still } from "./try/anim";
 // stylesheet: src/pages/account.css, loaded with the app shell (src/app/app-styles.ts)
 
@@ -31,16 +32,11 @@ type CardView = View | "onboard" | "roles";
 let view: View | null = null;
 let loginName = "";
 let draft: { email: string; username: string; role: Role } = { email: "", username: "", role: "supplier" };
-let onboarding = false;
 // The device's authenticator turned out to have no PRF, so offer test data.
 let prfFailed = false;
 // The next session to appear was made by Create passkey: the hanko comes down on the seat.
 let pressNext = false;
-const onboardingListeners = new Set<() => void>();
-const setOnboarding = (v: boolean) => {
-  onboarding = v;
-  onboardingListeners.forEach((f) => f());
-};
+const setOnboarding = (v: boolean) => onboarding.set(v);
 
 const KANJI: Record<Role, string> = { supplier: "売", buyer: "買", member: "資" };
 const ROLE_LINE: Record<Role, string> = {
@@ -59,19 +55,22 @@ const NO_PASSKEYS = "Passkeys are not available in this browser. Open the app ov
 const JITSUIN = "Your passkey is your jitsuin: a seal only your device can press.";
 const REGISTERED = "Registered. Your passkey signs for you; JitsuinFi never sees it.";
 
-/** True right after sign-up, until the onboarding view is left: the router keeps showing it. */
+/**
+ * True right after sign-up, until the onboarding view is left: the router keeps showing it. Any
+ * move to another screen leaves it (src/lib/onboarding.ts, audit 2026-10-27 finding 1).
+ */
 export function onboardingPending(): boolean {
-  return onboarding && account.current !== null;
+  return onboarding.on && account.current !== null;
 }
 
 /** Repaints on every session change and when the onboarding view is left. */
 export function useSessionGate(): void {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useLayoutEffect(() => {
-    onboardingListeners.add(bump);
+    const offStep = onboarding.subscribe(bump);
     const off = account.onChange(bump);
     return () => {
-      onboardingListeners.delete(bump);
+      offStep();
       off();
     };
   }, []);
@@ -217,7 +216,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
     if (!s) view = null;
   }
   let v: CardView;
-  if (s) v = onboarding ? "onboard" : "roles";
+  if (s) v = onboarding.on ? "onboard" : "roles";
   else {
     if (!view) view = account.knownCredentials().length ? "login" : "signup";
     if (want && view === "signup" && !draft.username) draft.role = want;
@@ -372,7 +371,9 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
       // set before the call: the new session re-renders the app at once (as Create passkey does)
       if (onboard) setOnboarding(true);
       try {
-        await account.signInDemo(r, key);
+        // the name and email typed on the card stay with the test-data session (finding 5)
+        const typed = v === "signup-passkey" && draft.username ? { username: draft.username, email: draft.email } : v === "login-passkey" && loginName ? { username: loginName } : undefined;
+        await account.signInDemo(r, key, typed);
         view = null;
       } catch (e) {
         if (onboard) setOnboarding(false);
@@ -793,7 +794,7 @@ export function AccountPage({ want }: { want?: Role }): ReactNode {
                   <div className="ac-act">
                     <button
                       type="button"
-                      className="ac-link"
+                      className="ac-btn2 ac-later"
                       onClick={() => {
                         // Opened from a role screen: that screen shows now; from the account page: the role list.
                         setOnboarding(false);

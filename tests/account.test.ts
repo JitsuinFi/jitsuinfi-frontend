@@ -218,6 +218,21 @@ test("demo mode: the test secret is the master, switching roles keeps it, lock w
   await assert.rejects(acct.signInDemo("buyer", new Uint8Array(16)), /64 hex/);
 });
 
+test("demo mode keeps the username and email typed on the card for the session only (audit 2026-10-27)", async () => {
+  const kv = new MapStorage();
+  const { acct } = setup(kv);
+  const secret = new Uint8Array(32).fill(0x5b);
+  await acct.signInDemo("supplier", secret.slice(), { username: "Audit_Sup", email: " a@example.com " });
+  assert.deepEqual(acct.who(), { username: "audit_sup", email: "a@example.com" });
+  await acct.switchRole("buyer");
+  assert.deepEqual(acct.who(), { username: "audit_sup", email: "a@example.com" });
+  assert.deepEqual(readProfile(kv).credentials, []);
+  acct.lock();
+  assert.equal(acct.who(), null);
+  await acct.signInDemo("member", secret.slice());
+  assert.equal(acct.who(), null);
+});
+
 test("the profile records the roles used", async () => {
   const kv = new MapStorage();
   const { acct } = setup(kv);

@@ -2,7 +2,7 @@
 // helpers of src/lib/ui.ts and src/pages/desk.ts had, so the stylesheets apply unchanged.
 // No innerHTML and no parsed markup: the QR is drawn as React SVG from its modules (QrPlate.tsx).
 import { useState, type ReactNode, type Ref } from "react";
-import { explain } from "../lib/explain";
+import { explain, isRelayOutage } from "../lib/explain";
 import { download } from "../lib/download";
 
 // One part of a screen, set on the paper (D-36: no card box): its heading on the left, its fields
@@ -103,7 +103,7 @@ export function useOut(): OutSlot {
       const msg = e instanceof Error ? e.message : String(e);
       // HNK-21.T9: what happened in a sentence; the crate's own words stay for support
       const said = explain(msg);
-      setContent(<Banner kind="bad" title="Refused" text={said} detail={said !== msg ? msg : undefined} />);
+      setContent(<Banner kind="bad" title={isRelayOutage(msg) ? "Relay not reachable" : "Refused"} text={said} detail={said !== msg ? msg : undefined} />);
     },
   };
 }

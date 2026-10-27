@@ -31,3 +31,12 @@ test("a message on screen is a sentence: capital first, full stop last (audit 20
   assert.equal(asSentence("Done!"), "Done!");
   assert.equal(asSentence("  "), "");
 });
+
+test("the relay down reads as an outage to retry, not a refusal (messy-state E2E 2026-10-27)", async () => {
+  const { isRelayOutage } = await import("../src/lib/explain.ts");
+  assert.match(explain("the relay answered 502"), /^The relay is not answering right now \(502\)\. Nothing is lost: try again/);
+  assert.match(explain("the relay cannot be reached; check your connection and try again"), /could not be reached\. Nothing is lost/);
+  assert.equal(isRelayOutage("the relay answered 503"), true);
+  assert.equal(isRelayOutage("the relay answered 404"), false);
+  assert.equal(isRelayOutage("relay: mailbox not found"), false);
+});

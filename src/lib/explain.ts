@@ -31,6 +31,9 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/same financier commitment: not double financing/i, () => "Both entries name the same financier: that is a repeated registration, not double financing."],
   [/malformed verification bundle/i, () => "This bundle is incomplete or changed: ask the financier for it again."],
   [/memo is not ZIP-302|memo padding is not zero/i, () => "This is not a JitsuinFi board memo."],
+  // messy-state E2E 2026-10-27: the relay down (no connection, or a gateway answering for it)
+  [/the relay cannot be reached/i, () => "The relay could not be reached. Nothing is lost: check your connection and try again in a moment; doing it twice does no harm."],
+  [/the relay answered (50[234])/i, (m) => `The relay is not answering right now (${m[1]}). Nothing is lost: try again in a moment; doing it twice does no harm.`],
   // HNK-32 (local E2E 2026-10-22): the node's own errors as the console shows them
   [/lightwalletd: error sending request|transport error|gave up after \d+ s without an answer/i, () => "The Zcash server did not answer in time. Nothing was sent; try again in a minute."],
   [/insufficient balance \(have (\d+), need (\d+)/i, (m) => `The wallet has ${m[1]} zat it can spend now and needs ${m[2]}, fee included. Funds that just arrived become spendable after a few blocks.`],
@@ -43,6 +46,11 @@ export function explain(message: string): string {
     if (m) return say(m);
   }
   return message;
+}
+
+/** The relay was down: the action did not go through, it was not refused (the banner says "Relay not reachable", not "Refused"). */
+export function isRelayOutage(message: string): boolean {
+  return /the relay cannot be reached|the relay answered 50[234]/i.test(message);
 }
 
 /**

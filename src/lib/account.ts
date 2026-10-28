@@ -156,6 +156,15 @@ export function usernameProblem(s: string): string | null {
   return null;
 }
 
+/**
+ * The sign-up's fields are good to go on (mobile E2E 4): a phone then shows Continue in the bottom
+ * bar, so it is on screen 1 without a scroll. Whether this device already has the username is
+ * still checked on Continue.
+ */
+export function signupReady(email: string, username: string): boolean {
+  return !emailProblem(email) && !usernameProblem(username);
+}
+
 export function emailProblem(s: string): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim()) ? null : "Enter an email address like name@example.com.";
 }

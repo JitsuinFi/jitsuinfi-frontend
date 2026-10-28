@@ -307,3 +307,11 @@ test("the last username survives a reload, for Welcome back (mobile E2E 2026-10-
   const again = setup(kv); // a reload: a new Account on the same profile
   assert.equal(again.acct.lastUsername(), "hans_01");
 });
+
+test("mobile E2E 4: the sign-up is ready for the bar's Continue once email and username are good", async () => {
+  const { signupReady } = await import("../src/lib/account.ts");
+  assert.equal(signupReady("name@example.com", "yourname"), true);
+  assert.equal(signupReady("name@example", "yourname"), false);
+  assert.equal(signupReady("name@example.com", ""), false);
+  assert.equal(signupReady("", ""), false);
+});

@@ -73,7 +73,7 @@ function SealIcon({ cls }: { cls: string }): ReactNode {
   );
 }
 
-export function Hero({ reduced }: { reduced: boolean }): ReactNode {
+export function Hero({ reduced, pitchOpen, onPitch }: { reduced: boolean; pitchOpen: boolean; onPitch: () => void }): ReactNode {
   const t = useT();
   const lang = getLang();
   const [ep, setEp] = useState(reduced ? 5 : 0);
@@ -96,7 +96,7 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
   const beats = useRef<(HTMLButtonElement | null)[]>([]);
   const words = useRef<(HTMLSpanElement | null)[]>([]);
   // what the rail and the watch button call: set by the director
-  const controls = useRef<{ toggle: () => void; play: (i: number) => void }>({ toggle: () => undefined, play: () => undefined });
+  const controls = useRef<{ toggle: () => void; play: (i: number) => void; hold: () => () => void }>({ toggle: () => undefined, play: () => undefined, hold: () => () => undefined });
 
   // a rebuilt headline (a language switch) settles in quickly; the first one waits for the entry
   const firstLang = useRef(true);
@@ -332,6 +332,14 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
     controls.current = {
       toggle: () => setPaused(!isPaused),
       play: (i) => (isPaused && setPaused(false), play(i)),
+      // the pitch video holds the story while it is open; a story the viewer paused stays paused
+      hold: () => {
+        const was = isPaused;
+        if (!was) setPaused(true);
+        return () => {
+          if (!was) setPaused(false);
+        };
+      },
     };
 
     // render loop: only while the hero is on screen and the tab is visible
@@ -413,6 +421,11 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!pitchOpen || reduced) return;
+    return controls.current.hold();
+  }, [pitchOpen, reduced]);
+
   const { words: lines, gap } = HEADLINE[lang];
   words.current = [];
   let w = 0;
@@ -486,11 +499,11 @@ export function Hero({ reduced }: { reduced: boolean }): ReactNode {
             <a className="seal-btn" href="/app" ref={demo}>
               <span className="seal-btn-label">{t("hero.demo")}</span>
             </a>
-            <button className="watch glass" type="button" hidden={reduced} ref={watch} onClick={() => controls.current.play(4)}>
+            <button className="watch glass" type="button" aria-haspopup="dialog" ref={watch} onClick={onPitch}>
               <svg viewBox="0 0 24 24" className="watch-icon" aria-hidden="true">
                 <polygon points="7 4 20 12 7 20 7 4" />
               </svg>
-              <span>{t("hero.watch")}</span>
+              <span>{t("hero.pitch")}</span>
             </button>
           </div>
           <p className="hero-proof" ref={proof}>

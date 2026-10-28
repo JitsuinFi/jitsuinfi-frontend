@@ -171,9 +171,9 @@ const handlers: Handlers = {
       const bundle = String(h.body.bundle);
       if (json<{ nullifier: string }>(wasm.verifyBundle(bundle)).nullifier !== d.n) throw new Error("This bundle is for another invoice.");
       await save({ ...d, bundle });
-      return `${d.invoice_id} is settled: the buyer repaid and the financier posted the settled entry. The bundle is on the deal, ready for Verify.`;
+      return `${d.invoice_id} is settled: the buyer repaid and the financier posted the settled record. The bundle is on the deal, ready for Verify.`;
     },
-    (d) => `${d.invoice_id}: the buyer repaid and the financier posted the settled entry.`,
+    (d) => `${d.invoice_id}: the buyer repaid and the financier posted the settled record.`,
     (d) => !!d.bundle,
   ),
 };

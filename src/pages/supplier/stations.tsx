@@ -99,7 +99,7 @@ export function StationWork(p: WorkProps & { station: StationKey; stations: Stat
     case "settled": {
       const board = boardLine(d);
       return d.bundle || st.state === "done" ? (
-        <Work glyph="済" step="Settled" title="Repaid and settled" hint="The buyer repaid and the financier posted the settled entry. The settlement bundle proves the whole deal on the Verify page.">
+        <Work glyph="済" step="Settled" title="Repaid and settled" hint="The buyer repaid and the financier posted the settled record. The settlement bundle proves the whole deal on the Verify page.">
           <Kv
             rows={[
               ["On the board", board ? board.replace(/^On the board: /, "") : "not read yet"],
@@ -124,7 +124,7 @@ export function StationWork(p: WorkProps & { station: StationKey; stations: Stat
           </Actions>
         </Work>
       ) : (
-        <Work glyph="済" step="Waiting" title="Waiting for the buyer to pay" hint={`Your advance arrived as agreed. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the financier then posts the settled entry and the settlement bundle arrives in your inbox. Nothing to do until then.`} />
+        <Work glyph="済" step="Waiting" title="Waiting for the buyer to pay" hint={`Your advance arrived as agreed. The buyer pays the financier at maturity, due ${daysToDate(d.due_date)}; the financier then posts the settled record and the settlement bundle arrives in your inbox. Nothing to do until then.`} />
       );
     }
   }
@@ -615,14 +615,14 @@ function EntryWork(p: WorkProps): ReactNode {
             ["Buyer's history checked", d.entry.tagged ? "yes" : "no"],
           ]}
         />
-        {d.entry.sent ? null : <CodeBlock label="The entry: hand it to the financier" value={d.entry.memo} filename={`${d.invoice_id}.entry.txt`} />}
+        {d.entry.sent ? null : <CodeBlock label="The public record: hand it to the financier" value={d.entry.memo} filename={`${d.invoice_id}.entry.txt`} />}
       </Work>
     );
   }
   const req = d.entry_request;
   if (!req) {
     return (
-      <Work glyph="登" step="Step 3" title="Wait for the entry request" hint="The financier asks you to register the invoice on the public board only after it has checked the board for this invoice (and the buyer's history, if it needs it). The request arrives in your inbox. Nothing to sign before that.">
+      <Work glyph="登" step="Step 3" title="Wait for the financier's request" hint="The financier asks you to register the invoice on the public board only after it has checked the board for this invoice (and the buyer's history, if it needs it). The request arrives in your inbox. Nothing to sign before that.">
         <ByHand title="Got it another way? Paste the request the financier gave you">
           <Field label="Entry request (from the financier)" area placeholder="jitsuin-entry-request-v1:…" inputRef={code} />
           <Actions>
@@ -653,7 +653,7 @@ function EntryWork(p: WorkProps): ReactNode {
   }
   const classes = req.discount === undefined ? "none" : `${req.discount} / ${req.tenor}`;
   return (
-    <Work glyph="登" step="Step 3" title="Register the invoice on the public board" hint="The financier checked the board and asks for your entry. The entry commits to that financier without naming it.">
+    <Work glyph="登" step="Step 3" title="Register the invoice on the public board" hint="The financier checked the board and asks you to sign the invoice's public record. The record commits to that financier without naming it.">
       <Kv
         rows={[
           ["Financier", finPrint || "…"],
@@ -689,14 +689,14 @@ function EntryWork(p: WorkProps): ReactNode {
                 await send(d.offer.sent.to, await encodeMessage(hd as Header), relayDeps);
                 const at = Date.now();
                 await save({ ...d, entry: { ...entry, sent: at } });
-                did(p, "登", "Entry signed and sent to the financier's node", `On ${when(at)}. The node posts it to the board; the first valid record for this invoice wins. The financing letter comes next.`);
+                did(p, "登", "Public record signed and sent to the financier's node", `On ${when(at)}. The node posts it to the public board; the first valid record for this invoice wins. The financing letter comes next.`);
               } else did(p, "登", "Public record signed", "Hand the record under 登 to the financier: it posts it to the public board.");
             } catch (e) {
               out.error(e);
             }
           }}
         >
-          Sign entry
+          Sign the public record
         </Button>
         </Dock>
       </Actions>

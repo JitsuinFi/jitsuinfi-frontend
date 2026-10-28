@@ -326,7 +326,7 @@ export function outcomeOn(o: Outcome | null, open: string | null): { outcome: Ou
  */
 const STATION_LABEL: Record<StationState, Record<StationKey, string>> = {
   done: { signature: "Buyer signed", offer: "Offered", entry: "Public record signed", seal: "Letter sealed", advance: "Advance received", settled: "Settled" },
-  next: { signature: "Check signature", offer: "Offer next", entry: "Sign entry next", seal: "Seal next", advance: "Check advance", settled: "Settle" },
+  next: { signature: "Check signature", offer: "Offer next", entry: "Sign the record next", seal: "Seal next", advance: "Check advance", settled: "Settle" },
   wait: { signature: "Buyer signs", offer: "Offer waits", entry: "Entry request waits", seal: "Letter waits", advance: "Advance waits", settled: "Repayment waits" },
   later: { signature: "Buyer's signature", offer: "Offer", entry: "Public record", seal: "Letter seal", advance: "Advance", settled: "Settlement" },
 };

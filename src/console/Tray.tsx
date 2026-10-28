@@ -283,9 +283,10 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
     setOpen(want.id);
     focusOpen("mail");
   }, [want]);
-  // keep the opened letter across reloads; open the first one otherwise
+  // keep the opened letter across reloads; otherwise open the first offer still to answer, and
+  // nothing when there is none (opening a quiet letter would unfold the whole old pile)
   useEffect(() => {
-    if (mail && !mail.some((m) => m.relay_id === open)) setOpen(mail[0]?.relay_id ?? null);
+    if (mail && !mail.some((m) => m.relay_id === open)) setOpen(mail.find((m) => !!m.offer?.ok && !m.offer.accepted)?.relay_id ?? null);
   }, [mail, open]);
   const t = totals(null, mail);
   const opened = mail?.find((m) => m.relay_id === open) ?? null;
@@ -359,10 +360,10 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
       <div className="cs-cap">
         <p className="cs-eyebrow">
           <Stamp k="便" />
-          Mailbox, read through the node
+          Inbox, read through the node
         </p>
         <h2 id="cs-tray-t">In-tray</h2>
-        <Lede className="cs-lede">Every letter arrives sealed to your mailbox. The node opens it, checks each signature and matches an offer against your 内規 before you read it.</Lede>
+        <Lede className="cs-lede">Every letter arrives sealed to your inbox. The node opens it, checks each signature and matches an offer against your 内規 before you read it.</Lede>
         <dl className="cs-totals">
           <div className="is-act">
             <dt>financing offers to answer</dt>
@@ -406,7 +407,7 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
           ) : null}
           {mail && !mail.length ? <p className="cs-tray-empty">No messages.</p> : null}
         </div>
-        {onOpen ? null : opened ? <Opened key={opened.relay_id} m={opened} demo={demo} load={load} /> : <p className="cs-note cs-opened-empty">{mail ? "No letter to open." : ""}</p>}
+        {onOpen ? null : opened ? <Opened key={opened.relay_id} m={opened} demo={demo} load={load} /> : <p className="cs-note cs-opened-empty">{mail ? (mail.length ? "No offer to answer. Pick a letter to read it." : "No letter to open.") : ""}</p>}
       </div>
     </section>
   );

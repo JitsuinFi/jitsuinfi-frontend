@@ -71,7 +71,7 @@ function NodeSlab({ info, board, boardErr, blink }: { info: Info; board: BoardSc
           </dd>
         </div>
         <div>
-          <dt>Mailbox</dt>
+          <dt>Inbox</dt>
           <dd className="is-mono" title={info.mailbox_id}>
             {short(info.mailbox_id)}
           </dd>

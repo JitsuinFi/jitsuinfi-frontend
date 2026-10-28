@@ -133,3 +133,10 @@ test("a reminder in the inbox is seen with the slip even if the buyer's day lags
   assert.equal(reminderHandled({ reminders_seen: [] }, undefined), false);
   assert.equal(reminderHandled({ reminders_seen: ["d-7"] }, undefined), true);
 });
+
+test("mobile E2E 4: the paid slip's bar says on time or late only when the board says so", async () => {
+  const { paidWords } = await import("../src/lib/buyer-late.ts");
+  assert.equal(paidWords({ kind: "paid-on-time" }), "Paid on time");
+  assert.equal(paidWords({ kind: "paid-late" }), "Paid late");
+  assert.equal(paidWords({ kind: "paid" }), "Paid");
+});

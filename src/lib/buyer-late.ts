@@ -55,6 +55,11 @@ export function lateState(rec: Pick<BuyerInvoice, "due_date" | "bundle" | "assig
   return { kind: "overdue", days_over: -left, defaulted: -left > grace };
 }
 
+/** The paid slip's status in the phone's bar (mobile E2E 4): on time or late when the board says so. */
+export function paidWords(s: LateState): string {
+  return s.kind === "paid-on-time" ? "Paid on time" : s.kind === "paid-late" ? "Paid late" : "Paid";
+}
+
 /**
  * Milliseconds until the on-time cut-off: the end of the due date in UTC, the last day a mined
  * payment counts as on time. Negative once it has passed.

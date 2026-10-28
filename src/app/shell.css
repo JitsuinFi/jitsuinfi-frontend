@@ -454,6 +454,9 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
     background: var(--paper); border-top: 1px solid var(--rule);
     animation: ia-bar-in var(--dur-enter) var(--ease-land) both;
   }
+  /* mobile E2E 4: the page no longer peeks out between the bar and the floating tab bar (the
+     paper runs on under the tab bar, which sits above it) */
+  .ia-bar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); background: var(--paper); pointer-events: none; }
   .ia-bar > button, .ia-bar > a, .ia-bar > form > button { flex: 1 1 100%; min-height: 48px; justify-content: center; }
   .ia-bar > a { display: flex; align-items: center; border-radius: var(--r-control); background: var(--seal); color: var(--sheet); font: 600 15px/1 var(--f-body); text-decoration: none; }
   .ia-bar > a.secondary { background: var(--seal-wash); color: var(--seal); }

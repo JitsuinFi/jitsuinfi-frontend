@@ -607,8 +607,8 @@ function EntryWork(p: WorkProps): ReactNode {
   const finPrint = useFinPrint(d.entry_request?.financier_pk ?? d.offer?.financier_pk);
   if (d.entry) {
     return (
-      <Work glyph="登" step="Step 3" title="Board entry signed" hint="The financier posts it to the board. The first valid entry for this invoice wins.">
-        {d.entry.sent ? <Banner kind="ok" title="Sent to the financier's node" text={`On ${when(d.entry.sent)}. It posts the entry to the board; the assignment letter comes next.`} /> : null}
+      <Work glyph="登" step="Step 3" title="Public record signed" hint="The financier posts it to the public board. The first valid record for this invoice wins.">
+        {d.entry.sent ? <Banner kind="ok" title="Sent to the financier's node" text={`On ${when(d.entry.sent)}. It posts the record to the public board; the financing letter comes next.`} /> : null}
         <Kv
           rows={[
             ["Rate classes on the public index", d.entry.discount === 0 && d.entry.tenor === 0 ? "not disclosed" : `${d.entry.discount} / ${d.entry.tenor}`],
@@ -689,8 +689,8 @@ function EntryWork(p: WorkProps): ReactNode {
                 await send(d.offer.sent.to, await encodeMessage(hd as Header), relayDeps);
                 const at = Date.now();
                 await save({ ...d, entry: { ...entry, sent: at } });
-                did(p, "登", "Entry signed and sent to the financier's node", `On ${when(at)}. The node posts it to the board; the first valid entry for this invoice wins. The assignment letter comes next.`);
-              } else did(p, "登", "Board entry signed", "Hand the entry under 登 to the financier: its node posts it to the board.");
+                did(p, "登", "Entry signed and sent to the financier's node", `On ${when(at)}. The node posts it to the board; the first valid record for this invoice wins. The financing letter comes next.`);
+              } else did(p, "登", "Public record signed", "Hand the record under 登 to the financier: it posts it to the public board.");
             } catch (e) {
               out.error(e);
             }
@@ -797,7 +797,7 @@ function SealWork(p: WorkProps): ReactNode {
     }
   };
   return (
-    <Work glyph="印" step="Step 4" title="Read and seal the assignment letter" hint="The letter assigns this invoice to the financier and names where the buyer pays. Read it before you seal: your seal says you agree.">
+    <Work glyph="印" step="Step 4" title="Read and seal the financing letter" hint="The letter hands this invoice to the financier and names where the buyer pays. Read it before you seal: your seal says you agree.">
       {d.letter_in ? (
         <p className="sp-line">
           <b lang="ja" aria-hidden="true">
@@ -816,7 +816,7 @@ function SealWork(p: WorkProps): ReactNode {
       <details className="sp-fold" open={!d.letter_in}>
         <summary>{d.letter_in ? "The letter as it came" : "Got it another way? Paste the letter the financier gave you"}</summary>
         <div className="sp-fold-body">
-          <Field label="Assignment letter (from the financier)" area value={d.letter_in?.letter} inputRef={letter} />
+          <Field label="Financing letter (from the financier)" area value={d.letter_in?.letter} inputRef={letter} />
           <FileField label="The letter's PDF" help={d.letter_in?.pdf ? "Already here: it came sealed with the letter. Choose a file only to check another one." : d.letter_in?.pdf_away ? "PDF on your other device: it came there with the letter. Choose it here to check it, or seal on that device." : "Compared with the letter in your browser. Never uploaded."} inputRef={pdf} />
         </div>
       </details>

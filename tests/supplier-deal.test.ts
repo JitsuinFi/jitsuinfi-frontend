@@ -124,7 +124,7 @@ test("the entry waits for the financier's request (SEQ-03)", () => {
   const offered = deal({ buyer_signature: "00", offer });
   assert.equal(nextStep(offered), "entry");
   assert.equal(nextAction(offered), "wait for the financier's entry request");
-  assert.equal(nextAction(deal({ buyer_signature: "00", offer, entry_request: request })), "sign the board entry");
+  assert.equal(nextAction(deal({ buyer_signature: "00", offer, entry_request: request })), "sign the public record");
   assert.equal(nextAction(deal()), "check the buyer's signature");
 });
 

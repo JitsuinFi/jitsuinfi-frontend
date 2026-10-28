@@ -138,18 +138,18 @@ const handlers: Handlers = {
       await save({ ...d, entry_request: r });
       return `The financier checked the board: sign the entry for ${d.invoice_id} (Step 3).`;
     },
-    (d) => `The financier you offered ${d.invoice_id} to checked the board and asks for the board entry.`,
+    (d) => `The financier you offered ${d.invoice_id} to checked the public board and asks you to sign the invoice's public record.`,
     (d) => !!d.entry_request || !!d.entry,
   ),
   "deal.letter": fromFinancier(
     "deal.letter",
-    ["印", "Assignment letter received"],
+    ["印", "Financing letter received"],
     async (d, h, files) => {
       if (!files[0]) throw new Error("The letter came without its PDF.");
       await save({ ...d, letter_in: { letter: String(h.body.letter), pdf: bytesToB64(files[0]), at: Date.now() } });
-      return `The assignment letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
+      return `The financing letter for ${d.invoice_id} is here: read and seal it (Step 4).`;
     },
-    (d) => `The assignment letter for ${d.invoice_id}, with its PDF: read it, then seal.`,
+    (d) => `The financing letter for ${d.invoice_id}, with its PDF: read it, then seal.`,
     (d) => !!d.letter_in || !!d.seal,
   ),
   "deal.advance": fromFinancier(

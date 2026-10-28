@@ -99,7 +99,7 @@ function PutAside({ l }: { l: Letter }): ReactNode {
     <div className="ia-aside">
       {ask ? (
         <>
-          <span>Remove this letter from your mailbox for good? The sender can send it again.</span>
+          <span>Remove this letter from your inbox for good? The sender can send it again.</span>
           <button
             type="button"
             className="secondary"
@@ -230,14 +230,14 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
           </div>
           {s.mailbox === "unreachable" ? (
             <p className="ia-ib-state is-off">
-              <b>Mailbox not reachable.</b> {`${asSentence(explain(s.why ?? ""))} Your documents stay on this device. It is tried again every minute.`}
+              <b>Inbox not reachable.</b> {`${asSentence(explain(s.why ?? ""))} Your documents stay on this device. It is tried again every minute.`}
             </p>
           ) : s.mailbox === "ready" ? (
             <p className="ia-ib-state">
-              <b>Mailbox ready.</b> Counterparties with your contact card can send you documents. Only you can open them.
+              <b>Inbox ready.</b> Counterparties with your contact card can send you documents. Only you can open them.
             </p>
           ) : (
-            <p className="ia-ib-state is-wait">Opening your mailbox…</p>
+            <p className="ia-ib-state is-wait">Opening your inbox…</p>
           )}
           <div className="ia-ib-check">
             <button type="button" className="secondary" disabled={s.checking || (s.mailbox !== "ready" && s.mailbox !== "unreachable")} onClick={() => void checkInbox()}>
@@ -248,7 +248,7 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
         </header>
         <div className="ia-ib-body">
           {s.refused ? (
-            <p className="ia-ib-refused">{`${s.refused} letter${s.refused > 1 ? "s" : ""} could not be opened: not sealed to your mailbox, or not a JitsuinFi letter. Ignored.`}</p>
+            <p className="ia-ib-refused">{`${s.refused} letter${s.refused > 1 ? "s" : ""} could not be opened: not addressed to you, or not a JitsuinFi letter. Ignored.`}</p>
           ) : null}
           {s.letters.length && role ? (
             <LongList

@@ -56,7 +56,7 @@ export type StepKey = "signature" | "offer" | "entry" | "seal" | "advance";
 export const STEPS: ReadonlyArray<{ key: StepKey; label: string; action: string }> = [
   { key: "signature", label: "Buyer signed", action: "check the buyer's signature" },
   { key: "offer", label: "Offered", action: "offer it to one financier" },
-  { key: "entry", label: "Board entry signed", action: "sign the board entry" },
+  { key: "entry", label: "Public record signed", action: "sign the public record" },
   { key: "seal", label: "Letter sealed", action: "read and seal the letter" },
   { key: "advance", label: "Advance received", action: "check the advance" },
 ];
@@ -325,10 +325,10 @@ export function outcomeOn(o: Outcome | null, open: string | null): { outcome: Ou
  * next station never reads as done.
  */
 const STATION_LABEL: Record<StationState, Record<StationKey, string>> = {
-  done: { signature: "Buyer signed", offer: "Offered", entry: "Board entry signed", seal: "Letter sealed", advance: "Advance received", settled: "Settled" },
+  done: { signature: "Buyer signed", offer: "Offered", entry: "Public record signed", seal: "Letter sealed", advance: "Advance received", settled: "Settled" },
   next: { signature: "Check signature", offer: "Offer next", entry: "Sign entry next", seal: "Seal next", advance: "Check advance", settled: "Settle" },
   wait: { signature: "Buyer signs", offer: "Offer waits", entry: "Entry request waits", seal: "Letter waits", advance: "Advance waits", settled: "Repayment waits" },
-  later: { signature: "Buyer's signature", offer: "Offer", entry: "Board entry", seal: "Letter seal", advance: "Advance", settled: "Settlement" },
+  later: { signature: "Buyer's signature", offer: "Offer", entry: "Public record", seal: "Letter seal", advance: "Advance", settled: "Settlement" },
 };
 export function stationLabel(k: StationKey, state: StationState): string {
   return STATION_LABEL[state][k];

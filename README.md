@@ -1,4 +1,34 @@
-# jitsuinfi-frontend
+<p align="center">
+  <a href="https://jitsuinfi.vercel.app"><img src=".github/readme/banner.svg" alt="JitsuinFi: Zcash stops double-spending. JitsuinFi stops double-financing." width="100%"></a>
+</p>
+
+<p align="center">
+  <img alt="Zcash testnet, Ironwood pool" src="https://img.shields.io/badge/Zcash-testnet%20%C2%B7%20Ironwood%20pool-032C7D?style=flat-square">
+  <img alt="ZECATHON 2026, Private Markets" src="https://img.shields.io/badge/ZECATHON%202026-Private%20Markets-7E2A53?style=flat-square">
+  <img alt="License MIT or Apache-2.0" src="https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-461D3A?style=flat-square">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-032C7D?style=flat-square&logo=react&logoColor=white">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-8-0841C9?style=flat-square&logo=vite&logoColor=white">
+  <img alt="three.js" src="https://img.shields.io/badge/three.js-0.186-461D3A?style=flat-square&logo=threedotjs&logoColor=white">
+  <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-7E2A53?style=flat-square">
+</p>
+
+<p align="center">
+  <b>The web app: landing, supplier, buyer and fund-member desks, the verify page, the outsider view and the financier console. All cryptography runs in the page.</b>
+</p>
+
+<p align="center">
+  <a href="https://jitsuinfi.vercel.app"><b>Landing</b></a> ·
+  <a href="https://jitsuinfi.vercel.app/app"><b>App</b></a> ·
+  <a href="https://jitsuinfi.vercel.app/try"><b>Try to double-finance</b></a> ·
+  <a href="https://jitsuinfi.vercel.app/verify"><b>Verify</b></a> ·
+  <a href="https://jitsuinfi-console-demo.vercel.app/console"><b>Console demo</b></a> ·
+  <a href="https://youtu.be/RB9hKSLarJo"><b>2-min video</b></a>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/RB9hKSLarJo"><img src=".github/readme/video-thumb.jpg" alt="Watch the 2-minute demo on YouTube" width="760"></a>
+  <br><sub>Two minutes: the idea, a double-financing attempt caught live on the testnet board, and a whole deal from supplier to settlement.</sub>
+</p>
 
 Web app for **JitsuinFi**: supplier, buyer and fund-member desks with a sealed inbox, the financier console, a verify page for auditors and judges, and a page showing what outsiders can see. All cryptography runs in the browser through `jitsuin-wasm` (from `jitsuinfi-zcash`), so the page never has to trust a server's verdict.
 
@@ -11,7 +41,56 @@ Live: <https://jitsuinfi.vercel.app> (landing), [/app](https://jitsuinfi.vercel.
 - The same records sync to the account's other devices (same passkey) through the relay's one state per mailbox: AES-GCM under a key from the passkey, inside a seal to the owner's own mailbox, so the relay sees only ciphertext, its size and when it changes (`src/lib/sync.ts`). A form being written survives a reload, sealed in the tab's session storage and cleared when the tab closes or the action succeeds (`src/app/kept.ts`).
 - Registering on the board, the Sign-to-Pay advance and the repayment watchdog run in the financier's node ([`jitsuinfi-node`](https://github.com/JitsuinFi/jitsuinfi-node), built on `jitsuin-flow`); this app covers what the browser does and verifies.
 
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src=".github/readme/town.webp" alt="Kota Piutang, the landing's 3D town" width="100%"><br><b>Kota Piutang, the landing's 3D town</b><br><sub>A cel-shaded receivables town (three.js) plays one invoice's life: seal, fingerprint to the board, advance, a copy refused, settled.</sub></td>
+    <td width="50%" valign="top"><img src=".github/readme/seal.webp" alt="One fingerprint per invoice" width="100%"><br><b>One fingerprint per invoice</b><br><sub>The buyer's jitsuin seals the invoice; only its fingerprint N reaches the public board.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><img src=".github/readme/try.webp" alt="/try: try to double-finance" width="100%"><br><b>/try: try to double-finance</b><br><sub>Case File #0417 against the live testnet board: 偽 when a digit changes, 重 when it is sold twice.</sub></td>
+    <td width="50%" valign="top"><img src=".github/readme/deal.webp" alt="Phone first" width="100%"><br><b>Phone first</b><br><sub>Supplier and buyer on phones: write, deliver sealed, sign with one passkey touch.</sub></td>
+  </tr>
+</table>
+
+## Map of the app
+
+```mermaid
+flowchart TD
+    L["/ landing<br/>3D receivables town"]:::sys --> APP["/app<br/>登記所 lobby"]:::sys
+    APP --> PUB
+    APP --> ROLES
+    subgraph PUB [Open to anyone, no account]
+      T["/try<br/>try to double-finance"]:::seal
+      V["/verify<br/>bundle, proof, Exhibit A"]:::sys
+      O["/outsider<br/>what the chain shows"]:::zcash
+      RT["/rates<br/>k ≥ 5 rate index"]:::zcash
+    end
+    subgraph ROLES [With your passkey]
+      SU["Supplier<br/>write, offer, seal"]:::human
+      BU["Buyer<br/>sign, seal, pay by QR, history"]:::human
+      FM["Fund member<br/>deposit, units"]:::human
+    end
+    CON["Financier console<br/>on the node's own host"]:::human
+    SU -. sealed letters .- BU
+    SU -. offer .- CON
+    classDef human fill:#FCFCFE,stroke:#7E2A53,color:#461D3A,stroke-width:2px
+    classDef zcash fill:#020D2F,stroke:#1D97F1,color:#C4C7F2,stroke-width:2px
+    classDef sys fill:#F6F5FC,stroke:#032C7D,color:#020D2F,stroke-width:2px
+    classDef seal fill:#7E2A53,stroke:#461D3A,color:#FCFCFE,stroke-width:2px
+```
+
+<p align="center"><img src=".github/readme/route.svg" alt="The deal route: 照 sent to the buyer, 署 buyer signs, 登 public record, 印 financing letter sealed, 金 advance, 済 settled" width="100%"></p>
+
+## Design: seal ink on document paper, Zcash as the deep pool
+
+Shippori Mincho B1 for display, Geist for text, Geist Mono for real data only. Ten colours, no pure black or white: blues are Zcash (the shielded pool), plums are people (ink, signatures, the registered seal). Dark Raspberry is the only red, kept for the seal and primary actions. Full rules: [`MASTER.md`](MASTER.md).
+
+<p align="center"><img src=".github/readme/palette.svg" alt="The JitsuinFi palette" width="100%"></p>
+
 ## Pages
+
+<details>
+<summary>All routes and where their code lives</summary>
 
 | Path | What | Code |
 |---|---|---|
@@ -32,6 +111,8 @@ A role page opens only in a session of that role. Signed in, a bell opens one in
 
 The landing, the app and the console are three worlds loaded on demand; moving between them reloads the page, so their stylesheets never meet. Old addresses (`app.html#/supplier`, `#/index`, `console.html?view=pair`) are moved to these paths (`src/lib/legacy-url.ts`).
 
+</details>
+
 ## Run
 
 ```bash
@@ -43,6 +124,8 @@ npm run dev       # or: npm run build && npm run preview
 Needs Rust with the `wasm32-unknown-unknown` target and `wasm-bindgen-cli 0.2.129` (see the `jitsuinfi-zcash` README). Status: in development for ZECATHON 2026, testnet.
 
 **Network, in one place** (HNK-26.T19): the build is testnet unless `VITE_NETWORK=main` is set when building (`src/lib/network.ts`: labels, the shielded address check). The financier node takes `NETWORK` from its environment and the `jitsuin` CLI reads the network from the viewing key it is given, so a mainnet build never accepts a testnet address and the node refuses a board key of the other network.
+
+<p align="center"><img src=".github/readme/outro.webp" alt="Zcash stops double-spending. JitsuinFi stops double-financing." width="640"></p>
 
 ## License
 

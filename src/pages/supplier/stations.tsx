@@ -333,7 +333,7 @@ function SignatureWork(p: WorkProps): ReactNode {
       ) : null}
       <Actions>
         <Dock label="Send">
-          <Button onClick={sendToBuyer}>Send to the buyer</Button>
+          <Button paint onClick={sendToBuyer}>Send to the buyer</Button>
         </Dock>
       </Actions>
       {sendOut.el}

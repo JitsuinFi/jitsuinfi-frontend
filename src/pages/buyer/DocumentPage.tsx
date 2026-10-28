@@ -86,6 +86,7 @@ function SendSignature({ n, sig, replyTo }: { n: string; sig: string; replyTo: s
         <div className="actions">
           <Dock label="Send">
           <Button
+            paint
             onClick={async () => {
               try {
                 await sendSignature(n, sig, replyTo);

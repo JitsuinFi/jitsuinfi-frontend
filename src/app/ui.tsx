@@ -41,8 +41,13 @@ export function FileField({ label, help, inputRef }: { label: string; help?: str
   );
 }
 
-/** A button that stays disabled while its (async) action runs. */
-export function Button({ onClick, secondary, children }: { onClick: () => void | Promise<void>; secondary?: boolean; children: ReactNode }): ReactNode {
+/**
+ * A button that stays disabled while its (async) action runs. `paint` (production run 5: Send to
+ * the buyer showed nothing for ~3.5 s): the busy state is drawn before the action starts, for an
+ * action that does heavy work in the page before its first await. Not for a clipboard write
+ * (Safari wants that inside the tap itself).
+ */
+export function Button({ onClick, secondary, paint, children }: { onClick: () => void | Promise<void>; secondary?: boolean; paint?: boolean; children: ReactNode }): ReactNode {
   const [busy, setBusy] = useState(false);
   return (
     <button
@@ -53,6 +58,7 @@ export function Button({ onClick, secondary, children }: { onClick: () => void |
       onClick={async () => {
         setBusy(true);
         try {
+          if (paint) await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
           await onClick();
         } finally {
           setBusy(false);

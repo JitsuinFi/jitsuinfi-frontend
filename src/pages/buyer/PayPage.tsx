@@ -244,6 +244,8 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
               </button>
             </Dock>
           )}
+          {/* production run 5: the fee, in plain words */}
+          <span className="hint by-fee">Your wallet adds a small network fee, about 0.0001 ZEC.</span>
           <span className="hint">{ready ? "Open it in your Zcash wallet, or scan it with one. The payment stays private and carries your signed receipt; the financier countersigns it once the payment is on chain." : "The QR opens once the financier's seal is in your inbox: it seals the letter when it pays the advance."}</span>
         </div>
       )}

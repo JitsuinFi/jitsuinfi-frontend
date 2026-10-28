@@ -856,6 +856,10 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
                   <div className="ac-act">
                     {/* the next step's line beside the buttons, so the primary is one height (audit 2026-10-27, finding 16) */}
                     <p className="ac-next">{first.line}</p>
+                    {/* production run 5: the wallet and who holds the money, in one line */}
+                    {s.role === "supplier" || s.role === "buyer" ? (
+                      <p className="ac-wallet">{`You'll need a Zcash wallet app (e.g. Zodl or Zashi) to ${s.role === "supplier" ? "receive the advance" : "pay at maturity"}. JitsuinFi never holds your money.`}</p>
+                    ) : null}
                     <button
                       type="button"
                       className="ac-btn2 ac-later"

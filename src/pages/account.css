@@ -169,6 +169,7 @@
 @keyframes ac-spin { to { transform: rotate(360deg); } }
 .ac-switch { font: 400 14.5px/1.4 var(--f-body); color: var(--ink-2); }
 .ac-next { flex: 1 1 100%; text-align: right; font: 400 14px/1.4 var(--f-body); color: var(--ink-2); }
+.ac-wallet { flex: 1 1 100%; margin: 0; text-align: right; font: 400 13px/1.45 var(--f-body); color: var(--ink-2); } /* production run 5 */
 .ac .ac-btn { min-height: 46px; padding-block: 0; }
 
 /* test data: a rounded paper panel that groups one input (shown only without passkeys) */
@@ -222,7 +223,7 @@
   .ac-foot { flex-direction: column; align-items: stretch; }
   .ac-act { justify-content: stretch; }
   .ac-act .ac-btn { flex: 1 1 100%; justify-content: center; }
-  .ac-act .ac-switch, .ac-act .ac-link, .ac-act .ac-next { flex: 1 1 100%; text-align: center; }
+  .ac-act .ac-switch, .ac-act .ac-link, .ac-act .ac-next, .ac-act .ac-wallet { flex: 1 1 100%; text-align: center; }
   .ac-demo-body { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {

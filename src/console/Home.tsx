@@ -322,7 +322,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               </span>
             ) : null}
           </p>
-          {d.state === "Pay" && d.intent ? <p className="cs-sub">{`Your passkey approves this exact payment: ${zec(d.intent.amount_zat)} ZEC to the supplier for N ${short(d.n)}.`}</p> : null}
+          {d.state === "Pay" && d.intent ? <p className="cs-sub">{`Your passkey approves this exact payment: ${zec(d.intent.amount_zat)} ZEC to the supplier for N ${short(d.n)}. Network fee about 0.0001 ZEC, paid by the node's wallet.`}</p> : null}
           {tx.length ? (
             <ul className="cs-txids">
               {tx.map(([k, v]) => (

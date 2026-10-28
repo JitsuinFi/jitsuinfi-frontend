@@ -90,11 +90,15 @@ export interface QrPlateProps {
   raw?: { label: string; filename?: string };
   /** The plate's primary is the screen's: on a phone it rides in the bottom bar (Dock.tsx). */
   dock?: boolean;
+  /** Most CSS pixels the code takes, instead of QR_CAP (wave 5: the console's top-up plate). */
+  cap?: number;
+  /** A line kept with the plate, after the caption (wave 5: the top-up address and its Copy). */
+  under?: ReactNode;
 }
 
 export function QrPlate(p: QrPlateProps): ReactNode {
   const phone = usePhone();
-  const cap = phone ? QR_CAP.phone : QR_CAP.wide;
+  const cap = p.cap ?? (phone ? QR_CAP.phone : QR_CAP.wide);
   const box = useRef<HTMLDivElement>(null);
   const avail = useWidth(box, cap + 24);
   const g = useMemo(() => {
@@ -168,6 +172,7 @@ export function QrPlate(p: QrPlateProps): ReactNode {
           </span>
         ) : null}
       </figcaption>
+      {p.under ? <div className="qrp-under">{p.under}</div> : null}
       {g ? (
         <div className="qrp-acts">
           {open ? (

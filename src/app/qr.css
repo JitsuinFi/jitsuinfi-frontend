@@ -33,16 +33,21 @@
 .qrp-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 /* .qrp before the class: the role pages' own button rules (.sp button, .rp button) give way */
 .qrp .qrp-btn {
+  border: 0; cursor: pointer; box-sizing: border-box;
   display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px;
   border-radius: 999px; font: 500 14px/1.1 var(--f-body); text-decoration: none; white-space: nowrap;
 }
 .qrp .qrp-raw .copyrow button.secondary { min-height: 44px; padding: 0 16px; font-size: 13.5px; }
 .qrp .qrp-btn.is-primary { background: var(--seal); color: var(--sheet); }
+/* wave 5: the plate draws its own secondary pill, so no page (the console has no base button rule) ever shows a browser button */
+.qrp button.qrp-btn.secondary { background: var(--seal-wash); color: var(--seal); }
+@media (hover: hover) and (pointer: fine) { .qrp button.qrp-btn.secondary:hover { background: var(--fiber, rgba(126, 42, 83, .14)); } }
+.qrp button.qrp-btn:disabled { opacity: .45; cursor: default; }
 a.qrp-btn { transition: background-color var(--dur-fade) var(--ease-land), box-shadow var(--dur-fade) var(--ease-land); }
 /* the wallet link as a secondary: the role pages' secondary pill, drawn the same on every page */
 .qrp a.qrp-btn.is-quiet { background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-strong); }
 @media (hover: hover) and (pointer: fine) { .qrp a.qrp-btn.is-quiet:hover { box-shadow: inset 0 0 0 1.5px var(--seal); } }
-@media (hover: hover) and (pointer: fine) { .qrp-btn.is-primary:hover { background: var(--seal-hi); } }
+@media (hover: hover) and (pointer: fine) { .qrp .qrp-btn.is-primary:hover { background: var(--seal-hi); } } /* wave 5: as specific as the rule it answers, so "Open in wallet" darkens on hover */
 .qrp-said { margin: 0; font: 400 13px/1.45 var(--f-body); color: var(--seal); text-align: center; }
 
 .qrp-raw { justify-self: stretch; border-top: 1px solid var(--rule); }

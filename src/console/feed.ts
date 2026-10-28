@@ -1,9 +1,9 @@
 // The desk's one data source (mobile E2E 2, TES-INV-MOB2-13631, finding 1): the in-tray (/node/mail)
 // and the deals (/node/console/deals) are read together, so the Desk's "Needs you now", the
 // In-tray and the deal screens never disagree. It loads at sign-in, when the Desk or the In-tray
-// comes into view, when the window gets focus or the tab is seen again, and every 15 s while the
+// comes into view, when the window gets focus or the tab is seen again, and every 10 s while the
 // page is seen (stopped while hidden). Two asks at once share one request. Mobile E2E 3: the Desk
-// was 44-47 s behind the node at a 30 s poll; it now polls every 15 s, and the Desk coming into
+// was 44-47 s behind the node at a 30 s poll; it polled every 15 s (10 s since wave 5: the node answers a listing with nothing new in one request), and the Desk coming into
 // view asks a fresh load (one more after a load already on its way, still shared). Pure scheduling: the
 // timers and the page's visibility are passed in, so tests run it under Node.
 
@@ -33,7 +33,7 @@ export interface Refresher {
   readonly busy: boolean;
 }
 
-export const EVERY_MS = 15_000;
+export const EVERY_MS = 10_000;
 
 export function refresher(load: () => Promise<void>, opts: { visible: () => boolean; every?: number; timers?: Timers }): Refresher {
   const every = opts.every ?? EVERY_MS;

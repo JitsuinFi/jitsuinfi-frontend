@@ -152,6 +152,13 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-ib-foot a span { margin-left: auto; color: var(--seal); }
 @media (hover: hover) and (pointer: fine) { .ia-ib-foot a:hover { color: var(--seal); } }
 
+/* production run 5: letters with nothing to do, folded under the ones that need you */
+.ia-ib-quiet { margin-top: 16px; }
+.ia-ib-quiet > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; font: 500 13.5px/1.3 var(--f-body); color: var(--ink-2); }
+.ia-ib-quiet > summary::-webkit-details-marker { display: none; }
+.ia-ib-quiet > summary::after { content: "▾"; font-size: 11px; }
+.ia-ib-quiet[open] > summary::after { content: "▴"; }
+.ia-ib-quiet > .ia-letters { display: grid; gap: 12px; }
 /* each letter: an envelope with its flap and its kind's glyph */
 .ia-letters ol { display: grid; gap: 12px; }
 .ia-letter {

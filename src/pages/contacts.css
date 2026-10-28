@@ -129,3 +129,6 @@
   .ia-bar > a.ia-add-go small { display: none; }
   .ia-bar > a.ia-add-go strong { font: 600 15px/1.2 var(--f-body); }
 }
+/* production run 5: the next step answers the pointer like every other primary */
+.ia-add-go { transition: background-color var(--dur-fade) var(--ease-land); }
+@media (hover: hover) and (pointer: fine) { .ia-add-go:hover { background: var(--seal-hi); } }

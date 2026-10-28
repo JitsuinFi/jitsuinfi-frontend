@@ -273,8 +273,14 @@ export function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }
 
 /** `onOpen`: a phone (compact) opens a letter as its own screen instead of beside the list. */
 /** `updated`: a phone shows when the desk's one data source last answered (feed.ts). */
-export function TraySection({ mail, refused, note, demo, load, onOpen, updated }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load; onOpen?: (relayId: string) => void; updated?: string }): ReactNode {
+export function TraySection({ mail, refused, note, demo, load, onOpen, updated, want }: { mail: Mail[] | null; refused: number; note: string; demo: boolean; load: Load; onOpen?: (relayId: string) => void; updated?: string; want?: { id: string; at: number } | null }): ReactNode {
   const [open, setOpen] = useState<string | null>(null);
+  // production run 5: the desktop's "Needs you now" opens a letter here
+  useEffect(() => {
+    if (!want) return;
+    setOpen(want.id);
+    requestAnimationFrame(() => document.getElementById("tray")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }, [want]);
   // keep the opened letter across reloads; open the first one otherwise
   useEffect(() => {
     if (mail && !mail.some((m) => m.relay_id === open)) setOpen(mail[0]?.relay_id ?? null);

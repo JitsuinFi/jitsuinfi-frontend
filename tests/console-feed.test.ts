@@ -118,8 +118,8 @@ test("a failing load does not stick and stop ends it all", async () => {
 });
 
 // mobile E2E 3: the Desk was 44-47 s behind the node at a 30 s poll
-test("polls every 15 s; the Desk coming into view loads fresh, after a load on its way, shared", async () => {
-  assert.equal(EVERY_MS, 15_000);
+test("polls every 10 s (wave 5: a listing with nothing new is one cheap request); the Desk coming into view loads fresh, after a load on its way, shared", async () => {
+  assert.equal(EVERY_MS, 10_000);
   let calls = 0;
   const g = gate();
   const t = fakeTimers();

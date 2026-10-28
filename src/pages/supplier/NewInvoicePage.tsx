@@ -13,7 +13,7 @@ import { useFormDraft } from "../../app/kept";
 import { account } from "../../lib/app-session";
 import { dateToDays, fileHash, json, wasm, zecToZat } from "../../lib/core";
 import { dealPath, newRef } from "../../lib/deal-ref";
-import { defaultChoice, HAND, keyChoices } from "../../lib/key-match";
+import { defaultChoice, HAND, keyChoices, keyHeldBy } from "../../lib/key-match";
 import { filePdfProblem } from "../../lib/pdf-check";
 import { readablePrint } from "../../lib/print";
 import { DUE_PRESETS, dueIn, invoiceNumberProblem, suggestInvoiceNumber } from "../../lib/supplier-deal";
@@ -159,7 +159,7 @@ function NewInvoice({ deals, book }: { deals: NonNullable<ReturnType<typeof useD
           typed.current?.focus();
           throw new Error("Write the buyer's invoice key on the 御中 line: copy it whole from the buyer's screen, or ask the buyer to send it to your inbox.");
         }
-        if (deals.some((d) => d.buyer_pk === buyerPk)) throw new Error("This key was used for another invoice already: a key is for one invoice only. Ask the buyer for their next invoice key.");
+        if (keyHeldBy(deals, buyerPk)) throw new Error(`This key is on ${keyHeldBy(deals, buyerPk)}, which is not financed yet: a key is for one invoice at a time. Ask the buyer for their next invoice key.`);
         // a key written by hand never borrows a contact's mailbox; one that came in a letter keeps its own
         mailbox = book.keys.find((k) => k.invoice_pk === buyerPk)?.mailbox_pk;
       }

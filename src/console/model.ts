@@ -24,8 +24,8 @@ export interface DealLike {
 /** The deal's route (HNK-26.T16, SEQ-03): one station per state of the node's flow. */
 export const ROUTE: Array<{ glyph: string; mark: string; label: string; states: string[] }> = [
   { glyph: "照", mark: "loupe", label: "Board checked", states: ["Check"] },
-  { glyph: "署", mark: "pen", label: "Supplier signed the entry", states: ["AwaitSupplierSignature"] },
-  { glyph: "登", mark: "board", label: "Entry on the board", states: ["Register", "AwaitConfirmation"] },
+  { glyph: "署", mark: "pen", label: "Supplier signed the public record", states: ["AwaitSupplierSignature"] },
+  { glyph: "登", mark: "board", label: "Public record on the board", states: ["Register", "AwaitConfirmation"] },
   { glyph: "印", mark: "seal", label: "Letter sealed by supplier and buyer", states: ["AwaitAssignment"] },
   { glyph: "金", mark: "coin", label: "Advance paid", states: ["Pay", "AwaitAdvanceConfirmation"] },
   { glyph: "済", mark: "done", label: "Done", states: ["Done"] },
@@ -34,8 +34,8 @@ export const ROUTE: Array<{ glyph: string; mark: string; label: string; states: 
 export const WAITING: Record<string, string> = {
   Check: "Checking the board for this invoice.",
   AwaitSupplierSignature: "Waiting for the supplier to register the invoice on the public board.",
-  Register: "Posting the entry to the board.",
-  AwaitConfirmation: "Entry posted; waiting for its confirmations.",
+  Register: "Posting the public record to the board.",
+  AwaitConfirmation: "Public record posted; waiting for its confirmations.",
   AwaitAssignment: "Letter sent; waiting for the supplier's and the buyer's seals.",
   Pay: "Sealed by both. Your passkey approves the advance.",
   AwaitAdvanceConfirmation: "Advance sent; waiting for it to be mined.",

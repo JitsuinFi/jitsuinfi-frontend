@@ -13,6 +13,7 @@ import { Actions, Banner, Button, CodeBlock, Field, FileField, Kv, useOut } from
 import { ScanButton } from "../../app/Scanner";
 import { addressFromScan, routeScan } from "../../lib/scan";
 import { Dock } from "../../app/Dock";
+import { usePhone } from "../../app/phone";
 import { act, checkInbox, letGo, lettersFor } from "../../app/inbox";
 import { useInbox } from "../../app/InboxPanel";
 import { setDid } from "../../app/outcome";
@@ -28,7 +29,7 @@ import { readablePrint } from "../../lib/print";
 import { PROVIDER } from "../../lib/provider";
 import { draft, send, signInWasm } from "../../lib/relay";
 import { describeFiles, encodeMessage, type Header } from "../../lib/relay-message";
-import { DEFAULT_ADVANCE_RATIO, advanceSuggestion, advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
+import { DEFAULT_ADVANCE_RATIO, advanceSuggestion, offerBar, advancePrefill, advanceRecord, decodeEntryRequest, encodeOffer, entryRequestProblems, looksShielded, type StationKey, type SupplierDeal } from "../../lib/supplier-deal";
 import { handToVerify } from "../../lib/verify-handoff";
 import { takeContact } from "../MailboxCard";
 import { BuyerLine, buyerName, STATION, Work, type Stations } from "./parts";
@@ -376,6 +377,11 @@ function OfferWork(p: WorkProps): ReactNode {
   // judge run 2, finding 7: the address is checked as it is pasted; the last one used here is offered
   const [addrSay, setAddrSay] = useState<string | null>(null);
   const [suggest, setSuggest] = useState<string | null>(null);
+  // mobile E2E 3: with nothing saved, the phone's bar scans the wallet's QR until an address is in
+  const phone = usePhone();
+  const [typed, setTyped] = useState("");
+  useEffect(() => setTyped(addr.current?.value ?? ""), [kept.restoredAny]);
+  const scanFirst = phone && offerBar(suggest, typed) === "scan";
   useEffect(() => {
     if (d.offer) return;
     void findFinanciers(d).then(setFits, (e) => setFits(e instanceof Error ? e.message : String(e)));
@@ -475,6 +481,47 @@ function OfferWork(p: WorkProps): ReactNode {
         </ol>
       </div>
     );
+  const sendOffer = async () => {
+    try {
+      const advanceZat = zecToZat(value(adv));
+      if (advanceZat > d.amount_zat) throw new Error("the advance cannot be more than the invoice amount");
+      const addrProblem = addressProblem(value(addr));
+      if (addrProblem) {
+        setAddrSay(addrProblem);
+        addr.current?.focus();
+        throw new Error(addrProblem);
+      }
+      if (!looksShielded(value(addr))) throw new Error(`use a shielded ${NET.noun} address (${NET.addressHint})`);
+      if (!value(contact)) {
+        if (manual.current) manual.current.open = true;
+        throw new Error("Choose a financier from the directory, or paste the card a financier gave you.");
+      }
+      const financierPk = id64(value(fin), "the financier's node key");
+      const c = await takeContact(value(contact), "financier");
+      if ((await financierFingerprint(financierPk)) !== c.fingerprint) throw new Error("this key does not belong to that contact card: ask the financier again");
+      const offer = { financier_pk: financierPk, advance_zat: advanceZat, supplier_address: value(addr) };
+      const me = myIdentity();
+      const header = signInWasm(
+        draft("deal.offer", { role: "supplier", mailbox_pk: me.mailbox_pk }, c.mailbox_pk, relayDeps, {
+          n: d.n,
+          // the buyer's mailbox lets the node send the letter there too
+          body: { invoice: d.invoice, buyer_signature: d.buyer_signature!, advance_zat: offer.advance_zat, supplier_address: offer.supplier_address, ...((d.sign_request?.to ?? d.buyer_mailbox) ? { buyer_mailbox_pk: d.sign_request?.to ?? d.buyer_mailbox } : {}) },
+        }),
+        d.supplier_pk,
+        await secretFor(d),
+        relayDeps,
+      );
+      await send(c.mailbox_pk, await encodeMessage(header, []), relayDeps);
+      const at = Date.now();
+      // remembered first, so the next offer offers it even if this screen moves on
+      await rememberAddress(offer.supplier_address).catch(() => undefined);
+      await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
+      kept.clear();
+      did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you to register the invoice on the public board.`);
+    } catch (e) {
+      out.error(e);
+    }
+  };
   const noDirectory = fits !== null && (typeof fits === "string" || !fits.length);
   return (
     <Work glyph="署" step="Step 2" title="Offer it to one financier" hint="Your offer goes sealed to the financier's inbox, signed with this invoice's key. The financier checks the board for this invoice, then asks you to register the invoice on the public board.">
@@ -514,69 +561,37 @@ function OfferWork(p: WorkProps): ReactNode {
             </span>
           ) : (
             <span className="sp-addr-first">
-              <span className="sp-addr-scan">
-                <ScanButton what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
-              </span>
-              <small className="sp-addr-why">Your wallet app shows a QR for your shielded address.</small>
+              {scanFirst ? null : (
+                <span className="sp-addr-scan">
+                  <ScanButton what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
+                </span>
+              )}
+              <small className="sp-addr-why">{scanFirst ? "Your wallet app shows a QR for your shielded address: scan it with the button below." : "Your wallet app shows a QR for your shielded address."}</small>
               <span className="sp-addr-or" aria-hidden="true">
                 or paste it
               </span>
             </span>
           )}
-          <input id="sp-addr-in" type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={() => addrSay && setAddrSay(null)} />
+          <input id="sp-addr-in" type="text" inputMode="text" spellCheck="false" autoComplete="off" autoCapitalize="none" autoCorrect="off" enterKeyHint="done" placeholder={`${NET.addressHint} from your wallet app`} aria-invalid={addrSay ? true : undefined} aria-describedby="sp-addr-say" ref={addr} onBlur={checkAddr} onInput={(e) => (setTyped(e.currentTarget.value), addrSay && setAddrSay(null))} />
           <small id="sp-addr-say" className={addrSay ? "is-bad" : undefined} role={addrSay ? "alert" : undefined}>
-            {addrSay ?? (suggest ? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.` : `It starts with ${NET.addressHint}; this app does not hold your wallet. A new address for every deal keeps your deals apart.`)}
+            {addrSay ?? (suggest ? `Your Zcash shielded address, from your wallet app (it starts with ${NET.addressHint}). This app does not hold your wallet, so paste it here. A new address for every deal keeps your deals apart.` : `It starts with ${NET.addressHint}; this app does not hold your wallet. We'll remember this address on this device for your next offer; a new address for every deal keeps your deals apart.`)}
           </small>
         </div>
       </div>
       </div>
       <Actions>
-        <Dock label="Offer">
-        <Button
-          onClick={async () => {
-            try {
-              const advanceZat = zecToZat(value(adv));
-              if (advanceZat > d.amount_zat) throw new Error("the advance cannot be more than the invoice amount");
-              const addrProblem = addressProblem(value(addr));
-              if (addrProblem) {
-                setAddrSay(addrProblem);
-                addr.current?.focus();
-                throw new Error(addrProblem);
-              }
-              if (!looksShielded(value(addr))) throw new Error(`use a shielded ${NET.noun} address (${NET.addressHint})`);
-              if (!value(contact)) {
-                if (manual.current) manual.current.open = true;
-                throw new Error("Choose a financier from the directory, or paste the card a financier gave you.");
-              }
-              const financierPk = id64(value(fin), "the financier's node key");
-              const c = await takeContact(value(contact), "financier");
-              if ((await financierFingerprint(financierPk)) !== c.fingerprint) throw new Error("this key does not belong to that contact card: ask the financier again");
-              const offer = { financier_pk: financierPk, advance_zat: advanceZat, supplier_address: value(addr) };
-              const me = myIdentity();
-              const header = signInWasm(
-                draft("deal.offer", { role: "supplier", mailbox_pk: me.mailbox_pk }, c.mailbox_pk, relayDeps, {
-                  n: d.n,
-                  // the buyer's mailbox lets the node send the letter there too
-                  body: { invoice: d.invoice, buyer_signature: d.buyer_signature!, advance_zat: offer.advance_zat, supplier_address: offer.supplier_address, ...((d.sign_request?.to ?? d.buyer_mailbox) ? { buyer_mailbox_pk: d.sign_request?.to ?? d.buyer_mailbox } : {}) },
-                }),
-                d.supplier_pk,
-                await secretFor(d),
-                relayDeps,
-              );
-              await send(c.mailbox_pk, await encodeMessage(header, []), relayDeps);
-              const at = Date.now();
-              await save({ ...d, offer: { ...offer, sent: { to: c.mailbox_pk, at } } });
-              await rememberAddress(offer.supplier_address).catch(() => undefined);
-              kept.clear();
-              did(p, "署", "Offer sent: in the financier's inbox", `Sealed and signed on ${when(at)}, asking ${zatToZec(advanceZat)} ZEC. The financier's node checks your signature and the buyer's, then asks you to register the invoice on the public board.`);
-            } catch (e) {
-              out.error(e);
-            }
-          }}
-        >
-          Send offer
-        </Button>
-        </Dock>
+        {scanFirst ? (
+          <>
+            <Dock label="Address">
+              <ScanButton secondary={false} what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
+            </Dock>
+            <Button secondary onClick={sendOffer}>Send offer</Button>
+          </>
+        ) : (
+          <Dock label="Offer">
+            <Button onClick={sendOffer}>Send offer</Button>
+          </Dock>
+        )}
       </Actions>
       {out.el}
     </Work>

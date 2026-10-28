@@ -370,6 +370,15 @@ export function advanceRecord(d: Pick<SupplierDeal, "offer">, receivedZat: numbe
 export const DEFAULT_ADVANCE_RATIO = 0.9;
 
 /**
+ * What the phone's bottom bar offers on the offer form (mobile E2E 3): with no address saved on
+ * this device and none typed yet, scanning the wallet's QR comes first; once an address is in
+ * (or one is saved for a tap), the bar sends the offer.
+ */
+export function offerBar(saved: string | null, typed: string): "scan" | "send" {
+  return !saved && !typed.trim() ? "scan" : "send";
+}
+
+/**
  * The advance to prefill on the offer form: the financier's typical ratio from its directory
  * listing when it gives one, else DEFAULT_ADVANCE_RATIO; never above the invoice nor the
  * mandate's maximum. The supplier can change it.

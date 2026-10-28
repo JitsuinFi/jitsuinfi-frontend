@@ -14,10 +14,52 @@ export type Load = () => Promise<void>;
 export const netLabel = (network: string | undefined) => (network === undefined ? null : network === "main" ? "Mainnet" : "Testnet");
 
 /** The console's top bar: the mark, what this is, then the screens and who is signed in, if anyone. */
-export function TopBar({ net, where, nav, end }: { net: string | null; where?: ReactNode; nav?: ReactNode; end?: ReactNode }): ReactNode {
+/**
+ * Wave 6 (desktop keyboard: 98 Tabs to Accept offer, 173 to Pay): the open letter's or deal's
+ * primary action takes the focus when it opens, else its heading. `kind`: "mail" or "deal".
+ */
+export function focusOpen(kind: string): void {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-primary="${kind}"]:not([disabled])`) ?? document.querySelector<HTMLElement>(`[data-open-head="${kind}"]`);
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({ block: "center", behavior: "auto" });
+    }),
+  );
+}
+
+/**
+ * Wave 6: a long list is one tab stop; the arrows (and Home/End) move through its `[data-rove]`
+ * buttons. The stop moves with the focus, so Tab leaves the list from where you are.
+ */
+export function rove(e: { key: string; currentTarget: HTMLElement; preventDefault(): void }): void {
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>("[data-rove]")];
+  const i = items.indexOf(document.activeElement as HTMLElement);
+  if (i < 0) return;
+  const to = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? items.length - 1 : null;
+  if (to === null || to < 0 || to >= items.length) return;
+  e.preventDefault();
+  items.forEach((x, j) => (x.tabIndex = j === to ? 0 : -1));
+  items[to].focus();
+}
+
+export function TopBar({ net, where, nav, end, openItem }: { net: string | null; where?: ReactNode; nav?: ReactNode; end?: ReactNode; openItem?: () => void }): ReactNode {
   return (
     <header className="cs-top">
       <SkipLink target="cs-main" />
+      {openItem ? (
+        <a
+          className="skip"
+          href="#cs-main"
+          onClick={(e) => {
+            e.preventDefault();
+            openItem();
+          }}
+        >
+          Skip to the open item
+        </a>
+      ) : null}
       <a className="cs-brand" href="/console" aria-label="JitsuinFi financier console">
         <Mark className="cs-brand-img" small />
         <Wordmark />
@@ -68,10 +110,11 @@ export function CopyButton({ label, value, className = "cs-btn-q", failed = "Cop
 }
 
 /** A button that runs once at a time, its error shown by `fail`. */
-export function Act({ label, className = "cs-btn-q", run, fail, disabled, children }: { label?: string; className?: string; run: () => Promise<void>; fail: (e: unknown) => void; disabled?: boolean; children?: ReactNode }): ReactNode {
+export function Act({ label, className = "cs-btn-q", run, fail, disabled, primary, children }: { label?: string; className?: string; run: () => Promise<void>; fail: (e: unknown) => void; disabled?: boolean; primary?: string; children?: ReactNode }): ReactNode {
   const [busy, setBusy] = useState(false);
   return (
     <button
+      data-primary={primary}
       className={`${className}${busy ? " is-busy" : ""}`}
       type="button"
       disabled={busy || disabled}

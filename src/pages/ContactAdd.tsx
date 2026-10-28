@@ -6,6 +6,8 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "../app/ui";
+import { Dock } from "../app/Dock";
+import { usePhone } from "../app/phone";
 import type { Role } from "../lib/account";
 import { myIdentity } from "../lib/app-relay";
 import { account } from "../lib/app-session";
@@ -59,6 +61,7 @@ export function AddContact({ c: given, onCancel, cancelLabel = "Not now", fromLi
   const [added, setAdded] = useState(addedBefore);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const phone = usePhone();
   if (!s) return null;
   const naming = !!nameable && !given.username;
   let c = given;
@@ -105,13 +108,17 @@ export function AddContact({ c: given, onCancel, cancelLabel = "Not now", fromLi
         ) : null}
         {added ? (
           <div className="ia-add-next">
-            <Link className="ia-add-go" to={next.to} replace={fromLink} onClick={() => next.before?.()}>
-              <span>
-                <strong>{next.label}</strong>
-                <small>{next.line}</small>
-              </span>
-              <i aria-hidden="true">→</i>
-            </Link>
+            {/* mobile E2E 4: on a phone the next step rides in the bottom bar (it sat at 46 %); its line stays here */}
+            {phone ? <p className="ia-add-line">{next.line}</p> : null}
+            <Dock label="Next step">
+              <Link className="ia-add-go" to={next.to} replace={fromLink} onClick={() => next.before?.()}>
+                <span>
+                  <strong>{next.label}</strong>
+                  <small>{next.line}</small>
+                </span>
+                <i aria-hidden="true">→</i>
+              </Link>
+            </Dock>
             <Link className="ia-add-alt" to={`/${s.role}/contacts`} replace={fromLink}>
               See your contacts
             </Link>

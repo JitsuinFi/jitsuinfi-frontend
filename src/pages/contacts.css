@@ -122,3 +122,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ia-meishi { animation: none; }
 }
+/* mobile E2E 4: the next step in the phone's bottom bar, its label only (the line stays on the card) */
+.ia-add-line { margin: 0 0 4px; font: 400 14px/1.45 var(--f-body); color: var(--ink-2); }
+@media (max-width: 599px) {
+  .ia-bar > a.ia-add-go { display: flex; gap: 10px; padding: 0 18px; border-radius: var(--r-control); }
+  .ia-bar > a.ia-add-go small { display: none; }
+  .ia-bar > a.ia-add-go strong { font: 600 15px/1.2 var(--f-body); }
+}

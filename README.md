@@ -81,6 +81,80 @@ flowchart TD
 
 <p align="center"><img src=".github/readme/route.svg" alt="The deal route: 照 sent to the buyer, 署 buyer signs, 登 public record, 印 financing letter sealed, 金 advance, 済 settled" width="100%"></p>
 
+## Flow in this repo (frontend)
+
+Everything secret stays in the page: keys come from the passkey, signing and verification run in `jitsuin-wasm`, and only sealed ciphertext leaves the browser.
+
+**Sequence: a buyer signs an invoice, then anyone verifies a deal**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Buyer
+    participant P as Page (React)
+    participant K as Passkey (WebAuthn PRF)
+    participant W as jitsuin-wasm
+    participant D as IndexedDB (sealed)
+    participant R as Relay /api
+    participant N as Node /api/board
+    U->>P: open inbox (bell)
+    P->>K: get assertion with PRF
+    K-->>P: PRF output (stays in page memory)
+    P->>W: derive buyer keys, mailbox key
+    P->>R: challenge, proof, read token
+    R-->>P: sealed invoice letter
+    P->>W: open seal, check invoice bytes and PDF hash
+    U->>P: Sign invoice (one passkey touch)
+    P->>W: sign canonical invoice
+    P->>D: keep the record (AES-GCM, HMAC names)
+    P->>R: POST signature sealed to the supplier's mailbox
+    Note over P,N: /verify, no account
+    U->>P: paste deal file, proof or Exhibit A
+    P->>N: GET live board (falls back to the last kept copy)
+    P->>W: check seals, entries, order against the board
+    W-->>P: 真 genuine / 重 double financed / 偽 forged
+```
+
+**DFD: what the browser keeps and sends**
+
+```mermaid
+flowchart LR
+    U[User<br/>supplier, buyer, member]:::human
+    PK[Passkey<br/>platform authenticator]:::human
+    RL[Relay<br/>jitsuinfi-backend]:::sys
+    ND[Financier node<br/>/api/board]:::zcash
+    P1((1.0<br/>Unlock keys<br/>PRF → keys)):::seal
+    P2((2.0<br/>Write, sign,<br/>seal documents)):::sys
+    P3((3.0<br/>Inbox:<br/>send, read)):::sys
+    P4((4.0<br/>Sync devices)):::sys
+    P5((5.0<br/>Verify, outsider,<br/>rates)):::sys
+    D1[(D1 page memory<br/>keys, never stored)]:::store
+    D2[(D2 IndexedDB<br/>sealed records)]:::store
+    D3[(D3 session storage<br/>sealed drafts)]:::store
+    D4[(D4 localStorage<br/>last public board)]:::store
+    U -- passkey touch --> P1
+    PK -- PRF output --> P1
+    P1 -- keys --> D1
+    U -- invoice fields, PDF --> P2
+    D1 -- keys --> P2
+    P2 -- records --> D2
+    P2 -- form in progress --> D3
+    P2 -- sealed letters --> P3
+    P3 <-- ciphertext --> RL
+    D2 -- records --> P4
+    P4 <-- sealed state blob --> RL
+    ND -- board entries --> P5
+    P5 -- last board --> D4
+    U -- bundle, proof, Exhibit A --> P5
+    P5 -- verdict --> U
+    classDef human fill:#FCFCFE,stroke:#7E2A53,color:#461D3A,stroke-width:2px
+    classDef zcash fill:#020D2F,stroke:#1D97F1,color:#C4C7F2,stroke-width:2px
+    classDef sys fill:#F6F5FC,stroke:#032C7D,color:#020D2F,stroke-width:2px
+    classDef seal fill:#7E2A53,stroke:#461D3A,color:#FCFCFE,stroke-width:2px
+    classDef store fill:#ECD0EC,stroke:#7E2A53,color:#461D3A,stroke-width:1px
+```
+<sub>DFD legend: rectangles are external entities, circles are processes, cylinders are data stores; arrows carry the named data.</sub>
+
 ## Design: seal ink on document paper, Zcash as the deep pool
 
 Shippori Mincho B1 for display, Geist for text, Geist Mono for real data only. Ten colours, no pure black or white: blues are Zcash (the shielded pool), plums are people (ink, signatures, the registered seal). Dark Raspberry is the only red, kept for the seal and primary actions. Full rules: [`MASTER.md`](MASTER.md).

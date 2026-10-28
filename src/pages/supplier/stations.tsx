@@ -381,7 +381,14 @@ function OfferWork(p: WorkProps): ReactNode {
   const phone = usePhone();
   const [typed, setTyped] = useState("");
   useEffect(() => setTyped(addr.current?.value ?? ""), [kept.restoredAny]);
-  const scanFirst = phone && offerBar(suggest, typed) === "scan";
+  const bar = phone ? offerBar(suggest, typed) : "send";
+  const scanFirst = bar === "scan";
+  const savedFirst = bar === "saved";
+  const useSaved = () => {
+    if (!suggest) return;
+    put(addr.current, suggest);
+    setAddrSay(addressProblem(suggest));
+  };
   useEffect(() => {
     if (d.offer) return;
     void findFinanciers(d).then(setFits, (e) => setFits(e instanceof Error ? e.message : String(e)));
@@ -546,17 +553,13 @@ function OfferWork(p: WorkProps): ReactNode {
               characters to paste), and pasting is the second way */}
           {suggest ? (
             <span className="sp-addr-quick">
-              <button
-                type="button"
-                className="sp-pill sp-addr-last"
-                onClick={() => {
-                  put(addr.current, suggest);
-                  setAddrSay(addressProblem(suggest));
-                }}
-              >
-                Use my saved address
-                <small>{`${suggest.slice(0, 10)}…${suggest.slice(-6)}`}</small>
-              </button>
+              {/* wave 6: on a phone the saved address is the bar's primary; the pill stays wider */}
+              {savedFirst ? null : (
+                <button type="button" className="sp-pill sp-addr-last" onClick={useSaved}>
+                  Use my saved address
+                  <small>{`${suggest.slice(0, 10)}…${suggest.slice(-6)}`}</small>
+                </button>
+              )}
               <ScanButton what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />
             </span>
           ) : (
@@ -580,7 +583,16 @@ function OfferWork(p: WorkProps): ReactNode {
       </div>
       </div>
       <Actions>
-        {scanFirst ? (
+        {savedFirst && suggest ? (
+          <>
+            <Dock label="Address">
+              <button type="button" className="sp-addr-bar" onClick={useSaved}>
+                {`Use my saved address ${suggest.slice(0, 10)}…${suggest.slice(-6)}`}
+              </button>
+            </Dock>
+            <Button secondary onClick={sendOffer}>Send offer</Button>
+          </>
+        ) : scanFirst ? (
           <>
             <Dock label="Address">
               <ScanButton secondary={false} what="your wallet's receive QR" label="Scan my wallet's QR" onPaste={() => addr.current?.focus()} onRead={(t) => (put(addr.current, addressFromScan(t, addressProblem)), setAddrSay(null))} />

@@ -350,6 +350,10 @@ export function setKeyInfo(k: KeyInfo | null): void {
   keyInfo = k;
   keyListeners.forEach((f) => f());
 }
+/** The key shown last in this tab, outside React. */
+export function keyInfoNow(): KeyInfo | null {
+  return keyInfo;
+}
 export function useKeyInfo(): KeyInfo | null {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {

@@ -9,11 +9,12 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { download } from "../lib/download";
 import { explain, stopReason } from "../lib/explain";
-import { Act, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
+import { Act, focusOpen, rove, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
 import { agoSec, bigStamp, doubleNote, dueDay, isDouble, ROUTE, seals, short, stations, tabOf, totals, WAITING, zec } from "./model";
 import { keepName } from "./name";
 import { approvePayment, contactFingerprint, get, getRaw, NodeError, post } from "./node";
 import { TopUp, WalletCtx, WalletSection } from "./Wallet";
+import { txUrl } from "../lib/explorer";
 import { payShortfall, refusalShortfall, shortWords, walletOf, type Shortfall, type WalletView } from "./wallet-model";
 import { needs, refresher, updatedLine } from "./feed";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
@@ -236,6 +237,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
             <Act
               className="cs-btn"
               label={`Pay the advance, ${zec(d.advance_zat)} ZEC`}
+              primary="deal"
               run={async () => {
                 setNote("Waiting for your passkey…");
                 const approval = await approvePayment(d.intent!);
@@ -348,7 +350,8 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
       </ol>
       <div className="cs-now">
         <div className="cs-now-t">
-          <p>
+          {/* wave 6: the open deal's heading takes the focus when it has no action to press */}
+          <p tabIndex={-1} data-open-head="deal">
             {line}
             {d.state === "AwaitConfirmation" && d.confirmations != null && d.min_confirmations ? (
               <span className="cs-confs" aria-hidden="true">
@@ -364,9 +367,10 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               {tx.map(([k, v]) => (
                 <li key={k}>
                   {k}{" "}
-                  <span className="is-mono" title={v}>
+                  {/* wave 6: every txid opens on the app's one explorer (lib/explorer.ts) */}
+                  <a className="cs-link is-mono" href={txUrl(v)} target="_blank" rel="noopener noreferrer" title={v}>
                     {short(v)}
-                  </span>
+                  </a>
                   <CopyButton className="cs-tx-copy" label="Copy" value={v} />
                 </li>
               ))}
@@ -395,6 +399,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
             <Dock label="Move this deal on">
             <Act
               label="Move on now"
+              primary="deal"
               run={async () => {
                 await post(`/node/console/deals/${d.n}/step`);
                 setNote("Asked the node to move this deal on now.");
@@ -464,7 +469,7 @@ function DealFile({ deals, note, name, demo, load, paid, want }: { deals: DealRo
             // production run 5: the whole invoice number, wrapped onto two lines if it must
             const id = x.invoice_id;
             return (
-              <button key={x.n} className="cs-tab" type="button" role="tab" data-k={t.kind} aria-selected={x.n === sel} aria-controls="cs-deal-panel" tabIndex={x.n === sel ? 0 : -1} title={`${x.invoice_id}: ${t.line}`} onClick={() => setSel(x.n)}>
+              <button key={x.n} className="cs-tab" type="button" role="tab" data-k={t.kind} aria-selected={x.n === sel} aria-controls="cs-deal-panel" tabIndex={x.n === sel ? 0 : -1} title={`${x.invoice_id}: ${t.line}`} onClick={() => (setSel(x.n), focusOpen("deal"))}>
                 <i lang="ja" aria-hidden="true">
                   {t.glyph}
                 </i>
@@ -534,9 +539,14 @@ let pushedFrom = "";
 /** What the person has to do now: offers to answer, then deals waiting for their action (feed.ts `needs`). */
 function NeedsYou({ deals, mail, open, refresh, busy, updated, others = true }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string; others?: boolean }): ReactNode {
   const n = needs(deals, mail);
-  const row = (key: string, glyph: string, what: string, line: string, go: string, act?: string) => (
+  // wave 6: each list is one tab stop (its first row); the arrows move through it
+  let first = true;
+  const row = (key: string, glyph: string, what: string, line: string, go: string, act?: string) => {
+    const stop = first;
+    first = false;
+    return (
     <li key={key}>
-      <button type="button" className="cs-need" onClick={() => open(go)} title={`${what}: ${line}`}>
+      <button type="button" className="cs-need" data-rove tabIndex={stop ? 0 : -1} onClick={() => open(go)} title={`${what}: ${line}`}>
         <i lang="ja" aria-hidden="true">
           {glyph}
         </i>
@@ -550,7 +560,8 @@ function NeedsYou({ deals, mail, open, refresh, busy, updated, others = true }: 
         </svg>
       </button>
     </li>
-  );
+    );
+  };
   return (
     <>
       <div className="cs-needs-h">
@@ -565,7 +576,7 @@ function NeedsYou({ deals, mail, open, refresh, busy, updated, others = true }: 
           {updated}
         </p>
       </div>
-      <ul className="cs-needs" aria-label="Needs you now">
+      <ul className="cs-needs" aria-label="Needs you now" onKeyDown={rove}>
         {n.offers.map((m) => row(m.relay_id, "売", `Financing offer · ${m.offer?.invoice_id ?? ""}`, `${zec(m.offer?.advance_zat ?? 0)} ZEC asked · ${m.offer?.mandate?.verdict === "breaks" ? "breaks your rules" : m.offer?.mandate?.verdict === "fits" ? "fits your rules" : "checked by your node"}`, `tray/${encodeURIComponent(m.relay_id)}`, "Accept or decline"))}
         {n.acting.map((d) => row(d.n, "金", d.invoice_id, `Sealed by both · ${zec(d.advance_zat)} ZEC`, `deal/${d.n}`, "Pay the advance"))}
         {n.moving.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`, "Move on"))}
@@ -576,7 +587,9 @@ function NeedsYou({ deals, mail, open, refresh, busy, updated, others = true }: 
           <div className="cs-needs-h">
             <h2>Your other deals</h2>
           </div>
-          <ul className="cs-needs is-quiet" aria-label="Your other deals">
+          <ul className="cs-needs is-quiet" aria-label="Your other deals" onKeyDown={rove}>
+            {/* this list's own tab stop */}
+            {void (first = true)}
             {n.accepted.map((m) => row(m.relay_id, "受", m.offer?.invoice_id ?? "Accepted offer", "Accepted · waiting for the supplier's public record", `tray/${encodeURIComponent(m.relay_id)}`))}
             {n.rest.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`))}
           </ul>
@@ -737,11 +750,15 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   // the desktop: a "Needs you now" row opens its deal folder or in-tray letter on this page
   const [wantDeal, setWantDeal] = useState<{ n: string; at: number } | null>(null);
   const [wantMail, setWantMail] = useState<{ id: string; at: number } | null>(null);
+  // wave 6: "Skip to the open item" goes to the item opened last (the deal folder by default)
+  const lastOpen = useRef<"deal" | "mail">("deal");
   const openHere = (h: string) => {
     const [kind, ...rest] = h.split("/");
     const id = decodeURIComponent(rest.join("/"));
     if (kind === "deal") setWantDeal({ n: id, at: Date.now() });
     else if (kind === "tray") setWantMail({ id, at: Date.now() });
+    lastOpen.current = kind === "deal" ? "deal" : "mail";
+    focusOpen(lastOpen.current);
   };
   const back = () => {
     if (pushedDetail) {
@@ -795,6 +812,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   return (
     <div className={`cs${demo ? " is-demo" : ""}${compact ? " is-compact" : ""}`}>
       <TopBar
+        openItem={compact ? undefined : () => focusOpen(lastOpen.current)}
         net={netLabel(info.network)}
         where={<span className="cs-brand-sub">Financier console</span>}
         nav={

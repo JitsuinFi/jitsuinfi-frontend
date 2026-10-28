@@ -32,5 +32,6 @@ test("mobile E2E 3: with no saved address, the bar scans the wallet's QR until a
   assert.equal(offerBar(null, ""), "scan");
   assert.equal(offerBar(null, "   "), "scan");
   assert.equal(offerBar(null, "utest1abc"), "send");
-  assert.equal(offerBar("utest1saved", ""), "send");
+  assert.equal(offerBar("utest1saved", ""), "saved", "wave 6: the saved address is the bar's one tap");
+  assert.equal(offerBar("utest1saved", "utest1saved"), "send");
 });

@@ -142,3 +142,13 @@ test("two invoices in a row: the key is held until the first invoice is financed
   assert.equal(keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: false }])?.kind, "warn");
   assert.equal(keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: true }, { invoice_id: "TES-INV-0002", signed: false }])?.kind, "warn");
 });
+
+// production run 6: the key shown earlier in the tab came back with the notes of then
+test("a key shown earlier gets its notes about key #k made again; the others stay", async () => {
+  const { freshKeyNotes, keyTakenNote } = await import("../src/lib/key-match.ts");
+  const then = [{ kind: "ok", title: "Your history matches the public board.", text: "No invoice is in it yet" }, { kind: "warn", title: "Key #0 is on TES-INV-0001 already.", text: "…" }];
+  const now = [keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: true }])!];
+  const out = freshKeyNotes(then, 0, now);
+  assert.deepEqual(out.map((n) => n.title), ["Your history matches the public board.", "Key #0 is free for your next invoice."]);
+  assert.deepEqual(freshKeyNotes(then, 1, []).length, 2, "another key's notes are not touched");
+});

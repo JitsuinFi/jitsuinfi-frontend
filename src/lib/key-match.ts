@@ -212,6 +212,14 @@ export function keyTakenNote(k: number, all: ReadonlyArray<{ invoice_id: string;
   };
 }
 
+/**
+ * The notes kept with a key shown earlier, with the ones about key #k (taken, free, handed out)
+ * made again (production run 6). The others (the board, the backup) stay as they were.
+ */
+export function freshKeyNotes<N extends { title?: string }>(notes: readonly N[], k: number, now: readonly N[]): N[] {
+  return [...notes.filter((n) => !(n.title ?? "").startsWith(`Key #${k} `)), ...now];
+}
+
 // ---------- the keys handed out, from every device (finding F10) ----------
 /** The buyer's invoice keys handed out (the synced "keys:given" record): k, to whom, when. */
 export interface GivenKeys {

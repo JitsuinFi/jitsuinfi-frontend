@@ -2,8 +2,8 @@
 // tray; one is opened beside it. A financing offer carries the node's checks, the 内規 verdict
 // rule by rule, and Accept / Decline; a buyer history its KYC flag; a member's withdrawal the
 // button that queues it for the period's end.
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Act, say, Stamp, Status, type Load } from "./bits";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Act, focusOpen, say, Stamp, Status, type Load } from "./bits";
 import { acceptedLine, dueDay, refusal, short, totals, zec } from "./model";
 import { del, post } from "./node";
 import type { Mail, Offer } from "./types";
@@ -159,7 +159,7 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
         <div className="cs-actions">
           {/* a phone: the offer's one action rides the bottom bar; `form` keeps it this form's submit (mobile E2E 2026-10-27, finding 5) */}
           <Dock label="Answer the offer">
-            <button className={`cs-btn${accepting ? " is-busy" : ""}`} type="submit" form={`cs-accept-${relayId}`} disabled={accepting} aria-busy={accepting || undefined}>
+            <button className={`cs-btn${accepting ? " is-busy" : ""}`} type="submit" form={`cs-accept-${relayId}`} disabled={accepting} aria-busy={accepting || undefined} data-primary="mail">
               {accepting ? "Accepting…" : "Accept offer"}
             </button>
           </Dock>
@@ -204,7 +204,9 @@ export function Opened({ m, demo, load }: { m: Mail; demo: boolean; load: Load }
         <span className="cs-badge" lang="ja" aria-hidden="true">
           {ROLE_BADGE[m.from?.role ?? ""] ?? "外"}
         </span>
-        <h3 id="cs-opened-t">{TYPE_LABEL[m.type] ?? m.type}</h3>
+        <h3 id="cs-opened-t" tabIndex={-1} data-open-head="mail">
+          {TYPE_LABEL[m.type] ?? m.type}
+        </h3>
         {signed ? (
           <span className={m.signature_ok ? "cs-verdict" : "cs-verdict is-bad"} lang="ja" title={m.signature_ok ? "Signature holds" : "Signature does not hold"}>
             {m.signature_ok ? "認" : "拒"}
@@ -279,7 +281,7 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
   useEffect(() => {
     if (!want) return;
     setOpen(want.id);
-    requestAnimationFrame(() => document.getElementById("tray")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    focusOpen("mail");
   }, [want]);
   // keep the opened letter across reloads; open the first one otherwise
   useEffect(() => {
@@ -287,6 +289,71 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
   }, [mail, open]);
   const t = totals(null, mail);
   const opened = mail?.find((m) => m.relay_id === open) ?? null;
+  // an offer still to answer stays in the list; everything else folds (accepted, refused, other kinds)
+  const all = mail ?? [];
+  const toAnswer = (m: Mail) => !!m.offer?.ok && !m.offer.accepted;
+  const active = all.filter(toAnswer);
+  const quiet = all.filter((m) => !toAnswer(m));
+  // each list's one tab stop: the open letter when it is in that list, else its first
+  const stopOf = (list: Mail[]) => (list.some((m) => m.relay_id === open) ? open : list[0]?.relay_id);
+  const openHere = (id: string) => {
+    setOpen(id);
+    focusOpen("mail");
+  };
+  const rove = (e: KeyboardEvent<HTMLButtonElement>, list: Mail[], id: string) => {
+    const i = list.findIndex((x) => x.relay_id === id);
+    const to = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? list.length - 1 : null;
+    if (to === null || to < 0 || to >= list.length) return;
+    e.preventDefault();
+    const next = list[to].relay_id;
+    setOpen(next);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`#tray .cs-lt[data-relay="${CSS.escape(next)}"]`)?.focus());
+  };
+  const row = (m: Mail, list: Mail[]) => (
+    <li key={m.relay_id} className="cs-letter-row">
+      <button
+        className="cs-lt"
+        type="button"
+        data-relay={m.relay_id}
+        aria-pressed={onOpen ? undefined : m.relay_id === open}
+        tabIndex={onOpen || m.relay_id === stopOf(list) ? 0 : -1}
+        onKeyDown={onOpen ? undefined : (e) => rove(e, list, m.relay_id)}
+        onClick={() => (onOpen ? onOpen(m.relay_id) : openHere(m.relay_id))}
+      >
+        <span className="cs-badge" lang="ja" aria-hidden="true">
+          {ROLE_BADGE[m.from?.role ?? ""] ?? "外"}
+        </span>
+        <span className="cs-lt-what">{TYPE_LABEL[m.type] ?? m.type}</span>
+        {m.signer !== undefined && m.signer !== null ? (
+          <span className={m.signature_ok ? "cs-verdict" : "cs-verdict is-bad"} lang="ja" title={m.signature_ok ? "Signature holds" : "Signature does not hold"}>
+            {m.signature_ok ? "認" : "拒"}
+          </span>
+        ) : (
+          <span className="cs-verdict is-none" aria-hidden="true" />
+        )}
+        <span className="cs-lt-line">
+          {`from ${m.from?.role ?? "?"} · ${ago(m.received_at)}`}
+          {m.offer?.ok && m.offer.invoice_id ? (
+            <>
+              {" · "}
+              <span className="is-mono">{m.offer.invoice_id}</span>
+            </>
+          ) : m.n ? (
+            <>
+              {" · fingerprint "}
+              <span className="is-mono">{short(m.n)}</span>
+            </>
+          ) : null}
+          {m.identity ? (
+            <>
+              {" · "}
+              <Kyc id={m.identity} />
+            </>
+          ) : null}
+        </span>
+      </button>
+    </li>
+  );
   return (
     <section className="cs-sec" id="tray" aria-labelledby="cs-tray-t">
       <div className="cs-cap">
@@ -323,45 +390,20 @@ export function TraySection({ mail, refused, note, demo, load, onOpen, updated, 
       </div>
       <div className="cs-tray-wrap">
         <div className="cs-tray">
-          <ul className="cs-tray-list" aria-label="Letters">
-            {(mail ?? []).map((m) => (
-              <li key={m.relay_id} className="cs-letter-row">
-                <button className="cs-lt" type="button" aria-pressed={onOpen ? undefined : m.relay_id === open} onClick={() => (onOpen ? onOpen(m.relay_id) : setOpen(m.relay_id))}>
-                  <span className="cs-badge" lang="ja" aria-hidden="true">
-                    {ROLE_BADGE[m.from?.role ?? ""] ?? "外"}
-                  </span>
-                  <span className="cs-lt-what">{TYPE_LABEL[m.type] ?? m.type}</span>
-                  {m.signer !== undefined && m.signer !== null ? (
-                    <span className={m.signature_ok ? "cs-verdict" : "cs-verdict is-bad"} lang="ja" title={m.signature_ok ? "Signature holds" : "Signature does not hold"}>
-                      {m.signature_ok ? "認" : "拒"}
-                    </span>
-                  ) : (
-                    <span className="cs-verdict is-none" aria-hidden="true" />
-                  )}
-                  <span className="cs-lt-line">
-                    {`from ${m.from?.role ?? "?"} · ${ago(m.received_at)}`}
-                    {m.offer?.ok && m.offer.invoice_id ? (
-                      <>
-                        {" · "}
-                        <span className="is-mono">{m.offer.invoice_id}</span>
-                      </>
-                    ) : m.n ? (
-                      <>
-                        {" · fingerprint "}
-                        <span className="is-mono">{short(m.n)}</span>
-                      </>
-                    ) : null}
-                    {m.identity ? (
-                      <>
-                        {" · "}
-                        <Kyc id={m.identity} />
-                      </>
-                    ) : null}
-                  </span>
-                </button>
-              </li>
-            ))}
+          {/* wave 6 (desktop keyboard): one tab stop for the list, arrows move through it (the
+              letter follows); letters with nothing to answer fold below; opening a letter takes
+              the focus to its Accept, else its heading */}
+          <ul className="cs-tray-list" aria-label="Letters to answer">
+            {active.map((m) => row(m, active))}
           </ul>
+          {quiet.length ? (
+            <details className="cs-tray-old" open={!onOpen && !!opened && quiet.includes(opened)}>
+              <summary>{`${quiet.length} letter${quiet.length > 1 ? "s" : ""} with nothing to answer`}</summary>
+              <ul className="cs-tray-list" aria-label="Letters with nothing to answer">
+                {quiet.map((m) => row(m, quiet))}
+              </ul>
+            </details>
+          ) : null}
           {mail && !mail.length ? <p className="cs-tray-empty">No messages.</p> : null}
         </div>
         {onOpen ? null : opened ? <Opened key={opened.relay_id} m={opened} demo={demo} load={load} /> : <p className="cs-note cs-opened-empty">{mail ? "No letter to open." : ""}</p>}

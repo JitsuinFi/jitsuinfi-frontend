@@ -762,3 +762,13 @@
 .cs-short .cs-topup.is-compact .qrp-btn { min-height: 40px; padding: 0 12px; font-size: 13px; }
 
 @media (max-width: 340px) { .cs-nav a { padding: 12px 2px; font-size: 11.5px; min-width: 44px; } .cs-nav .cs-n-count { min-width: 15px; height: 15px; padding: 0 3px; } }
+
+/* wave 6: in-tray letters with nothing to answer fold under the offers (one tab stop when closed) */
+.cs-tray-old { margin-top: 10px; }
+.cs-tray-old > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; cursor: pointer; list-style: none; font: 500 13.5px/1.3 var(--f-body); color: var(--ink-2); }
+.cs-tray-old > summary::-webkit-details-marker { display: none; }
+.cs-tray-old > summary::after { content: "▾"; font-size: 11px; }
+.cs-tray-old[open] > summary::after { content: "▴"; }
+.cs-tray-old > summary:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; border-radius: 8px; }
+[data-open-head]:focus { outline: none; }
+[data-open-head]:focus-visible { outline: 2px solid var(--seal); outline-offset: 4px; border-radius: 6px; }

@@ -137,7 +137,7 @@ const handlers: Handlers = {
   },
   "deal.commitment_opening": fromFinancier(
     "deal.commitment_opening",
-    ["登", "Entry request received"],
+    ["登", "Public record requested"],
     async (d, h) => {
       const b = h.body as { financier_pk: string; salt: string; discount?: number; tenor?: number; history_tag?: string };
       // HNK-26.T8: with the buyer's history checked, the entry must carry the certificate's tag
@@ -145,7 +145,7 @@ const handlers: Handlers = {
       const problems = entryRequestProblems(d, r);
       if (problems.length) throw new Error(problems.join("; "));
       await save({ ...d, entry_request: r });
-      return `The financier checked the board: sign the entry for ${d.invoice_id} (Step 3).`;
+      return `The financier checked the board: sign the public record for ${d.invoice_id} (Step 3).`;
     },
     (d) => `The financier you offered ${d.invoice_id} to checked the public board and asks you to sign the invoice's public record.`,
     (d) => !!d.entry_request || !!d.entry,

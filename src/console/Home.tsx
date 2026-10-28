@@ -216,10 +216,10 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
   const [s1, s2, s3] = seals(d);
   const big = bigStamp(d);
   let line = d.state === "Stopped" ? "The deal stopped. Nothing more happens on this file." : (WAITING[d.state] ?? d.state);
-  if (d.state === "AwaitConfirmation" && d.confirmations != null && d.min_confirmations) line = `Entry posted: ${d.confirmations} of ${d.min_confirmations} confirmations.`;
+  if (d.state === "AwaitConfirmation" && d.confirmations != null && d.min_confirmations) line = `Public record posted: ${d.confirmations} of ${d.min_confirmations} confirmations.`;
   if (d.state === "Done" && d.repayment) line = d.settled_txid ? `Repaid and settled on the board (${short(d.settled_txid)})${d.bundle_sent ? "; the bundle went to the supplier and the buyer" : ""}.` : `Repayment: ${d.repayment.toLowerCase()}${d.paid_zat ? `, ${zec(d.paid_zat)} ZEC received` : ""}.`;
   const tx: Array<[string, string]> = [];
-  if (d.entry_txid) tx.push(["Entry", d.entry_txid]);
+  if (d.entry_txid) tx.push(["Public record", d.entry_txid]);
   if (d.advance_txid) tx.push(["Advance", d.advance_txid]);
   if (d.settled_txid) tx.push(["Settled", d.settled_txid]);
   const label = { done: "done", now: "your action", wait: "in progress", later: "later", stop: "stopped here", cut: "not reached" };
@@ -280,7 +280,10 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               <dt>
                 指紋 N<span>Fingerprint on the board</span>
               </dt>
-              <dd>{d.n}</dd>
+              {/* production run 5: shortened like elsewhere; the whole N copies */}
+              <dd title={d.n}>
+                <span className="is-mono">{`${d.n.slice(0, 8)}…${d.n.slice(-4)}`}</span> <CopyButton className="cs-tx-copy" label="Copy" value={d.n} />
+              </dd>
             </div>
           </dl>
           <div className="cs-l-foot">
@@ -428,7 +431,8 @@ function DealFile({ deals, note, name, demo, load, paid }: { deals: DealRow[] | 
         >
           {(deals ?? []).map((x) => {
             const t = tabOf(x);
-            const id = x.invoice_id.length > 9 ? `…${x.invoice_id.slice(-8)}` : x.invoice_id;
+            // production run 5: the whole invoice number, wrapped onto two lines if it must
+            const id = x.invoice_id;
             return (
               <button key={x.n} className="cs-tab" type="button" role="tab" data-k={t.kind} aria-selected={x.n === sel} aria-controls="cs-deal-panel" tabIndex={x.n === sel ? 0 : -1} title={`${x.invoice_id}: ${t.line}`} onClick={() => setSel(x.n)}>
                 <i lang="ja" aria-hidden="true">

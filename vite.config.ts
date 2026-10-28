@@ -20,10 +20,11 @@ const relay = {
 };
 
 // Same-origin only: no CDN, no third-party requests, no inline script. WASM needs
-// 'wasm-unsafe-eval'. The meta copy goes into the build only: in development the React refresh
+// 'wasm-unsafe-eval'. The one exception is the landing's pitch video: a YouTube frame
+// (privacy-enhanced host), mounted only after the viewer opens it. The meta copy goes into the build only: in development the React refresh
 // preamble is an inline script. Production also sends the same policy as a header (vercel.json).
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; form-action 'none'";
 const cspMeta = (): Plugin => ({
   name: "jitsuin-csp-meta",
   apply: "build",

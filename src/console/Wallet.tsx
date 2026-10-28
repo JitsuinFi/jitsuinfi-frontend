@@ -29,11 +29,15 @@ export function useQrSvg(text: string | null): string | null {
   return svg;
 }
 
-/** The top-up plate: the node's address as a QR, its copy, and the address in words. */
-export function TopUp({ w, caption }: { w: Wallet; caption?: string }): ReactNode {
+/**
+ * The top-up plate: what it is, the node's address as a QR, the address and its Copy, then the
+ * actions (wave 5 polish: on a phone Open in wallet is the one primary, under the address; wider,
+ * the actions sit in one row under the code). `compact`: the smaller plate in the pay preflight.
+ */
+export function TopUp({ w, caption, compact }: { w: Wallet; caption?: string; compact?: boolean }): ReactNode {
   const svg = useQrSvg(w.topup_uri || w.topup_address || null);
   return (
-    <div className="cs-topup">
+    <div className={`cs-topup${compact ? " is-compact" : ""}`}>
       <QrPlate
         svg={svg}
         text={w.topup_uri || w.topup_address}
@@ -43,10 +47,13 @@ export function TopUp({ w, caption }: { w: Wallet; caption?: string }): ReactNod
         wallet
         shareTitle="Top up the node's wallet"
         veil={{ glyph: "入", text: "Drawing the QR…" }}
+        cap={compact ? 168 : 280}
+        under={
+          <p className="cs-topup-addr">
+            <span>Address</span> <span className="is-mono" title={w.topup_address}>{short(w.topup_address)}</span> <CopyButton className="cs-tx-copy" label="Copy address" value={w.topup_address} />
+          </p>
+        }
       />
-      <p className="cs-topup-addr">
-        <span>Address</span> <span className="is-mono" title={w.topup_address}>{short(w.topup_address)}</span> <CopyButton className="cs-tx-copy" label="Copy address" value={w.topup_address} />
-      </p>
     </div>
   );
 }
@@ -80,17 +87,21 @@ export function WalletSection({ wallet }: { wallet: WalletView }): ReactNode {
               </div>
               {wallet.fund_cash_zat !== null ? (
                 <>
+                  {/* the fund's cash can be above the balance (advances out): own money shows 0, said once */}
                   <div>
                     <dt>Fund members' money</dt>
                     <dd className="is-mono">{zec(wallet.fund_cash_zat)}</dd>
                   </div>
                   <div>
                     <dt>Your own money</dt>
-                    <dd className="is-mono">{zec(wallet.own_zat ?? Math.max(0, wallet.balance_zat - wallet.fund_cash_zat))}</dd>
+                    <dd className="is-mono">{zec(Math.max(0, wallet.own_zat ?? wallet.balance_zat - wallet.fund_cash_zat))}</dd>
                   </div>
                 </>
               ) : null}
             </dl>
+            {wallet.fund_cash_zat !== null && wallet.fund_cash_zat > wallet.balance_zat ? (
+              <p className="cs-sub">The fund members' money is more than the wallet holds now: part of it is out in advances. Your own money shows 0 until they come back.</p>
+            ) : null}
             <p className="cs-sub">{`Each payment from this wallet adds a network fee of about ${zec(wallet.fee_zat)} ZEC.${wallet.synced_at ? ` Read from the chain ${agoSec(wallet.synced_at)}.` : ""}`}</p>
           </>
         )}

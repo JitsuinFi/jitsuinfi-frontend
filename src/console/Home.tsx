@@ -230,6 +230,35 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
   if (d.advance_txid) tx.push(["Advance", d.advance_txid]);
   if (d.settled_txid) tx.push(["Settled", d.settled_txid]);
   const label = { done: "done", now: "your action", wait: "in progress", later: "later", stop: "stopped here", cut: "not reached" };
+  // wave 5 polish: short of funds, Pay sits under the panel that says why (cause and action together)
+  const payDock = (
+            <Dock label="Pay the advance">
+            <Act
+              className="cs-btn"
+              label={`Pay the advance, ${zec(d.advance_zat)} ZEC`}
+              run={async () => {
+                setNote("Waiting for your passkey…");
+                const approval = await approvePayment(d.intent!);
+                await post(`/node/console/deals/${d.n}/pay`, { approval });
+                // approved: the coin drops into the pool, the node's light blinks
+                replay(coin.current, "is-drop");
+                paid();
+                setNote("Approved with your passkey. The advance is on its way.");
+                setApproved(true);
+                await load();
+              }}
+              fail={(e) => {
+                // the node still refuses (409/422 with its numbers): say it as the shortfall
+                const s = e instanceof NodeError ? refusalShortfall(e.body, d.advance_zat) : null;
+                if (s) setRefused(s);
+                fail(e);
+              }}
+              disabled={!!shortBy}
+            >
+              <PasskeyGlyph />
+            </Act>
+            </Dock>
+  );
   return (
     <>
       <div className="cs-sheets">
@@ -346,7 +375,8 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
           {shortBy ? (
             <div className="cs-short" role="status">
               <p>{shortWords(shortBy, zec)}</p>
-              {wallet && wallet !== "missing" ? <TopUp w={wallet} caption={`Top up at least ${zec(Math.max(0, shortBy.need + shortBy.fee - (shortBy.have ?? 0)))} ZEC`} /> : null}
+              {payDock}
+              {wallet && wallet !== "missing" ? <TopUp compact w={wallet} caption={`Top up at least ${zec(Math.max(0, shortBy.need + shortBy.fee - (shortBy.have ?? 0)))} ZEC`} /> : null}
             </div>
           ) : null}
           <Status text={note} />
@@ -359,32 +389,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               </small>
             </Dock>
           ) : !demo && d.state === "Pay" && d.intent ? (
-            <Dock label="Pay the advance">
-            <Act
-              className="cs-btn"
-              label={`Pay the advance, ${zec(d.advance_zat)} ZEC`}
-              run={async () => {
-                setNote("Waiting for your passkey…");
-                const approval = await approvePayment(d.intent!);
-                await post(`/node/console/deals/${d.n}/pay`, { approval });
-                // approved: the coin drops into the pool, the node's light blinks
-                replay(coin.current, "is-drop");
-                paid();
-                setNote("Approved with your passkey. The advance is on its way.");
-                setApproved(true);
-                await load();
-              }}
-              fail={(e) => {
-                // the node still refuses (409/422 with its numbers): say it as the shortfall
-                const s = e instanceof NodeError ? refusalShortfall(e.body, d.advance_zat) : null;
-                if (s) setRefused(s);
-                fail(e);
-              }}
-              disabled={!!shortBy}
-            >
-              <PasskeyGlyph />
-            </Act>
-            </Dock>
+            shortBy ? null : payDock
           ) : null}
           {!demo && !["Pay", "Done", "Stopped"].includes(d.state) ? (
             <Dock label="Move this deal on">

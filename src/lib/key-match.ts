@@ -54,6 +54,33 @@ export function day(ms: number, year = false): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}${year ? ` ${d.getFullYear()}` : ""}`;
 }
 
+/**
+ * Production run 5 (repeat buyer and supplier): the buyer's next key is its next place in its
+ * payment history, which moves on only when a financier asks for that history (the certificate is
+ * anchored on the board with the register entry). A deal financed without that request leaves the
+ * buyer at the same place, so the buyer sends the same key again for the next invoice: that is
+ * right, and every invoice still has its own N. A key is held while an invoice on it is not yet
+ * financed (only one of two such invoices could take the history place); once financed, the key is
+ * free for the next invoice.
+ */
+export interface KeyUse {
+  buyer_pk: string;
+  invoice_id: string;
+  /** The advance came (or the node said it paid it), or the deal settled. */
+  advance?: unknown;
+  advance_notice?: unknown;
+  bundle?: string;
+}
+
+export function holdsKey(d: Omit<KeyUse, "buyer_pk" | "invoice_id">): boolean {
+  return !d.advance && !d.advance_notice && !d.bundle;
+}
+
+/** The invoice that still holds key `k`, or null when the key is free (unused, or its invoices financed). */
+export function keyHeldBy(deals: ReadonlyArray<KeyUse>, k: string): string | null {
+  return deals.find((d) => d.buyer_pk === k && holdsKey(d))?.invoice_id ?? null;
+}
+
 const short = (hex: string) => readablePrint(hex).slice(0, 9);
 
 /**
@@ -61,8 +88,9 @@ const short = (hex: string) => readablePrint(hex).slice(0, 9);
  * then each buyer contact that has not sent an unused key, then a key written by hand.
  * `deals` are the supplier's invoices (each names the buyer key it was written for).
  */
-export function keyChoices(keys: readonly KeyLetter[], contacts: readonly KnownBuyer[], cards: readonly KnownBuyer[], deals: ReadonlyArray<{ buyer_pk: string; invoice_id: string }>): KeyChoice[] {
-  const used = new Map(deals.map((d) => [d.buyer_pk, d.invoice_id]));
+export function keyChoices(keys: readonly KeyLetter[], contacts: readonly KnownBuyer[], cards: readonly KnownBuyer[], deals: ReadonlyArray<KeyUse>): KeyChoice[] {
+  // a key whose invoices are all financed is free again (production run 5: repeat buyer)
+  const used = new Map(deals.filter(holdsKey).map((d) => [d.buyer_pk, d.invoice_id]));
   const contactOf = (mb: string) => contacts.find((c) => c.mailbox_pk === mb);
   const cardOf = (mb: string) => cards.find((c) => c.mailbox_pk === mb);
   const sorted = [...keys].sort((a, b) => Number(used.has(a.invoice_pk)) - Number(used.has(b.invoice_pk)) || b.at - a.at);
@@ -158,8 +186,18 @@ export function keyMissText(m: KeyMiss): string {
  * same key was handed to a second supplier, or sent again to the first, who then saw it as used.
  * `on`: the invoices addressed to key #k, with whether each is signed. Null when none.
  */
-export function keyTakenNote(k: number, on: ReadonlyArray<{ invoice_id: string; signed: boolean }>): { kind: "warn" | "bad"; title: string; text: string } | null {
-  if (!on.length) return null;
+export function keyTakenNote(k: number, all: ReadonlyArray<{ invoice_id: string; signed: boolean; financed?: boolean }>): { kind: "ok" | "warn" | "bad"; title: string; text: string } | null {
+  if (!all.length) return null;
+  // production run 5: invoices on this key that are financed no longer hold it (see holdsKey)
+  const on = all.filter((x) => !x.financed);
+  if (!on.length) {
+    const done = all.map((x) => x.invoice_id).join(", ");
+    return {
+      kind: "ok",
+      title: `Key #${k} is free for your next invoice.`,
+      text: `${done} on this key ${all.length > 1 ? "are" : "is"} financed, and no financier asked for your history, so your history stays at #${k}. Send this key for the next invoice; the supplier sees it as new.`,
+    };
+  }
   const ids = on.map((x) => x.invoice_id).join(", ");
   if (on.length > 1)
     return {

@@ -100,7 +100,7 @@ async function showKey(boardFile: File | undefined, then?: (master: Uint8Array, 
       said.push(
         chainState.successorOnBoard
           ? { kind: "bad", title: "Your history is ahead of this device.", text: `The board already holds a certificate after #${r.next_index - 1 < 0 ? "start" : r.next_index - 1} that this device does not have. Do not issue a new certificate here: it would fork your history. Open this page on the device that issued it; its copy reaches the relay and comes back here.` }
-          : { kind: "ok", title: "Your history matches the public board.", text: r.next_index ? `${plural(r.next_index, "financed invoice")} on record, paid as the board shows.` : "No financed invoice in it yet: this key starts it." },
+          : { kind: "ok", title: "Your history matches the public board.", text: r.next_index ? `${plural(r.next_index, "financed invoice")} on record, paid as the board shows.` : "No invoice is in it yet (one joins it when a financier asks for your history): this key starts it." },
       );
     } else {
       if (relayUnread !== null) said.push(unreadNote());
@@ -119,7 +119,7 @@ async function showKey(boardFile: File | undefined, then?: (master: Uint8Array, 
     }
     // messy-state E2E 2026-10-27: invoices on this device (and, synced, on the others) that already name this key
     const invoices = await loadInvoices().catch(() => []);
-    const taken = keyTakenNote(k, invoices.filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature })));
+    const taken = keyTakenNote(k, invoices.filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature, financed: !!x.assignment?.financier_seal || !!x.bundle })));
     if (taken) said.push(taken);
     else {
       const names = new Map((await account.current?.store?.list<Contact>().catch(() => []))?.filter((x) => x.id.startsWith("contact:")).map((x) => [x.doc.mailbox_pk, contactName(x.doc)]) ?? []);

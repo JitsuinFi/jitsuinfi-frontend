@@ -8,6 +8,7 @@ import { account } from "../../lib/app-session";
 import { cardFromKeyLetter, contactId, contactName, type Contact } from "../../lib/contact";
 import { daysToDate, json, wasm, zatToZec } from "../../lib/core";
 import { leadPath, letterAction } from "../../lib/inbox-routes";
+import { keyHeldBy, type KeyUse } from "../../lib/key-match";
 import { readablePrint } from "../../lib/print";
 import type { Received } from "../../lib/relay";
 import type { Header, MessageType } from "../../lib/relay-message";
@@ -84,11 +85,16 @@ const handlers: Handlers = {
   },
   // HNK-25.T2 (BL-D22-01): the buyer's key for the next invoice, with the mailbox it came from
   "key.invoice_pk": {
-    // kept already, or an invoice was written for it
+    // kept already and not written on yet, or an invoice not yet financed holds it (production
+    // run 5: a key whose invoice was financed comes again from a repeat buyer, and is new)
     handled: async (r) => {
       const k = String(r.message.header.body.invoice_pk);
-      const all = await store().list<{ buyer_pk?: string; invoice_pk?: string }>();
-      return all.some((x) => x.doc.invoice_pk === k || x.doc.buyer_pk === k);
+      const all = (await store().list<{ buyer_pk?: string; invoice_pk?: string; at?: number; invoice_id?: string }>()).map((x) => x.doc);
+      const deals = all.filter((x): x is KeyUse => typeof x.buyer_pk === "string" && typeof x.invoice_id === "string");
+      if (keyHeldBy(deals, k)) return true;
+      const kept = all.find((x) => x.invoice_pk === k);
+      const sent = Date.parse(r.receivedAt);
+      return !!kept && !deals.some((d) => d.buyer_pk === k) && !(sent > (kept.at ?? 0));
     },
     about: async (r) => {
       const c = await contactOf(r.message.header.from.mailbox_pk);
@@ -96,8 +102,11 @@ const handlers: Handlers = {
       const who = c ? `${c.username ? `@${c.username}` : "A buyer in your contacts"} (${c.fingerprint})` : card ? `${card.username ? `@${card.username}` : "A buyer"}, not in your contacts yet (fingerprint ${card.fingerprint}),` : "A buyer not in your contacts yet";
       const k = String(r.message.header.body.invoice_pk);
       // messy-state E2E 2026-10-27: the same key again (it moves on only once that invoice is financed)
-      const used = (await store().list<{ buyer_pk?: string; invoice_id?: string }>()).find((x) => x.doc.buyer_pk === k)?.doc.invoice_id;
-      if (used) return `${who} sent key ${readablePrint(k)} again: it is on ${used} already, and a key is for one invoice. Their next key comes once ${used} is financed.`;
+      const deals = (await store().list<KeyUse>()).map((x) => x.doc).filter((x) => typeof x.buyer_pk === "string");
+      const used = keyHeldBy(deals, k);
+      if (used) return `${who} sent key ${readablePrint(k)} again: it is on ${used} already, which is not financed yet. A key is for one invoice at a time; it is free again once ${used} is financed.`;
+      const before = deals.find((d) => d.buyer_pk === k)?.invoice_id;
+      if (before) return `${who} sent key ${readablePrint(k)} for your next invoice. It was on ${before}, which is financed, so it is free again: their history moves on only when a financier asks for it.`;
       return `${who} sent the key for your next invoice to them, key ${readablePrint(k)}, signed by that key.`;
     },
     run: async (r) => {

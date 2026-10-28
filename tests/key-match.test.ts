@@ -119,3 +119,26 @@ test("ledger rows: a letter shows on the ledger its action leads into", () => {
   assert.equal(onLedger("member", "fund.receipt"), true);
   assert.equal(onLedger("member", "invoice.sign_request"), false);
 });
+
+// production run 5: a repeat buyer and supplier, two invoices in a row on the same key (no
+// financier asked for the history, so the buyer's place in it stays at #0)
+test("two invoices in a row: the key is held until the first invoice is financed, then free", async () => {
+  const { keyHeldBy, keyTakenNote } = await import("../src/lib/key-match.ts");
+  const first = { buyer_pk: KEY_X, invoice_id: "TES-INV-0001" };
+  assert.equal(keyHeldBy([first], KEY_X), "TES-INV-0001");
+  assert.equal(keyHeldBy([{ ...first, advance_notice: { txid: "t" } }], KEY_X), null);
+  assert.equal(keyHeldBy([{ ...first, advance: { txid: "t" } }], KEY_X), null);
+  assert.equal(keyHeldBy([{ ...first, bundle: "JTSB" }], KEY_X), null);
+  // the supplier's 御中 line offers the key again, not as used
+  const keys = [{ invoice_pk: KEY_X, mailbox_pk: BOX_X, at: T0 }];
+  assert.equal(keyChoices(keys, [], [], [first])[0].usedFor, "TES-INV-0001");
+  assert.equal(keyChoices(keys, [], [], [{ ...first, bundle: "JTSB" }])[0].usedFor, undefined);
+  assert.equal(defaultChoice(keyChoices(keys, [], [], [{ ...first, bundle: "JTSB" }])), KEY_X);
+  // the second invoice holds it again until it is financed too
+  const second = { buyer_pk: KEY_X, invoice_id: "TES-INV-0002" };
+  assert.equal(keyHeldBy([{ ...first, bundle: "JTSB" }, second], KEY_X), "TES-INV-0002");
+  // the buyer is told the key is free, not that it is taken
+  assert.equal(keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: true }])?.kind, "ok");
+  assert.equal(keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: false }])?.kind, "warn");
+  assert.equal(keyTakenNote(0, [{ invoice_id: "TES-INV-0001", signed: true, financed: true }, { invoice_id: "TES-INV-0002", signed: false }])?.kind, "warn");
+});

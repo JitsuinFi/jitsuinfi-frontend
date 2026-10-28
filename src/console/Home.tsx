@@ -582,7 +582,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
 
   // one source for the in-tray and the deals (mobile E2E 2, finding 1: the phone's Desk never
   // refreshed): loaded together at sign-in, when the Desk or the In-tray comes into view, on focus,
-  // and every 30 s while the page is seen; two asks at once share one request (feed.ts)
+  // and every 15 s while the page is seen; two asks at once share one request (feed.ts)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [feedErr, setFeedErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -693,7 +693,8 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
       firstShown.current = false;
       return;
     }
-    if (compact ? ["desk", "tray"].includes(view.sec) : sec === "desk" || sec === "tray") feed.seen();
+    // mobile E2E 3: fresh, so a load that started before the Desk came back is followed by one more
+    if (compact ? ["desk", "tray"].includes(view.sec) : sec === "desk" || sec === "tray") feed.seen(true);
   }, [shown, feed]);
   const openMail = compact && view.open?.kind === "mail" ? (mail?.find((m) => m.relay_id === view.open!.id) ?? null) : null;
   const openDeal = compact && view.open?.kind === "deal" ? (deals?.find((d) => d.n === view.open!.id) ?? null) : null;

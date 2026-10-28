@@ -4,7 +4,7 @@
 // derives from both lists.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { needs, refresher, updatedLine, type Timers } from "../src/console/feed.ts";
+import { EVERY_MS, needs, refresher, updatedLine, type Timers } from "../src/console/feed.ts";
 
 function fakeTimers() {
   const live = new Map<number, () => void>();
@@ -115,6 +115,29 @@ test("a failing load does not stick and stop ends it all", async () => {
   await r.run();
   await r.run(true);
   assert.equal(calls, after);
+});
+
+// mobile E2E 3: the Desk was 44-47 s behind the node at a 30 s poll
+test("polls every 15 s; the Desk coming into view loads fresh, after a load on its way, shared", async () => {
+  assert.equal(EVERY_MS, 15_000);
+  let calls = 0;
+  const g = gate();
+  const t = fakeTimers();
+  const r = refresher(async () => {
+    calls++;
+    if (calls === 1) await g.p;
+  }, { visible: () => true, timers: t });
+  const first = r.run();
+  r.seen(true); // the Desk came into view while the first load was on its way
+  r.seen(true); // and again: still one more load, not two
+  assert.equal(t.count(), 1);
+  g.open();
+  await first;
+  await r.run(); // joins the queued fresh load
+  assert.equal(calls, 2);
+  r.seen(); // not fresh: no load waits behind one already done
+  await r.run();
+  r.stop();
 });
 
 const offer = (id: string, n: string, more: Record<string, unknown> = {}) => ({ relay_id: id, offer: { ok: true, n, invoice_id: `INV-${id}`, advance_zat: 1, ...more } });

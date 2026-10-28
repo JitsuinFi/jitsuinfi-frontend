@@ -483,8 +483,10 @@ export function viewOf(hash: string): View {
   if (a === "deal" && id) return { sec: "desk", open: { kind: "deal", id } };
   return { sec: SECS.has(a) ? a : "desk" };
 }
-// a detail screen pushed from its list in this visit: its Back goes back in history
+// a detail screen pushed from its list in this visit: its Back goes back in history, to the
+// screen it was opened from (mobile E2E 3: an offer opened from the Desk said "Back to In-tray")
 let pushedDetail = false;
+let pushedFrom = "";
 
 /** What the person has to do now: offers to answer, then deals waiting for their action (feed.ts `needs`). */
 function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string }): ReactNode {
@@ -672,8 +674,12 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   /** A phone: to another screen of the console (a real history entry). */
   const go = (h: string, opts: { replace?: boolean } = {}) => {
     pushedDetail = !opts.replace && /\//.test(h);
+    if (pushedDetail) pushedFrom = view.sec;
     void navigate({ to: "/console", hash: h, replace: opts.replace });
   };
+  /** Where Back really goes: the screen the detail was opened from, else the detail's own list. */
+  const backTo = pushedDetail && pushedFrom ? pushedFrom : view.sec;
+  const backLabel = NAV.find(([id]) => id === backTo)?.[1] ?? "Desk";
   const back = () => {
     if (pushedDetail) {
       pushedDetail = false;
@@ -701,12 +707,12 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   const detail = compact && view.open ? (
     view.open.kind === "mail" ? (
       <section className="cs-sec cs-screen" id="tray" aria-label="Letter">
-        <BackTo label="In-tray" onBack={back} />
+        <BackTo label={backLabel} onBack={back} />
         {openMail ? <Opened key={openMail.relay_id} m={openMail} demo={demo} load={refresh} /> : <p className="cs-note">{mail ? "This letter is no longer in the in-tray." : "Opening the letter…"}</p>}
       </section>
     ) : (
       <section className="cs-sec cs-screen is-deal" id="desk" aria-labelledby="cs-deal-t">
-        <BackTo label="Desk" onBack={back} />
+        <BackTo label={backLabel} onBack={back} />
         {openDeal ? (
           <>
             <h1 id="cs-deal-t" className="cs-deal-t">

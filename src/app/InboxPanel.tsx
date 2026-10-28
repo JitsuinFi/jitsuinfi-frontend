@@ -204,6 +204,10 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
   };
 
   const n = unread(s);
+  // a letter with nothing to do here: signed, not acted on, not waiting for another device, and no action (or done already)
+  const isQuiet = (l: Letter) => l.r.signatureOk && l.state !== "done" && !l.away && !actionable(l, s.handlers);
+  const toAct = s.letters.filter((l) => !isQuiet(l));
+  const quiet = s.letters.filter(isQuiet);
   const phone = usePhone();
   // the top letter with an action (the list shows those first), while it can still be acted on
   const top = phone && role ? (s.letters.find((l) => l.r.signatureOk && l.state !== "done" && actionable(l, s.handlers) && letterAction(role, l.r.message.header.type) !== null) ?? null) : null;
@@ -251,17 +255,35 @@ export function InboxPanel({ open, onClose, onLeave }: { open: boolean; onClose:
             <p className="ia-ib-refused">{`${s.refused} letter${s.refused > 1 ? "s" : ""} could not be opened: not addressed to you, or not a JitsuinFi letter. Ignored.`}</p>
           ) : null}
           {s.letters.length && role ? (
-            <LongList
-              items={s.letters}
-              keyOf={(l) => l.r.relayId}
-              stage={(l) => (l.state === "done" || actionable(l, s.handlers) ? "move" : "done")}
-              words={(l) => `${letterLabel(l.r.message.header.type, role, l.r.message.header.body)} ${l.about ?? ""} ${l.r.message.header.from.role}`}
-              labels={{ move: "To act on", wait: "Waiting", done: "Nothing to do here" }}
-              searchLabel="Search letters by invoice number"
-              limit={6}
-              className="ia-letters"
-              render={(l) => <LetterRow l={l} role={role} onLead={(x) => void lead(x)} leaving={leaving === l.r.relayId} pinned={top === l} />}
-            />
+            <>
+              {toAct.length ? (
+                <LongList
+                  items={toAct}
+                  keyOf={(l) => l.r.relayId}
+                  stage={(l) => (l.state === "done" || actionable(l, s.handlers) ? "move" : "done")}
+                  words={(l) => `${letterLabel(l.r.message.header.type, role, l.r.message.header.body)} ${l.about ?? ""} ${l.r.message.header.from.role}`}
+                  labels={{ move: "To act on", wait: "Waiting", done: "Nothing to do here" }}
+                  searchLabel="Search letters by invoice number"
+                  limit={6}
+                  className="ia-letters"
+                  render={(l) => <LetterRow l={l} role={role} onLead={(x) => void lead(x)} leaving={leaving === l.r.relayId} pinned={top === l} />}
+                />
+              ) : (
+                <p className="ia-ib-empty">Nothing to act on. Letters for your keys land here; each one carries its action.</p>
+              )}
+              {/* production run 5: letters with nothing to do here (copies of seals, work already
+                  done on this device) fold away, so the list holds only what needs you */}
+              {quiet.length ? (
+                <details className="ia-ib-quiet">
+                  <summary>{`${quiet.length} letter${quiet.length > 1 ? "s" : ""} with nothing to do`}</summary>
+                  <div className="ia-letters">
+                    {quiet.map((l) => (
+                      <LetterRow key={l.r.relayId} l={l} role={role} onLead={(x) => void lead(x)} leaving={leaving === l.r.relayId} />
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </>
           ) : (
             <p className="ia-ib-empty">Nothing new. Letters for your keys land here; each one carries its action.</p>
           )}

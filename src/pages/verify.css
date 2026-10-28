@@ -223,5 +223,5 @@
 @media (max-width: 599px) {
   .vf-vd-more:not(.is-open) .vf-vd-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .vf-vd-more:not(.is-open) .vf-vd-src { display: none; }
-  .vf-more { display: inline-flex; align-items: center; min-height: 44px; justify-self: start; }
+  .vf-more { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; justify-self: start; }
 }

@@ -1,7 +1,7 @@
 // Mobile E2E 2026-10-27, finding 7: the offer form fills what it can (DS-MOB F3).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { advanceSuggestion, DEFAULT_ADVANCE_RATIO } from "../src/lib/supplier-deal.ts";
+import { advanceSuggestion, DEFAULT_ADVANCE_RATIO, offerBar } from "../src/lib/supplier-deal.ts";
 import { addressFromScan, ScanRefused } from "../src/lib/scan.ts";
 
 test("the advance is prefilled from the financier's ratio, else a default share of the invoice", () => {
@@ -26,4 +26,11 @@ test("due presets count days from the issue date", async () => {
   assert.equal(dueIn("2026-10-27", 30), "2026-11-26");
   assert.equal(dueIn("2026-12-15", 30), "2027-01-14");
   assert.throws(() => dueIn("", 30), /issue date/);
+});
+
+test("mobile E2E 3: with no saved address, the bar scans the wallet's QR until an address is in", () => {
+  assert.equal(offerBar(null, ""), "scan");
+  assert.equal(offerBar(null, "   "), "scan");
+  assert.equal(offerBar(null, "utest1abc"), "send");
+  assert.equal(offerBar("utest1saved", ""), "send");
 });

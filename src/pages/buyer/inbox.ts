@@ -62,10 +62,10 @@ function keepAssignment(type: MessageType, take: (h: Header, files: Uint8Array[]
     }),
     about: aboutInvoice((r, h) =>
       type === "deal.letter"
-        ? `The financier's assignment letter for ${facts(r)}, with its PDF: read it, then seal.`
+        ? `The financier's financing letter for ${facts(r)}, with its PDF: read it, then seal.`
         : h.from.role === "financier"
-          ? `The financier sealed the assignment letter for ${r.invoice_id} when it paid the supplier the advance.`
-          : `The supplier's seal on the assignment letter for ${r.invoice_id}.`,
+          ? `The financier sealed the financing letter for ${r.invoice_id} when it paid the supplier the advance.`
+          : `The supplier's seal on the financing letter for ${r.invoice_id}.`,
     ),
     run: async (x) => {
       const h = x.message.header;

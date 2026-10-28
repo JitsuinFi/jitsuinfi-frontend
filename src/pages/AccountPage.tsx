@@ -18,6 +18,7 @@
 import { useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
+import { Dock } from "../app/Dock";
 import { Lede } from "../app/Lede";
 import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
@@ -816,10 +817,13 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
                     <button type="button" className="ac-link" disabled={lock} onClick={() => go("signup")}>
                       Back
                     </button>
-                    <button className={`ac-btn${busy === "create" ? " is-busy" : ""}`} type="button" disabled={!pk || lock} onClick={() => void createPasskey()}>
-                      <PasskeyIcon />
-                      Create passkey
-                    </button>
+                    {/* mobile E2E 3: nothing to write on this step, so a phone has the primary in the bottom bar (thumb zone) */}
+                    <Dock label="Passkey">
+                      <button className={`ac-btn${busy === "create" ? " is-busy" : ""}`} type="button" disabled={!pk || lock} onClick={() => void createPasskey()}>
+                        <PasskeyIcon />
+                        Create passkey
+                      </button>
+                    </Dock>
                   </div>
                 ) : v === "onboard" && s && first ? (
                   <div className="ac-act">
@@ -836,31 +840,34 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
                     >
                       I'll do it later
                     </button>
-                    <button
-                      className={`ac-btn${busy === "first" ? " is-busy" : ""}`}
-                      type="button"
-                      disabled={lock}
-                      aria-busy={busy === "first" || undefined}
-                      onClick={() =>
-                        void act("first", async () => {
-                          if (shared) {
-                            // the contact screen comes back with the card added and its next step
-                            try {
-                              await shared.add();
-                            } catch (e) {
-                              say({ mk: "拒", text: sentence(e), bad: true });
+                    {/* mobile E2E 3: the Ready step's primary rides in the phone's bottom bar */}
+                    <Dock label="Ready">
+                      <button
+                        className={`ac-btn${busy === "first" ? " is-busy" : ""}`}
+                        type="button"
+                        disabled={lock}
+                        aria-busy={busy === "first" || undefined}
+                        onClick={() =>
+                          void act("first", async () => {
+                            if (shared) {
+                              // the contact screen comes back with the card added and its next step
+                              try {
+                                await shared.add();
+                              } catch (e) {
+                                say({ mk: "拒", text: sentence(e), bad: true });
+                                return;
+                              }
+                              setOnboarding(false);
                               return;
                             }
                             setOnboarding(false);
-                            return;
-                          }
-                          setOnboarding(false);
-                          void router.navigate({ href: first.to ?? rolePath(s.role) });
-                        })
-                      }
-                    >
-                      {first.label}
-                    </button>
+                            void router.navigate({ href: first.to ?? rolePath(s.role) });
+                          })
+                        }
+                      >
+                        {first.label}
+                      </button>
+                    </Dock>
                   </div>
                 ) : v === "login" ? (
                   <div className="ac-act">

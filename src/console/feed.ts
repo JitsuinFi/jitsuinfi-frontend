@@ -1,8 +1,10 @@
 // The desk's one data source (mobile E2E 2, TES-INV-MOB2-13631, finding 1): the in-tray (/node/mail)
 // and the deals (/node/console/deals) are read together, so the Desk's "Needs you now", the
 // In-tray and the deal screens never disagree. It loads at sign-in, when the Desk or the In-tray
-// comes into view, when the window gets focus or the tab is seen again, and every 30 s while the
-// page is seen (stopped while hidden). Two asks at once share one request. Pure scheduling: the
+// comes into view, when the window gets focus or the tab is seen again, and every 15 s while the
+// page is seen (stopped while hidden). Two asks at once share one request. Mobile E2E 3: the Desk
+// was 44-47 s behind the node at a 30 s poll; it now polls every 15 s, and the Desk coming into
+// view asks a fresh load (one more after a load already on its way, still shared). Pure scheduling: the
 // timers and the page's visibility are passed in, so tests run it under Node.
 
 export interface Timers {
@@ -16,8 +18,11 @@ export interface Refresher {
    * a load that started before the change cannot be trusted, so one more follows it (shared too).
    */
   run(fresh?: boolean): Promise<void>;
-  /** The page is seen again (visibilitychange, focus, or the section came into view): load and keep polling. */
-  seen(): void;
+  /**
+   * The page is seen again (visibilitychange, focus, or the section came into view): load and keep
+   * polling. `fresh` (the Desk came into view): as `run(true)`, a load already on its way is not enough.
+   */
+  seen(fresh?: boolean): void;
   /** The page is hidden: stop polling (a load on its way finishes). */
   hidden(): void;
   /** The tab's visibility changed: `seen` or `hidden`, whichever it now is. */
@@ -28,7 +33,7 @@ export interface Refresher {
   readonly busy: boolean;
 }
 
-export const EVERY_MS = 30_000;
+export const EVERY_MS = 15_000;
 
 export function refresher(load: () => Promise<void>, opts: { visible: () => boolean; every?: number; timers?: Timers }): Refresher {
   const every = opts.every ?? EVERY_MS;
@@ -72,9 +77,9 @@ export function refresher(load: () => Promise<void>, opts: { visible: () => bool
     timers.clearInterval(handle);
     handle = null;
   };
-  const seen = () => {
+  const seen = (fresh = false) => {
     if (stopped || !opts.visible()) return;
-    void run();
+    void run(fresh);
     poll();
   };
   return {

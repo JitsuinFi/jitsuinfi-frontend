@@ -240,7 +240,7 @@ header.top nav.ia-nav .ia-count { top: -6px; right: -4px; }
 .ia-did span { max-width: 64ch; font: 400 14.5px/1.5 var(--f-body); color: var(--ink); text-wrap: pretty; overflow-wrap: anywhere; }
 .ia-did-t { min-width: 0; }
 /* a phone: the long sentence under a fold (DS-MOB P4), its door a full-height row */
-.ia-did-more > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; font: 500 13px/1.2 var(--f-body); color: var(--seal); }
+.ia-did-more > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; cursor: pointer; list-style: none; font: 500 13px/1.2 var(--f-body); color: var(--seal); }
 .ia-did-more > summary::-webkit-details-marker { display: none; }
 .ia-did-more > summary::after { content: "▾"; font-size: 11px; }
 .ia-did-more[open] > summary::after { content: "▴"; }

@@ -199,6 +199,8 @@ function SealBox({ k, role, who, wait, on }: { k: string; role: string; who: str
 /** The selected deal's paper file: the letter, the route under it, and the one line and action. */
 function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | null | undefined; demo: boolean; load: () => Promise<void>; paid: () => void }): ReactNode {
   const [note, setNote] = useState("");
+  // mobile E2E 3: once the passkey approved the advance, the bar says so instead of a disabled spinner
+  const [approved, setApproved] = useState(false);
   const letter = useRef<HTMLElement>(null);
   const stamp = useRef<HTMLSpanElement>(null);
   const coin = useRef<HTMLSpanElement>(null);
@@ -334,7 +336,13 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
           <Status text={note} />
         </div>
         <div className="cs-actions">
-          {!demo && d.state === "Pay" && d.intent ? (
+          {!demo && d.state === "Pay" && approved ? (
+            <Dock label="Advance approved">
+              <small className="cs-bar-said" role="status">
+                Approved with your passkey. The advance is on its way; this deal moves on by itself.
+              </small>
+            </Dock>
+          ) : !demo && d.state === "Pay" && d.intent ? (
             <Dock label="Pay the advance">
             <Act
               className="cs-btn"
@@ -347,6 +355,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
                 replay(coin.current, "is-drop");
                 paid();
                 setNote("Approved with your passkey. The advance is on its way.");
+                setApproved(true);
                 await load();
               }}
               fail={fail}
@@ -483,8 +492,10 @@ export function viewOf(hash: string): View {
   if (a === "deal" && id) return { sec: "desk", open: { kind: "deal", id } };
   return { sec: SECS.has(a) ? a : "desk" };
 }
-// a detail screen pushed from its list in this visit: its Back goes back in history
+// a detail screen pushed from its list in this visit: its Back goes back in history, to the
+// screen it was opened from (mobile E2E 3: an offer opened from the Desk said "Back to In-tray")
 let pushedDetail = false;
+let pushedFrom = "";
 
 /** What the person has to do now: offers to answer, then deals waiting for their action (feed.ts `needs`). */
 function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string }): ReactNode {
@@ -582,7 +593,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
 
   // one source for the in-tray and the deals (mobile E2E 2, finding 1: the phone's Desk never
   // refreshed): loaded together at sign-in, when the Desk or the In-tray comes into view, on focus,
-  // and every 30 s while the page is seen; two asks at once share one request (feed.ts)
+  // and every 15 s while the page is seen; two asks at once share one request (feed.ts)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [feedErr, setFeedErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -672,8 +683,12 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   /** A phone: to another screen of the console (a real history entry). */
   const go = (h: string, opts: { replace?: boolean } = {}) => {
     pushedDetail = !opts.replace && /\//.test(h);
+    if (pushedDetail) pushedFrom = view.sec;
     void navigate({ to: "/console", hash: h, replace: opts.replace });
   };
+  /** Where Back really goes: the screen the detail was opened from, else the detail's own list. */
+  const backTo = pushedDetail && pushedFrom ? pushedFrom : view.sec;
+  const backLabel = NAV.find(([id]) => id === backTo)?.[1] ?? "Desk";
   const back = () => {
     if (pushedDetail) {
       pushedDetail = false;
@@ -693,19 +708,20 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
       firstShown.current = false;
       return;
     }
-    if (compact ? ["desk", "tray"].includes(view.sec) : sec === "desk" || sec === "tray") feed.seen();
+    // mobile E2E 3: fresh, so a load that started before the Desk came back is followed by one more
+    if (compact ? ["desk", "tray"].includes(view.sec) : sec === "desk" || sec === "tray") feed.seen(true);
   }, [shown, feed]);
   const openMail = compact && view.open?.kind === "mail" ? (mail?.find((m) => m.relay_id === view.open!.id) ?? null) : null;
   const openDeal = compact && view.open?.kind === "deal" ? (deals?.find((d) => d.n === view.open!.id) ?? null) : null;
   const detail = compact && view.open ? (
     view.open.kind === "mail" ? (
       <section className="cs-sec cs-screen" id="tray" aria-label="Letter">
-        <BackTo label="In-tray" onBack={back} />
+        <BackTo label={backLabel} onBack={back} />
         {openMail ? <Opened key={openMail.relay_id} m={openMail} demo={demo} load={refresh} /> : <p className="cs-note">{mail ? "This letter is no longer in the in-tray." : "Opening the letter…"}</p>}
       </section>
     ) : (
       <section className="cs-sec cs-screen is-deal" id="desk" aria-labelledby="cs-deal-t">
-        <BackTo label="Desk" onBack={back} />
+        <BackTo label={backLabel} onBack={back} />
         {openDeal ? (
           <>
             <h1 id="cs-deal-t" className="cs-deal-t">

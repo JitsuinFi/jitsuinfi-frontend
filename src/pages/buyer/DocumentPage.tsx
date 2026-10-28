@@ -413,10 +413,10 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
 
   const letterSheet =
     dec && lf ? (
-      <article className="by-sheet" key={`l-${dec.nullifier}`} aria-label={`Assignment letter for ${dec.invoice_id}`}>
+      <article className="by-sheet" key={`l-${dec.nullifier}`} aria-label={`Financing letter for ${dec.invoice_id}`}>
         <div className="by-s-head">
           <p className="by-s-title is-long" lang="ja">
-            債権譲渡通知書<small>{`Assignment letter for ${dec.invoice_id}`}</small>
+            債権譲渡通知書<small>{`Financing letter for ${dec.invoice_id}`}</small>
           </p>
           <p className="by-s-no">
             From the financier<b>{readablePrint(lf.financier_pk)}</b>
@@ -495,7 +495,7 @@ function Desk({ start, list }: { start?: Inv; list: Inv[] }): ReactNode {
       <article className="by-sheet is-blank" aria-label="Letter not readable">
         <div className="by-s-head">
           <p className="by-s-title is-long" lang="ja">
-            債権譲渡通知書<small>{`Assignment letter for ${dec.invoice_id}`}</small>
+            債権譲渡通知書<small>{`Financing letter for ${dec.invoice_id}`}</small>
           </p>
         </div>
         <p className="by-blank">This letter code does not read with this invoice. Check the codes behind the sheet: the letter must name this invoice.</p>

@@ -215,7 +215,7 @@ test("the inbox panel routes each buyer letter to the invoice, its slip, History
   assert.equal(letterLabel("deal.letter", "buyer"), "Letter to seal");
   assert.equal(letterLabel("deal.reminder", "buyer"), "Due-date reminder");
   assert.equal(letterLabel("history.request", "buyer"), "History request");
-  assert.equal(letterLabel("deal.letter", "supplier"), "Assignment letter to read and seal", "the supplier's words stay");
+  assert.equal(letterLabel("deal.letter", "supplier"), "Financing letter to read and seal", "the supplier's words stay (plain words, mobile E2E 3)");
 });
 
 test("the inbox panel routes the fund member's letters to Units, with readable names", () => {

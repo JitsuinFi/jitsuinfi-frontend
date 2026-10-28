@@ -49,6 +49,7 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
   const out = useOut();
   const phone = usePhone();
   const plate = useRef<HTMLDivElement>(null);
+  const slip = useRef<HTMLElement>(null);
   const [qr, setQr] = useState<{ svg: string; uri: string; payTo: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -101,6 +102,14 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
     frame = requestAnimationFrame(look);
     return () => cancelAnimationFrame(frame);
   }, [qr]);
+  // mobile E2E 3, B-22: a slip that turns paid (or opens paid) kept the scroll of the pay controls
+  // it replaced, so the phone showed its foot. On a phone it now opens at the slip's top, the 済
+  // line on screen 1, with Check it on Verify in the bottom bar (as on the supplier's settled step)
+  useEffect(() => {
+    if (!paid || !phone) return;
+    const frame = requestAnimationFrame(() => slip.current?.scrollIntoView({ block: "start", behavior: "auto" }));
+    return () => cancelAnimationFrame(frame);
+  }, [paid, phone, r.n]);
   const pay = async () => {
     setBusy(true);
     try {
@@ -117,7 +126,7 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
     }
   };
   return (
-    <section className={`by-slip is-main${paid ? " is-paid" : ""}`} aria-label={`Payment slip for ${r.invoice_id}`}>
+    <section ref={slip} className={`by-slip is-main${paid ? " is-paid" : ""}`} aria-label={`Payment slip for ${r.invoice_id}`}>
       {paid ? (
         <span className="by-paid" lang="ja" role="img" aria-label="Settled">
           済
@@ -144,9 +153,11 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
           </span>
           <span className="by-settled-acts">
             {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
-            <a className="by-a by-verify" href="/verify" onClick={() => handToVerify(r.bundle!)}>
-              Check it on Verify
-            </a>
+            <Dock label="Check">
+              <a className="by-a by-verify" href="/verify" onClick={() => handToVerify(r.bundle!)}>
+                Check it on Verify
+              </a>
+            </Dock>
             <Button secondary onClick={async () => void (await navigator.clipboard.writeText(r.bundle!).then(() => setCopied(true)))}>
               {copied ? "Copied" : "Copy the proof"}
             </Button>

@@ -42,7 +42,7 @@ a.qrp-btn { transition: background-color var(--dur-fade) var(--ease-land), box-s
 /* the wallet link as a secondary: the role pages' secondary pill, drawn the same on every page */
 .qrp a.qrp-btn.is-quiet { background: var(--sheet); color: var(--head); box-shadow: inset 0 0 0 1px var(--rule-strong); }
 @media (hover: hover) and (pointer: fine) { .qrp a.qrp-btn.is-quiet:hover { box-shadow: inset 0 0 0 1.5px var(--seal); } }
-@media (hover: hover) and (pointer: fine) { .qrp-btn.is-primary:hover { background: var(--seal-hi); } }
+@media (hover: hover) and (pointer: fine) { .qrp .qrp-btn.is-primary:hover { background: var(--seal-hi); } } /* wave 5: as specific as the rule it answers, so "Open in wallet" darkens on hover */
 .qrp-said { margin: 0; font: 400 13px/1.45 var(--f-body); color: var(--seal); text-align: center; }
 
 .qrp-raw { justify-self: stretch; border-top: 1px solid var(--rule); }

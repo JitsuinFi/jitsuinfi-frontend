@@ -4,7 +4,6 @@
 // recent transactions. A node from before it answers 404: the console says to update the node.
 // Pure: tests run it under Node.
 
-import { NETWORK } from "../lib/network.ts";
 
 export interface WalletTx {
   txid: string;
@@ -63,10 +62,8 @@ export const KIND_WORDS: Record<WalletTx["kind"], string> = {
   other: "Other",
 };
 
-/** A transaction on a block explorer of this build's network. */
-export function txUrl(txid: string): string {
-  return `https://${NETWORK === "main" ? "mainnet" : "testnet"}.zcashexplorer.app/transactions/${encodeURIComponent(txid)}`;
-}
+/** A transaction on the explorer (one constant for the app: lib/explorer.ts). */
+export { txUrl } from "../lib/explorer.ts";
 
 export interface Shortfall {
   /** What the wallet can spend now (null: not known). */

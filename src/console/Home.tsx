@@ -14,6 +14,7 @@ import { agoSec, bigStamp, doubleNote, dueDay, isDouble, ROUTE, seals, short, st
 import { keepName } from "./name";
 import { approvePayment, contactFingerprint, get, getRaw, NodeError, post } from "./node";
 import { TopUp, WalletCtx, WalletSection } from "./Wallet";
+import { txUrl } from "../lib/explorer";
 import { payShortfall, refusalShortfall, shortWords, walletOf, type Shortfall, type WalletView } from "./wallet-model";
 import { needs, refresher, updatedLine } from "./feed";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
@@ -364,9 +365,10 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               {tx.map(([k, v]) => (
                 <li key={k}>
                   {k}{" "}
-                  <span className="is-mono" title={v}>
+                  {/* wave 6: every txid opens on the app's one explorer (lib/explorer.ts) */}
+                  <a className="cs-link is-mono" href={txUrl(v)} target="_blank" rel="noopener noreferrer" title={v}>
                     {short(v)}
-                  </span>
+                  </a>
                   <CopyButton className="cs-tx-copy" label="Copy" value={v} />
                 </li>
               ))}

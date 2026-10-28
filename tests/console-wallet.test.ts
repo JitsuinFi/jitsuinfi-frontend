@@ -28,7 +28,7 @@ test("the node's refusal with its numbers, and the words", () => {
   assert.equal(refusalShortfall({ error: "other" }, 1), null);
   const zec = (z: number) => (z / 1e8).toString();
   assert.equal(shortWords({ have: 20_000, need: 90_000, fee: 10_000 }, zec), "The node's wallet holds 0.0002 ZEC; this advance needs 0.0009 ZEC + 0.0001 fee. Top up the node's wallet, then pay.");
-  assert.match(txUrl("ab"), /^https:\/\/testnet\.zcashexplorer\.app\/transactions\/ab$/);
+  assert.equal(txUrl("ab"), "https://blockexplorer.one/zcash/testnet/tx/ab");
 });
 
 test("node wave 5: the deal's own need_zat and spendable_zat, and the 409 with advance and fee", () => {

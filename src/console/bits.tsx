@@ -68,13 +68,13 @@ export function CopyButton({ label, value, className = "cs-btn-q", failed = "Cop
 }
 
 /** A button that runs once at a time, its error shown by `fail`. */
-export function Act({ label, className = "cs-btn-q", run, fail, children }: { label?: string; className?: string; run: () => Promise<void>; fail: (e: unknown) => void; children?: ReactNode }): ReactNode {
+export function Act({ label, className = "cs-btn-q", run, fail, disabled, children }: { label?: string; className?: string; run: () => Promise<void>; fail: (e: unknown) => void; disabled?: boolean; children?: ReactNode }): ReactNode {
   const [busy, setBusy] = useState(false);
   return (
     <button
       className={`${className}${busy ? " is-busy" : ""}`}
       type="button"
-      disabled={busy}
+      disabled={busy || disabled}
       onClick={async () => {
         setBusy(true);
         try {

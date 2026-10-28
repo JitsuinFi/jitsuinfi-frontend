@@ -95,6 +95,11 @@ export interface DealRow {
   bundle?: string | null;
   bundle_sent?: boolean;
   history_requested?: boolean;
+  /** Wave 5: the node's wallet cannot pay this advance and its fee now. */
+  wallet_short?: boolean;
+  /** Wave 5 (node): the advance and its fee, and what the wallet can spend now (null before its first sync). */
+  need_zat?: number;
+  spendable_zat?: number | null;
   history?: string | null;
   proof?: string | null;
   exhibit?: string | null;

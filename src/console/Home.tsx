@@ -6,13 +6,15 @@
 // (the only dark object: it is where Zcash is) with four big numbers, and the selected deal's
 // paper file: the assignment letter over the 請求書, three seal boxes, index tabs per deal, the
 // route 照 署 登 印 金 済 as marks and the one action as the seal-red button.
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { download } from "../lib/download";
 import { explain, stopReason } from "../lib/explain";
 import { Act, CopyButton, Foot, PasskeyGlyph, say, Stamp, StationMark, Status, TopBar, netLabel } from "./bits";
 import { agoSec, bigStamp, doubleNote, dueDay, isDouble, ROUTE, seals, short, stations, tabOf, totals, WAITING, zec } from "./model";
 import { keepName } from "./name";
-import { approvePayment, contactFingerprint, get, post } from "./node";
+import { approvePayment, contactFingerprint, get, getRaw, NodeError, post } from "./node";
+import { TopUp, WalletCtx, WalletSection } from "./Wallet";
+import { payShortfall, refusalShortfall, shortWords, walletOf, type Shortfall, type WalletView } from "./wallet-model";
 import { needs, refresher, updatedLine } from "./feed";
 import { FundSection, KeysSection, RulesSection } from "./Sections";
 import { SignIn } from "./SignIn";
@@ -201,6 +203,11 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
   const [note, setNote] = useState("");
   // mobile E2E 3: once the passkey approved the advance, the bar says so instead of a disabled spinner
   const [approved, setApproved] = useState(false);
+  // wave 5: the pay preflight, from the node's wallet (and the node's refusal, if it still refuses)
+  const wallet = useContext(WalletCtx);
+  const [refused, setRefused] = useState<Shortfall | null>(null);
+  useEffect(() => setRefused(null), [wallet]);
+  const shortBy = !demo && d.state === "Pay" && d.intent && !approved ? (payShortfall(wallet, d) ?? refused) : null;
   const letter = useRef<HTMLElement>(null);
   const stamp = useRef<HTMLSpanElement>(null);
   const coin = useRef<HTMLSpanElement>(null);
@@ -336,6 +343,12 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
               ))}
             </ul>
           ) : null}
+          {shortBy ? (
+            <div className="cs-short" role="status">
+              <p>{shortWords(shortBy, zec)}</p>
+              {wallet && wallet !== "missing" ? <TopUp w={wallet} caption={`Top up at least ${zec(Math.max(0, shortBy.need + shortBy.fee - (shortBy.have ?? 0)))} ZEC`} /> : null}
+            </div>
+          ) : null}
           <Status text={note} />
         </div>
         <div className="cs-actions">
@@ -361,7 +374,13 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
                 setApproved(true);
                 await load();
               }}
-              fail={fail}
+              fail={(e) => {
+                // the node still refuses (409/422 with its numbers): say it as the shortfall
+                const s = e instanceof NodeError ? refusalShortfall(e.body, d.advance_zat) : null;
+                if (s) setRefused(s);
+                fail(e);
+              }}
+              disabled={!!shortBy}
             >
               <PasskeyGlyph />
             </Act>
@@ -396,9 +415,15 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
 }
 
 /** The deals after Accept, moved by the node, as folders with index tabs. */
-function DealFile({ deals, note, name, demo, load, paid }: { deals: DealRow[] | null; note: string; name: string | null | undefined; demo: boolean; load: () => Promise<void>; paid: () => void }): ReactNode {
+function DealFile({ deals, note, name, demo, load, paid, want }: { deals: DealRow[] | null; note: string; name: string | null | undefined; demo: boolean; load: () => Promise<void>; paid: () => void; want?: { n: string; at: number } | null }): ReactNode {
   const [sel, setSel] = useState<string | null>(null);
   const tabs = useRef<HTMLDivElement>(null);
+  // production run 5: the desktop's "Needs you now" opens a deal's folder here
+  useEffect(() => {
+    if (!want) return;
+    setSel(want.n);
+    requestAnimationFrame(() => tabs.current?.closest(".cs-file")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }, [want]);
   useEffect(() => {
     if (deals && !deals.some((d) => d.n === sel)) setSel((deals.find((d) => d.state === "Pay") ?? deals[0])?.n ?? null);
   }, [deals, sel]);
@@ -487,7 +512,7 @@ function useCompact(): boolean {
   );
 }
 type View = { sec: string; open?: { kind: "mail" | "deal"; id: string } };
-const SECS = new Set(["desk", "tray", "rules", "fund", "keys"]);
+const SECS = new Set(["desk", "tray", "rules", "fund", "wallet", "keys"]);
 /** The compact view named by the hash ("#tray/abc" → the in-tray letter abc). */
 export function viewOf(hash: string): View {
   const [a, ...rest] = hash.replace(/^#/, "").split("/");
@@ -502,7 +527,7 @@ let pushedDetail = false;
 let pushedFrom = "";
 
 /** What the person has to do now: offers to answer, then deals waiting for their action (feed.ts `needs`). */
-function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string }): ReactNode {
+function NeedsYou({ deals, mail, open, refresh, busy, updated, others = true }: { deals: DealRow[] | null; mail: Mail[] | null; open: (hash: string) => void; refresh: () => void; busy: boolean; updated: string; others?: boolean }): ReactNode {
   const n = needs(deals, mail);
   const row = (key: string, glyph: string, what: string, line: string, go: string, act?: string) => (
     <li key={key}>
@@ -541,7 +566,7 @@ function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRo
         {n.moving.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`, "Move on"))}
       </ul>
       {n.none ? <p className="cs-note">Nothing waits for you. New offers arrive in the in-tray.</p> : n.loading ? <p className="cs-note">Opening your desk…</p> : null}
-      {n.accepted.length || n.rest.length ? (
+      {others && (n.accepted.length || n.rest.length) ? (
         <>
           <div className="cs-needs-h">
             <h2>Your other deals</h2>
@@ -576,6 +601,7 @@ const NAV: Array<[string, string]> = [
   ["tray", "In-tray"],
   ["rules", "Rules"],
   ["fund", "Fund"],
+  ["wallet", "Wallet"],
   ["keys", "Keys"],
 ];
 
@@ -597,7 +623,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
 
   // one source for the in-tray and the deals (mobile E2E 2, finding 1: the phone's Desk never
   // refreshed): loaded together at sign-in, when the Desk or the In-tray comes into view, on focus,
-  // and every 15 s while the page is seen; two asks at once share one request (feed.ts)
+  // and every 10 s while the page is seen; two asks at once share one request (feed.ts)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [feedErr, setFeedErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -639,14 +665,24 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
       return say(e);
     }
   }, []);
+  // wave 5: the node's wallet, with the desk (a node from before it answers 404: "missing")
+  const [wallet, setWallet] = useState<WalletView>(null);
+  const loadWallet = useCallback(async () => {
+    try {
+      const r = await getRaw("/node/console/wallet");
+      if (r.status === 200 || r.status === 404) setWallet(walletOf(r.status, r.body));
+    } catch {
+      // unreachable now: the last reading stays
+    }
+  }, []);
   const loadAll = useCallback(async () => {
     setBusy(true);
-    const [m, d] = await Promise.all([loadMail(), loadDeals(), loadBoard()]);
+    const [m, d] = await Promise.all([loadMail(), loadDeals(), loadBoard(), loadWallet()]);
     setBusy(false);
     const err = m || d;
     setFeedErr(err ? `Could not update: ${err}` : "");
     if (!err) setUpdatedAt(Date.now());
-  }, [loadMail, loadDeals, loadBoard]);
+  }, [loadMail, loadDeals, loadBoard, loadWallet]);
   const feed = useMemo(() => refresher(loadAll, { visible: () => document.visibilityState === "visible" }), [loadAll]);
   // after an action (Accept, Pay, Decline, Remove, a tap on Refresh) the lists follow at once
   const refresh = useCallback(() => feed.run(true), [feed]);
@@ -658,7 +694,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
     const vis = () => feed.visibility();
     const focus = () => feed.seen();
     // "Updated just now" stays true while the page is seen
-    const tick = setInterval(() => document.visibilityState === "visible" && setTick((n) => n + 1), 15_000);
+    const tick = setInterval(() => document.visibilityState === "visible" && setTick((n) => n + 1), 10_000);
     document.addEventListener("visibilitychange", vis);
     window.addEventListener("focus", focus);
     return () => {
@@ -693,6 +729,15 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
   /** Where Back really goes: the screen the detail was opened from, else the detail's own list. */
   const backTo = pushedDetail && pushedFrom ? pushedFrom : view.sec;
   const backLabel = NAV.find(([id]) => id === backTo)?.[1] ?? "Desk";
+  // the desktop: a "Needs you now" row opens its deal folder or in-tray letter on this page
+  const [wantDeal, setWantDeal] = useState<{ n: string; at: number } | null>(null);
+  const [wantMail, setWantMail] = useState<{ id: string; at: number } | null>(null);
+  const openHere = (h: string) => {
+    const [kind, ...rest] = h.split("/");
+    const id = decodeURIComponent(rest.join("/"));
+    if (kind === "deal") setWantDeal({ n: id, at: Date.now() });
+    else if (kind === "tray") setWantMail({ id, at: Date.now() });
+  };
   const back = () => {
     if (pushedDetail) {
       pushedDetail = false;
@@ -783,6 +828,7 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
           </span>
         }
       />
+      <WalletCtx.Provider value={wallet}>
       <main id="cs-main" tabIndex={-1}>
         {detail}
         {detail ? null : compact && sec !== "desk" ? null : (
@@ -793,7 +839,8 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
               <span>{demo ? "Demo console: payments, invites, removals and the profile are off" : "Financier node · the keys and wallet stay on the node"}</span>
             </p>
             <h1 id="cs-desk-t">{name ? `Welcome, ${name}` : "Financier console"}</h1>
-            {compact ? <NeedsYou deals={deals} mail={mail} open={(h) => go(h)} refresh={() => void refresh()} busy={busy} updated={updatedLine(updatedAt, Date.now(), busy, feedErr)} /> : null}
+            {/* production run 5: the desktop has the same "Needs you now", opening the folder or letter on this page */}
+            <NeedsYou deals={deals} mail={mail} open={compact ? (h) => go(h) : openHere} refresh={() => void refresh()} busy={busy} updated={updatedLine(updatedAt, Date.now(), busy, feedErr)} others={compact} />
             <NodeSlab info={info} board={board} boardErr={boardErr} blink={blink} />
             <dl className="cs-totals" aria-label="Your desk at a glance">
               <div className="is-act">
@@ -819,16 +866,18 @@ function Desk({ session, info, rerender }: { session: Session; info: Info; reren
           </div>
           {compact ? null : (
             <div className="cs-vis">
-              <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={refresh} paid={() => setBlink((n) => n + 1)} />
+              <DealFile deals={deals} note={dealsNote} name={name} demo={demo} load={refresh} paid={() => setBlink((n) => n + 1)} want={wantDeal} />
             </div>
           )}
         </section>
         )}
-        {detail || (compact && sec !== "tray") ? null : <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={refresh} updated={compact ? updatedLine(updatedAt, Date.now(), busy, feedErr) : undefined} onOpen={compact ? (id) => go(`tray/${encodeURIComponent(id)}`) : undefined} />}
+        {detail || (compact && sec !== "tray") ? null : <TraySection mail={mail} refused={refused} note={mailNote} demo={demo} load={refresh} updated={compact ? updatedLine(updatedAt, Date.now(), busy, feedErr) : undefined} onOpen={compact ? (id) => go(`tray/${encodeURIComponent(id)}`) : undefined} want={wantMail} />}
         {detail || (compact && sec !== "rules") ? null : <RulesSection name={name} mail={mail} demo={demo} />}
         {detail || (compact && sec !== "fund") ? null : <FundSection info={info} demo={demo} />}
+        {detail || (compact && sec !== "wallet") ? null : <WalletSection wallet={wallet} />}
         {detail || (compact && sec !== "keys") ? null : <KeysSection info={info} name={name} demo={demo} onName={setName} />}
       </main>
+      </WalletCtx.Provider>
       <Foot />
     </div>
   );

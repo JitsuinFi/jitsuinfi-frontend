@@ -2,7 +2,16 @@
 // on this origin, which Vercel forwards to the financier's node. Base64url helpers turn the
 // WebAuthn options of the node (webauthn-rs JSON) into browser types and back.
 
-export class NodeError extends Error {}
+export class NodeError extends Error {
+  /** The node's JSON answer and status, for a refusal that carries more than words (wave 5: pay preflight). */
+  readonly status: number;
+  readonly body: unknown;
+  constructor(message: string, status = 0, body: unknown = null) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
+}
 
 export async function get<T>(path: string): Promise<T> {
   const r = await fetch(path, { credentials: "same-origin" });
@@ -14,8 +23,14 @@ export async function get<T>(path: string): Promise<T> {
 export async function post<T>(path: string, body: unknown = {}): Promise<T> {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), credentials: "same-origin" });
   const j = (await r.json().catch(() => ({}))) as T & { error?: string };
-  if (!r.ok) throw new NodeError(j.error || `the node answered ${r.status}`);
+  if (!r.ok) throw new NodeError(j.error || `the node answered ${r.status}`, r.status, j);
   return j;
+}
+
+/** A GET that also says the status (the wallet: 404 on a node from before it). */
+export async function getRaw(path: string): Promise<{ status: number; body: unknown }> {
+  const r = await fetch(path, { credentials: "same-origin" });
+  return { status: r.status, body: await r.json().catch(() => null) };
 }
 
 export async function del(path: string): Promise<void> {

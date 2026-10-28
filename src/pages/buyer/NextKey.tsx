@@ -18,19 +18,51 @@ import { certFields, dropTail, freeable, localNextIndex, reconcile } from "../..
 import { contactId, contactName, type Contact } from "../../lib/contact";
 import { sendKeyTo } from "../ContactAdd";
 import { json, today, wasm } from "../../lib/core";
-import { keyAfterOtherDevices, keyGivenNote, keyTakenNote } from "../../lib/key-match";
+import { freshKeyNotes, keyAfterOtherDevices, keyGivenNote, keyTakenNote } from "../../lib/key-match";
 import { NET } from "../../lib/network";
 import { readablePrint } from "../../lib/print";
 import { draft, send } from "../../lib/relay";
 import { encodeMessage, signingBytes, type Header } from "../../lib/relay-message";
 import { myContact, takeContact } from "../MailboxCard";
-import { backupHistory, backupProblem, chainState, changed, loadGiven, loadHistory, loadInvoices, noteGiven, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
+import { backupHistory, backupProblem, chainState, changed, keyInfoNow, loadGiven, loadHistory, loadInvoices, noteGiven, readBoard, registeredNs, relayHistory, saveHistory, setKeyInfo, useKeyInfo, type Note } from "./data";
 import { FilePill, plural, Tag } from "./parts";
 import "../role-paper.css";
 import "../buyer.css";
 import { Lede } from "../../app/Lede";
 
 const NOTE_GLYPH = { ok: "認", warn: "待", bad: "拒" } as const;
+
+/**
+ * What this device's invoices and handed-out keys say about key #k (messy-state E2E 2026-10-27;
+ * production run 6: computed again whenever the page shows, not only on the passkey touch).
+ */
+async function keyNotes(k: number): Promise<Note[]> {
+  const invoices = await loadInvoices().catch(() => []);
+  const taken = keyTakenNote(k, invoices.filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature, financed: !!x.assignment?.financier_seal || !!x.bundle })));
+  if (taken) return [taken];
+  const names = new Map((await account.current?.store?.list<Contact>().catch(() => []))?.filter((x) => x.id.startsWith("contact:")).map((x) => [x.doc.mailbox_pk, contactName(x.doc)]) ?? []);
+  const given = keyGivenNote(k, await loadGiven(), (to) => names.get(to) ?? "a supplier without a card here");
+  return given ? [given] : [];
+}
+
+/**
+ * Production run 6: the key shown earlier in this tab (kept in memory) came back on a later visit
+ * with the notes of then: "No invoice is in it yet" after the deal was financed, and no "Key #k is
+ * free". On every visit the notes about key #k are made again from the device's invoices; when
+ * this device's history moved past k since, the key is not shown at all (a passkey touch reads
+ * the next one).
+ */
+async function refreshKeyInfo(): Promise<void> {
+  const info = keyInfoNow();
+  if (!info) return;
+  const hist = await loadHistory().catch(() => null);
+  if (hist && localNextIndex(hist) > info.k) {
+    setKeyInfo(null);
+    return;
+  }
+  const notes = freshKeyNotes(info.notes, info.k, await keyNotes(info.k));
+  if (keyInfoNow() === info) setKeyInfo({ ...info, notes });
+}
 
 /**
  * Reads the next invoice key: one passkey touch for the keys, the relay's copy of the chain, then
@@ -117,15 +149,7 @@ async function showKey(boardFile: File | undefined, then?: (master: Uint8Array, 
       said.push({ kind: "ok", title: `Keys up to #${otherCerts - 1} are used on your other device.`, text: `It issued ${plural(otherCerts, "certificate")} of your history, so this device offers key #${otherCerts}. The certificates come to this device once the board can be read to check them.` });
       k = otherCerts;
     }
-    // messy-state E2E 2026-10-27: invoices on this device (and, synced, on the others) that already name this key
-    const invoices = await loadInvoices().catch(() => []);
-    const taken = keyTakenNote(k, invoices.filter((x) => x.key_index === k).map((x) => ({ invoice_id: x.invoice_id, signed: !!x.signature, financed: !!x.assignment?.financier_seal || !!x.bundle })));
-    if (taken) said.push(taken);
-    else {
-      const names = new Map((await account.current?.store?.list<Contact>().catch(() => []))?.filter((x) => x.id.startsWith("contact:")).map((x) => [x.doc.mailbox_pk, contactName(x.doc)]) ?? []);
-      const given = keyGivenNote(k, await loadGiven(), (to) => names.get(to) ?? "a supplier without a card here");
-      if (given) said.push(given);
-    }
+    said.push(...(await keyNotes(k)));
     const next = json<{ invoice_pk: string }>(wasm.buyerKeysBytes(m.slice(), k)).invoice_pk;
     setKeyInfo({ id, k, next, notes: said, anchored });
     changed();
@@ -277,6 +301,9 @@ function ShareKey({ k, invoicePk, sent = null }: { k: number; invoicePk: string;
 export function KeyBlock({ hidden }: { hidden?: boolean } = {}): ReactNode {
   const info = useKeyInfo();
   const board = useRef<HTMLInputElement>(null);
+  // production run 6: a key shown earlier in this tab says what holds now
+  const written = useStoreVersion("buyer");
+  useEffect(() => void refreshKeyInfo().catch(() => undefined), [written]);
   const out = useOut();
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);

@@ -17,7 +17,7 @@ import { DidLine, useDid } from "../../app/outcome";
 import { Button, useOut } from "../../app/ui";
 import { QrPlate } from "../../app/QrPlate";
 import { hasSlip, slipOrder } from "../../lib/buyer-invoices";
-import { DEFAULT_GRACE_DAYS, lateState, msToCutoff, slipSeen } from "../../lib/buyer-late";
+import { DEFAULT_GRACE_DAYS, lateState, msToCutoff, paidWords, slipSeen } from "../../lib/buyer-late";
 import { payProblems } from "../../lib/buyer-letter";
 import { daysToDate, json, today, wasm, zatToZec } from "../../lib/core";
 import { byRef, invoicePath, slipPath } from "../../lib/deal-ref";
@@ -105,10 +105,26 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
   // mobile E2E 3, B-22: a slip that turns paid (or opens paid) kept the scroll of the pay controls
   // it replaced, so the phone showed its foot. On a phone it now opens at the slip's top, the 済
   // line on screen 1, with Check it on Verify in the bottom bar (as on the supplier's settled step)
+  // Mobile E2E 4: on production the slip turns paid from the inbox sheet's Keep it, while the sheet
+  // is open; closing it goes Back off the sheet's history entry, and the browser then restores the
+  // scroll that entry kept (the foot of the unpaid slip). So the slip lands at its top again after
+  // the first Back that follows (once), as well as at once.
   useEffect(() => {
     if (!paid || !phone) return;
-    const frame = requestAnimationFrame(() => slip.current?.scrollIntoView({ block: "start", behavior: "auto" }));
-    return () => cancelAnimationFrame(frame);
+    const land = () => slip.current?.scrollIntoView({ block: "start", behavior: "auto" });
+    const frame = requestAnimationFrame(land);
+    const timers: number[] = [];
+    const pop = () => {
+      removeEventListener("popstate", pop);
+      requestAnimationFrame(land);
+      timers.push(window.setTimeout(land, 120), window.setTimeout(land, 400));
+    };
+    addEventListener("popstate", pop);
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener("popstate", pop);
+      timers.forEach((t) => window.clearTimeout(t));
+    };
   }, [paid, phone, r.n]);
   const pay = async () => {
     setBusy(true);
@@ -154,6 +170,13 @@ function Slip({ r, status, from }: { r: Inv; status: string | null; from?: strin
           <span className="by-settled-acts">
             {/* the bundle goes along to Verify's in-tray, in memory (never in the address) */}
             <Dock label="Check">
+              {/* the bar says the slip is paid beside its one action (mobile E2E 4); wider, the line above says it */}
+              <span className="by-bar-paid" role="status">
+                <b lang="ja" aria-hidden="true">
+                  済
+                </b>
+                {paidWords(late)}
+              </span>
               <a className="by-a by-verify" href="/verify" onClick={() => handToVerify(r.bundle!)}>
                 Check it on Verify
               </a>

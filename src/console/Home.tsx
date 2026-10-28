@@ -235,7 +235,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
             <i lang="ja">買</i>受領印
           </div>
         </div>
-        <article className="cs-letter" ref={letter} aria-label={`Assignment letter for ${d.invoice_id}`}>
+        <article className="cs-letter" ref={letter} aria-label={`Financing letter for ${d.invoice_id}`}>
           {big ? (
             <span className="cs-big-stamp" ref={stamp} lang="ja" aria-hidden="true">
               {big.glyph}
@@ -245,7 +245,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
           <div className="cs-l-head">
             <div className="cs-l-title">
               <b lang="ja">債権譲渡通知書</b>
-              <span>Assignment letter · this deal's paper file</span>
+              <span>Financing letter · this deal's paper file</span>
             </div>
             <div className="cs-l-no">
               <span>
@@ -453,7 +453,7 @@ function DealFile({ deals, note, name, demo, load, paid }: { deals: DealRow[] | 
               <div className="cs-l-head">
                 <div className="cs-l-title">
                   <b lang="ja">債権譲渡通知書</b>
-                  <span>Assignment letter · this deal's paper file</span>
+                  <span>Financing letter · this deal's paper file</span>
                 </div>
               </div>
               <p className="cs-note">{deals ? "No deal yet: accept an offer from the mailbox." : note || "Opening your deals…"}</p>
@@ -543,7 +543,7 @@ function NeedsYou({ deals, mail, open, refresh, busy, updated }: { deals: DealRo
             <h2>Your other deals</h2>
           </div>
           <ul className="cs-needs is-quiet" aria-label="Your other deals">
-            {n.accepted.map((m) => row(m.relay_id, "受", m.offer?.invoice_id ?? "Accepted offer", "Accepted · waiting for the supplier's board entry", `tray/${encodeURIComponent(m.relay_id)}`))}
+            {n.accepted.map((m) => row(m.relay_id, "受", m.offer?.invoice_id ?? "Accepted offer", "Accepted · waiting for the supplier's public record", `tray/${encodeURIComponent(m.relay_id)}`))}
             {n.rest.map((d) => row(d.n, tabOf(d).glyph, d.invoice_id, tabOf(d).line, `deal/${d.n}`))}
           </ul>
         </>

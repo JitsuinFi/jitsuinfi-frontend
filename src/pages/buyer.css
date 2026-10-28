@@ -390,5 +390,14 @@ p.by-late b { color: var(--head); font-weight: 600; }
 
 /* the letter's pay-to address: its ends, the whole under Details (mobile E2E 2, finding 9) */
 .by-s-addr { display: grid; gap: 4px; min-width: 0; }
-.by-s-more summary { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; font: 500 13px/1 var(--f-body); color: var(--seal); }
+.by-s-more summary { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; cursor: pointer; font: 500 13px/1 var(--f-body); color: var(--seal); }
 .by-s-more .by-s-full { display: block; overflow-wrap: anywhere; font-size: 12px; line-height: 1.45; }
+
+/* the paid slip's bar (mobile E2E 4): 済 and the status beside Check it on Verify; wider, the 済
+   line above the facts says it, so the status stays out of the slip's own row */
+.by-settled-acts > .by-bar-paid { display: none; }
+@media (max-width: 599px) {
+  .ia-bar > .by-bar-paid { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 48px; font: 600 14px/1.2 var(--f-body); color: var(--head); white-space: nowrap; }
+  .ia-bar > .by-bar-paid b { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1.5px solid currentColor; border-radius: 50%; font: 400 15px/1 var(--f-seal); color: var(--ok); }
+  .ia-bar > .by-bar-paid + a { flex: 1 1 0; min-width: 0; }
+}

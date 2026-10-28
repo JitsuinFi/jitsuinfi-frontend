@@ -13,7 +13,7 @@ import { Dock } from "../app/Dock";
 // Message types (relay-message.ts) in the operator's words, and the role seals of the app.
 const TYPE_LABEL: Record<string, string> = {
   "deal.offer": "Financing offer",
-  "deal.entry": "Board entry",
+  "deal.entry": "Public record",
   "deal.seal": "Seal",
   "history.chain": "Buyer history",
   "invoice.signature": "Buyer signature",
@@ -153,7 +153,7 @@ function OfferBlock({ relayId, o, demo, reload }: { relayId: string; o: Offer; d
           <label className="cs-field">
             <span>Confirmations</span>
             <input className="is-mono" inputMode="numeric" defaultValue="1" ref={confirmations} />
-            <small>Blocks the board entry waits before you pay.</small>
+            <small>Blocks the public record waits before you pay.</small>
           </label>
         </div>
         <div className="cs-actions">

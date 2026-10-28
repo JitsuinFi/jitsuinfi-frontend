@@ -15,12 +15,13 @@
 // Nav audit 2026-10-25: the nav's Sign in opens log-in on a device that knows an account and
 // sign-up on one that does not; test data shows the same Ready step as a passkey sign-up; a role
 // screen's gate names its counter; Use test data instead is always under the passkey step.
-import { useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Page } from "../app/AppShell";
 import { Dock } from "../app/Dock";
+import { usePhone } from "../app/phone";
 import { Lede } from "../app/Lede";
-import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, usernameProblem, type Role } from "../lib/account";
+import { emailProblem, isNonProductionHost, normalizeUsername, PRODUCTION_RP_ID, roleLabel, ROLES, signupReady, usernameProblem, type Role } from "../lib/account";
 import { account, accountDoor } from "../lib/app-session";
 import { dropMyDrafts } from "../app/kept";
 import { firstSection } from "../lib/sections";
@@ -333,6 +334,23 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
     if (imp.current && !still()) void run(imp.current, { opacity: [0.2, 1], rotate: [-8, 0], scale: [0.94, 1], duration: dur.enter }, ease.softLand);
   };
 
+  // mobile E2E 4: Continue sat at 136-148 % of a phone's screen. Once the fields are good, it
+  // moves to the bottom bar (screen 1, thumb zone); until then it stays right after the fields,
+  // so it never floats over one being written
+  const phone = usePhone();
+  const [ready, setReady] = useState(false);
+  const checkReady = () => setReady(v === "signup" && !!emailIn.current && !!userIn.current && signupReady(emailIn.current.value, userIn.current.value));
+  useEffect(checkReady, [v]);
+  useEffect(() => {
+    if (!ready || !phone) return;
+    // the bar came up while a field is focused: the field stays above it
+    const f = requestAnimationFrame(() => {
+      const a = document.activeElement;
+      const bar = document.querySelector(".ia-bar");
+      if (a instanceof HTMLInputElement && bar && a.getBoundingClientRect().bottom > bar.getBoundingClientRect().top - 8) a.scrollIntoView({ block: "nearest" });
+    });
+    return () => cancelAnimationFrame(f);
+  }, [ready, phone]);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -546,7 +564,7 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
 
           {/* the visual: ≥ 65% */}
           <div className="ac-desk">
-            <form className={`ac-card${fixed ? " is-fixed" : ""}${s ? " is-registered" : ""}${v === "signup" || v === "login" ? " has-fields" : ""}`} noValidate aria-labelledby="ac-card-title" onSubmit={submit} ref={card}>
+            <form className={`ac-card${fixed ? " is-fixed" : ""}${s ? " is-registered" : ""}${v === "signup" || v === "login" ? " has-fields" : ""}`} noValidate aria-labelledby="ac-card-title" id="ac-form" onSubmit={submit} onInput={checkReady} ref={card}>
               <span className="ac-band" aria-hidden="true" />
               <div className="ac-head">
                 <p className="ac-title" id="ac-card-title">
@@ -808,9 +826,18 @@ export function AccountPage({ want, shared }: { want?: Role; shared?: SharedCard
                         Sign in
                       </button>
                     </p>
-                    <button className="ac-btn" type="submit">
-                      Continue
-                    </button>
+                    {ready ? (
+                      <Dock label="Continue">
+                        {/* in the bar the button sits outside the form: it submits it by id */}
+                        <button className="ac-btn" type="submit" form="ac-form">
+                          Continue
+                        </button>
+                      </Dock>
+                    ) : (
+                      <button className="ac-btn" type="submit">
+                        Continue
+                      </button>
+                    )}
                   </div>
                 ) : v === "signup-passkey" ? (
                   <div className="ac-act">

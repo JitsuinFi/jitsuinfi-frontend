@@ -107,7 +107,7 @@ const SUPPLIER: Partial<Record<MessageType, LetterAction>> = {
   "invoice.signature": { label: "Check and keep", lead: { kind: "deal", station: "offer" }, goes: "opens the deal" },
   "key.invoice_pk": { label: "Use for my next invoice", lead: { kind: "new-invoice" }, goes: "opens Write an invoice" },
   "deal.decline": { label: "Note and free the invoice", lead: { kind: "deal", station: "offer" }, goes: `opens the deal at ${STATION_WORD.offer}` },
-  "deal.commitment_opening": { label: "Use this entry request", lead: { kind: "deal", station: "entry" }, goes: `opens the deal at ${STATION_WORD.entry}` },
+  "deal.commitment_opening": { label: "Use this request", lead: { kind: "deal", station: "entry" }, goes: `opens the deal at ${STATION_WORD.entry}` },
   "deal.letter": { label: "Keep the letter", lead: { kind: "deal", station: "seal" }, goes: `opens the deal at ${STATION_WORD.seal}` },
   "deal.advance": { label: "Note the advance", lead: { kind: "deal", station: "advance" }, goes: `opens the deal at ${STATION_WORD.advance}` },
   // mobile E2E 2, finding 7: the deal opens at 済, where "Check it on Verify" is on screen 1

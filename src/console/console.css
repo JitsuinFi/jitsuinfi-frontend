@@ -694,6 +694,8 @@
 .cs .cs-detail > .cs-route { order: -1; }
 /* the bottom bar (app/Dock.tsx) above the console's floating nav */
 :root:has(#console) .ia-bar { display: none; }
+/* wider, the deal's status line already says it (the bar's words are for the phone) */
+.cs-actions > .cs-bar-said { display: none; }
 @media (max-width: 599px) {
   :root:has(#console) .ia-bar {
     position: fixed; z-index: 29; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom, 0px));
@@ -701,6 +703,8 @@
     animation: cs-bar-in var(--dur-enter) var(--ease-land) both;
   }
   :root:has(#console) .ia-bar > button { flex: 1 1 100%; min-height: 48px; justify-content: center; }
+  /* the advance approved: the bar says so in words, no disabled spinner (mobile E2E 3) */
+  :root:has(#console) .ia-bar > .cs-bar-said { flex: 1 1 100%; display: flex; align-items: center; justify-content: center; min-height: 48px; margin: 0; font: 500 14px/1.35 var(--f-body); color: var(--head); text-align: center; }
   :root:has(#console) body.has-dock #cs-main { padding-bottom: 80px; }
   :root:has(#console) { scroll-padding-bottom: 150px; }
 }

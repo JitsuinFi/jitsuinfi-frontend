@@ -199,6 +199,8 @@ function SealBox({ k, role, who, wait, on }: { k: string; role: string; who: str
 /** The selected deal's paper file: the letter, the route under it, and the one line and action. */
 function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | null | undefined; demo: boolean; load: () => Promise<void>; paid: () => void }): ReactNode {
   const [note, setNote] = useState("");
+  // mobile E2E 3: once the passkey approved the advance, the bar says so instead of a disabled spinner
+  const [approved, setApproved] = useState(false);
   const letter = useRef<HTMLElement>(null);
   const stamp = useRef<HTMLSpanElement>(null);
   const coin = useRef<HTMLSpanElement>(null);
@@ -334,7 +336,13 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
           <Status text={note} />
         </div>
         <div className="cs-actions">
-          {!demo && d.state === "Pay" && d.intent ? (
+          {!demo && d.state === "Pay" && approved ? (
+            <Dock label="Advance approved">
+              <small className="cs-bar-said" role="status">
+                Approved with your passkey. The advance is on its way; this deal moves on by itself.
+              </small>
+            </Dock>
+          ) : !demo && d.state === "Pay" && d.intent ? (
             <Dock label="Pay the advance">
             <Act
               className="cs-btn"
@@ -347,6 +355,7 @@ function DealPaper({ d, name, demo, load, paid }: { d: DealRow; name: string | n
                 replay(coin.current, "is-drop");
                 paid();
                 setNote("Approved with your passkey. The advance is on its way.");
+                setApproved(true);
                 await load();
               }}
               fail={fail}
